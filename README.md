@@ -1,0 +1,141 @@
+# Do Mato ao Milhão
+
+**Comece com um terreno. Termine comprando a vizinhança.**
+
+Protótipo jogável de um tycoon de fazenda 3D estilizado para Windows, em português.
+Godot 4.7.2 + modelos originais feitos no Blender 5.2.1. Campanha solo e offline.
+
+## Jogar
+
+O executável local fica em `exports/windows/DoMatoAoMilhao.exe` depois da exportação.
+Ele abre diretamente, sem instalar Godot ou Blender. Os binários não são enviados ao Git.
+
+Para executar a partir do código:
+1. Abra o Godot 4.7.2, escolha **Importar** e selecione `project.godot`.
+2. Aguarde a importação dos modelos.
+3. Pressione **F5** para jogar. O cenário é montado pelos scripts durante a execução.
+
+## Primeiros passos
+
+1. Dê um nome à sua fazenda e clique em **Escolher meu pedaço de terra**.
+2. Clique numa área válida do vale para comprar um terreno de 24 × 24 m por $400.
+3. Selecione a semente e coloque alguns canteiros. Cada um custa $20 e inclui as primeiras sementes.
+4. Escolha **Cuidar** e clique nos canteiros para regar.
+5. Use **TAB** para caminhar e deixar o tempo passar. A construção e as janelas pausam a simulação.
+6. Colha com **E** perto do canteiro ou use **Cuidar** na câmera aérea.
+7. Abra o **Armazém [F]**, venda ou entregue o pedido especial e reinvista.
+8. Construa o galinheiro para receber ovos, personalize placas e pinte as construções.
+9. Junte $900 e use **Expandir**. Há duas expansões neste mapa.
+
+## Controles
+
+| Ação | Controle |
+|---|---|
+| Andar / deslocar câmera aérea | WASD |
+| Correr | Shift + WASD |
+| Girar câmera | Segurar botão direito e mover mouse |
+| Aproximar / afastar | Scroll |
+| Alternar caminhada e construção | TAB |
+| Construir / selecionar / cuidar | Clique esquerdo |
+| Girar construção | R / Q |
+| Cuidar de canteiro / editar placa próxima | E |
+| Armazém do Seu Tonico | F |
+| Salvar | F5 |
+| Cancelar ferramenta / fechar janela / menu | Esc |
+| Ferramentas da barra | 1–8 |
+
+**Pintura:** em construção, use Cuidar para selecionar celeiro, galinheiro, cerca ou placa;
+escolha uma cor no painel da direita. A cor principal muda; telhado e detalhes permanecem fixos.
+**Placas:** o editor abre ao construir ou clicar na placa. Até 40 caracteres.
+**Remover:** devolve metade do preço da construção selecionada.
+**Replantar:** selecione a semente e interaja com um canteiro vazio.
+
+## O que esta versão entrega
+
+- Vale 3D com rio, colinas, árvores e armazém de um vizinho.
+- Escolha da posição inicial do terreno e validação de área, saldo e sobreposição.
+- Fazendeiro em terceira pessoa com colisões, câmera com zoom e rotação, câmera aérea.
+- Canteiros, celeiro, galinheiro, cercas, placas e caminhos.
+- Cenoura (32 s), trigo (46 s), milho (62 s); irrigação, crescimento, colheita e replantio.
+- Três galinhas por galinheiro; produção de dois ovos a cada 45 s.
+- Maricota ocasionalmente vira a “gerente” e acompanha o jogador por alguns segundos.
+- Venda de estoque e um contrato de seis cenouras por $110.
+- Pintura, placas, metas, expansão, efeitos sonoros de interação e salvamento local.
+
+## Limites assumidos do protótipo
+
+Esta é a versão **0.1**, destinada a validar o ciclo de jogo e a direção visual.
+O celeiro é decorativo por enquanto. Ração e água das galinhas estão incluídas;
+não há sistema completo de necessidades, criação ou reprodução animal.
+O comércio tem preços fixos e fica acessível pela interface, além do armazém no mapa.
+Há um único vizinho comerciante, sem simulação econômica independente.
+O personagem usa animação simples, e as galinhas ainda não têm navegação com obstáculos.
+Sem multiplayer, funcionários, tratores dirigíveis, indústrias, clima, estações ou continente.
+O jogo não cresce enquanto está fechado. O relógio representa dias de trabalho simplificados.
+
+## Salvamento
+
+Salvamento automático a cada 30 segundos, manual em F5 e ao sair normalmente.
+Arquivos em `%APPDATA%/Godot/app_userdata/Do Mato ao Milhão/`:
+- `farm_v1.json`: fazenda atual;
+- `farm_v1.json.bak`: cópia anterior, usada se o arquivo principal não puder ser lido.
+
+São preservados terreno, estruturas, textos, cores, cultivos, dinheiro, estoque,
+relógio e progresso. Ao abrir, o personagem volta a um ponto seguro da propriedade.
+Começar outra fazenda exige confirmação no menu e substitui a fazenda atual.
+
+## Organização
+
+```text
+assets/models/        Modelos GLB usados pelo jogo
+art/source/           Modelos Blender editáveis (fora da importação do Godot)
+scenes/main.tscn       Cena de entrada
+scripts/farm_state.gd Simulação, economia e validação dos dados
+scripts/farm_world.gd Cenário, construções e visuais
+scripts/farm_hud.gd   Interface em português
+scripts/main.gd       Câmeras, personagem, interações e persistência
+tests/                Testes da simulação
+tools/build_assets.py Gerador reproduzível do kit original no Blender
+DESIGN.md             Direção e recorte da primeira versão
+```
+
+## Recriar os modelos
+
+Execute a partir da raiz do projeto (ajuste o caminho se necessário):
+
+```powershell
+& 'C:\Program Files\Blender Foundation\Blender 5.2\blender.exe' --background --python tools/build_assets.py
+```
+
+Isso recria os `.blend` em `art/source` e os `.glb` em `assets/models`.
+Para alterar um modelo manualmente, abra seu `.blend` e exporte GLB para o arquivo correspondente.
+O script gerador sobrescreve esses modelos: guarde alterações manuais no Git antes de executá-lo.
+
+## Testes e exportação
+
+Com `godot` apontando para o executável Godot 4.7.2:
+
+```powershell
+godot --headless --editor --path . --import
+godot --headless --path . --script tests/test_farm_state.gd
+New-Item -ItemType Directory -Force test-results
+godot --path . --quit-after 600 -- --qa
+New-Item -ItemType Directory -Force exports/windows
+godot --headless --path . --export-release 'Windows Desktop'
+```
+
+O teste de integração usa apenas `qa_farm_v1.json`, nunca o salvamento real.
+Valida compra, colocação via controles do jogo, colheita, venda, pintura, texto,
+movimento, câmeras, gravação real, leitura e recuperação de backup.
+As capturas são geradas em `test-results/` e não entram no Git.
+O modo QA só é aceito por compilações de depuração/editor.
+
+Testado inicialmente em Windows com i5-13420H, 16 GB de RAM e RTX 3050 Laptop 6 GB.
+O teste breve confirma funcionamento, sem representar um benchmark de fazenda grande.
+
+## Créditos e uso
+
+Projeto de Vitor Girardi. Código e modelos originais criados para este projeto.
+Nenhuma licença pública de redistribuição foi concedida para o conteúdo do jogo.
+Godot: licença MIT, incluída em `GODOT_LICENSE.txt`; [licenças de terceiros do motor](https://godotengine.org/license/).
+Blender é a ferramenta de autoria dos modelos; não precisa estar instalado para jogar.

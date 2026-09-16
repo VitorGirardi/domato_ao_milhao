@@ -1,0 +1,8 @@
+.godot/
+exports/
+*.blend1
+*.blend2
+art/source/.godot/
+test-results/
+*.tmp
+.DS_Store
