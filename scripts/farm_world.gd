@@ -9,15 +9,63 @@ var chickens: Array[Dictionary] = []
 var farmer: Node3D
 var clock: float = 0.0
 var rng := RandomNumberGenerator.new()
+var build_grid:=MeshInstance3D.new()
+var selection:=Node3D.new()
+var selection_edges: Array[MeshInstance3D]=[]
+var highlighted_index: int = -1
 
 func _ready() -> void:
 	rng.seed = 24517
-	for key in ["barn", "coop", "fence", "sign", "tree", "rock", "chicken", "farmer", "market", "carrot", "wheat", "corn", "flower"]:
+	for key in ["barn", "coop", "fence", "sign", "tree", "rock", "chicken", "farmer", "market", "carrot", "wheat", "corn", "flower", "sprout", "watering_can", "harvest_carrot", "harvest_wheat", "harvest_corn"]:
 		models[key] = load("res://assets/models/%s.glb" % key)
 	add_child(structures)
 	add_child(border)
 	_environment()
 	_landscape()
+	_build_guides()
+
+func _build_guides() -> void:
+	add_child(build_grid)
+	var plane:=PlaneMesh.new()
+	plane.size=Vector2.ONE
+	build_grid.mesh=plane
+	var shader:=Shader.new()
+	shader.code="""shader_type spatial;
+render_mode unshaded, cull_disabled;
+varying vec3 world_pos;
+void vertex(){world_pos=(MODEL_MATRIX*vec4(VERTEX,1.0)).xyz;}
+void fragment(){
+ vec2 p=abs(fract((world_pos.xz+1.0)/2.0)*2.0-1.0);
+ float line=smoothstep(0.97,0.995,max(p.x,p.y));
+ ALBEDO=vec3(1.0,0.94,0.7); ALPHA=line*0.25;
+}"""
+	var grid_material:=ShaderMaterial.new()
+	grid_material.shader=shader
+	build_grid.material_override=grid_material
+	build_grid.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	build_grid.visible=false
+	add_child(selection)
+	var gold:=material("ffe092")
+	gold.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED
+	for i in range(4):
+		var edge:=box(selection,Vector3.ZERO,Vector3.ONE,gold)
+		edge.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		selection_edges.append(edge)
+	selection.visible=false
+
+func show_selection(state: FarmState, index: int) -> void:
+	if index!=highlighted_index:
+		highlighted_index=index
+		update_crops(state)
+	selection.visible=index>=0 and index<state.items.size()
+	if not selection.visible: return
+	var item:Dictionary=state.items[index]
+	var rect:=state.item_rect(item.kind,Vector2(item.x,item.z),item.turn).grow(0.10)
+	selection.position=Vector3(rect.get_center().x,0.19,rect.get_center().y)
+	for i in range(4):
+		var horizontal:=i<2
+		selection_edges[i].scale=Vector3(rect.size.x,0.045,0.075) if horizontal else Vector3(0.075,0.045,rect.size.y)
+		selection_edges[i].position=Vector3(0,0,rect.size.y/2*(1 if i==0 else -1)) if horizontal else Vector3(rect.size.x/2*(1 if i==2 else -1),0,0)
 
 func material(hex: String, roughness: float = 0.9) -> StandardMaterial3D:
 	var result := StandardMaterial3D.new()
@@ -179,7 +227,10 @@ func update_border(state: FarmState) -> void:
 	for child in border.get_children():
 		child.free()
 	if not state.claimed:
+		build_grid.visible=false
 		return
+	build_grid.position=Vector3(state.center.x,0.045,state.center.y)
+	build_grid.scale=Vector3(state.land_size,1,state.land_size)
 	var edge := material("f1d991")
 	var half := state.land_size / 2
 	for i in range(int(state.land_size / 2)):
@@ -205,8 +256,25 @@ func rebuild(state: FarmState) -> void:
 			soil.name = "Soil"
 			for x in [-0.6,0,0.6]:
 				box(root, Vector3(x,0.14,0),Vector3(0.22,0.08,1.7),material("8e633d"))
-			var crop_node := model(item.crop, root)
-			crop_node.name = "Crop"
+			var crop_root:=Node3D.new()
+			crop_root.name="Crop"
+			root.add_child(crop_root)
+			var sprout:=model("sprout",crop_root,Vector3(0,0.14,0))
+			sprout.name="Sprout"
+			var young:=model(item.crop,crop_root,Vector3(0,0.14,0))
+			young.name="Young"
+			_tint_model(young,material("5b953f"))
+			var ripe:=model(item.crop,crop_root,Vector3(0,0.14,0))
+			ripe.name="Ripe"
+			var badge:=Label3D.new()
+			badge.name="Badge"
+			badge.font_size=30
+			badge.pixel_size=0.007
+			badge.position=Vector3(0,1.7,0)
+			badge.billboard=BaseMaterial3D.BILLBOARD_ENABLED
+			badge.outline_modulate=Color("294739")
+			badge.outline_size=9
+			root.add_child(badge)
 		elif item.kind == "path":
 			box(root, Vector3(0,0.025,0), Vector3(1.98,0.05,1.98), material("c2a574"))
 		else:
@@ -214,6 +282,7 @@ func rebuild(state: FarmState) -> void:
 			paint(visual, Color(FarmState.PALETTE[int(item.paint)]))
 			if item.kind in ["barn", "coop", "fence", "sign"]:
 				var body := StaticBody3D.new()
+				body.set_meta("item_index",i)
 				var shape := CollisionShape3D.new()
 				var box_shape := BoxShape3D.new()
 				var size: Vector2 = FarmState.ITEMS[item.kind].size
@@ -252,6 +321,18 @@ func paint(root: Node, color: Color) -> void:
 	for child in root.get_children():
 		paint(child, color)
 
+func replace_crop(index: int, kind: String) -> void:
+	if index<0 or index>=item_nodes.size(): return
+	var root:=item_nodes[index].get_node_or_null("Crop") as Node3D
+	if not root: return
+	root.get_node("Young").free()
+	root.get_node("Ripe").free()
+	var young:=model(kind,root,Vector3(0,0.14,0))
+	young.name="Young"
+	_tint_model(young,material("5b953f"))
+	var ripe:=model(kind,root,Vector3(0,0.14,0))
+	ripe.name="Ripe"
+
 func update_crops(state: FarmState) -> void:
 	for i in range(state.items.size()):
 		var item: Dictionary = state.items[i]
@@ -259,9 +340,25 @@ func update_crops(state: FarmState) -> void:
 			var node := item_nodes[i].get_node_or_null("Crop") as Node3D
 			if node:
 				node.visible = item.planted
-				node.scale = Vector3.ONE * (0.16 + float(item.growth) * 0.84)
+				var sprout:=node.get_node("Sprout") as Node3D
+				var young:=node.get_node("Young") as Node3D
+				var ripe:=node.get_node("Ripe") as Node3D
+				sprout.visible=item.growth<0.33
+				young.visible=item.growth>=0.33 and item.growth<0.75
+				ripe.visible=item.growth>=0.75
+				sprout.scale=Vector3.ONE*(0.65+float(item.growth))
+				young.scale=Vector3.ONE*(0.4+float(item.growth)*0.6)
+				ripe.scale=Vector3.ONE*(0.6+float(item.growth)*0.4)
+				var badge:=item_nodes[i].get_node("Badge") as Label3D
+				badge.text=("REGAR" if not item.watered else "COLHER") if i==highlighted_index else ("•" if not item.watered else "◆")
+				badge.visible=item.planted and (not item.watered or item.growth>=1)
+				badge.modulate=Color("9ee4ef") if not item.watered else Color("ffe092")
 				var soil := item_nodes[i].get_node("Soil") as MeshInstance3D
 				soil.material_override.albedo_color = Color("594431" if item.watered else "88603c")
+
+func _tint_model(node: Node, color: Material) -> void:
+	if node is MeshInstance3D: node.material_override=color
+	for child in node.get_children(): _tint_model(child,color)
 
 func animate(delta: float, player_pos: Vector3, silly: bool) -> void:
 	clock += delta

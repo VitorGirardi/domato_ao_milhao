@@ -10,6 +10,11 @@ var money_label: Label
 var clock_label: Label
 var mode_label: Label
 var quest_label: Label
+var quest_title: Label
+var quest_counter: Label
+var quest_button: Button
+var quest_progress: ProgressBar
+var move_button: Button
 var stock_label: Label
 var hint_label: Label
 var toast_label: Label
@@ -115,11 +120,30 @@ func _build() -> void:
 	button(root,"Armazém  [F]",Rect2(854,22,234,46),"market",true)
 	button(root,"Salvar  [F5]",Rect2(854,77,114,39),"save")
 	button(root,"Menu",Rect2(980,77,108,39),"menu")
-	var quest := panel(root,Rect2(24,140,287,192))
-	label(quest,"UM SONHO, UM TERRENO",Vector2(18,16),Vector2(250,25),14,MUTED)
-	quest_label=label(quest,"Escolha onde tudo começa.\n\nSeu primeiro terreno custa $400.\nO restante vira semente de futuro.",Vector2(18,50),Vector2(250,125),16)
+	var quest := panel(root,Rect2(24,140,287,279))
+	quest_counter=label(quest,"SEU PRIMEIRO CAPÍTULO",Vector2(18,16),Vector2(250,25),12,MUTED)
+	quest_title=label(quest,"Um lugar para chamar de seu",Vector2(18,47),Vector2(250,48),18)
+	quest_title.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+	quest_label=label(quest,"",Vector2(18,103),Vector2(250,92),15)
 	quest_label.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
-	select_panel=panel(root,Rect2(1110,140,306,338))
+	quest_button=button(quest,"Escolher meu terreno",Rect2(18,205,251,39),"journey",true)
+	quest_button.add_theme_font_size_override("font_size",14)
+	quest_progress=ProgressBar.new()
+	quest_progress.position=Vector2(18,260)
+	quest_progress.size=Vector2(250,7)
+	quest_progress.show_percentage=false
+	quest_progress.add_theme_font_size_override("font_size",1)
+	quest_progress.add_theme_constant_override("outline_size",0)
+	quest_progress.max_value=FarmState.JOURNEY.size()
+	for key in ["background","fill"]:
+		var bar_style:=StyleBoxFlat.new()
+		bar_style.bg_color=Color("e4ddc5") if key=="background" else Color("729464")
+		bar_style.set_corner_radius_all(3)
+		quest_progress.add_theme_stylebox_override(key,bar_style)
+	quest_progress.size=Vector2(250,7)
+	quest.add_child(quest_progress)
+	quest_progress.set_deferred("size",Vector2(250,7))
+	select_panel=panel(root,Rect2(1110,140,306,388))
 	select_label=label(select_panel,"CADERNO DA FAZENDA",Vector2(18,15),Vector2(270,32),16)
 	details_label=label(select_panel,"Selecione algo no terreno\npara cuidar ou personalizar.",Vector2(18,54),Vector2(270,132),16)
 	details_label.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
@@ -128,8 +152,9 @@ func _build() -> void:
 		var b:=button(select_panel,"",Rect2(18+i*53,226,44,34),"paint:%d"%i)
 		b.add_theme_stylebox_override("normal",style(Color(FarmState.PALETTE[i]),8))
 		b.tooltip_text="Pintar construção selecionada"
-	button(select_panel,"Editar placa",Rect2(18,281,128,39),"edit_sign")
-	button(select_panel,"Remover",Rect2(158,281,130,39),"remove")
+	move_button=button(select_panel,"Mover seleção  [M]",Rect2(18,278,270,39),"move")
+	button(select_panel,"Editar placa",Rect2(18,331,128,39),"edit_sign")
+	button(select_panel,"Remover",Rect2(158,331,130,39),"remove")
 	tool_panel=panel(root,Rect2(24,720,1392,157))
 	tool_title=label(tool_panel,"CONSTRUA SEU COMEÇO",Vector2(18,12),Vector2(305,25),13,MUTED)
 	walk_tip=label(tool_panel,"A vida acontece no seu ritmo. Cuide dos canteiros e descubra o vale.",Vector2(18,49),Vector2(1340,26),15,MUTED)
@@ -189,20 +214,24 @@ func update(state: FarmState, build_mode: bool, selected: int, tool: String, cro
 		current_tool=tool
 		current_crop=crop
 		_set_active_buttons()
-	if state.claimed:
-		var plots:=0
-		for item in state.items:
-			if item.kind=="plot": plots+=1
-		if plots==0:
-			quest_label.text="01 / RAÍZES NO CHÃO\n\nConstrua seu primeiro canteiro.\nEscolha a semente na barra abaixo."
-		elif state.harvests==0:
-			quest_label.text="02 / TEMPO DE CUIDAR\n\nRegue um canteiro com Cuidar.\nUse TAB para o tempo passar.\nDepois, colha sua primeira safra."
-		elif state.revenue==0:
-			quest_label.text="03 / PRIMEIRO NEGÓCIO\n\nAbra o armazém do Seu Tonico\ne venda sua primeira colheita."
-		elif state.land_size==24:
-			quest_label.text="04 / PENSANDO GRANDE\n\nJunte $900 para expandir.\nFaturamento: $%d\nSua próxima conquista está perto!"%state.revenue
-		else:
-			quest_label.text="SEU PRIMEIRO IMPÉRIO!\n\nTerreno expandido. Continue\ncriando a fazenda do seu jeito.\nFaturamento: $%d"%state.revenue
+	var step:=state.journey_step()
+	quest_progress.value=step
+	quest_button.visible=step<FarmState.JOURNEY.size()
+	if step<FarmState.JOURNEY.size():
+		var goal:Dictionary=FarmState.JOURNEY[step]
+		quest_counter.text="SEU PRIMEIRO CAPÍTULO   %02d / 08"%(step+1)
+		quest_title.text=goal.title
+		quest_label.text=goal.body
+		quest_button.text=goal.button
+		if goal.key=="plots": quest_label.text+="\nCanteiros: %d / 3"%mini(3,state.count_items("plot"))
+		if goal.key=="water": quest_label.text+="\nRegados: %d / 3"%mini(3,state.count_items("plot",true))
+		if goal.key=="contract": quest_label.text+="\nCenouras: %d / 6"%mini(6,int(state.inventory.carrot))
+	else:
+		quest_counter.text="CAPÍTULO CONCLUÍDO!"
+		quest_title.text="Seu primeiro império"
+		quest_label.text="Você plantou, cuidou e prosperou.\nContinue criando sua fazenda!\n\nFaturamento: $%d"%state.revenue
+	move_button.disabled=selected<0 or tool=="move"
+	move_button.text="Esc cancela a mudança" if tool=="move" else "Mover seleção  [M]"
 	if selected>=0 and selected<state.items.size():
 		var item:Dictionary=state.items[selected]
 		select_label.text=FarmState.ITEMS[item.kind].name.to_upper()
@@ -221,7 +250,7 @@ func update(state: FarmState, build_mode: bool, selected: int, tool: String, cro
 			details_label.text="Um toque seu na fazenda.\n\nRemover devolve metade\ndo custo de construção."
 	else:
 		select_label.text="CADERNO DA FAZENDA"
-		details_label.text="WASD  mover câmera\nMouse direito  girar\nScroll  aproximar / afastar\nR / Q  girar construção\nEsc  cancelar ferramenta\n\nTAB  voltar ao fazendeiro"
+		details_label.text="WASD mover • Scroll zoom\nBotão direito gira a câmera\nR / Q giram a construção\nM move a seleção • Esc cancela\nTAB volta ao fazendeiro"
 	if not state.claimed:
 		hint_label.text="Mova o mouse no vale e clique para comprar seu terreno • $400"
 	elif not hover_hint.is_empty():
@@ -276,7 +305,7 @@ func welcome(state: FarmState, has_save: bool) -> void:
 	text_input.text=state.farm_name
 	p.add_child(text_input)
 	button(p,"Voltar para minha fazenda" if has_save else "Escolher meu pedaço de terra",Rect2(34,494,542,55),"start",true)
-	label(p,"PROTÓTIPO 0.1   •   UM JOGO FEITO PARA CRESCER",Vector2(34,561),Vector2(542,17),11,MUTED)
+	label(p,"VERSÃO 0.2   •   CADA PEQUENO CUIDADO CONTA",Vector2(34,561),Vector2(542,17),11,MUTED)
 
 func market(state: FarmState) -> void:
 	var p:=_modal("market",590)

@@ -251,3 +251,7 @@ sphere('Flower heart',(0,0,.39),(.07,.07,.035),'Gold',1)
 cylinder('Stem',(0,0,.18),.017,.36,'Green',5)
 export('flower')
 print('ALL_ASSETS_COMPLETE')
+
+# The articulated character and action props supersede the original static farmer.
+import runpy
+runpy.run_path(str(ROOT / 'tools' / 'build_feedback_assets.py'), run_name='__main__')

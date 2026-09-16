@@ -16,6 +16,16 @@ const ITEMS = {
 	"path": {"name": "Caminho", "cost": 5, "size": Vector2(2, 2)}
 }
 const PALETTE = ["#ca6244", "#4e8f87", "#ddb65d", "#e8dfc2", "#7b83a6"]
+const JOURNEY = [
+	{"key":"land", "title":"Um lugar para chamar de seu", "body":"Escolha uma área do vale.\nSeu primeiro terreno custa $400.", "button":"Escolher meu terreno", "action":"land"},
+	{"key":"plots", "title":"Raízes no chão", "body":"Construa 3 canteiros.\nCada um já vem com sementes.\nCenouras crescem mais rápido!", "button":"Plantar meus canteiros", "action":"plots"},
+	{"key":"water", "title":"Uma dose de cuidado", "body":"Regue 3 canteiros com Cuidar.\nOs marcadores azuis indicam\nquem está precisando de água.", "button":"Cuidar dos canteiros", "action":"water"},
+	{"key":"harvest", "title":"Hora de colher", "body":"TAB faz o tempo passar.\nQuando aparecer COLHER,\nuse Cuidar ou E de perto.", "button":"Caminhar pela fazenda", "action":"harvest"},
+	{"key":"sale", "title":"Seu primeiro negócio", "body":"Seu Tonico compra a produção.\nAbra o armazém e transforme\nsua colheita em moedas.", "button":"Visitar o armazém", "action":"market"},
+	{"key":"contract", "title":"O bolo da Dona Nena", "body":"Entregue 6 cenouras por $110.\nSepare o pedido antes de\nvender o restante do estoque!", "button":"Ver pedido especial", "action":"market"},
+	{"key":"coop", "title":"Companhia no quintal", "body":"Construa seu primeiro\ngalinheiro por $180.\nA Maricota vem de brinde!", "button":"Construir galinheiro", "action":"coop"},
+	{"key":"expand", "title":"Um sonho maior", "body":"Junte $900 para expandir.\nMais espaço para construir\na fazenda do seu jeito.", "button":"Planejar expansão", "action":"expand"}
+]
 var money: int = 1600
 var claimed: bool = false
 var center: Vector2 = Vector2(4, -2)
@@ -27,6 +37,7 @@ var revenue: int = 0
 var harvests: int = 0
 var farm_name: String = "Meu pedacinho de mundo"
 var contract_done: bool = false
+var milestones: Dictionary = {}
 
 func claim(at: Vector2) -> String:
 	if claimed:
@@ -38,6 +49,7 @@ func claim(at: Vector2) -> String:
 	center = at.snapped(Vector2(2, 2))
 	claimed = true
 	money -= 400
+	refresh_journey()
 	return ""
 
 func bounds() -> Rect2:
@@ -49,7 +61,7 @@ func item_rect(kind: String, at: Vector2, turn: int) -> Rect2:
 		size = Vector2(size.y, size.x)
 	return Rect2(at - size / 2, size)
 
-func can_place(kind: String, at: Vector2, turn: int) -> String:
+func can_place(kind: String, at: Vector2, turn: int, ignore_index: int = -1) -> String:
 	if not claimed:
 		return "Escolha seu terreno primeiro."
 	if not ITEMS.has(kind):
@@ -59,15 +71,50 @@ func can_place(kind: String, at: Vector2, turn: int) -> String:
 		return "Fora da sua propriedade."
 	if _reserved(area):
 		return "Mantenha a estrada e o armazém do vizinho livres."
-	for item in items:
+	for index in range(items.size()):
+		if index==ignore_index: continue
+		var item: Dictionary = items[index]
 		if area.grow(-0.05).intersects(item_rect(item.kind, Vector2(item.x, item.z), item.turn)):
 			return "Este espaço já está ocupado."
-	if money < int(ITEMS[kind].cost):
+	if ignore_index<0 and money < int(ITEMS[kind].cost):
 		return "Moedas insuficientes."
 	return ""
 
 func _reserved(area: Rect2) -> bool:
 	return area.intersects(Rect2(-29.2,-42,4.4,84)) or area.intersects(Rect2(-36,28.2,72,3.6)) or area.intersects(Rect2(-26,11,5,6))
+
+func can_move(index: int, at: Vector2, turn: int) -> String:
+	if index<0 or index>=items.size(): return "Selecione uma construção primeiro."
+	return can_place(items[index].kind,at.snapped(Vector2(2,2)),turn,index)
+
+func move_item(index: int, at: Vector2, turn: int) -> String:
+	var error:=can_move(index,at,turn)
+	if not error.is_empty(): return error
+	at=at.snapped(Vector2(2,2))
+	items[index].x=at.x
+	items[index].z=at.y
+	items[index].turn=posmod(turn,4)
+	return ""
+
+func count_items(kind: String, only_watered: bool = false) -> int:
+	var total:=0
+	for item in items:
+		if item.kind==kind and (not only_watered or (item.planted and item.watered)):
+			total+=1
+	return total
+
+func refresh_journey() -> void:
+	var facts={"land":claimed, "plots":count_items("plot")>=3,
+		"water":count_items("plot",true)>=3, "harvest":harvests>0,
+		"sale":revenue>0, "contract":contract_done,
+		"coop":count_items("coop")>0, "expand":land_size>24}
+	for key in facts:
+		if facts[key]: milestones[key]=true
+
+func journey_step() -> int:
+	for i in range(JOURNEY.size()):
+		if not milestones.get(JOURNEY[i].key,false): return i
+	return JOURNEY.size()
 
 func place(kind: String, at: Vector2, turn: int, crop: String = "carrot") -> String:
 	at = at.snapped(Vector2(2, 2))
@@ -80,6 +127,7 @@ func place(kind: String, at: Vector2, turn: int, crop: String = "carrot") -> Str
 	items.append({"kind": kind, "x": at.x, "z": at.y, "turn": posmod(turn, 4),
 		"paint": 0, "text": "Aqui o fiado só amanhã", "crop": crop,
 		"growth": 0.0, "watered": false, "planted": kind == "plot", "egg_time": 0.0})
+	refresh_journey()
 	return ""
 
 func tend(index: int, crop: String = "carrot") -> String:
@@ -99,6 +147,7 @@ func tend(index: int, crop: String = "carrot") -> String:
 		item.growth = 0.0
 		item.planted = true
 		item.watered = false
+		refresh_journey()
 		return "Sementes plantadas. Agora é só regar!"
 	if float(item.growth) >= 1.0:
 		inventory[item.crop] += int(CROPS[item.crop]["yield"])
@@ -106,9 +155,11 @@ func tend(index: int, crop: String = "carrot") -> String:
 		item.planted = false
 		item.watered = false
 		item.growth = 0.0
+		refresh_journey()
 		return "+3 %s no estoque!" % CROPS[item.crop].name
 	if not item.watered:
 		item.watered = true
+		refresh_journey()
 		return "Regado! A natureza cuida do resto."
 	return "Crescendo... %d%%" % int(float(item.growth) * 100)
 
@@ -140,6 +191,7 @@ func sell_all() -> int:
 	revenue += total
 	for key in inventory:
 		inventory[key] = 0
+	refresh_journey()
 	return total
 
 func deliver_contract() -> bool:
@@ -149,6 +201,7 @@ func deliver_contract() -> bool:
 	money += 110
 	revenue += 110
 	contract_done = true
+	refresh_journey()
 	return true
 
 func expand() -> String:
@@ -160,6 +213,7 @@ func expand() -> String:
 		return "A expansão custa 900 moedas."
 	money -= 900
 	land_size += 8
+	refresh_journey()
 	return ""
 
 func serialize() -> Dictionary:
@@ -167,7 +221,7 @@ func serialize() -> Dictionary:
 		"center": [center.x, center.y], "land_size": land_size,
 		"items": items.duplicate(true), "inventory": inventory.duplicate(),
 		"elapsed": elapsed, "revenue": revenue, "harvests": harvests,
-		"farm_name": farm_name, "contract_done": contract_done}
+		"farm_name": farm_name, "contract_done": contract_done, "milestones": milestones.duplicate()}
 
 func restore(data: Variant) -> bool:
 	# Validate before mutating live state. Invalid files never partially replace it.
@@ -190,6 +244,10 @@ func restore(data: Variant) -> bool:
 		return false
 	if not data.get("inventory") is Dictionary or not data.get("items") is Array or data.items.size() > 1200:
 		return false
+	if not data.get("milestones",{}) is Dictionary:
+		return false
+	for value in data.get("milestones",{}).values():
+		if not value is bool: return false
 	for key in inventory:
 		if not _number(data.inventory.get(key)) or float(data.inventory[key]) < 0:
 			return false
@@ -229,6 +287,8 @@ func restore(data: Variant) -> bool:
 	harvests = int(data.harvests)
 	farm_name = data.farm_name
 	contract_done = data.contract_done
+	milestones=data.get("milestones",{}).duplicate()
+	refresh_journey()
 	return true
 
 func _number(value: Variant) -> bool:

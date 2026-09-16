@@ -7,6 +7,8 @@ var world: FarmWorld
 var hud: FarmHUD
 var player := CharacterBody3D.new()
 var avatar: Node3D
+var actor:=FarmAvatar.new()
+var feedback:=FarmFeedback.new()
 var camera := Camera3D.new()
 var build_mode := true
 var focus := Vector3(4,0,-2)
@@ -31,16 +33,21 @@ var silly_timer := 0.0
 var next_silly := 75.0
 var sound := AudioStreamPlayer.new()
 var qa_mode := false
+var move_index: int = -1
+var action_cooldown := 0.0
+var journey_seen := -1
 
 func _ready() -> void:
 	qa_mode = OS.is_debug_build() and "--qa" in OS.get_cmdline_user_args()
-	if qa_mode: save_path="user://qa_farm_v1.json"
+	if qa_mode: save_path="user://qa_farm_v02.json"
 	get_tree().auto_accept_quit = false
 	_inputs()
 	world = FarmWorld.new()
 	add_child(world)
 	var loaded := false if qa_mode else _load_game()
 	world.rebuild(state)
+	add_child(feedback)
+	feedback.setup(world)
 	_player()
 	add_child(camera)
 	camera.current = true
@@ -85,6 +92,7 @@ func _player() -> void:
 	collision.position.y = 0.95
 	player.add_child(collision)
 	avatar = world.model("farmer",player)
+	actor.setup(avatar,world)
 
 func _physics_process(delta: float) -> void:
 	if not is_instance_valid(hud):
@@ -95,6 +103,7 @@ func _physics_process(delta: float) -> void:
 	var right := Vector3(cos(yaw),0,-sin(yaw))
 	var back := Vector3(sin(yaw),0,cos(yaw))
 	var direction := right * movement.x + back * movement.y
+	if actor.action_time>0 and not build_mode: direction=Vector3.ZERO
 	if build_mode:
 		focus += direction * delta * build_distance * 0.45
 		focus.x = clampf(focus.x,-25,38)
@@ -107,11 +116,9 @@ func _physics_process(delta: float) -> void:
 		player.velocity.z = direction.z * speed
 		if direction.length() > 0.1:
 			avatar.rotation.y = lerp_angle(avatar.rotation.y,atan2(direction.x,direction.z),delta*12)
-			avatar.position.y = sin(state.elapsed*15)*0.05
-		else:
-			avatar.position.y = 0
 	player.velocity.y -= 18*delta
 	player.move_and_slide()
+	actor.animate(delta,not build_mode and Vector2(player.velocity.x,player.velocity.z).length()>0.2,Input.is_action_pressed("run"))
 	player.position.x = clampf(player.position.x,-31,44)
 	player.position.z = clampf(player.position.z,-39,43)
 	if player.position.y < -3:
@@ -121,6 +128,7 @@ func _physics_process(delta: float) -> void:
 func _process(delta: float) -> void:
 	if not is_instance_valid(hud):
 		return
+	action_cooldown=maxf(0,action_cooldown-delta)
 	if session_started and not build_mode and hud.modal_kind.is_empty():
 		if state.tick(delta):
 			hud.toast("Có-có-contabilidade: +2 ovos por galinheiro!")
@@ -182,6 +190,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				if hud.modal_kind != "welcome": hud.close_modal()
 			elif tool != "inspect":
 				tool="inspect"
+				move_index=-1
 			else:
 				hud.menu(state)
 			get_viewport().set_input_as_handled()
@@ -193,6 +202,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_E: _interact_nearest()
 			KEY_F: _action("market")
 			KEY_F5: _action("save")
+			KEY_M: _action("move")
 			KEY_R: turn=posmod(turn+1,4)
 			KEY_Q: turn=posmod(turn-1,4)
 			KEY_1: _action("tool:inspect")
@@ -220,6 +230,9 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _update_pointer() -> void:
 	ghost.visible = false
+	world.build_grid.visible=session_started and state.claimed and build_mode and hud.modal_kind.is_empty() and (FarmState.ITEMS.has(tool) or move_index>=0)
+	world.show_selection(state,selected if build_mode else _nearest())
+	if not hud.modal_kind.is_empty(): world.selection.visible=false
 	hover_hint = ""
 	pointer_valid = false
 	if not session_started or not hud.modal_kind.is_empty():
@@ -234,6 +247,9 @@ func _update_pointer() -> void:
 	pointer_valid = true
 	if get_viewport().gui_get_hovered_control()!=null:
 		return
+	if state.claimed and build_mode and tool=="inspect":
+		var hovered:=_pick_item(mouse,Vector2(at.x,at.z))
+		world.show_selection(state,hovered if hovered>=0 else selected)
 	if not state.claimed:
 		_preview("land")
 		ghost.position = Vector3(pointer.x,0.06,pointer.y)
@@ -242,14 +258,17 @@ func _update_pointer() -> void:
 		ghost_mat.albedo_color=Color(0.84,0.92,0.43,0.32) if valid else Color(0.9,0.2,0.12,0.38)
 		ghost.visible=true
 		hover_hint="24 × 24 metros • $400 • Clique para começar" if valid else "Procure uma área plana no centro do vale"
-	elif build_mode and FarmState.ITEMS.has(tool):
-		_preview(tool)
+	elif build_mode and (FarmState.ITEMS.has(tool) or move_index>=0):
+		var kind:String=state.items[move_index].kind if move_index>=0 else tool
+		_preview(kind)
 		ghost.position=Vector3(pointer.x,0.08,pointer.y)
 		ghost.rotation.y=turn*PI/2
-		var error:=state.can_place(tool,pointer,turn)
+		var error:=state.can_move(move_index,pointer,turn) if move_index>=0 else state.can_place(kind,pointer,turn)
 		ghost_mat.albedo_color=Color(0.7,0.95,0.45,0.48) if error.is_empty() else Color(0.95,0.22,0.12,0.5)
 		ghost.visible=true
-		hover_hint="%s • $%d • Clique para colocar • R gira"%[FarmState.ITEMS[tool].name,FarmState.ITEMS[tool].cost] if error.is_empty() else error
+		if error.is_empty():
+			hover_hint="Mover %s • Grátis • Clique confirma • Esc cancela"%FarmState.ITEMS[kind].name if move_index>=0 else "%s • $%d • Clique para colocar • R gira"%[FarmState.ITEMS[kind].name,FarmState.ITEMS[kind].cost]
+		else: hover_hint=error
 	elif not build_mode:
 		var nearest:=_nearest()
 		if nearest>=0:
@@ -280,6 +299,19 @@ func _ghost_material(node: Node) -> void:
 func _click_world() -> void:
 	if not pointer_valid:
 		return
+	if move_index>=0:
+		var error:=state.move_item(move_index,pointer,turn)
+		if not error.is_empty():
+			hud.toast(error)
+			return
+		selected=move_index
+		move_index=-1
+		tool="inspect"
+		world.rebuild(state)
+		_ensure_player_space()
+		hud.toast("Novo lugar, mesma história. Tudo preservado!")
+		_update_ui()
+		return
 	if not state.claimed:
 		var error:=state.claim(pointer)
 		if not error.is_empty():
@@ -302,7 +334,9 @@ func _click_world() -> void:
 			_chime()
 			if tool=="sign":
 				hud.editor_dialog("sign",state.items[selected].text)
-			elif tool=="plot": hud.toast("Sementes no chão. Use Cuidar para regar!")
+			elif tool=="plot":
+				feedback.planted(Vector3(pointer.x,0,pointer.y))
+				hud.toast("Sementes no chão. Use Cuidar para regar!")
 			else: hud.toast("%s construído!"%FarmState.ITEMS[tool].name)
 		else:
 			hud.toast(error)
@@ -311,13 +345,21 @@ func _click_world() -> void:
 		var ray:=camera.project_ray_origin(mouse)
 		var direction:=camera.project_ray_normal(mouse)
 		var at:Vector3=ray+direction*(-ray.y/direction.y)
-		selected=_find_item(Vector2(at.x,at.z))
+		selected=_pick_item(mouse,Vector2(at.x,at.z))
 		if selected>=0:
 			if not build_mode and _distance_to_item(selected)>3:
 				hud.toast("Chegue mais perto ou use a câmera de construção.")
 			else:
 				_tend_selected()
 	_update_ui()
+
+func _pick_item(mouse: Vector2, ground: Vector2) -> int:
+	var origin:=camera.project_ray_origin(mouse)
+	var end:=origin+camera.project_ray_normal(mouse)*200
+	var hit:=get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(origin,end,1,[player.get_rid()]))
+	if not hit.is_empty() and hit.collider.has_meta("item_index"):
+		return int(hit.collider.get_meta("item_index"))
+	return _find_item(ground)
 
 func _find_item(at: Vector2) -> int:
 	for i in range(state.items.size()-1,-1,-1):
@@ -336,10 +378,15 @@ func _distance_to_item(i: int) -> float:
 func _nearest() -> int:
 	var best:=-1
 	var distance:=2.6
+	if selected>=0 and selected<state.items.size() and state.items[selected].kind in ["plot","sign"]:
+		var current_distance:=_distance_to_item(selected)
+		if current_distance<distance:
+			best=selected
+			distance=current_distance
 	for i in range(state.items.size()):
 		if state.items[i].kind not in ["plot","sign"]: continue
 		var d:=_distance_to_item(i)
-		if d<distance:
+		if d<distance and (best<0 or d+0.05<distance):
 			best=i
 			distance=d
 	return best
@@ -366,17 +413,45 @@ func _tend_selected() -> void:
 	if selected<0 or selected>=state.items.size(): return
 	var item:Dictionary=state.items[selected]
 	if item.kind=="plot":
+		if action_cooldown>0: return
 		var old_crop:String=item.crop
 		var before:bool=item.planted
+		var was_watered:bool=item.watered
+		var previous_harvests:=state.harvests
 		var message:=state.tend(selected,crop)
 		hud.toast(message)
-		if item.crop!=old_crop or item.planted!=before: world.rebuild(state)
-		else: world.update_crops(state)
-		_chime()
+		if item.crop!=old_crop: world.replace_crop(selected,item.crop)
+		world.update_crops(state)
+		var kind:=""
+		var at:=Vector3(item.x,0,item.z)
+		if not build_mode and (state.harvests>previous_harvests or item.watered!=was_watered or item.planted!=before):
+			var facing:=at-player.position
+			if facing.length()>0.01: avatar.rotation.y=atan2(facing.x,facing.z)
+		if state.harvests>previous_harvests:
+			feedback.harvest(at,old_crop)
+			kind="harvest"
+		elif not was_watered and item.watered:
+			var origin:=avatar.global_transform*Vector3(0.47,1.1,1.0)
+			feedback.water(at,origin,build_mode)
+			kind="water"
+		elif not before and item.planted:
+			feedback.planted(at)
+			kind="plant"
+		if not kind.is_empty():
+			action_cooldown=0.35 if build_mode else 0.75
+			if not build_mode:
+				var direction:=at-player.position
+				if direction.length()>0.01: avatar.rotation.y=atan2(direction.x,direction.z)
+				actor.play(kind)
+			_chime(kind)
+		_update_ui()
 	elif item.kind=="sign":
 		hud.editor_dialog("sign",item.text)
 
 func _action(value: String) -> void:
+	if move_index>=0 and value not in ["move","save"]:
+		move_index=-1
+		tool="inspect"
 	if value.begins_with("tool:"):
 		if not session_started: return
 		var key:=value.get_slice(":",1)
@@ -408,6 +483,19 @@ func _action(value: String) -> void:
 		hud.toast("Uma cor nova, um lugar mais seu.")
 		return
 	match value:
+		"move":
+			if selected<0 or selected>=state.items.size():
+				hud.toast("Selecione uma construção com Cuidar para mover.")
+				return
+			if not build_mode:
+				focus=Vector3(state.items[selected].x,0,state.items[selected].z)
+				pitch=0.78
+			build_mode=true
+			move_index=selected
+			turn=state.items[selected].turn
+			tool="move"
+			hud.toast("Escolha o novo lugar. R gira • Esc cancela • Sem custo.")
+		"journey": _journey_action()
 		"start":
 			var farm_name:=hud.text_input.text.strip_edges()
 			state.farm_name=farm_name if not farm_name.is_empty() else "Meu pedacinho de mundo"
@@ -460,6 +548,7 @@ func _action(value: String) -> void:
 			state=FarmState.new()
 			world.rebuild(state)
 			selected=-1
+			journey_seen=-1
 			build_mode=true
 			tool="inspect"
 			focus=Vector3(4,0,-2)
@@ -475,6 +564,37 @@ func _action(value: String) -> void:
 
 func _update_ui() -> void:
 	hud.update(state,build_mode,selected,tool,crop,hover_hint)
+	var step:=state.journey_step()
+	if session_started and journey_seen>=0 and step>journey_seen:
+		hud.toast("Etapa concluída: "+FarmState.JOURNEY[journey_seen].title+"!")
+	journey_seen=step
+
+func _journey_action() -> void:
+	var step:=state.journey_step()
+	if step>=FarmState.JOURNEY.size(): return
+	var key:String=FarmState.JOURNEY[step].action
+	if key=="market":
+		hud.market(state)
+	elif key=="harvest":
+		if build_mode: _action("mode")
+	elif key=="plots":
+		crop="carrot"
+		_action("tool:plot")
+		focus=Vector3(state.center.x,0,state.center.y)
+	elif key=="coop":
+		_action("tool:coop")
+		focus=Vector3(state.center.x,0,state.center.y)
+	else:
+		_action("tool:inspect")
+		focus=Vector3(state.center.x,0,state.center.y)
+		if key=="water":
+			for i in range(state.items.size()):
+				var item:Dictionary=state.items[i]
+				if item.kind=="plot" and item.planted and not item.watered:
+					selected=i
+					focus=Vector3(item.x,0,item.z)
+					break
+		elif key=="expand": hud.toast("Use Expandir na barra quando tiver $900.")
 
 func _save_game(notify: bool, force: bool = false) -> bool:
 	if not session_started and not force: return true
@@ -512,7 +632,7 @@ func _notification(what: int) -> void:
 	if what==NOTIFICATION_WM_CLOSE_REQUEST:
 		if _save_game(false): get_tree().quit()
 
-func _chime() -> void:
+func _chime(kind: String = "build") -> void:
 	var stream:=AudioStreamWAV.new()
 	stream.format=AudioStreamWAV.FORMAT_16_BITS
 	stream.mix_rate=22050
@@ -520,7 +640,12 @@ func _chime() -> void:
 	bytes.resize(4410*2)
 	for i in range(4410):
 		var t:=float(i)/22050
-		var sample:=int(sin(t*TAU*(660 if t<0.1 else 880))*exp(-t*20)*6500)
+		var frequency:=660.0 if t<0.1 else 880.0
+		if kind=="harvest": frequency=[523.25,659.25,783.99][mini(2,int(t/0.066))]
+		if kind=="plant": frequency=360+t*400
+		var wave:=sin(t*TAU*frequency)
+		if kind=="water": wave=(sin(t*TAU*(900-t*2500))*0.35+sin(i*1.719)*sin(i*0.827)*0.3)
+		var sample:=int(wave*exp(-t*15)*6500)
 		bytes.encode_s16(i*2,sample)
 	stream.data=bytes
 	sound.stream=stream
@@ -569,6 +694,7 @@ func _qa() -> void:
 	_update_camera(1,true)
 	await get_tree().process_frame
 	await get_tree().process_frame
+	assert(_pick_item(camera.unproject_position(Vector3(-2,2,-8)),Vector2(100,100))==0)
 	if DisplayServer.get_name()!="headless":
 		await RenderingServer.frame_post_draw
 		get_viewport().get_texture().get_image().save_png("res://test-results/construction.png")
@@ -591,6 +717,30 @@ func _qa() -> void:
 	hud.text_input.text="Cuidado com a gerente!"
 	_action("apply_text")
 	assert(state.items[2].text=="Cuidado com a gerente!")
+	var before_move:Dictionary=state.items[2].duplicate(true)
+	var balance_before_move:=state.money
+	_action("move")
+	assert(move_index==2)
+	assert(state.items[2]==before_move)
+	pointer=Vector2(-2,-8)
+	pointer_valid=true
+	_click_world()
+	assert(move_index==2 and state.items[2]==before_move)
+	var cancel:=InputEventKey.new()
+	cancel.keycode=KEY_ESCAPE
+	cancel.pressed=true
+	_unhandled_input(cancel)
+	assert(move_index==-1 and state.items[2]==before_move)
+	_action("move")
+	pointer=Vector2(8,8)
+	pointer_valid=true
+	turn=1
+	_click_world()
+	assert(move_index==-1 and state.items[2].x==8 and state.items[2].turn==1)
+	assert(state.items[2].text==before_move.text and state.money==balance_before_move)
+	_action("journey")
+	assert(hud.modal_kind=="market")
+	_action("close")
 	_action("mode")
 	assert(not build_mode)
 	player.position=Vector3(4,0.2,7)
@@ -602,6 +752,43 @@ func _qa() -> void:
 	if DisplayServer.get_name()!="headless":
 		await RenderingServer.frame_post_draw
 		get_viewport().get_texture().get_image().save_png("res://test-results/walking.png")
+	assert(actor.parts.ArmR!=null and actor.parts.LegL!=null)
+	await get_tree().create_timer(1.5).timeout
+	assert(hud.quest_progress.size.y<=10)
+	player.position=Vector3(4,0.2,4.8)
+	yaw=-0.65
+	_update_camera(1,true)
+	selected=10
+	state.items[10].growth=0.10
+	state.items[10].watered=false
+	state.items[4].growth=0.52
+	world.update_crops(state)
+	assert(world.item_nodes[10].get_node("Crop/Sprout").visible)
+	assert(world.item_nodes[4].get_node("Crop/Young").visible)
+	assert(world.item_nodes[5].get_node("Crop/Ripe").visible)
+	_tend_selected()
+	assert(state.items[10].watered and actor.action_kind=="water")
+	for i in range(12): await get_tree().physics_frame
+	assert(actor.can.visible and absf(actor.parts.ArmR.rotation.x)>0.1)
+	if DisplayServer.get_name()!="headless":
+		await RenderingServer.frame_post_draw
+		get_viewport().get_texture().get_image().save_png("res://test-results/watering-v02.png")
+	for i in range(60): await get_tree().physics_frame
+	assert(not actor.can.visible)
+	state.items[10].growth=1.0
+	var harvest_before:=state.harvests
+	var hen_before:Node3D=world.chickens[0].node
+	_tend_selected()
+	assert(state.harvests==harvest_before+1)
+	assert(is_instance_valid(hen_before) and world.chickens[0].node==hen_before)
+	_tend_selected()
+	assert(not state.items[10].planted)
+	for i in range(12): await get_tree().physics_frame
+	if DisplayServer.get_name()!="headless":
+		await RenderingServer.frame_post_draw
+		get_viewport().get_texture().get_image().save_png("res://test-results/harvest-v02.png")
+	for i in range(100): await get_tree().physics_frame
+	assert(feedback.get_child_count()==0)
 	var start:=Time.get_ticks_msec()
 	Input.action_press("forward")
 	var old_position:=player.position
@@ -628,6 +815,7 @@ func _qa() -> void:
 	DirAccess.remove_absolute(save_path+".bak")
 	print("INTEGRATION_OK: terrain, construction, crops, sale, paint, signs, camera, movement, persistence")
 	print("SAVE_OK: atomic replacement, disk reload, backup recovery")
+	print("V02_OK: articulated character, watering, harvest feedback, growth stages, movement commit/cancel, tutorial, effect cleanup")
 	print("RENDERER: ",RenderingServer.get_video_adapter_name())
 	print("FPS: ",Engine.get_frames_per_second()," | physics movement test ms: ",Time.get_ticks_msec()-start)
 	get_tree().quit()

@@ -5,9 +5,11 @@
 Protótipo jogável de um tycoon de fazenda 3D estilizado para Windows, em português.
 Godot 4.7.2 + modelos originais feitos no Blender 5.2.1. Campanha solo e offline.
 
+**Versão atual: 0.2.0.** Veja [as prioridades](ROADMAP.md) e [as novidades](CHANGELOG.md).
+
 ## Jogar
 
-O executável local fica em `exports/windows/DoMatoAoMilhao.exe` depois da exportação.
+O executável local fica em `exports/windows-v0.2/DoMatoAoMilhao.exe` depois da exportação.
 Ele abre diretamente, sem instalar Godot ou Blender. Os binários não são enviados ao Git.
 
 Para executar a partir do código:
@@ -19,7 +21,7 @@ Para executar a partir do código:
 
 1. Dê um nome à sua fazenda e clique em **Escolher meu pedaço de terra**.
 2. Clique numa área válida do vale para comprar um terreno de 24 × 24 m por $400.
-3. Selecione a semente e coloque alguns canteiros. Cada um custa $20 e inclui as primeiras sementes.
+3. Siga o guia à esquerda e coloque três canteiros. Cada um custa $20 e inclui as primeiras sementes.
 4. Escolha **Cuidar** e clique nos canteiros para regar.
 5. Use **TAB** para caminhar e deixar o tempo passar. A construção e as janelas pausam a simulação.
 6. Colha com **E** perto do canteiro ou use **Cuidar** na câmera aérea.
@@ -38,6 +40,7 @@ Para executar a partir do código:
 | Alternar caminhada e construção | TAB |
 | Construir / selecionar / cuidar | Clique esquerdo |
 | Girar construção | R / Q |
+| Mover construção selecionada | M |
 | Cuidar de canteiro / editar placa próxima | E |
 | Armazém do Seu Tonico | F |
 | Salvar | F5 |
@@ -49,6 +52,12 @@ escolha uma cor no painel da direita. A cor principal muda; telhado e detalhes p
 **Placas:** o editor abre ao construir ou clicar na placa. Até 40 caracteres.
 **Remover:** devolve metade do preço da construção selecionada.
 **Replantar:** selecione a semente e interaja com um canteiro vazio.
+**Mover:** selecione uma estrutura com Cuidar, pressione M ou use o painel. Escolha
+o destino, gire com R/Q e confirme com clique. Esc cancela. Não há custo e nada é
+removido antes da confirmação. Textos, cores e plantações permanecem intactos.
+**Marcadores:** azul significa regar, dourado significa colher. O destaque indica o alvo atual.
+**Guia:** cada objetivo tem um botão que abre a ferramenta ou tela apropriada;
+as conquistas permanecem concluídas mesmo depois de colher ou remover estruturas.
 
 ## O que esta versão entrega
 
@@ -61,15 +70,18 @@ escolha uma cor no painel da direita. A cor principal muda; telhado e detalhes p
 - Maricota ocasionalmente vira a “gerente” e acompanha o jogador por alguns segundos.
 - Venda de estoque e um contrato de seis cenouras por $110.
 - Pintura, placas, metas, expansão, efeitos sonoros de interação e salvamento local.
+- Caminhada articulada, regador com gotas e animação, colheita com produtos e texto flutuante.
+- Três estágios visuais das plantações, marcadores, seleção destacada e grade de construção.
+- Reposicionamento gratuito e cancelável; capítulo introdutório com oito objetivos persistentes.
 
 ## Limites assumidos do protótipo
 
-Esta é a versão **0.1**, destinada a validar o ciclo de jogo e a direção visual.
+Esta é a versão **0.2**, destinada a validar o ciclo de jogo e a direção visual.
 O celeiro é decorativo por enquanto. Ração e água das galinhas estão incluídas;
 não há sistema completo de necessidades, criação ou reprodução animal.
 O comércio tem preços fixos e fica acessível pela interface, além do armazém no mapa.
 Há um único vizinho comerciante, sem simulação econômica independente.
-O personagem usa animação simples, e as galinhas ainda não têm navegação com obstáculos.
+O personagem tem animações procedurais de caminhada e ações; as galinhas ainda não têm navegação com obstáculos.
 Sem multiplayer, funcionários, tratores dirigíveis, indústrias, clima, estações ou continente.
 O jogo não cresce enquanto está fechado. O relógio representa dias de trabalho simplificados.
 
@@ -83,6 +95,9 @@ Arquivos em `%APPDATA%/Godot/app_userdata/Do Mato ao Milhão/`:
 São preservados terreno, estruturas, textos, cores, cultivos, dinheiro, estoque,
 relógio e progresso. Ao abrir, o personagem volta a um ponto seguro da propriedade.
 Começar outra fazenda exige confirmação no menu e substitui a fazenda atual.
+Salvamentos da versão 0.1 são aceitos; os objetivos são inferidos a partir das
+construções, plantações e conquistas que ficaram registradas. A posição antiga
+de uma construção permanece salva se uma mudança de lugar for cancelada.
 
 ## Organização
 
@@ -94,9 +109,13 @@ scripts/farm_state.gd Simulação, economia e validação dos dados
 scripts/farm_world.gd Cenário, construções e visuais
 scripts/farm_hud.gd   Interface em português
 scripts/main.gd       Câmeras, personagem, interações e persistência
+scripts/farm_avatar.gd Animação do personagem e regador
+scripts/farm_feedback.gd Efeitos visuais temporários das ações
 tests/                Testes da simulação
 tools/build_assets.py Gerador reproduzível do kit original no Blender
+tools/build_feedback_assets.py Personagem articulado, regador e plantas
 DESIGN.md             Direção e recorte da primeira versão
+ROADMAP.md            Prioridades e etapas futuras
 ```
 
 ## Recriar os modelos
@@ -119,14 +138,16 @@ Com `godot` apontando para o executável Godot 4.7.2:
 godot --headless --editor --path . --import
 godot --headless --path . --script tests/test_farm_state.gd
 New-Item -ItemType Directory -Force test-results
-godot --path . --quit-after 600 -- --qa
-New-Item -ItemType Directory -Force exports/windows
+godot --path . --quit-after 1200 -- --qa
+New-Item -ItemType Directory -Force exports/windows-v0.2
 godot --headless --path . --export-release 'Windows Desktop'
 ```
 
-O teste de integração usa apenas `qa_farm_v1.json`, nunca o salvamento real.
+O teste de integração usa apenas `qa_farm_v02.json`, nunca o salvamento real.
 Valida compra, colocação via controles do jogo, colheita, venda, pintura, texto,
 movimento, câmeras, gravação real, leitura e recuperação de backup.
+Também verifica movimento/cancelamento de construções, poses do personagem,
+rega, colheita, etapas visuais, botões do guia e remoção dos efeitos temporários.
 As capturas são geradas em `test-results/` e não entram no Git.
 O modo QA só é aceito por compilações de depuração/editor.
 
