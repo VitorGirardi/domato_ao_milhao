@@ -1,12 +1,13 @@
 extends SceneTree
 
 var checks := 0
+var failures := 0
 
 func check(condition: bool, message: String) -> void:
 	checks+=1
 	if not condition:
+		failures+=1
 		push_error("FAILED: "+message)
-		quit(1)
 
 func _initialize() -> void:
 	var farm:=FarmState.new()
@@ -90,7 +91,10 @@ func _initialize() -> void:
 	journey.tend(2)
 	check(journey.journey_step()==3,"Three watered plots complete care objective")
 	var legacy:=journey.serialize()
+	legacy.version=1
 	legacy.erase("milestones")
+	legacy.erase("reserve")
+	legacy.erase("watering_upgrade")
 	var migrated:=FarmState.new()
 	check(migrated.restore(JSON.parse_string(JSON.stringify(legacy))),"Version 0.1 save remains readable")
 	check(migrated.journey_step()==3 and migrated.money==journey.money,"Legacy migration derives objectives without changing economy")
@@ -114,5 +118,5 @@ func _initialize() -> void:
 	var invalid:=journey.serialize()
 	invalid.milestones={"land":"yes"}
 	check(not migrated.restore(invalid),"Malformed milestones are rejected atomically")
-	print("SIMULATION_OK: %d checks"%checks)
-	quit()
+	print("SIMULATION: %d checks, %d failures"%[checks,failures])
+	quit(0 if failures==0 else 1)

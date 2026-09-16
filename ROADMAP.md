@@ -7,8 +7,8 @@ Não são promessas de prazo nem uma lista de tarefas já concluídas.
 | Ordem | Etapa | Resultado esperado | Situação |
 |---|---|---|---|
 | 1 | Interações e primeiros minutos | Entender o jogo sem explicação externa; plantar, regar e colher com resposta visual | Entregue na 0.2; seguirá recebendo ajustes |
-| 2 | Construção confortável | Selecionar, mover, girar, traçar cercas/caminhos e personalizar cores | Seleção, grade e movimento entregues na 0.2; restante pendente |
-| 3 | Progressão e construções úteis | Celeiro com função, ferramentas melhores e desbloqueios com propósito | A fazer |
+| 2 | Construção confortável | Selecionar, mover, girar, traçar cercas/caminhos e personalizar cores | Entregue na 0.3, com traçados retos e pintura por partes |
+| 3 | Progressão e construções úteis | Celeiro com função, ferramentas melhores e desbloqueios com propósito | Reserva e primeira melhoria entregues na 0.3; ampliar depois |
 | 4 | Animais com personalidade | Nomes, aparência, água, alimentação, ninhos e comportamentos | A fazer |
 | 5 | Vizinhos e economia regional | Pedidos variados, especialidades, reputação e preços legíveis | A fazer |
 | 6 | Gestão e automação | Funcionários, rotinas e máquinas para evitar tarefas repetitivas | A fazer |
@@ -16,7 +16,7 @@ Não são promessas de prazo nem uma lista de tarefas já concluídas.
 | 8 | Mundo vivo | Clima, estações, feiras, concursos e acontecimentos engraçados | A fazer |
 | 9 | Cooperativo | Amigos em ranchos próprios, visitas e comércio sincronizado | A fazer após estabilizar a campanha solo |
 
-## Entrega atual — 0.2
+## Entrega anterior — 0.2
 
 - [x] Personagem com braços e pernas articulados durante a caminhada.
 - [x] Regador visível ao cuidar da plantação, gotas e resposta sonora própria.
@@ -32,13 +32,26 @@ Não são promessas de prazo nem uma lista de tarefas já concluídas.
 **Critério de conclusão:** completar o caminho de terreno vazio até primeira venda,
 reorganizar a fazenda sem perder plantas ou dinheiro e retomar a partida salva.
 
-## Próximo bloco — conclusão da construção e progressão
+## Entrega atual — 0.3
 
-- Cercas e caminhos colocados por arraste, com orçamento total antes de confirmar.
-- Pintura separada de paredes, telhados e portas.
-- Celeiro com armazenamento e bancada de melhorias.
-- Primeira melhoria de ferramenta com benefício visível no trabalho.
-- Rever preços e velocidade de crescimento com base em partidas reais.
+- [x] Cercas e caminhos por arraste reto, orçamento total e confirmação.
+- [x] Cancelamento e rejeição sem construção parcial ou cobrança.
+- [x] Pintura separada de paredes, telhados e portas em celeiros e galinheiros.
+- [x] Celeiro com reserva compartilhada de 60 produtos por construção, fora da venda geral.
+- [x] Bancada com regador de $300 que rega até cinco canteiros em cruz.
+- [x] Preservação de saves antigos, reserva e melhorias persistentes.
+- [x] Testes de simulação e integração das novas ações.
+
+**Critério de conclusão:** traçar e cancelar sem perda, guardar produtos sem vendê-los
+por acidente, melhorar o regador e retomar tudo a partir de uma partida salva.
+
+## Próximo bloco — animais com personalidade
+
+- Nomes para as galinhas e identificação ao selecionar.
+- Comedouro e bebedouro com estados visuais claros.
+- Bem-estar influenciando a produção, sem punições bruscas durante a aprendizagem.
+- Coleta de ovos nos ninhos e comportamentos variados para a Maricota.
+- Ajustar preços e tempos com base no teste do autor; balanceamento segue pendente.
 
 ## Cuidados em todas as etapas
 

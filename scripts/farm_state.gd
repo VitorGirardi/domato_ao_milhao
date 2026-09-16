@@ -15,7 +15,7 @@ const ITEMS = {
 	"sign": {"name": "Placa", "cost": 25, "size": Vector2(2, 1)},
 	"path": {"name": "Caminho", "cost": 5, "size": Vector2(2, 2)}
 }
-const PALETTE = ["#ca6244", "#4e8f87", "#ddb65d", "#e8dfc2", "#7b83a6"]
+const PALETTE = ["#ca6244", "#4e8f87", "#ddb65d", "#e8dfc2", "#7b83a6", "#344d52", "#785239"]
 const JOURNEY = [
 	{"key":"land", "title":"Um lugar para chamar de seu", "body":"Escolha uma área do vale.\nSeu primeiro terreno custa $400.", "button":"Escolher meu terreno", "action":"land"},
 	{"key":"plots", "title":"Raízes no chão", "body":"Construa 3 canteiros.\nCada um já vem com sementes.\nCenouras crescem mais rápido!", "button":"Plantar meus canteiros", "action":"plots"},
@@ -38,6 +38,106 @@ var harvests: int = 0
 var farm_name: String = "Meu pedacinho de mundo"
 var contract_done: bool = false
 var milestones: Dictionary = {}
+var reserve: Dictionary = {"carrot":0, "wheat":0, "corn":0, "egg":0}
+var watering_upgrade := false
+
+func line_plan(kind: String, start: Vector2, finish: Vector2, rotation: int = 0) -> Array:
+	if kind not in ["fence","path"]: return []
+	start=start.snapped(Vector2(2,2))
+	finish=finish.snapped(Vector2(2,2))
+	var offset:=finish-start
+	var along_x:=absf(offset.x)>=absf(offset.y)
+	var length:float=offset.x if along_x else offset.y
+	var steps:=mini(63,int(absf(length)/2))
+	var direction:=Vector2(signf(length)*2,0) if along_x else Vector2(0,signf(length)*2)
+	var rotation_value:=rotation if steps==0 else (0 if along_x else 1)
+	var plan:Array=[]
+	for i in range(steps+1):
+		var at:=start+direction*i
+		plan.append({"kind":kind,"x":at.x,"z":at.y,"turn":rotation_value})
+	return plan
+
+func batch_error(plan: Array) -> String:
+	if plan.is_empty() or plan.size()>64: return "Trace de 1 a 64 peças."
+	var cost:=0
+	for i in range(plan.size()):
+		var piece:Dictionary=plan[i]
+		if piece.get("kind","") not in ["fence","path"]: return "Traçado inválido."
+		var error:=can_place(piece.kind,Vector2(piece.x,piece.z),piece.turn,-2)
+		if not error.is_empty(): return "Peça %d: %s"%[i+1,error]
+		var area:=item_rect(piece.kind,Vector2(piece.x,piece.z),piece.turn).grow(-0.05)
+		for j in range(i):
+			var other:Dictionary=plan[j]
+			if area.intersects(item_rect(other.kind,Vector2(other.x,other.z),other.turn)):
+				return "O traçado sobrepõe suas próprias peças."
+		cost+=int(ITEMS[piece.kind].cost)
+	if money<cost: return "O traçado custa $%d. Você tem $%d."%[cost,money]
+	return ""
+
+func batch_cost(plan: Array) -> int:
+	var cost:=0
+	for piece in plan: cost+=int(ITEMS[piece.kind].cost)
+	return cost
+
+func place_batch(plan: Array) -> String:
+	var error:=batch_error(plan)
+	if not error.is_empty(): return error
+	# Validate everything first; a rejected route never charges or leaves partial pieces.
+	for piece in plan: place(piece.kind,Vector2(piece.x,piece.z),piece.turn)
+	return ""
+
+func reserve_count() -> int:
+	var total:=0
+	for value in reserve.values(): total+=int(value)
+	return total
+
+func reserve_capacity() -> int:
+	return count_items("barn")*60
+
+func transfer_reserve(key: String, deposit: bool) -> int:
+	if not reserve.has(key) or count_items("barn")==0: return 0
+	var amount:=mini(int(inventory[key]),maxi(0,reserve_capacity()-reserve_count())) if deposit else int(reserve[key])
+	reserve[key]+=amount if deposit else -amount
+	inventory[key]+=-amount if deposit else amount
+	return amount
+
+func buy_watering_upgrade() -> String:
+	if count_items("barn")==0: return "Construa um celeiro para usar a bancada."
+	if watering_upgrade: return "Seu regador já está melhorado."
+	if money<300: return "A melhoria custa $300."
+	money-=300
+	watering_upgrade=true
+	return ""
+
+func water_targets(index: int) -> Array:
+	var result:Array=[]
+	if index<0 or index>=items.size(): return result
+	var target:Dictionary=items[index]
+	if target.kind!="plot" or not target.planted or target.watered or target.growth>=1: return result
+	for i in range(items.size()):
+		var item:Dictionary=items[i]
+		if item.kind!="plot" or not item.planted or item.watered or item.growth>=1: continue
+		if i==index or (watering_upgrade and Vector2(item.x-target.x,item.z-target.z).length()<=2.01): result.append(i)
+	return result
+
+func remove_item(index: int) -> String:
+	if index<0 or index>=items.size(): return "Selecione uma construção."
+	if items[index].kind=="barn" and reserve_count()>reserve_capacity()-60:
+		return "Retire a reserva do celeiro antes de removê-lo."
+	money+=int(ITEMS[items[index].kind].cost)/2
+	items.remove_at(index)
+	return ""
+
+func paint_item(index: int, part: String, color: int) -> String:
+	if index<0 or index>=items.size() or items[index].kind not in ["barn","coop","fence","sign"]:
+		return "Selecione uma construção para pintar."
+	if part not in ["walls","roof","door"] or color<0 or color>=PALETTE.size(): return "Pintura inválida."
+	if part!="walls" and items[index].kind not in ["barn","coop"]: return "Esta peça só tem pintura principal."
+	if items[index].kind=="barn" and not items[index].has("door_paint"):
+		items[index].door_paint=int(items[index].paint)
+	var key:="paint" if part=="walls" else part+"_paint"
+	items[index][key]=color
+	return ""
 
 func claim(at: Vector2) -> String:
 	if claimed:
@@ -76,7 +176,7 @@ func can_place(kind: String, at: Vector2, turn: int, ignore_index: int = -1) -> 
 		var item: Dictionary = items[index]
 		if area.grow(-0.05).intersects(item_rect(item.kind, Vector2(item.x, item.z), item.turn)):
 			return "Este espaço já está ocupado."
-	if ignore_index<0 and money < int(ITEMS[kind].cost):
+	if ignore_index==-1 and money < int(ITEMS[kind].cost):
 		return "Moedas insuficientes."
 	return ""
 
@@ -158,9 +258,10 @@ func tend(index: int, crop: String = "carrot") -> String:
 		refresh_journey()
 		return "+3 %s no estoque!" % CROPS[item.crop].name
 	if not item.watered:
-		item.watered = true
+		var targets:=water_targets(index)
+		for target in targets: items[target].watered=true
 		refresh_journey()
-		return "Regado! A natureza cuida do resto."
+		return "%d canteiros regados de uma vez!"%targets.size() if targets.size()>1 else "Regado! A natureza cuida do resto."
 	return "Crescendo... %d%%" % int(float(item.growth) * 100)
 
 func tick(delta: float) -> bool:
@@ -217,15 +318,16 @@ func expand() -> String:
 	return ""
 
 func serialize() -> Dictionary:
-	return {"version": 1, "money": money, "claimed": claimed,
+	return {"version": 2, "money": money, "claimed": claimed,
 		"center": [center.x, center.y], "land_size": land_size,
 		"items": items.duplicate(true), "inventory": inventory.duplicate(),
 		"elapsed": elapsed, "revenue": revenue, "harvests": harvests,
-		"farm_name": farm_name, "contract_done": contract_done, "milestones": milestones.duplicate()}
+		"farm_name": farm_name, "contract_done": contract_done, "milestones": milestones.duplicate(),
+		"reserve":reserve.duplicate(), "watering_upgrade":watering_upgrade}
 
 func restore(data: Variant) -> bool:
 	# Validate before mutating live state. Invalid files never partially replace it.
-	if not data is Dictionary or data.get("version") != 1:
+	if not data is Dictionary or (data.get("version")!=1 and data.get("version")!=2):
 		return false
 	for key in ["money", "land_size", "elapsed", "revenue", "harvests"]:
 		if not _number(data.get(key)) or float(data[key]) < 0:
@@ -248,6 +350,14 @@ func restore(data: Variant) -> bool:
 		return false
 	for value in data.get("milestones",{}).values():
 		if not value is bool: return false
+	if not data.get("watering_upgrade",false) is bool: return false
+	var saved_reserve:Variant=data.get("reserve",{"carrot":0,"wheat":0,"corn":0,"egg":0})
+	if not saved_reserve is Dictionary or saved_reserve.size()!=4: return false
+	var stored_total:=0
+	var barn_count:=0
+	for key in reserve:
+		if not _number(saved_reserve.get(key)) or saved_reserve[key]<0 or float(saved_reserve[key])!=floorf(float(saved_reserve[key])): return false
+		stored_total+=int(saved_reserve[key])
 	for key in inventory:
 		if not _number(data.inventory.get(key)) or float(data.inventory[key]) < 0:
 			return false
@@ -263,10 +373,15 @@ func restore(data: Variant) -> bool:
 			return false
 		if item.paint < 0 or item.paint >= PALETTE.size() or item.turn < 0 or item.turn > 3:
 			return false
+		for part in ["roof_paint","door_paint"]:
+			var color:Variant=item.get(part,-1)
+			if not _number(color) or color < -1 or color>=PALETTE.size() or float(color)!=floorf(float(color)): return false
+		if item.kind=="barn": barn_count+=1
 		var area := item_rect(item.kind, Vector2(item.x, item.z), int(item.turn))
 		var land := Rect2(Vector2(data.center[0], data.center[1]) - Vector2.ONE * float(data.land_size) / 2, Vector2.ONE * float(data.land_size))
 		if not land.encloses(area):
 			return false
+	if stored_total>barn_count*60: return false
 	for i in range(data.items.size()):
 		var first: Dictionary = data.items[i]
 		var area := item_rect(first.kind,Vector2(first.x,first.z),int(first.turn)).grow(-0.05)
@@ -288,6 +403,9 @@ func restore(data: Variant) -> bool:
 	farm_name = data.farm_name
 	contract_done = data.contract_done
 	milestones=data.get("milestones",{}).duplicate()
+	reserve=saved_reserve.duplicate()
+	for key in reserve: reserve[key]=int(reserve[key])
+	watering_upgrade=data.get("watering_upgrade",false)
 	refresh_journey()
 	return true
 

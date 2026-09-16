@@ -13,6 +13,7 @@ var build_grid:=MeshInstance3D.new()
 var selection:=Node3D.new()
 var selection_edges: Array[MeshInstance3D]=[]
 var highlighted_index: int = -1
+var paint_materials: Dictionary = {}
 
 func _ready() -> void:
 	rng.seed = 24517
@@ -279,7 +280,7 @@ func rebuild(state: FarmState) -> void:
 			box(root, Vector3(0,0.025,0), Vector3(1.98,0.05,1.98), material("c2a574"))
 		else:
 			var visual := model(item.kind, root)
-			paint(visual, Color(FarmState.PALETTE[int(item.paint)]))
+			paint(visual,item)
 			if item.kind in ["barn", "coop", "fence", "sign"]:
 				var body := StaticBody3D.new()
 				body.set_meta("item_index",i)
@@ -310,16 +311,26 @@ func rebuild(state: FarmState) -> void:
 	update_crops(state)
 	update_border(state)
 
-func paint(root: Node, color: Color) -> void:
+func paint(root: Node, item: Dictionary) -> void:
 	if root is MeshInstance3D:
 		for i in range(root.mesh.get_surface_count()):
 			var source: Material = root.mesh.surface_get_material(i)
-			if source != null and source.resource_name.begins_with("Paint"):
-				var replacement: StandardMaterial3D = source.duplicate()
-				replacement.albedo_color = color
-				root.set_surface_override_material(i, replacement)
+			if source==null: continue
+			var index:=-1
+			if source.resource_name.begins_with("Paint"): index=int(item.paint)
+			elif source.resource_name.begins_with("Roof"): index=int(item.get("roof_paint",-1))
+			elif source.resource_name.begins_with("Door"):
+				index=int(item.get("door_paint",-1))
+				if index<0 and item.kind=="barn": index=int(item.paint)
+			if index>=0:
+				var key:="%d:%d"%[source.get_instance_id(),index]
+				if not paint_materials.has(key):
+					var replacement: StandardMaterial3D = source.duplicate()
+					replacement.albedo_color = Color(FarmState.PALETTE[index])
+					paint_materials[key]=replacement
+				root.set_surface_override_material(i,paint_materials[key])
 	for child in root.get_children():
-		paint(child, color)
+		paint(child,item)
 
 func replace_crop(index: int, kind: String) -> void:
 	if index<0 or index>=item_nodes.size(): return

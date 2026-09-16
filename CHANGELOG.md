@@ -1,5 +1,18 @@
 # Alterações
 
+## 0.3.0 — Sua fazenda, do seu jeito
+
+- Cercas e caminhos por arraste em linha, com prévia, orçamento e confirmação.
+- Cancelar, soltar sobre a interface ou rejeitar um traçado não gasta dinheiro nem deixa peças parciais.
+- Paredes, telhados e portas pintáveis separadamente em celeiros e galinheiros; sete cores.
+- Modelos Blender atualizados com materiais próprios para portas, mantendo os acabamentos.
+- Celeiros oferecem 60 espaços de reserva por unidade; produtos guardados ficam fora da venda geral.
+- Remoção de celeiro bloqueada quando deixaria produtos sem armazenamento.
+- Bancada vende regador melhorado por $300: até cinco canteiros em cruz por ação.
+- Migração dos saves 0.1/0.2, persistindo reserva, melhoria e cores no formato interno 2.
+- 110 verificações da simulação e testes de integração de mouse, materiais, armazenamento e rega.
+- Correção do executor de testes para retornar falha quando alguma verificação falhar.
+
 ## 0.2.0 — O cuidado ganha vida
 
 - Caminhada com braços e pernas articulados; personagem se volta para a ação.

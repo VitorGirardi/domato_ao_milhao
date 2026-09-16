@@ -15,6 +15,8 @@ var quest_counter: Label
 var quest_button: Button
 var quest_progress: ProgressBar
 var move_button: Button
+var paint_selector: OptionButton
+var barn_button: Button
 var stock_label: Label
 var hint_label: Label
 var toast_label: Label
@@ -143,18 +145,27 @@ func _build() -> void:
 	quest_progress.size=Vector2(250,7)
 	quest.add_child(quest_progress)
 	quest_progress.set_deferred("size",Vector2(250,7))
-	select_panel=panel(root,Rect2(1110,140,306,388))
+	select_panel=panel(root,Rect2(1110,140,306,466))
 	select_label=label(select_panel,"CADERNO DA FAZENDA",Vector2(18,15),Vector2(270,32),16)
 	details_label=label(select_panel,"Selecione algo no terreno\npara cuidar ou personalizar.",Vector2(18,54),Vector2(270,132),16)
 	details_label.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
-	label(select_panel,"PINTURA",Vector2(18,196),Vector2(260,24),12,MUTED)
+	label(select_panel,"PINTURA • ESCOLHA A PARTE",Vector2(18,188),Vector2(270,24),12,MUTED)
+	paint_selector=OptionButton.new()
+	paint_selector.position=Vector2(18,216)
+	paint_selector.size=Vector2(270,32)
+	paint_selector.add_theme_font_size_override("font_size",15)
+	paint_selector.add_theme_color_override("font_color",INK)
+	paint_selector.add_theme_stylebox_override("normal",style(Color("f4edd9"),8))
+	for part in ["Paredes / cor principal","Telhado","Portas"]: paint_selector.add_item(part)
+	select_panel.add_child(paint_selector)
 	for i in range(FarmState.PALETTE.size()):
-		var b:=button(select_panel,"",Rect2(18+i*53,226,44,34),"paint:%d"%i)
+		var b:=button(select_panel,"",Rect2(18+i*39,258,34,30),"paint:%d"%i)
 		b.add_theme_stylebox_override("normal",style(Color(FarmState.PALETTE[i]),8))
 		b.tooltip_text="Pintar construção selecionada"
-	move_button=button(select_panel,"Mover seleção  [M]",Rect2(18,278,270,39),"move")
-	button(select_panel,"Editar placa",Rect2(18,331,128,39),"edit_sign")
-	button(select_panel,"Remover",Rect2(158,331,130,39),"remove")
+	move_button=button(select_panel,"Mover seleção  [M]",Rect2(18,304,270,39),"move")
+	button(select_panel,"Editar placa",Rect2(18,354,128,39),"edit_sign")
+	button(select_panel,"Remover",Rect2(158,354,130,39),"remove")
+	barn_button=button(select_panel,"Reserva e bancada",Rect2(18,407,270,39),"barn",true)
 	tool_panel=panel(root,Rect2(24,720,1392,157))
 	tool_title=label(tool_panel,"CONSTRUA SEU COMEÇO",Vector2(18,12),Vector2(305,25),13,MUTED)
 	walk_tip=label(tool_panel,"A vida acontece no seu ritmo. Cuide dos canteiros e descubra o vale.",Vector2(18,49),Vector2(1340,26),15,MUTED)
@@ -225,12 +236,21 @@ func update(state: FarmState, build_mode: bool, selected: int, tool: String, cro
 		quest_button.text=goal.button
 		if goal.key=="plots": quest_label.text+="\nCanteiros: %d / 3"%mini(3,state.count_items("plot"))
 		if goal.key=="water": quest_label.text+="\nRegados: %d / 3"%mini(3,state.count_items("plot",true))
-		if goal.key=="contract": quest_label.text+="\nCenouras: %d / 6"%mini(6,int(state.inventory.carrot))
+		if goal.key=="contract":
+			quest_label.text+="\nCenouras: %d / 6"%mini(6,int(state.inventory.carrot))
+			if state.inventory.carrot<6 and state.reserve.carrot>0:
+				quest_label.text="Você tem cenouras reservadas.\nRetire no celeiro antes de\nentregar o pedido de $110.\nEstoque: %d / 6"%int(state.inventory.carrot)
+				quest_button.text="Retirar no celeiro"
 	else:
 		quest_counter.text="CAPÍTULO CONCLUÍDO!"
 		quest_title.text="Seu primeiro império"
 		quest_label.text="Você plantou, cuidou e prosperou.\nContinue criando sua fazenda!\n\nFaturamento: $%d"%state.revenue
 	move_button.disabled=selected<0 or tool=="move"
+	barn_button.visible=selected>=0 and selected<state.items.size() and state.items[selected].kind=="barn"
+	var multipart:bool=selected>=0 and selected<state.items.size() and state.items[selected].kind in ["barn","coop"]
+	paint_selector.set_item_disabled(1,not multipart)
+	paint_selector.set_item_disabled(2,not multipart)
+	if not multipart: paint_selector.select(0)
 	move_button.text="Esc cancela a mudança" if tool=="move" else "Mover seleção  [M]"
 	if selected>=0 and selected<state.items.size():
 		var item:Dictionary=state.items[selected]
@@ -245,7 +265,7 @@ func update(state: FarmState, build_mode: bool, selected: int, tool: String, cro
 		elif item.kind=="sign":
 			details_label.text='“%s”\n\nPinte ou escreva sua mensagem.'%item.text
 		elif item.kind=="barn":
-			details_label.text="O coração da propriedade.\n\nNesta versão, é decorativo.\nEscolha uma cor abaixo."
+			details_label.text="Reserva: %d / %d produtos\nGuardados fora da venda geral.\n\nBancada: %s\nUse o botão abaixo ou E perto."%[state.reserve_count(),state.reserve_capacity(),"regador melhorado" if state.watering_upgrade else "regador por $300"]
 		else:
 			details_label.text="Um toque seu na fazenda.\n\nRemover devolve metade\ndo custo de construção."
 	else:
@@ -305,7 +325,47 @@ func welcome(state: FarmState, has_save: bool) -> void:
 	text_input.text=state.farm_name
 	p.add_child(text_input)
 	button(p,"Voltar para minha fazenda" if has_save else "Escolher meu pedaço de terra",Rect2(34,494,542,55),"start",true)
-	label(p,"VERSÃO 0.2   •   CADA PEQUENO CUIDADO CONTA",Vector2(34,561),Vector2(542,17),11,MUTED)
+	label(p,"VERSÃO 0.3   •   SUA FAZENDA, DO SEU JEITO",Vector2(34,561),Vector2(542,17),11,MUTED)
+
+func confirm_route(state: FarmState, plan: Array) -> void:
+	var p:=_modal("route",370)
+	label(p,"Conferir o traçado",Vector2(30,28),Vector2(550,44),29)
+	label(p,"%d peças  •  Total: $%d  •  Saldo: $%d"%[plan.size(),state.batch_cost(plan),state.money],Vector2(30,90),Vector2(550,36),20)
+	var error:=state.batch_error(plan)
+	var description:=label(p,"Tudo livre! Confirme para construir.\nNenhuma moeda foi gasta na prévia." if error.is_empty() else error+"\nCancele e tente outro traçado.",Vector2(30,150),Vector2(550,95),18)
+	description.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+	button(p,"Cancelar",Rect2(30,283,170,49),"route_cancel")
+	var confirm:=button(p,"Construir por $%d"%state.batch_cost(plan),Rect2(218,283,362,49),"route_confirm",true)
+	confirm.disabled=not error.is_empty()
+
+func barn(state: FarmState) -> void:
+	var p:=_modal("barn",668)
+	label(p,"CELEIRO • RESERVA E BANCADA",Vector2(30,23),Vector2(550,27),13,MUTED)
+	label(p,"Guarde hoje, planeje amanhã",Vector2(30,59),Vector2(550,43),28)
+	label(p,"Reserva compartilhada: %d / %d produtos\nO que está guardado fica fora de Vender estoque."%[state.reserve_count(),state.reserve_capacity()],Vector2(30,113),Vector2(550,61),17)
+	label(p,"PRODUTO         ESTOQUE / RESERVA",Vector2(30,190),Vector2(550,24),12,MUTED)
+	var keys:=["carrot","wheat","corn","egg"]
+	for i in range(keys.size()):
+		var key:String=keys[i]
+		var title:String="Ovos" if key=="egg" else FarmState.CROPS[key].name
+		label(p,"%s:  %d / %d"%[title,state.inventory[key],state.reserve[key]],Vector2(30,224+i*43),Vector2(276,31),17)
+		var deposit:=button(p,"Guardar",Rect2(310,220+i*43,124,35),"deposit:"+key)
+		var withdraw:=button(p,"Retirar",Rect2(446,220+i*43,134,35),"withdraw:"+key)
+		for b in [deposit,withdraw]:
+			b.add_theme_font_size_override("font_size",15)
+			for key_style in ["normal","hover","pressed","disabled"]:
+				var compact:StyleBoxFlat=b.get_theme_stylebox(key_style).duplicate()
+				compact.content_margin_top=5
+				compact.content_margin_bottom=5
+				b.add_theme_stylebox_override(key_style,compact)
+			b.set_deferred("size",Vector2(b.size.x,35))
+		deposit.disabled=state.inventory[key]==0 or state.reserve_count()>=state.reserve_capacity()
+		withdraw.disabled=state.reserve[key]==0
+	label(p,"REGADOR MELHORADO",Vector2(30,414),Vector2(550,26),13,MUTED)
+	label(p,"Uma rega alcança até 5 canteiros em cruz.\nA melhoria fica com você, mesmo se mover o celeiro.",Vector2(30,450),Vector2(550,56),17)
+	var upgrade:=button(p,"Melhoria instalada!" if state.watering_upgrade else "Melhorar regador • $300",Rect2(30,519,550,46),"upgrade",true)
+	upgrade.disabled=state.watering_upgrade or state.money<300
+	button(p,"Voltar ao campo",Rect2(30,589,550,46),"close")
 
 func market(state: FarmState) -> void:
 	var p:=_modal("market",590)
@@ -319,6 +379,7 @@ func market(state: FarmState) -> void:
 		var price:int=10 if key=="egg" else FarmState.CROPS[key].price
 		label(p,"%s"%title,Vector2(30,204+i*35),Vector2(220,29),19)
 		label(p,"%d un.    ×    $%d"%[state.inventory[key],price],Vector2(295,204+i*35),Vector2(265,29),18)
+	label(p,"Reserva no celeiro: %d produtos • Fora da venda abaixo"%state.reserve_count(),Vector2(30,341),Vector2(550,18),12,MUTED)
 	var sell:=button(p,"Vender estoque  •  $%d"%state.sale_value(),Rect2(30,360,550,47),"sell",true)
 	sell.disabled=state.sale_value()==0
 	label(p,"PEDIDO ESPECIAL  •  6 CENOURAS POR $110",Vector2(30,427),Vector2(550,24),13,MUTED)

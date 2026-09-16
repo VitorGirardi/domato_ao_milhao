@@ -5,6 +5,7 @@ Each asset is saved as editable .blend and as a runtime .glb.
 import bpy
 import math
 import random
+import sys
 from pathlib import Path
 from mathutils import Vector
 
@@ -32,7 +33,7 @@ def mat(name, hex_color):
     return m
 
 M = {name: mat(name, color) for name, color in {
-    'Paint':'b94d36', 'Cream':'fff1ce', 'Roof':'344d52', 'Wood':'98603c',
+    'Paint':'b94d36', 'DoorBarn':'b94d36', 'DoorCoop':'503d30', 'Cream':'fff1ce', 'Roof':'344d52', 'Wood':'98603c',
     'DarkWood':'503d30', 'Leaf':'65a443', 'LightLeaf':'88b34d', 'Trunk':'76503a',
     'Gold':'efb53c', 'Orange':'e37827', 'Green':'3e863c', 'White':'fff2d9',
     'Red':'d54d37', 'Eye':'252f30', 'Boot':'4c3830', 'Denim':'3d727e',
@@ -94,6 +95,8 @@ def roof(width, depth, bottom, rise, material='Roof'):
         beam('Gable trim',(0,y,bottom+rise),(w,y,bottom),.13,'Cream')
 
 def export(name):
+    if '--only-buildings' in sys.argv and name not in ('barn', 'coop'):
+        return
     bpy.ops.object.select_all(action='SELECT')
     bpy.context.view_layer.objects.active = next(o for o in bpy.context.scene.objects if o.type=='MESH')
     bpy.ops.object.convert(target='MESH')
@@ -116,7 +119,7 @@ for x in [-2.4,2.4]:
     for y in [-2.29,2.29]: box('Corner trim',(x,y,1.45),(.16,.16,2.9),'Cream')
 for x in [-2,-1.5,-1,1,1.5,2]: box('Front batten',(x,-2.29,1.45),(.06,.04,2.75),'Red')
 box('Door frame',(0,-2.32,1.08),(2.18,.12,2.16),'Cream')
-box('Double door',(0,-2.41,1.02),(1.96,.1,2.02),'Paint')
+box('Double door',(0,-2.41,1.02),(1.96,.1,2.02),'DoorBarn')
 for x in [-.96,0,.96]: box('Door stile',(x,-2.48,1.03),(.08,.05,2.04),'Cream')
 beam('Door cross',(-.9,-2.49,.1),(.9,-2.49,1.95),.1,'Cream')
 beam('Door cross',(.9,-2.49,.1),(-.9,-2.49,1.95),.1,'Cream')
@@ -134,7 +137,7 @@ for x in [-1.25,1.25]:
     for y in [-1,1]: box('Leg',(x,y,.4),(.19,.19,.8),'Wood')
 box('Coop walls',(0,0,1.25),(2.7,2.3,1.65),'Paint',.04)
 roof(3.15,2.75,2.07,.8)
-box('Chicken door',(0,-1.19,1),(.8,.1,1.1),'DarkWood')
+box('Chicken door',(0,-1.19,1),(.8,.1,1.1),'DoorCoop')
 box('Door trim',(0,-1.26,1.56),(.96,.12,.12),'Cream')
 for x in [-.47,.47]: box('Door jamb',(x,-1.25,1.03),(.1,.12,1.06),'Cream')
 ramp=box('Ramp',(0,-1.63,.3),(.8,1.35,.08),'Wood')
@@ -254,4 +257,5 @@ print('ALL_ASSETS_COMPLETE')
 
 # The articulated character and action props supersede the original static farmer.
 import runpy
-runpy.run_path(str(ROOT / 'tools' / 'build_feedback_assets.py'), run_name='__main__')
+if '--only-buildings' not in sys.argv:
+    runpy.run_path(str(ROOT / 'tools' / 'build_feedback_assets.py'), run_name='__main__')

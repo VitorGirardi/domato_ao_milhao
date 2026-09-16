@@ -36,10 +36,15 @@ var qa_mode := false
 var move_index: int = -1
 var action_cooldown := 0.0
 var journey_seen := -1
+var dragging := false
+var drag_start := Vector2.ZERO
+var route: Array = []
+var route_ghost:=Node3D.new()
+var route_key:=""
 
 func _ready() -> void:
 	qa_mode = OS.is_debug_build() and "--qa" in OS.get_cmdline_user_args()
-	if qa_mode: save_path="user://qa_farm_v02.json"
+	if qa_mode: save_path="user://qa_farm_v03.json"
 	get_tree().auto_accept_quit = false
 	_inputs()
 	world = FarmWorld.new()
@@ -58,6 +63,7 @@ func _ready() -> void:
 		player.position = focus + Vector3(0,0.2,8)
 		_ensure_player_space()
 	add_child(ghost)
+	add_child(route_ghost)
 	ghost_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	ghost_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	ghost_mat.albedo_color = Color(0.65,0.85,0.35,0.35)
@@ -183,9 +189,24 @@ func _ensure_player_space() -> void:
 				player.position=Vector3(candidate.x,0.2,candidate.y)
 				return
 
+func _input(event: InputEvent) -> void:
+	# Release must be caught even over a HUD panel, where unhandled input is consumed.
+	if dragging and event is InputEventMouseButton and event.button_index==MOUSE_BUTTON_LEFT and not event.pressed:
+		_update_pointer()
+		if get_viewport().gui_get_hovered_control()!=null or not pointer_valid:
+			_cancel_route()
+			hud.toast("Traçado cancelado. Solte sobre o terreno para revisar.")
+		else: _finish_route()
+		get_viewport().set_input_as_handled()
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_ESCAPE:
+			if dragging or not route.is_empty():
+				_cancel_route()
+				if hud.modal_kind=="route": hud.close_modal()
+				get_viewport().set_input_as_handled()
+				return
 			if not hud.modal_kind.is_empty():
 				if hud.modal_kind != "welcome": hud.close_modal()
 			elif tool != "inspect":
@@ -226,7 +247,45 @@ func _unhandled_input(event: InputEvent) -> void:
 			if build_mode: build_distance=clampf(build_distance+3,20,78)
 			else: walk_distance=clampf(walk_distance+0.7,3,14)
 		if event.button_index==MOUSE_BUTTON_LEFT:
-			_click_world()
+			_update_pointer()
+			if build_mode and tool in ["fence","path"] and move_index<0 and state.claimed:
+				_begin_route()
+			else: _click_world()
+
+func _begin_route() -> void:
+	if not pointer_valid: return
+	dragging=true
+	drag_start=pointer
+	_update_route()
+
+func _update_route() -> void:
+	route=state.line_plan(tool,drag_start,pointer,turn)
+	var key:=str(route)
+	if key!=route_key:
+		route_key=key
+		for child in route_ghost.get_children(): child.free()
+		for piece in route:
+			var size:Vector2=FarmState.ITEMS[piece.kind].size
+			var box:=world.box(route_ghost,Vector3(piece.x,0.2,piece.z),Vector3(size.x,0.22,size.y),ghost_mat)
+			box.rotation.y=piece.turn*PI/2
+	var error:=state.batch_error(route)
+	ghost_mat.albedo_color=Color(0.7,0.95,0.45,0.55) if error.is_empty() else Color(0.95,0.22,0.12,0.55)
+	route_ghost.visible=true
+	ghost.visible=false
+	hover_hint="%d peças • $%d • Solte para revisar • Esc cancela"%[route.size(),state.batch_cost(route)] if error.is_empty() else error
+
+func _finish_route() -> void:
+	if not dragging: return
+	_update_route()
+	dragging=false
+	hud.confirm_route(state,route)
+
+func _cancel_route() -> void:
+	dragging=false
+	route.clear()
+	route_key=""
+	route_ghost.visible=false
+	for child in route_ghost.get_children(): child.queue_free()
 
 func _update_pointer() -> void:
 	ghost.visible = false
@@ -245,6 +304,9 @@ func _update_pointer() -> void:
 	var at: Vector3 = ray + direction * (-ray.y / direction.y)
 	pointer = Vector2(at.x,at.z).snapped(Vector2(2,2))
 	pointer_valid = true
+	if dragging:
+		_update_route()
+		return
 	if get_viewport().gui_get_hovered_control()!=null:
 		return
 	if state.claimed and build_mode and tool=="inspect":
@@ -269,6 +331,8 @@ func _update_pointer() -> void:
 		if error.is_empty():
 			hover_hint="Mover %s • Grátis • Clique confirma • Esc cancela"%FarmState.ITEMS[kind].name if move_index>=0 else "%s • $%d • Clique para colocar • R gira"%[FarmState.ITEMS[kind].name,FarmState.ITEMS[kind].cost]
 		else: hover_hint=error
+		if tool in ["fence","path"] and move_index<0 and error.is_empty():
+			hover_hint="Segure e arraste em linha • Solte para conferir o custo"
 	elif not build_mode:
 		var nearest:=_nearest()
 		if nearest>=0:
@@ -378,13 +442,13 @@ func _distance_to_item(i: int) -> float:
 func _nearest() -> int:
 	var best:=-1
 	var distance:=2.6
-	if selected>=0 and selected<state.items.size() and state.items[selected].kind in ["plot","sign"]:
+	if selected>=0 and selected<state.items.size() and state.items[selected].kind in ["plot","sign","barn"]:
 		var current_distance:=_distance_to_item(selected)
 		if current_distance<distance:
 			best=selected
 			distance=current_distance
 	for i in range(state.items.size()):
-		if state.items[i].kind not in ["plot","sign"]: continue
+		if state.items[i].kind not in ["plot","sign","barn"]: continue
 		var d:=_distance_to_item(i)
 		if d<distance and (best<0 or d+0.05<distance):
 			best=i
@@ -393,6 +457,7 @@ func _nearest() -> int:
 
 func _interaction_text(item: Dictionary) -> String:
 	if item.kind=="sign": return "Editar placa"
+	if item.kind=="barn": return "Abrir reserva e bancada do celeiro"
 	if not item.planted: return "Plantar %s • $%d"%[FarmState.CROPS[crop].name,FarmState.CROPS[crop].seed]
 	if item.growth>=1: return "Colher "+FarmState.CROPS[item.crop].name
 	if not item.watered: return "Regar "+FarmState.CROPS[item.crop].name
@@ -418,6 +483,7 @@ func _tend_selected() -> void:
 		var before:bool=item.planted
 		var was_watered:bool=item.watered
 		var previous_harvests:=state.harvests
+		var water_targets:=state.water_targets(selected)
 		var message:=state.tend(selected,crop)
 		hud.toast(message)
 		if item.crop!=old_crop: world.replace_crop(selected,item.crop)
@@ -433,6 +499,10 @@ func _tend_selected() -> void:
 		elif not was_watered and item.watered:
 			var origin:=avatar.global_transform*Vector3(0.47,1.1,1.0)
 			feedback.water(at,origin,build_mode)
+			for target in water_targets:
+				if target==selected: continue
+				var neighbor:Dictionary=state.items[target]
+				feedback.water(Vector3(neighbor.x,0,neighbor.z),origin,false)
 			kind="water"
 		elif not before and item.planted:
 			feedback.planted(at)
@@ -447,8 +517,12 @@ func _tend_selected() -> void:
 		_update_ui()
 	elif item.kind=="sign":
 		hud.editor_dialog("sign",item.text)
+	elif item.kind=="barn": hud.barn(state)
 
 func _action(value: String) -> void:
+	if (dragging or not route.is_empty()) and value!="route_confirm":
+		_cancel_route()
+		if hud.modal_kind=="route": hud.close_modal()
 	if move_index>=0 and value not in ["move","save"]:
 		move_index=-1
 		tool="inspect"
@@ -475,14 +549,39 @@ func _action(value: String) -> void:
 		_update_ui()
 		return
 	if value.begins_with("paint:"):
-		if selected<0 or state.items[selected].kind not in ["barn","coop","sign","fence"]:
-			hud.toast("Selecione uma construção com Cuidar para pintar.")
-			return
-		state.items[selected].paint=int(value.get_slice(":",1))
-		world.rebuild(state)
-		hud.toast("Uma cor nova, um lugar mais seu.")
+		var part:String=["walls","roof","door"][hud.paint_selector.selected]
+		var error:=state.paint_item(selected,part,int(value.get_slice(":",1)))
+		if error.is_empty(): world.paint(world.item_nodes[selected],state.items[selected])
+		hud.toast("Uma cor nova, um lugar mais seu." if error.is_empty() else error)
+		return
+	if value.begins_with("deposit:") or value.begins_with("withdraw:"):
+		var amount:=state.transfer_reserve(value.get_slice(":",1),value.begins_with("deposit:"))
+		hud.barn(state)
+		hud.toast("%d produtos transferidos. A reserva está protegida da venda geral."%amount)
+		_update_ui()
 		return
 	match value:
+		"route_confirm":
+			var error:=state.place_batch(route)
+			if not error.is_empty():
+				hud.confirm_route(state,route)
+				hud.toast(error)
+				return
+			var count:=route.size()
+			_cancel_route()
+			hud.close_modal()
+			selected=state.items.size()-1
+			world.rebuild(state)
+			_ensure_player_space()
+			hud.toast("%d peças prontas. Ficou um capricho!"%count)
+			_chime()
+		"route_cancel": hud.close_modal()
+		"barn":
+			if state.count_items("barn")>0: hud.barn(state)
+		"upgrade":
+			var error:=state.buy_watering_upgrade()
+			hud.barn(state)
+			hud.toast("Regador melhorado! Até 5 canteiros por rega." if error.is_empty() else error)
 		"move":
 			if selected<0 or selected>=state.items.size():
 				hud.toast("Selecione uma construção com Cuidar para mover.")
@@ -538,8 +637,10 @@ func _action(value: String) -> void:
 			hud.close_modal()
 		"remove":
 			if selected>=0:
-				state.money+=int(FarmState.ITEMS[state.items[selected].kind].cost)/2
-				state.items.remove_at(selected)
+				var error:=state.remove_item(selected)
+				if not error.is_empty():
+					hud.toast(error)
+					return
 				selected=-1
 				world.rebuild(state)
 				hud.toast("Espaço livre. Metade do custo voltou para você.")
@@ -574,7 +675,9 @@ func _journey_action() -> void:
 	if step>=FarmState.JOURNEY.size(): return
 	var key:String=FarmState.JOURNEY[step].action
 	if key=="market":
-		hud.market(state)
+		if FarmState.JOURNEY[step].key=="contract" and state.inventory.carrot<6 and state.reserve.carrot>0:
+			hud.barn(state)
+		else: hud.market(state)
 	elif key=="harvest":
 		if build_mode: _action("mode")
 	elif key=="plots":
@@ -798,19 +901,23 @@ func _qa() -> void:
 	state.elapsed=next_silly+1
 	_process(0.1)
 	assert(silly_timer>0)
+	await _qa_v03()
 	var restored:=FarmState.new()
 	assert(restored.restore(JSON.parse_string(JSON.stringify(state.serialize()))))
 	assert(restored.items.size()==state.items.size())
 	assert(_save_game(false))
 	assert(_save_game(false))
 	var saved_money:=state.money
+	var saved_reserve:=state.reserve.duplicate()
 	state=FarmState.new()
 	assert(_load_game() and state.money==saved_money)
+	assert(state.reserve==saved_reserve and state.watering_upgrade and state.items[0].door_paint==2)
 	var damaged:=FileAccess.open(save_path,FileAccess.WRITE)
 	damaged.store_string("{damaged")
 	damaged.close()
 	state=FarmState.new()
 	assert(_load_game() and state.money==saved_money)
+	assert(state.reserve==saved_reserve and state.watering_upgrade and state.items[0].roof_paint==5)
 	DirAccess.remove_absolute(save_path)
 	DirAccess.remove_absolute(save_path+".bak")
 	print("INTEGRATION_OK: terrain, construction, crops, sale, paint, signs, camera, movement, persistence")
@@ -819,3 +926,167 @@ func _qa() -> void:
 	print("RENDERER: ",RenderingServer.get_video_adapter_name())
 	print("FPS: ",Engine.get_frames_per_second()," | physics movement test ms: ",Time.get_ticks_msec()-start)
 	get_tree().quit()
+
+func _qa_v03() -> void:
+	_action("mode")
+	_action("tool:fence")
+	focus=Vector3(4,0,-2)
+	yaw=0.42
+	pitch=0.78
+	build_distance=40
+	_update_camera(1,true)
+	var before:=state.serialize()
+	pointer=Vector2(-4,-12)
+	pointer_valid=true
+	_begin_route()
+	pointer=Vector2(8,-12)
+	_update_route()
+	assert(route.size()==7 and state.serialize()==before)
+	_finish_route()
+	assert(hud.modal_kind=="route" and not dragging and state.serialize()==before)
+	await get_tree().process_frame
+	if DisplayServer.get_name()!="headless":
+		await RenderingServer.frame_post_draw
+		get_viewport().get_texture().get_image().save_png("res://test-results/route-v03.png")
+	var cancel:=InputEventKey.new()
+	cancel.keycode=KEY_ESCAPE
+	cancel.pressed=true
+	_unhandled_input(cancel)
+	assert(route.is_empty() and hud.modal_kind.is_empty() and state.serialize()==before)
+	# Drive the actual mouse input path, including release before confirmation.
+	if DisplayServer.get_name()!="headless":
+		await _qa_mouse(camera.unproject_position(Vector3(-4,0,-12)),true)
+		assert(dragging)
+		await _qa_mouse(camera.unproject_position(Vector3(8,0,-12)),false)
+	else:
+		pointer=Vector2(-4,-12)
+		_begin_route()
+		pointer=Vector2(8,-12)
+		_finish_route()
+	assert(hud.modal_kind=="route" and route.size()==7)
+	_action("route_confirm")
+	assert(state.items.size()==before.items.size()+7 and state.money==before.money-84)
+	assert(hud.modal_kind.is_empty() and route.is_empty())
+	var after:=state.serialize()
+	pointer=Vector2(-4,-12)
+	pointer_valid=true
+	_begin_route()
+	pointer=Vector2(8,-12)
+	_finish_route()
+	_action("route_confirm")
+	assert(state.serialize()==after and hud.modal_kind=="route")
+	_action("route_cancel")
+	_action("tool:path")
+	pointer=Vector2(10,0)
+	pointer_valid=true
+	_begin_route()
+	pointer=Vector2(10,6)
+	_finish_route()
+	_action("route_confirm")
+	assert(state.items.size()==after.items.size()+4 and state.money==after.money-20)
+	# Releasing over the toolbar cancels even though GUI input would be consumed.
+	if DisplayServer.get_name()!="headless":
+		await _qa_mouse(camera.unproject_position(Vector3(14,0,2)),true)
+		assert(dragging)
+		after=state.serialize()
+		await _qa_mouse(Vector2(600,770),false)
+		assert(not dragging and route.is_empty() and state.serialize()==after)
+	_action("tool:inspect")
+	selected=0
+	_update_ui()
+	hud.paint_selector.select(0)
+	_action("paint:1")
+	hud.paint_selector.select(1)
+	_action("paint:5")
+	hud.paint_selector.select(2)
+	_action("paint:2")
+	assert(state.items[0].paint==1 and state.items[0].roof_paint==5 and state.items[0].door_paint==2)
+	var materials:=_qa_painted_surfaces(world.item_nodes[0])
+	assert(materials.has("Paint") and materials.has("Roof") and materials.has("DoorBarn"))
+	assert(materials.Paint.is_equal_approx(Color(FarmState.PALETTE[1])))
+	assert(materials.Roof.is_equal_approx(Color(FarmState.PALETTE[5])))
+	assert(materials.DoorBarn.is_equal_approx(Color(FarmState.PALETTE[2])))
+	state.inventory.carrot=70
+	_action("barn")
+	assert(hud.modal_kind=="barn")
+	_action("deposit:carrot")
+	assert(state.reserve.carrot==60 and state.inventory.carrot==10)
+	_action("close")
+	_action("remove")
+	assert(state.items[0].kind=="barn" and state.reserve.carrot==60)
+	_action("market")
+	_action("sell")
+	assert(state.reserve.carrot==60 and state.inventory.carrot==0)
+	_action("close")
+	_update_ui()
+	assert(hud.quest_button.text=="Retirar no celeiro")
+	_action("journey")
+	assert(hud.modal_kind=="barn")
+	_action("close")
+	_action("barn")
+	var balance:=state.money
+	_action("upgrade")
+	assert(state.watering_upgrade and state.money==balance-300)
+	await get_tree().process_frame
+	if DisplayServer.get_name()!="headless":
+		await RenderingServer.frame_post_draw
+		get_viewport().get_texture().get_image().save_png("res://test-results/barn-v03.png")
+	_action("withdraw:carrot")
+	assert(state.reserve.carrot==0 and state.inventory.carrot==60)
+	_action("deposit:carrot")
+	_action("close")
+	_action("mode")
+	player.position=Vector3(-2,0.2,-4)
+	selected=0
+	_interact_nearest()
+	assert(hud.modal_kind=="barn")
+	_action("close")
+	_action("mode")
+	# Five plots in a cross receive water from the same player action.
+	for index in [4,6,7,8,10]:
+		state.items[index].planted=true
+		state.items[index].watered=false
+		state.items[index].growth=0
+	selected=7
+	action_cooldown=0
+	_tend_selected()
+	for index in [4,6,7,8,10]: assert(state.items[index].watered)
+	assert(feedback.get_child_count()>=26*5)
+	await get_tree().create_timer(1.6).timeout
+	assert(feedback.get_child_count()==0)
+	selected=0
+	focus=Vector3(2,0,-3)
+	yaw=0.35
+	pitch=0.65
+	build_distance=32
+	_update_camera(1,true)
+	_update_ui()
+	hud.toast_time=0
+	await get_tree().process_frame
+	if DisplayServer.get_name()!="headless":
+		await RenderingServer.frame_post_draw
+		get_viewport().get_texture().get_image().save_png("res://test-results/farm-v03.png")
+	print("V03_INTEGRATION_OK: mouse drag, release over HUD, price confirmation, cancel, independent materials, barn, protected reserve, tool upgrade, area watering")
+
+func _qa_mouse(at: Vector2, pressed: bool) -> void:
+	Input.warp_mouse(at)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var event:=InputEventMouseButton.new()
+	event.position=at
+	event.global_position=at
+	event.button_index=MOUSE_BUTTON_LEFT
+	event.pressed=pressed
+	Input.parse_input_event(event)
+	await get_tree().process_frame
+	await get_tree().process_frame
+
+func _qa_painted_surfaces(node: Node) -> Dictionary:
+	var found:Dictionary={}
+	if node is MeshInstance3D:
+		for surface in range(node.mesh.get_surface_count()):
+			var source:Material=node.mesh.surface_get_material(surface)
+			var replacement:Material=node.get_surface_override_material(surface)
+			if source and replacement: found[source.resource_name]=replacement.albedo_color
+	for child in node.get_children(): found.merge(_qa_painted_surfaces(child))
+	return found
