@@ -21,11 +21,21 @@ static func setup(cow:Dictionary,pen:Node3D) -> void:
 
 static func animate(cow:Dictionary,delta:float,player_pos:Vector3) -> void:
 	if delta<=0: return
+	cow["dock_ready"]=false
 	var motion:Dictionary=cow.motion
 	var node:Node3D=cow.node
 	motion.time+=delta
 	var walking:=false
-	if motion.phase=="walk" and motion.graze<.05:
+	if cow.get("attending",false):
+		motion.graze=move_toward(motion.graze,0.0,delta*.8)
+		var direction:Vector3=Vector3(-.4,0,.35)-node.position
+		var desired:=atan2(direction.x,direction.z) if direction.length()>.06 else 0.0
+		if node.global_position.distance_to(player_pos)>1.9:node.rotation.y=rotate_toward(node.rotation.y,desired,delta*.95)
+		if motion.graze<.05 and direction.length()>.06 and absf(angle_difference(node.rotation.y,desired))<.18 and node.global_position.distance_to(player_pos)>1.9:
+			node.position+=direction.normalized()*minf(delta*.42,direction.length());walking=true
+		cow["dock_ready"]=direction.length()<.07 and absf(angle_difference(node.rotation.y,0))<.06 and motion.graze<.05
+		motion.phase="rest";motion.wait=3
+	elif motion.phase=="walk" and motion.graze<.05:
 		var direction:Vector3=SPOTS[motion.target]-node.position
 		if direction.length()<.08:
 			motion.phase="graze";motion.wait=6.0
@@ -34,7 +44,7 @@ static func animate(cow:Dictionary,delta:float,player_pos:Vector3) -> void:
 			var distance_to_farmer:float=node.global_position.distance_to(player_pos)
 			if distance_to_farmer>1.9:
 				walking=absf(angle_difference(node.rotation.y,desired))>.04
-				node.rotation.y=rotate_toward(node.rotation.y,desired,delta*.95)
+				if node.global_position.distance_to(player_pos)>1.9:node.rotation.y=rotate_toward(node.rotation.y,desired,delta*.95)
 			var aligned:=absf(angle_difference(node.rotation.y,desired))<.18
 			var local_player:Vector3=node.get_parent().to_local(player_pos)
 			var next:Vector3=node.position+direction.normalized()*minf(delta*.42,direction.length())

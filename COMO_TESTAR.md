@@ -1,7 +1,31 @@
-# Como testar a versão 0.17.0
+# Como testar a versão 0.18.0
 
 Extraia o ZIP e abra `DoMatoAoMilhao.exe`. Escolha **Voltar para minha fazenda**.
 A versão aceita a partida anterior. Não precisa começar outra.
+
+## Raul do Curral — teste rápido
+
+1. Retome sua fazenda e tenha um curral com Mimosa. Abra **E no curral → Raul · Cuidar do curral**.
+   Também está em **H → Equipe e treinamento → Raul · Curral**.
+2. Revise a contratação de **$140**. Voltar não cobra; confirmar contrata uma vez.
+3. Escolha o curral, deixe **$60 de limite**, revise e confirme **Aplicar rotina**.
+4. Feche os menus e fique no modo caminhada. Aos **4 L**, ele abre a porteira, chama Mimosa,
+   entra, agacha para ordenhar e sai com o recipiente. Não bloqueie a entrada.
+5. Aos **35%**, ele repõe água ou ração. Cada tarefa custa **$2**, mais a ração quando usada.
+   Água não custa material. O limite de $60 inclui serviço e ração; não é cobrado antecipadamente.
+6. Contrate/configure Chico na queijaria, com **2 queijos por lote**. O leite recolhido pelo Raul
+   abastece automaticamente a produção. Após a coleta do Chico, confira o queijo no estoque.
+7. Abra o painel do Raul: veja tarefas, litros e gasto total. Aplicar novamente mantém a verba usada.
+   **Renovar orçamento** só zera o usado após confirmar; o gasto histórico permanece.
+8. Pause no meio da ordenha: a tarefa incompleta não cobra nem recolhe leite. Raul sai com segurança.
+   Menus e modo construção congelam a simulação inteira, incluindo essa saída.
+9. Se faltar saldo/verba ou uma cerca bloquear a entrada, ele pausa. Libere a passagem, reponha
+   saldo ou renove a verba e use **Retomar**. Não atravessa a cerca para concluir tarefas.
+10. Salve com F5 e reabra: atribuição, orçamento e relatório ficam. A pose pode reiniciar;
+    leite e serviços já concluídos não duplicam. Dispensa preserva vaca e leite; recontratar custa $140.
+
+O leite é transferido ao concluir a ordenha; o trajeto de saída representa o transporte.
+Uma vaga de Raul pode atender um curral por vez. Sem produção enquanto o jogo está fechado.
 
 ## Chico Queijeiro — para testar quando puder
 
@@ -20,7 +44,7 @@ A versão aceita a partida anterior. Não precisa começar outra.
 11. Dispense Chico: leite e queijos ficam, assim como o lote em preparo. Recontratar custa $160 e preserva o histórico.
 12. Venda queijos ou entregue pedidos manualmente. Chico não vende nem entrega encomendas.
 
-Save atual: **formato 12**. Depois de salvar, use a 0.17 ou posterior. Nenhum funcionário é contratado automaticamente ao migrar.
+Save atual: **formato 13**. Depois de salvar, use a 0.18 ou posterior. Nenhum funcionário é contratado automaticamente ao migrar.
 
 ## Queijaria
 
@@ -39,7 +63,7 @@ Save atual: **formato 12**. Depois de salvar, use a 0.17 ou posterior. Nenhum fu
     Não há prazo; cancelar não cobra. Vendas normais podem consumir estoque que você pretendia entregar.
 11. Mova a queijaria durante um lote: produção e tempo permanecem. Remover com lote ativo/pronto é bloqueado.
 
-Save agora é **formato 12**. Use a 0.17 ou posterior depois de salvar.
+Save agora é **formato 13**. Use a 0.18 ou posterior depois de salvar.
 Início e coleta podem ser manuais ou feitos por Chico. A produção não avança com o jogo fechado.
 
 ## Humor e Mimosa
@@ -68,7 +92,7 @@ Início e coleta podem ser manuais ou feitos por Chico. A produção não avanç
 8. Mova o curral na câmera de construção. A vaca, os suprimentos e o leite devem permanecer.
    Curral ocupado não pode ser removido nesta versão; use Mover.
 9. Salve com F5 e reabra. Compra, cuidados, leite pronto e estoque permanecem.
-   Save atual: **formato 12**. Depois de salvar na 0.17, use esta versão ou posterior.
+   Save atual: **formato 13**. Depois de salvar na 0.17, use esta versão ou posterior.
 
 A coleta é pelo menu nesta etapa; ordenha manual animada, queijaria e ajudante das vacas vêm depois.
 Pastar é visual nesta etapa: continue repondo ração e água no menu.

@@ -7,7 +7,7 @@ var last_cheese:=0
 
 static func paused_text(state:FarmState) -> String:
 	var names:Array[String]=[]
-	for entry in [["Zeca",state.staff],["Bento",state.field_staff],["Chico",state.cheese_worker]]:
+	for entry in [["Zeca",state.staff],["Bento",state.field_staff],["Chico",state.cheese_worker],["Raul",state.dairy_worker]]:
 		var worker:Dictionary=entry[1]
 		if worker.hired and worker.paused and worker.reason in ["funds","budget","removed","blocked"]:
 			var reason:String={"funds":"sem saldo","budget":"limite de gastos","removed":"sem local de trabalho","blocked":"caminho bloqueado"}[worker.reason]

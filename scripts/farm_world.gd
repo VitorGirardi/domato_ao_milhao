@@ -5,6 +5,7 @@ const TRADE_BOARD_AT:=Vector3(-22.1,0,15.4)
 
 var models: Dictionary = {}
 var cows:Array[Dictionary]=[]
+var raul_motion:=FarmDairyWorkerMotion.new()
 var chico_motion:=FarmCheeseWorkerMotion.new()
 var structures := Node3D.new()
 var border := Node3D.new()
@@ -42,8 +43,9 @@ func _ready() -> void:
 	models["trade_board"]=load("res://assets/models/trade_board.glb")
 	models["helper"]=load("res://assets/models/helper.glb")
 	models["vendor"]=load("res://assets/models/vendor.glb")
-	for asset in ["cheesemaker","milk_can","cheese_tray"]:models[asset]=load("res://assets/models/%s.glb"%asset)
+	for asset in ["cheesemaker","milk_can","cheese_tray","feed_sack"]:models[asset]=load("res://assets/models/%s.glb"%asset)
 	models["cheesery"]=load("res://assets/models/cheesery.glb")
+	models["dairyman"]=load("res://assets/models/dairyman.glb")
 	models["corral"]=load("res://assets/models/corral.glb")
 	models["cow"]=load("res://assets/models/cow.glb")
 	models["workshop"]=load("res://assets/models/workshop.glb")
@@ -367,7 +369,11 @@ func rebuild(state: FarmState) -> void:
 				shape.position.y = height / 2
 				body.add_child(shape)
 				if item.kind=="corral":
-					box_shape.size=Vector3(7.5,1.1,.18); shape.position=Vector3(0,.55,2.7)
+					box_shape.size=Vector3(2.6,1.1,.18); shape.position=Vector3(0,.55,2.7)
+					shape.name="GateCollision"
+					for side in [-1,1]:
+						var rail:=CollisionShape3D.new();var rail_box:=BoxShape3D.new()
+						rail_box.size=Vector3(2.4,1.1,.18);rail.shape=rail_box;rail.position=Vector3(side*2.55,.55,2.7);body.add_child(rail)
 					for wall in [[Vector3(0,.55,-2.7),Vector3(7.5,1.1,.18)],[Vector3(-3.7,.55,0),Vector3(.18,1.1,5.5)],[Vector3(3.7,.55,0),Vector3(.18,1.1,5.5)],[Vector3(-2,2.53,-2.1),Vector3(3,.15,1.25)],[Vector3(2.65,.3,-2.25),Vector3(1.7,.6,.65)],[Vector3(3.0,.32,1.45),Vector3(1.35,.64,.73)],[Vector3(-2.7,.42,-2.15),Vector3(1.1,.84,.83)]]:
 						var part:=CollisionShape3D.new(); var volume:=BoxShape3D.new()
 						volume.size=wall[1]; part.shape=volume; part.position=wall[0]; body.add_child(part)
@@ -414,6 +420,9 @@ func rebuild(state: FarmState) -> void:
 					var joint:=cow.find_child(key,true,false) as Node3D
 					if joint: bones[key]={"node":joint,"rest":joint.basis}
 				cows[-1].bones=bones
+				cows[-1].gate=visual.find_child("GateHinge",true,false)
+				cows[-1].gate_rest=cows[-1].gate.basis if cows[-1].gate else Basis.IDENTITY
+				cows[-1].gate_collision=root.find_child("GateCollision",true,false)
 				var cow_body:=StaticBody3D.new(); cow_body.name="CowCollision"
 				cow_body.collision_layer=1 if item.dairy.owned else 0
 				cow_body.set_meta("item_index",i)
@@ -428,6 +437,7 @@ func rebuild(state: FarmState) -> void:
 	update_crops(state)
 	update_border(state)
 	update_animals(state)
+	raul_motion.anchor="";raul_motion.reset()
 	chico_motion.reset()
 	staff_anchor=""
 	field_anchor=""
@@ -485,6 +495,7 @@ func update_cheese_worker(state:FarmState,delta:float) -> void:
 	chico_motion.update(self,state,delta)
 
 func update_staff(state: FarmState, delta: float) -> void:
+	raul_motion.update(self,state,delta)
 	update_cheese_worker(state,delta)
 	update_field_staff(state,delta)
 	var worker:Dictionary=state.staff

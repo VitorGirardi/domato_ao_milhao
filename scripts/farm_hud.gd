@@ -15,6 +15,9 @@ var cultivation_budget:SpinBox
 var milk_quantity:SpinBox
 var cheese_quantity:SpinBox
 var cheese_batch:=1
+var raul_site:=-1
+var raul_budget:=60
+var raul_confirm:=""
 var chico_site:=-1
 var chico_batch:=4
 var chico_budget:=40

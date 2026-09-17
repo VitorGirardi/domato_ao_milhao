@@ -12,7 +12,7 @@ Não são promessas de prazo nem uma lista de tarefas já concluídas.
 | 4 | Animais com personalidade | Nomes, aparência, água, alimentação, ninhos e comportamentos | Primeira entrega na 0.4, com galinhas |
 | 5 | Vizinhos e economia regional | Pedidos variados, especialidades, reputação e preços legíveis | Primeira entrega na 0.5; ranchos físicos e economia dinâmica depois |
 | 6 | Gestão e automação | Funcionários, rotinas e máquinas para evitar tarefas repetitivas | Primeiro ajudante entregue na 0.6; outras rotinas e máquinas depois |
-| 7 | Cadeias produtivas e expansão | Queijo, farinha, novos terrenos e regiões | A fazer |
+| 7 | Cadeias produtivas e expansão | Queijo, farinha, novos terrenos e regiões | Leite e queijo automatizados na 0.18; ampliar depois |
 | 8 | Mundo vivo | Clima, estações, feiras, concursos e acontecimentos engraçados | A fazer |
 | 9 | Cooperativo | Amigos em ranchos próprios, visitas e comércio sincronizado | A fazer após estabilizar a campanha solo |
 
@@ -209,3 +209,14 @@ Expressões animadas e personalização de roupas ficam para outra etapa.
 
 - Melhorias de capacidade e novas receitas após avaliar o ciclo atual.
 - Cuidados e coleta de leite automatizados no curral, com orçamento separado.
+
+## Entrega — 0.18: Raul do Curral
+
+- [x] Contratação e atribuição a um curral, orçamento com serviço e ração.
+- [x] Porteira com passagem e vaca posicionada para o atendimento.
+- [x] Ordenha, água, alimentação e transporte com animações.
+- [x] Leite no estoque abastece a queijaria operada por Chico.
+- [x] Pausa, renovação, dispensa, relatórios e save 13.
+- [x] Validar interrupção, bloqueio, rotação e cadeia completa sem alterar o save real.
+
+Próxima decisão: testar o ritmo dessa cadeia antes de ampliar máquinas, preços e novas produções.

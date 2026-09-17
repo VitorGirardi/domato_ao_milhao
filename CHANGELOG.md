@@ -1,5 +1,15 @@
 # Alterações
 
+## 0.18.0 — Raul do Curral
+
+- Funcionário para água, ração e ordenha, com atribuição a um curral e orçamento próprio.
+- $140 para contratar; $2 por tarefa mais ração, cobrados apenas ao concluir e incluídos no limite.
+- Porteira articulada com passagem, posicionamento cooperativo da vaca e trajeto pelo corredor interno.
+- Animações de ordenha agachada, transporte, alimentação e água; personagem e saco originais Blender.
+- Leite alimenta a cadeia automática do Chico; vendas e encomendas seguem manuais.
+- Save 13, pausa, dispensa, renovação e relatórios persistentes.
+- Testes de migração, gastos, interrupções, bloqueios, quatro rotações e cadeia vaca–queijo.
+
 ## 0.17.0 — Chico Queijeiro
 
 - Contratação, atribuição a uma queijaria, lote e verba de serviços.

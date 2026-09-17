@@ -30,7 +30,8 @@ static func show(hud:FarmHUD,state:FarmState) -> void:
 			hud.label(c,"Uma tarefa por vez",Vector2(20,349),Vector2(356,26),16,FarmHUD.MUTED)
 	FarmGameUI.icon(p,"coins",Rect2(28,544,38,38))
 	hud.label(p,"$%d"%state.money,Vector2(78,548),Vector2(245,33),25)
-	FarmGameUI.action(hud,p,"Chico · Queijaria",Rect2(330,538,504,48),"chico")
+	FarmGameUI.action(hud,p,"Raul · Curral",Rect2(326,538,246,48),"raul")
+	FarmGameUI.action(hud,p,"Chico · Queijaria",Rect2(584,538,250,48),"chico")
 
 static func confirm(hud:FarmHUD,state:FarmState,kind:String) -> void:
 	var p:=FarmGameUI.open(hud,"crew_confirm","Equipe • confirmar","worker",780,515)

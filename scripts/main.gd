@@ -51,7 +51,7 @@ var picked_trade_board:=false
 
 func _ready() -> void:
 	qa_mode = OS.is_debug_build() and "--qa" in OS.get_cmdline_user_args()
-	if qa_mode: save_path="user://qa_farm_v017.json"
+	if qa_mode: save_path="user://qa_farm_v018.json"
 	get_tree().auto_accept_quit = false
 	_inputs()
 	world = FarmWorld.new()
@@ -624,6 +624,26 @@ func _action(value: String) -> void:
 		hud.close_modal(); actor.emote(key)
 		return
 	actor.stop_emote()
+	if value=="raul": FarmDairyWorkerHUD.show(hud,state);return
+	if value.begins_with("raul:"):
+		var act:=value.get_slice(":",1)
+		if act.begins_with("review_"):
+			if hud.modal_kind=="raul": FarmDairyWorkerHUD.review(hud,state,act.trim_prefix("review_"))
+			return
+		var w:=state.dairy_worker
+		if act=="confirm" and hud.modal_kind=="raul_confirm":
+			var error:=""
+			match hud.raul_confirm:
+				"hire": error=FarmDairyWorker.hire(state)
+				"apply","renew": error=FarmDairyWorker.configure(state,hud.raul_site,hud.raul_budget,hud.raul_confirm=="renew")
+				"dismiss": FarmDairyWorker.dismiss(state)
+			if not error.is_empty():hud.toast(error)
+		elif act=="pause" and hud.modal_kind=="raul" and w.hired:
+			if w.paused and w.site>=0:w.paused=false;w.reason=""
+			else:w.paused=true;w.reason="manual"
+		else:return
+		world.raul_motion.reset();world.raul_motion.update(world,state,0)
+		FarmDairyWorkerHUD.show(hud,state);_update_ui();return
 	if value=="chico": FarmCheeseWorkerHUD.show(hud,state);return
 	if value.begins_with("chico:"):
 		var act:=value.get_slice(":",1)
@@ -696,7 +716,8 @@ func _action(value: String) -> void:
 		FarmWalkHUD.objectives(hud,state)
 		return
 	if value=="field_attention":
-		if state.cheese_worker.hired and state.cheese_worker.paused and state.cheese_worker.reason in ["funds","budget","removed","blocked"]: FarmCheeseWorkerHUD.show(hud,state)
+		if state.dairy_worker.hired and state.dairy_worker.paused and state.dairy_worker.reason in ["funds","budget","removed","blocked"]: FarmDairyWorkerHUD.show(hud,state)
+		elif state.cheese_worker.hired and state.cheese_worker.paused and state.cheese_worker.reason in ["funds","budget","removed","blocked"]: FarmCheeseWorkerHUD.show(hud,state)
 		elif not FarmFieldAlerts.paused_text(state).is_empty(): FarmCrewHUD.show(hud,state)
 		else:
 			var full:=FarmFieldAlerts.full_coops(state)
@@ -1141,6 +1162,11 @@ func _chime(kind: String = "build") -> void:
 	sound.play()
 
 func _qa() -> void:
+	if "--qa-v018" in OS.get_cmdline_user_args():
+		_action("start")
+		await _qa_v018()
+		get_tree().quit()
+		return
 	if "--qa-v017" in OS.get_cmdline_user_args():
 		_action("start")
 		await _qa_v017()
@@ -1315,6 +1341,7 @@ func _qa() -> void:
 	await _qa_v015()
 	await _qa_v016()
 	await _qa_v017()
+	await _qa_v018()
 	var restored:=FarmState.new()
 	assert(restored.restore(JSON.parse_string(JSON.stringify(state.serialize()))))
 	assert(restored.items.size()==state.items.size())
@@ -2542,3 +2569,87 @@ func _qa_v017() -> void:
 	assert(not state.cheese_worker.hired and state.items[0].cheese.batch==2)
 	assert(state.restore(previous));world.rebuild(state);build_mode=true;_update_ui()
 	print("V017_INTEGRATION_OK: hire/cancel, draft quantity/budget, animated routes and props, exact fees, free collection, cap, renewal/cancel, manual pause, blocked path/resume, persistence and dismissal; walked=",walked)
+
+func _qa_v018() -> void:
+	var previous:=state.serialize()
+	state=FarmState.new();state.claim(Vector2(4,-2));state.money=10000
+	assert(state.place("corral",Vector2(4,0),0).is_empty())
+	assert(state.place("cheesery",Vector2(-4,0),0).is_empty())
+	assert(FarmDairy.care(state,0,"buy").is_empty())
+	state.items[0].dairy.milk=4
+	world.rebuild(state);build_mode=true;_action("close");selected=0;tool="inspect";move_index=-1;ghost.visible=false
+	_action("raul");_action("raul:review_hire");var money:=state.money
+	_action("raul");assert(state.money==money and not state.dairy_worker.hired)
+	_action("raul:review_hire");_action("raul:confirm")
+	assert(state.dairy_worker.hired and state.money==money-140)
+	var controls:=hud.modal.find_children("*","SpinBox",true,false);controls[0].value=60
+	_action("raul:review_apply");await _qa_ui_capture("raul-confirm-v018")
+	_action("raul:confirm");assert(state.dairy_worker.site==0 and state.dairy_worker.budget==60)
+	await _qa_ui_capture("raul-manager-v018")
+	var frozen:=state.serialize();_process(20);assert(state.serialize()==frozen)
+	_action("close");_process(20);assert(state.serialize()==frozen)
+	FarmCheeseWorker.hire(state);FarmCheeseWorker.configure(state,1,2,40)
+	focus=Vector3(4,.8,0);yaw=.80;pitch=.47;build_distance=9;_update_camera(1,true)
+	player.position=Vector3(15,0,10);hud.world_hud.visible=false;hud.build_hud.visible=false;hud.walking.root.visible=false
+	DirAccess.make_dir_recursive_absolute("res://test-results/raul-v018")
+	var phases:Dictionary={};var tasks:Dictionary={};var captured:=0;var walked:=0.0
+	for frame in range(7000):
+		var before:Vector3=world.raul_motion.node.position
+		state.tick(.1);world.update_staff(state,.1);world.animate(.1,player.position,state)
+		var motion:=world.raul_motion
+		walked+=before.distance_to(motion.node.position);phases[motion.phase]=true
+		if motion.phase=="work":tasks[motion.kind]=true
+		assert(not state.dairy_worker.paused,"Unexpected pause: "+state.dairy_worker.reason)
+		if motion.inside(state.items[0]):
+			assert(motion.safe(motion.node.position,state,0),"Worker must stay in clear aisle")
+			assert(world.cows[0].dock_ready,"Cow must hold for interior access")
+		if frame%5==0 and (frame<230 or (motion.phase=="work" and motion.kind!="milk" and not tasks.has("captured_"+motion.kind))) and DisplayServer.get_name()!="headless":
+			await get_tree().process_frame;await RenderingServer.frame_post_draw
+			get_viewport().get_texture().get_image().save_png("res://test-results/raul-v018/%04d.png"%frame);captured+=1
+			if motion.phase=="work" and motion.kind!="milk" and motion.work_time<1.5:tasks["captured_"+motion.kind]=true
+	assert(phases.has_all(["wait","enter","work","exit"]) and tasks.has_all(["milk","water","food"]) and walked>20)
+	assert(state.cheese_stock>0 and state.cheese_worker.started>0 and state.dairy_worker.collected>=8,"Cow to cheese chain")
+	assert(state.dairy_worker.spent==state.dairy_worker.total_spent and state.dairy_worker.spent<=60)
+	print("V018_CHAIN: milk=",state.dairy_worker.collected," cheese=",state.cheese_stock," cost=",state.dairy_worker.spent," tasks=",tasks)
+	_action("raul");await _qa_ui_capture("raul-report-v018")
+	var spent:int=state.dairy_worker.spent
+	_action("raul:review_apply");_action("raul:confirm");assert(state.dairy_worker.spent==spent)
+	_action("raul:review_renew");_action("raul");assert(state.dairy_worker.spent==spent)
+	_action("raul:review_renew");_action("raul:confirm");assert(state.dairy_worker.spent==0)
+	_action("close");state.dairy_worker.paused=true;state.dairy_worker.reason="manual"
+	var held:=state.serialize()
+	for i in range(100):world.raul_motion.update(world,state,.1);world.animate(.1,player.position,state)
+	assert(state.serialize()==held,"Pause must not spend or transfer milk")
+	var saved:Variant=JSON.parse_string(JSON.stringify(state.serialize()))
+	assert(state.restore(saved) and state.dairy_worker.spent==0)
+	_action("raul");_action("raul:review_dismiss");_action("raul:confirm");assert(not state.dairy_worker.hired)
+	# Rotated pens, interrupted milking and obstruction must preserve the ledger.
+	for turn in range(4):
+		state=FarmState.new();state.claim(Vector2(4,-2));state.money=5000
+		assert(state.place("corral",Vector2(4,0),turn).is_empty())
+		FarmDairy.care(state,0,"buy");state.items[0].dairy.milk=4
+		FarmDairyWorker.hire(state);FarmDairyWorker.configure(state,0,20)
+		world.rebuild(state)
+		var interrupted:=false
+		for frame in range(700):
+			world.update_staff(state,.1);world.animate(.1,player.position,state)
+			if world.raul_motion.phase=="work" and not interrupted:
+				assert(state.dairy_worker.spent==0 and state.milk_stock==0)
+				state.dairy_worker.paused=true;state.dairy_worker.reason="manual";interrupted=true
+			if frame==300:
+				assert(state.dairy_worker.spent==0 and state.milk_stock==0 and not world.raul_motion.inside(state.items[0]))
+				state.dairy_worker.paused=false;state.dairy_worker.reason=""
+		assert(interrupted and state.dairy_worker.spent==2 and state.milk_stock==4)
+		assert(not world.raul_motion.inside(state.items[0]) and not world.cows[0].gate_collision.disabled)
+	# A fence across the entrance prevents billing and emits an actionable pause.
+	state=FarmState.new();state.claim(Vector2(4,-2));state.money=5000
+	state.place("corral",Vector2(4,0),0);FarmDairy.care(state,0,"buy");state.items[0].dairy.milk=4
+	FarmDairyWorker.hire(state);FarmDairyWorker.configure(state,0,20)
+	assert(state.place("fence",Vector2(4,4),0).is_empty());world.rebuild(state)
+	for frame in range(40):world.update_staff(state,.1);world.animate(.1,player.position,state)
+	assert(state.dairy_worker.paused and state.dairy_worker.reason=="blocked" and state.dairy_worker.spent==0 and state.milk_stock==0)
+	state.remove_item(1);world.rebuild(state);state.dairy_worker.paused=false;state.dairy_worker.reason=""
+	for frame in range(500):world.update_staff(state,.1);world.animate(.1,player.position,state)
+	assert(state.dairy_worker.spent==2 and state.milk_stock==4)
+	assert(state.restore(previous));world.rebuild(state);build_mode=true;_update_ui()
+	print("V018_INTEGRATION_OK: UI hire/cancel, budget, gate, cow docking, paths, milking/water/feed, milk-to-cheese, pause, renewal and persistence; walked=",walked)

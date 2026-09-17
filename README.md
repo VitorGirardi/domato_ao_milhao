@@ -5,13 +5,13 @@
 Protótipo jogável de um tycoon de fazenda 3D estilizado para Windows, em português.
 Godot 4.7.2 + modelos originais feitos no Blender 5.2.1. Campanha solo e offline.
 
-**Versão atual: 0.17.0.** Veja [as prioridades](ROADMAP.md) e [as novidades](CHANGELOG.md).
+**Versão atual: 0.18.0.** Veja [as prioridades](ROADMAP.md) e [as novidades](CHANGELOG.md).
 
 Veja o [roteiro de teste manual](COMO_TESTAR.md), incluindo encomendas e vendas da 0.5.
 
 ## Jogar
 
-O executável local fica em `exports/windows-v0.17/DoMatoAoMilhao.exe` depois da exportação.
+O executável local fica em `exports/windows-v0.18/DoMatoAoMilhao.exe` depois da exportação.
 Ele abre diretamente, sem instalar Godot ou Blender. Os binários não são enviados ao Git.
 
 Para executar a partir do código:
@@ -19,7 +19,18 @@ Para executar a partir do código:
 2. Aguarde a importação dos modelos.
 3. Pressione **F5** para jogar. O cenário é montado pelos scripts durante a execução.
 
-## Novidades da 0.17
+## Novidades da 0.18
+
+- **Raul do Curral**, em **E no curral → Raul**, ou **H → Equipe e treinamento → Raul**.
+- Contratação de **$140**; **$2 por tarefa concluída**, mais a ração utilizada. O limite inclui os dois.
+- Ordenha a partir de **4 L**; repõe água e ração quando chegam a **35%**.
+- Abre a porteira, espera Mimosa se posicionar, entra, ordenha agachado e sai carregando leite.
+- Saco de ração e recipiente com água acompanham as tarefas. Fora do atendimento, Mimosa volta a pastar.
+- Leite entra no estoque compartilhado e abastece os lotes do Chico. Vendas continuam manuais.
+- Pausa, dispensa, renovação explícita e relatório de litros, tarefas e gastos.
+- **Save 13**, migração sem contratação automática; orçamento e resultados persistem.
+
+## Recursos da 0.17
 
 - **Chico Queijeiro**: na queijaria ou em **H → Equipe e treinamento → Chico**.
 - Contratação de **$160**; uma queijaria atribuída, lote de 1 a 4 queijos e limite total de serviços.
