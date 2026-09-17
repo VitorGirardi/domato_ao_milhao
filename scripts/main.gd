@@ -50,7 +50,7 @@ var picked_trade_board:=false
 
 func _ready() -> void:
 	qa_mode = OS.is_debug_build() and "--qa" in OS.get_cmdline_user_args()
-	if qa_mode: save_path="user://qa_farm_v07.json"
+	if qa_mode: save_path="user://qa_farm_v08.json"
 	get_tree().auto_accept_quit = false
 	_inputs()
 	world = FarmWorld.new()
@@ -100,9 +100,9 @@ func _player() -> void:
 	var collision := CollisionShape3D.new()
 	var capsule := CapsuleShape3D.new()
 	capsule.radius = 0.37
-	capsule.height = 2.35
+	capsule.height = 2.58
 	collision.shape = capsule
-	collision.position.y = 1.18
+	collision.position.y = 1.29
 	player.add_child(collision)
 	avatar = world.model("farmer",player)
 	actor.setup(avatar,world)
@@ -1021,7 +1021,7 @@ func _qa() -> void:
 	if DisplayServer.get_name()!="headless":
 		await RenderingServer.frame_post_draw
 		get_viewport().get_texture().get_image().save_png("res://test-results/walking.png")
-	assert(actor.parts.ArmR!=null and actor.parts.LegL!=null)
+	assert(actor.bones.has("UpperArm.R") and actor.bones.has("Thigh.L"))
 	await get_tree().create_timer(1.5).timeout
 	assert(hud.quest_progress.size.y<=10)
 	player.position=Vector3(4,0.2,4.8)
@@ -1038,7 +1038,7 @@ func _qa() -> void:
 	_tend_selected()
 	assert(state.items[10].watered and actor.action_kind=="water")
 	for i in range(12): await get_tree().physics_frame
-	assert(actor.can.visible and absf(actor.parts.ArmR.rotation.x)>0.1)
+	assert(actor.can.visible and actor.skeleton.get_bone_pose_rotation(actor.bones["UpperArm.R"]).angle_to(actor.skeleton.get_bone_rest(actor.bones["UpperArm.R"]).basis.get_rotation_quaternion())>0.1)
 	if DisplayServer.get_name()!="headless":
 		await RenderingServer.frame_post_draw
 		get_viewport().get_texture().get_image().save_png("res://test-results/watering-v02.png")
@@ -1071,7 +1071,7 @@ func _qa() -> void:
 	await _qa_v04()
 	await _qa_v05()
 	await _qa_v06()
-	await _qa_v07()
+	await _qa_v08()
 	var restored:=FarmState.new()
 	assert(restored.restore(JSON.parse_string(JSON.stringify(state.serialize()))))
 	assert(restored.items.size()==state.items.size())
@@ -1522,7 +1522,7 @@ func _qa_v06() -> void:
 	_action("staff_hire_review")
 	_action("staff_hire")
 	assert(state.staff.hired and state.staff.coop==1 and state.money==snapshot.money-120)
-	assert(world.staff_root.visible and world.staff_actor.parts.Head!=null)
+	assert(world.staff_root.visible and world.staff_actor.bones.has("Head"))
 	snapshot=state.serialize()
 	build_mode=false
 	_process(30)
@@ -1622,11 +1622,14 @@ func _qa_v06() -> void:
 	_action("close")
 	print("V06_INTEGRATION_OK: shortcut, hiring confirmation/cancel, care, costs, menu/build pause, low funds, assignment selector, dismiss/cancel, rehire and Blender character")
 
-func _qa_v07() -> void:
-	# Real in-game GLBs, framed from the front for review of the new faces.
+func _qa_v08() -> void:
+	# Real in-game skins; the isolated renderer also checks bent-joint poses.
 	for model_node in [avatar,world.staff_actor.root]:
-		for part in ["Head","Body","ArmL","ArmR","LegL","LegR"]:
-			assert(model_node.find_child(part,true,false) is MeshInstance3D)
+		var skin:MeshInstance3D=model_node.find_child("BodySkin",true,false)
+		assert(skin!=null and skin.skin!=null)
+		assert(model_node.find_children("*","Skeleton3D",true,false)[0].get_bone_count()==20)
+	for hen in world.chickens:
+		assert(hen.node.find_child("LegL",true,false)!=null and hen.node.find_child("LegR",true,false)!=null)
 	avatar.rotation.y=0.15
 	world.staff_root.rotation.y=0.15
 	focus=Vector3(10.5,0,-5)
@@ -1642,8 +1645,8 @@ func _qa_v07() -> void:
 	await get_tree().process_frame
 	if DisplayServer.get_name()!="headless":
 		await RenderingServer.frame_post_draw
-		get_viewport().get_texture().get_image().save_png("res://test-results/characters-v07-game.png")
-	print("V07_CHARACTER_OK: new GLBs, head and limb pivots, walking/watering regression, new collision height and front-facing game capture")
+		get_viewport().get_texture().get_image().save_png("res://test-results/characters-v08-game.png")
+	print("V08_CHARACTER_OK: continuous body skins, 20-bone humanoids, walking/watering regression, chicken gait pivots, game capture")
 
 func _qa_mouse(at: Vector2, pressed: bool) -> void:
 	get_viewport().warp_mouse(at)

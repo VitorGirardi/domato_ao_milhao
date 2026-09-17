@@ -546,6 +546,11 @@ func animate(delta: float, player_pos: Vector3, state: FarmState, event: String 
 		elif event=="meeting" and chicken.coop==chickens[0].coop:
 			target=chicken.home+Vector3((chicken.hen-1)*0.75,0,2.3).rotated(Vector3.UP,chicken.turn)
 		var direction := target - hen.position
+		# Feet pivot at the hips; keep them planted when the hen stops.
+		var stepping:bool=direction.length()>0.12 and not (resting and chicken.hen==2 and event.is_empty())
+		for side in ["L","R"]:
+			var leg:Node3D=hen.find_child("Leg"+side,true,false)
+			if leg: leg.rotation.x=sin(clock*13+phase+(PI if side=="L" else 0))*0.38 if stepping else 0.0
 		direction.y = 0
 		var dancing:bool=event=="dance" and is_manager
 		hen.rotation.x=sin(clock*7+phase)*0.18 if resting and chicken.hen==1 else 0.0

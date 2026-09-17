@@ -29,6 +29,7 @@ func render_preview() -> void:
 	mat.albedo_color=Color("eee4d1")
 	floor_mesh.material_override=mat
 	scene.add_child(floor_mesh)
+	var actors:Array[FarmAvatar]=[]
 	for i in range(2):
 		var model_name:="farmer" if i==0 else "helper"
 		var packed:PackedScene=load("res://assets/models/%s.glb"%model_name)
@@ -36,7 +37,19 @@ func render_preview() -> void:
 		FarmAvatar.prepare_model(actor)
 		actor.position.x=-0.95 if i==0 else 0.95
 		scene.add_child(actor)
-		for part in ["LegL","LegR","ArmL","ArmR","Body","Head"]: assert(actor.find_child(part,true,false)!=null)
+		var animator:=FarmAvatar.new()
+		animator.setup(actor)
+		actors.append(animator)
+		assert(animator.skeleton.get_bone_count()==20)
+		var body:MeshInstance3D=actor.find_child("BodySkin",true,false)
+		assert(body!=null and body.skin!=null)
+		# A zero model-space rotation must reproduce the imported local rest,
+		# including downward-facing leg bones. Identity is not the local rest.
+		for key in animator.bones:
+			animator.pose_bone(key,Vector3.ZERO)
+			var index:int=animator.bones[key]
+			assert(absf(animator.skeleton.get_bone_pose_rotation(index).normalized().dot(animator.skeleton.get_bone_rest(index).basis.get_rotation_quaternion().normalized()))>0.99999)
+		animator.animate(1,false,false)
 	var camera:=Camera3D.new()
 	camera.position=Vector3(0,1.65,6.8)
 	camera.fov=31
@@ -46,11 +59,41 @@ func render_preview() -> void:
 	await process_frame
 	await process_frame
 	await RenderingServer.frame_post_draw
-	root.get_texture().get_image().save_png("res://test-results/characters-v07-front.png")
+	root.get_texture().get_image().save_png("res://test-results/characters-v08-front.png")
 	camera.position=Vector3(3.1,2.0,6.1)
 	camera.look_at(Vector3(0,1.3,0))
 	await process_frame
 	await RenderingServer.frame_post_draw
-	root.get_texture().get_image().save_png("res://test-results/characters-v07-angle.png")
-	print("CHARACTER_RENDER_OK: two GLBs, twelve articulation groups, front and angle previews")
+	root.get_texture().get_image().save_png("res://test-results/characters-v08-angle.png")
+	# Deliberately bend elbow and knee, and raise the opposite arm to inspect seams.
+	for animator in actors:
+		animator.pose_bone("UpperArm.R",Vector3(-0.65,0,-0.28))
+		animator.pose_bone("Forearm.R",Vector3(-1.25,0,0))
+		animator.pose_bone("UpperArm.L",Vector3(-0.25,0,-0.95))
+		animator.pose_bone("Forearm.L",Vector3(-0.7,0,0))
+		animator.pose_bone("Thigh.R",Vector3(-0.85,0,0))
+		animator.pose_bone("Shin.R",Vector3(1.30,0,0))
+		animator.pose_bone("Foot.R",Vector3(-0.4,0,0))
+	await process_frame
+	await process_frame
+	await RenderingServer.frame_post_draw
+	root.get_texture().get_image().save_png("res://test-results/characters-v08-bend.png")
+	for animator in actors: animator.root.visible=false
+	var world:=FarmWorld.new()
+	for i in range(3):
+		var hen:Node3D=load("res://assets/models/chicken.glb").instantiate()
+		scene.add_child(hen)
+		hen.position.x=(i-1)*0.95
+		hen.rotation.y=-0.5 if i==0 else (0.7 if i==1 else 2.5)
+		world._color_hen(hen,i)
+		assert(hen.find_child("LegL",true,false)!=null)
+	camera.position=Vector3(2.0,1.55,4.9)
+	camera.look_at(Vector3(0,.5,0))
+	await process_frame
+	await process_frame
+	await RenderingServer.frame_post_draw
+	root.get_texture().get_image().save_png("res://test-results/chickens-v08.png")
+	for orphan in [world.structures,world.border,world.build_grid,world.selection]: orphan.free()
+	world.free()
+	print("CHARACTER_RENDER_OK: two skinned GLBs, 20 bones each, front/angle/bent elbow and knee")
 	quit()

@@ -1,5 +1,16 @@
 # Alterações
 
+## 0.8.0 — Corpo conectado e galinhas cartoon
+
+- Malha contínua nos ombros, tronco, braços, mãos, quadril e pernas; anatomia alongada e menos arredondada.
+- Protagonista e Zeca com 20 ossos, pesos normalizados e deformação de cotovelos/joelhos.
+- Conversão correta das poses de repouso importadas; teste de regressão contra membros invertidos.
+- Regador preso ao osso da mão; caminhada, corrida e ações adaptadas ao esqueleto.
+- Galinha refeita no Blender: pescoço/peito/asas unidos, penas, olhos e dedos; patas alternadas na caminhada.
+- Revisão visual de frente, perfil, pose dobrada e dentro do jogo; fontes Blender e geradores reproduzíveis.
+- Salvamento permanece no formato 5, com o QA isolado em qa_farm_v08.json.
+- Limites: faces estáticas, sem IK/dedos articulados; asas e pescoço da galinha ainda sem animação própria.
+
 ## 0.7.0 — Primeira versão dos personagens cartoon
 
 - Protagonista e Zeca refeitos no Blender com volumes suaves, cabeças grandes e corpos compactos.

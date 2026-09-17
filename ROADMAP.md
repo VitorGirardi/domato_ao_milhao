@@ -88,7 +88,7 @@ Preços e tempos ainda precisam do teste do autor para balanceamento.
 **Critério de conclusão:** contratar, observar a coleta, pausar sem pagar,
 trocar de galinheiro e retomar a partida com ajudante e histórico preservados.
 
-## Entrega atual — 0.7: personagens
+## Entrega anterior — 0.7: personagens
 
 - [x] Registrar o conceito cartoon aprovado pelo autor.
 - [x] Refazer protagonista e Zeca como modelos editáveis no Blender.
@@ -98,6 +98,14 @@ trocar de galinheiro e retomar a partida com ajudante e histórico preservados.
 
 A direção visual seguirá recebendo ajustes com a avaliação dentro do jogo.
 Expressões animadas e personalização de roupas ficam para outra etapa.
+
+## Entrega atual — 0.8: anatomia e animais
+
+- [x] Corpo humano contínuo e proporções menos arredondadas.
+- [x] Rig de 20 ossos, pesos e revisão de cotovelos/joelhos dobrados.
+- [x] Adaptar caminhada, corrida, rega e trabalho ao esqueleto.
+- [x] Galinhas com nova silhueta, penas e patas alternadas.
+- [x] Revisar os GLBs reais no Godot e preservar a integração do jogo.
 
 ## Próximo bloco — ampliar a automação
 

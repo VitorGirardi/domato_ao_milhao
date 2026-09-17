@@ -1,7 +1,7 @@
-# Como testar a versão 0.7
+# Como testar a versão 0.8
 
-Este roteiro cobre o **Zeca do Trato** e as **encomendas/vendas da 0.5**.
-Abra o executável da pasta `windows-v0.7` e escolha **Voltar para minha fazenda**.
+Este roteiro cobre os **corpos conectados**, as **galinhas novas**, o Zeca e as encomendas.
+Abra o executável da pasta `windows-v0.8` e escolha **Voltar para minha fazenda**.
 A versão nova aceita a fazenda anterior; não precisa começar outra.
 
 **Regra principal:** o tempo só avança caminhando, com as janelas fechadas.
@@ -10,14 +10,19 @@ pausam plantas, galinhas, ajudante e prazos de encomendas.
 
 ## 0. Conferir os personagens novos
 
-1. Abra a **0.7** e retome sua fazenda. O protagonista já usa o modelo novo.
+1. Abra a **0.8** e retome sua fazenda. O protagonista já usa o modelo novo.
 2. Use TAB para caminhar. Segure o botão direito e gire a câmera para ver o rosto;
-   aproxime com a roda do mouse. Confira o sorriso, os olhos e o chapéu.
+   aproxime com a roda do mouse. Confira ombros ligados ao tronco, cintura e pernas.
+   Os braços não devem parecer peças soltas.
 3. Ande com WASD, corra com Shift e interaja com um canteiro seco para ver o regador.
 4. Se Zeca já estiver contratado, visite o galinheiro dele e compare os personagens.
    Se ainda não estiver, siga o teste de contratação abaixo.
-5. Confira se câmera, mãos e regador ficam bem posicionados e se caminhar perto
-   de construções funciona com a nova altura. Os rostos têm expressão fixa nesta versão.
+5. Ande, corra e pare repetidamente: cotovelos e joelhos devem dobrar sem abrir
+   frestas no corpo. Regue com **E** perto de um canteiro seco e confira o regador na mão.
+6. Visite as galinhas: veja olhos, crista, penas e dedos. Observe as patas
+   alternando enquanto caminham. Clique em uma para conferir nome e cuidados.
+7. Os rostos ainda têm expressão fixa e a galinha não articula asas/pescoço.
+   Esta é uma base de animação; poses novas poderão precisar de ajustes.
 
 ## 1. Ver o Zeca trabalhar — cerca de 2 minutos
 
@@ -51,7 +56,7 @@ depois de aproximadamente 4–5 minutos de caminhada. Ele atende **um galinheiro
 3. Se tiver dois galinheiros, escolha o outro na lista e clique em
    **Atender este galinheiro**. A troca é grátis e reinicia a checagem de 15 segundos.
 4. Para testar salvamento com calma, pause o Zeca, feche a janela, pressione **F5**
-   e saia pelo menu. Abra novamente a **0.7**: ele continua contratado e pausado,
+   e saia pelo menu. Abra novamente a **0.8**: ele continua contratado e pausado,
    com os mesmos totais e galinheiro. Jogo fechado não gera serviço nem cobrança.
 5. **Dispensar…** abre uma confirmação. **Voltar sem alterar** cancela a dispensa.
    Confirmar é grátis, preserva os produtos e encerra o trabalho. Contratação

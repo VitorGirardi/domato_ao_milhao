@@ -337,7 +337,7 @@ func welcome(state: FarmState, has_save: bool) -> void:
 	text_input.text=state.farm_name
 	p.add_child(text_input)
 	button(p,"Voltar para minha fazenda" if has_save else "Escolher meu pedaço de terra",Rect2(34,494,542,55),"start",true)
-	label(p,"VERSÃO 0.7   •   NOVOS ROSTOS NO VALE",Vector2(34,561),Vector2(542,17),11,MUTED)
+	label(p,"VERSÃO 0.8   •   PERSONAGENS E GALINHAS",Vector2(34,561),Vector2(542,17),11,MUTED)
 
 func coop(state: FarmState, index: int, selected_hen: int = -1) -> void:
 	var flock:Dictionary=state.items[index].flock

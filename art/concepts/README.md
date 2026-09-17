@@ -10,7 +10,8 @@ Os modelos jogáveis são produzidos separadamente no Blender por
 `helper.blend` e os GLBs correspondentes. As prévias de `tests/render_characters.gd`
 mostram esses GLBs renderizados no Godot, sem geração ou retoque de imagem.
 
-Nesta primeira implementação, os rostos são geometria estática e o movimento
-usa seis grupos articulados. Não há rig facial, sincronização de fala ou roupas
+A revisão 0.8 alonga o corpo e conecta ombros, tronco, quadril e membros em
+uma malha contínua, com 20 ossos e pesos de deformação. Os rostos continuam
+em geometria estática. Não há rig facial, IK, dedos individuais, fala ou roupas
 trocáveis. As ferramentas continuam sendo equipadas somente durante as ações;
 o forcado e a cesta da imagem de conceito não fazem parte da pose permanente.

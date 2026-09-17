@@ -1,6 +1,6 @@
 """Original smooth cartoon characters. Blender mesh authoring, no image-to-mesh dependency.
 
-Coordinates: Z up, face toward -Y. Six named rigid articulation groups are the
+Coordinates: Z up, face toward -Y. A continuous body and humanoid skin rig are the
 runtime animation contract. Facial patches conform to the head's curved surface.
 """
 import bpy
@@ -109,45 +109,10 @@ def build(name,zeca=False):
              'Hat':'578577' if zeca else 'DDB45C','Band':'34574C' if zeca else 'AE803D'}
     global M
     M={key:material(name+'_'+key,value) for key,value in palette.items()}
-    wide=1.40 if zeca else 1.0
-    # Legs, rolled cuffs and oversized rounded work boots.
-    for side,sign in [('L',-1),('R',1)]:
-        x=sign*.175*wide
-        objs=[ellipsoid('Trouser',(x,0,.43),(.16*wide,.17,.28),'Denim',.88),
-              box('Rolled cuff',(x,-.005,.28),(.325*wide,.355,.11),'Seam',.04),
-              box('Rubber sole',(x,-.09,.06),(.35*wide,.53,.105),'Sole',.045),
-              ellipsoid('Boot toe',(x,-.13,.155),(.18*wide,.255,.125),'Boot',.72),
-              ellipsoid('Boot ankle',(x,.02,.205),(.14*wide,.155,.155),'Boot',.8)]
-        for z in [.20,.245]: objs.append(tube('Boot lace',[(x-.085,-.177,z),(x,-.19,z-.008),(x+.085,-.177,z)],.009,'Band'))
-        group('Leg'+side,objs,(x,0,.64))
-    # Rounded torso, bib, rounded pocket, shoulder straps and brass fasteners.
-    objs=[ellipsoid('Work shirt',(0,0,.94),(.325*wide,.22*wide,.28),'Shirt',.88),
-          ellipsoid('Overall waist',(0,0,.715),(.33*wide,.245*wide,.25),'Denim',.83),
-          ellipsoid('Neck',(0,0,1.17),(.12,.13,.15),'Skin')]
-    front=-.235*wide
-    objs.append(box('Overall bib',(0,front,.945),(.455*wide,.075,.335),'Denim',.07))
-    objs.append(box('Chest pocket',(0,front-.047,.895),(.255*wide,.042,.17),'Seam',.045))
-    objs.append(box('Pocket front',(0,front-.071,.902),(.225*wide,.012,.147),'Denim',.038))
-    for sign in [-1,1]:
-        x=sign*.205*wide
-        objs.append(tube('Thick overall strap',[(x,front-.01,1.065),(x,-.13,1.18),(x,.045,1.205),(x,.18,1.09),(x,.23*wide,1.0),(x,.245*wide,.84)],.035,'Denim'))
-        objs.append(ellipsoid('Brass button',(x,front-.061,1.06),(.036,.014,.036),'Gold',rings=10,segments=16))
-        objs.append(tube('Bib seam',[(sign*.205*wide,front-.044,1.02),(sign*.205*wide,front-.044,.835),(sign*.15*wide,front-.044,.79)],.006,'Seam'))
-    if zeca:
-        objs.append(box('Pocket patch',(.07,front-.085,.89),(.10,.014,.09),'Seam',.012))
-        for x in [.025,.07,.115]: objs.append(tube('Patch stitch',[(x,front-.096,.925),(x,front-.096,.946)],.004,'White'))
-    group('Body',objs,(0,0,.72))
-    # Arms retain shoulder pivots for the existing walking / watering animation.
-    for side,sign in [('L',-1),('R',1)]:
-        x=sign*.435*wide
-        objs=[ellipsoid('Rounded sleeve',(x,0,1.05),(.145,.16,.165),'Shirt',1.0),
-              ellipsoid('Forearm',(x+sign*.035,-.014,.87),(.11,.125,.18),'Skin'),
-              ellipsoid('Palm',(x+sign*.035,-.02,.71),(.12,.11,.12),'Skin' if zeca else 'Glove',.8),
-              ellipsoid('Thumb',(x-sign*.06,-.09,.745),(.057,.065,.075),'Skin' if zeca else 'Glove')]
-        if zeca: objs.append(tube('Rolled shirt cuff',[(x-.1,-.12,.96),(x,-.16,.95),(x+.1,-.12,.96)],.023,'Shirt'))
-        for j in range(3):
-            objs.append(ellipsoid('Finger',(x+sign*.035+(j-1)*.055,-.09,.681),(.033,.049,.055),'Skin' if zeca else 'Glove',rings=8,segments=12))
-        group('Arm'+side,objs,(x,0,1.12))
+    import runpy
+    body_builder=runpy.run_path(str(ROOT/'tools'/'character_body.py'))
+    api={'M':M,'mesh':mesh,'box':box,'ellipsoid':ellipsoid,'tube':tube}
+    body,details=body_builder['build_body'](api,zeca)
     # A curved rounded-square head; facial features hug its real surface.
     hx=.55 if zeca else .495
     hy=.37; hz=.47; cz=1.655; power=.85
@@ -228,14 +193,8 @@ def build(name,zeca=False):
     objs.append(tube('Hat band',band,.024,'Band'))
     for x in [-.115,-.063]: objs.append(tube('Hat repair',[(x,-.311,2.22),(x-.008,-.296,2.34)],.0045,'Band'))
     for z in [2.26,2.303]: objs.append(tube('Hat repair', [(-.145,-.317+(z-2.22)*.17,z),(-.035,-.317+(z-2.22)*.17,z)],.0045,'Band'))
-    group('Head',objs,(0,0,1.19))
-    bpy.ops.object.select_all(action='SELECT')
-    # Preserve the six mesh groups, their pivots and material identities in GLB.
-    bpy.ops.wm.save_as_mainfile(filepath=str(ROOT/'art/source'/f'{name}.blend'))
-    bpy.ops.export_scene.gltf(filepath=str(ROOT/'assets/models'/f'{name}.glb'),export_format='GLB',
-        use_selection=True,export_apply=True,export_cameras=False,export_lights=False,export_yup=True)
-    triangles=sum(sum(len(p.vertices)-2 for p in obj.data.polygons) for obj in bpy.context.scene.objects if obj.type=='MESH')
-    print('CARTOON_ASSET_OK',name,'triangles',triangles)
+    head=group('Head',objs,(0,0,1.19))
+    body_builder['rig_export'](name,body,details,head,zeca)
 
 if __name__=='__main__':
     wanted=sys.argv[sys.argv.index('--')+1:] if '--' in sys.argv else []
