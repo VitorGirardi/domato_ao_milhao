@@ -1,5 +1,16 @@
 # Alterações
 
+## 0.12.0 — Menus de jogo e lavoura automática
+
+- Ícones rurais originais, ações curtas, cartões e hierarquia nos menus de interação.
+- Galinheiro separa cuidados e animais; celeiro separa disponível e reserva; oficina mostra alcance.
+- Mercado simplifica vendas e encomendas; equipe e Zeca recebem o mesmo padrão.
+- HUD oculto durante menus e avisos acima das janelas, sem cobrir os títulos.
+- Bento rega, colhe e replanta nos canteiros e culturas escolhidos, com animações.
+- Limite de gastos inclui sementes e serviço; pausa independente por orçamento ou saldo.
+- Renovação explícita, relatório acumulado, migração de saves e proteção contra cobrança parcial.
+- 35 novas verificações de estado, integração visual e testes dos fluxos existentes.
+
 ## 0.11.0 — Equipe, evolução da fazenda e pulo
 
 - Zeca no galinheiro e Bento na irrigação simultaneamente, com contratação, pausa, gastos e treinamento independentes.

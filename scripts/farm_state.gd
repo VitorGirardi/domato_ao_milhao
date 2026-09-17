@@ -48,6 +48,7 @@ var staff:Dictionary=FarmStaff.fresh()
 var field_staff:Dictionary=FarmCrew.fresh()
 var staff_accessible:=true # Runtime arrival gate, recalculated by the world; not saved.
 var staff_notice:=""
+var cultivation:Dictionary=FarmCultivation.fresh()
 var irrigation:Dictionary={"enabled":false,"plots":[],"watered":0,"spent":0}
 
 func irrigation_worker() -> Dictionary:
@@ -75,6 +76,7 @@ func pause_field_staff() -> String:
 	return ""
 
 func dismiss_field_staff() -> void:
+	cultivation.enabled=false
 	field_staff.hired=false
 	field_staff.paused=true
 	field_staff.reason=""
@@ -101,6 +103,7 @@ func configure_irrigation(plots:Array) -> String:
 	for index in plots:
 		if not index is int or index<0 or index>=items.size() or items[index].kind!="plot": return "Canteiro inválido. Abra a seleção novamente."
 		if index not in unique: unique.append(index)
+	cultivation.enabled=false
 	irrigation.plots=unique
 	irrigation.enabled=true
 	worker.paused=false
@@ -109,6 +112,7 @@ func configure_irrigation(plots:Array) -> String:
 	return ""
 
 func irrigate(index:int) -> String:
+	if cultivation.enabled and field_staff.hired: return FarmCultivation.complete(self,index,"water")
 	var worker:=irrigation_worker()
 	if not irrigation.enabled or not worker.hired or worker.paused: return "Rotina pausada."
 	if index not in irrigation.plots or index<0 or index>=items.size(): return "Canteiro não selecionado."
@@ -339,6 +343,7 @@ func remove_item(index: int) -> String:
 	if items[index].kind=="barn" and reserve_count()>reserve_capacity()-FarmProgression.reserve_slots(items[index]):
 		return "Retire a reserva do celeiro antes de removê-lo."
 	money+=(int(ITEMS[items[index].kind].cost)+FarmProgression.investment(items[index]))/2
+	FarmCultivation.remove(self,index)
 	items.remove_at(index)
 	var remaining_plots:Array=[]
 	for plot in irrigation.plots:
@@ -589,7 +594,7 @@ func expand() -> String:
 	return ""
 
 func serialize() -> Dictionary:
-	return {"version": 8, "field_staff":field_staff.duplicate(true), "professional_watering":professional_watering, "irrigation":irrigation.duplicate(true), "money": money, "claimed": claimed,
+	return {"version": 9, "cultivation":cultivation.duplicate(true), "field_staff":field_staff.duplicate(true), "professional_watering":professional_watering, "irrigation":irrigation.duplicate(true), "money": money, "claimed": claimed,
 		"center": [center.x, center.y], "land_size": land_size,
 		"items": items.duplicate(true), "inventory": inventory.duplicate(),
 		"elapsed": elapsed, "revenue": revenue, "harvests": harvests,
@@ -598,7 +603,7 @@ func serialize() -> Dictionary:
 
 func restore(data: Variant) -> bool:
 	# Validate before mutating live state. Invalid files never partially replace it.
-	if not data is Dictionary or not _number(data.get("version")) or data.version<1 or data.version>8 or float(data.version)!=floorf(float(data.version)):
+	if not data is Dictionary or not _number(data.get("version")) or data.version<1 or data.version>9 or float(data.version)!=floorf(float(data.version)):
 		return false
 	for key in ["money", "land_size", "elapsed", "revenue", "harvests"]:
 		if not _number(data.get(key)) or float(data[key]) < 0:
@@ -687,6 +692,14 @@ func restore(data: Variant) -> bool:
 		if not _number(index) or index!=floorf(index) or index<0 or index>=data.items.size() or data.items[int(index)].kind!="plot" or index in unique_plots: return false
 		unique_plots.append(int(index))
 	if saved_irrigation.enabled and (unique_plots.is_empty() or not (data.get("staff",{}).get("hired",false) or saved_field.hired)): return false
+	var saved_cultivation:Variant=data.get("cultivation",FarmCultivation.fresh())
+	if data.version>=9 and not data.has("cultivation"): return false
+	if not FarmCultivation.valid(saved_cultivation,data.items): return false
+	if saved_cultivation.enabled:
+		if not saved_field.hired or not saved_irrigation.enabled: return false
+		var selected_plans:Array=[]
+		for plan in saved_cultivation.plans: selected_plans.append(int(plan.index))
+		if selected_plans!=unique_plots: return false
 	money = int(data.money)
 	claimed = data.claimed
 	center = Vector2(data.center[0], data.center[1])
@@ -725,6 +738,11 @@ func restore(data: Variant) -> bool:
 	staff.level=int(staff.get("level",1))
 	field_staff=saved_field.duplicate(true)
 	for key in ["level","spent","watered"]: field_staff[key]=int(field_staff[key])
+	cultivation=saved_cultivation.duplicate(true)
+	for key in ["limit","spent","services","seeds"]: cultivation[key]=int(cultivation[key])
+	for group in ["actions","produced","sown"]:
+		for key in cultivation[group]: cultivation[group][key]=int(cultivation[group][key])
+	for plan in cultivation.plans: plan.index=int(plan.index)
 	staff_notice=""
 	irrigation=saved_irrigation.duplicate(true)
 	irrigation.plots=unique_plots

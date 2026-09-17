@@ -6,6 +6,10 @@ const INK := Color("294739")
 const CREAM := Color("fff7e4")
 const MUTED := Color("7b806b")
 var root := Control.new()
+var world_hud:=Control.new()
+var coop_tab:="care"
+var cultivation_draft:Dictionary={}
+var cultivation_budget:SpinBox
 var money_label: Label
 var clock_label: Label
 var mode_label: Label
@@ -66,6 +70,9 @@ func _ready() -> void:
 	theme.set_color("caret_color", "LineEdit", INK)
 	theme.set_stylebox("normal", "LineEdit", style(Color("fffaf0"), 9))
 	root.theme = theme
+	root.add_child(world_hud)
+	world_hud.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	world_hud.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	_build()
 
 func style(color: Color, radius: int = 14, border_color: Color = Color("e3d9b9")) -> StyleBoxFlat:
@@ -118,23 +125,23 @@ func button(parent: Control, text: String, rect: Rect2, value: String, primary: 
 	return b
 
 func _build() -> void:
-	var brand := panel(root, Rect2(24, 22, 287, 98), Color("294b3c"))
+	var brand := panel(world_hud, Rect2(24, 22, 287, 98), Color("294b3c"))
 	label(brand, "DO MATO", Vector2(21,10), Vector2(260,31), 29, CREAM)
 	label(brand, "AO MILHÃO", Vector2(21,40), Vector2(260,34), 29, Color("edbd64"))
 	label(brand, "SEU PEQUENO GRANDE COMEÇO", Vector2(22,79), Vector2(256,15), 10, Color("d2dcc8"))
-	var time_panel := panel(root, Rect2(328,22,244,60))
+	var time_panel := panel(world_hud, Rect2(328,22,244,60))
 	clock_label = label(time_panel, "DIA 01   •   08:00", Vector2(17,12), Vector2(211,34),20)
-	var mode_panel := panel(root, Rect2(588,22,242,60),Color("e7eddb"))
+	var mode_panel := panel(world_hud, Rect2(588,22,242,60),Color("e7eddb"))
 	mode_label = label(mode_panel, "CONHEÇA O VALE", Vector2(16,14),Vector2(212,30),17)
-	var wallet := panel(root, Rect2(1110,22,306,98))
+	var wallet := panel(world_hud, Rect2(1110,22,306,98))
 	label(wallet,"SEU PATRIMÔNIO COMEÇA AQUI",Vector2(18,12),Vector2(272,20),11,MUTED)
 	money_label=label(wallet,"$ 1.600",Vector2(18,32),Vector2(265,45),32)
 	stock_label=label(wallet,"Estoque vazio • novas possibilidades",Vector2(18,77),Vector2(273,16),11,MUTED)
-	button(root,"Armazém  [F]",Rect2(854,22,234,46),"market",true)
-	button(root,"Salvar  [F5]",Rect2(854,77,114,39),"save")
-	button(root,"Menu",Rect2(980,77,108,39),"menu")
-	button(root,"Ajudante [H]",Rect2(588,88,242,32),"staff")
-	var quest := panel(root,Rect2(24,140,287,279))
+	button(world_hud,"Armazém  [F]",Rect2(854,22,234,46),"market",true)
+	button(world_hud,"Salvar  [F5]",Rect2(854,77,114,39),"save")
+	button(world_hud,"Menu",Rect2(980,77,108,39),"menu")
+	button(world_hud,"Ajudante [H]",Rect2(588,88,242,32),"staff")
+	var quest := panel(world_hud,Rect2(24,140,287,279))
 	quest_counter=label(quest,"SEU PRIMEIRO CAPÍTULO",Vector2(18,16),Vector2(250,25),12,MUTED)
 	quest_title=label(quest,"Um lugar para chamar de seu",Vector2(18,47),Vector2(250,48),18)
 	quest_title.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
@@ -157,7 +164,7 @@ func _build() -> void:
 	quest_progress.size=Vector2(250,7)
 	quest.add_child(quest_progress)
 	quest_progress.set_deferred("size",Vector2(250,7))
-	select_panel=panel(root,Rect2(1110,140,306,466))
+	select_panel=panel(world_hud,Rect2(1110,140,306,466))
 	select_label=label(select_panel,"CADERNO DA FAZENDA",Vector2(18,15),Vector2(270,32),16)
 	details_label=label(select_panel,"Selecione algo no terreno\npara cuidar ou personalizar.",Vector2(18,54),Vector2(270,132),16)
 	details_label.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
@@ -179,7 +186,7 @@ func _build() -> void:
 	button(select_panel,"Remover",Rect2(158,354,130,39),"remove")
 	barn_button=button(select_panel,"Estoque do celeiro",Rect2(18,407,270,39),"barn",true)
 	coop_button=button(select_panel,"Cuidar das galinhas",Rect2(18,407,270,39),"coop",true)
-	tool_panel=panel(root,Rect2(24,720,1392,157))
+	tool_panel=panel(world_hud,Rect2(24,720,1392,157))
 	tool_title=label(tool_panel,"CONSTRUA SEU COMEÇO",Vector2(18,12),Vector2(305,25),13,MUTED)
 	walk_tip=label(tool_panel,"A vida acontece no seu ritmo. Cuide dos canteiros e descubra o vale.",Vector2(18,49),Vector2(1340,26),15,MUTED)
 	walk_tip.visible=false
@@ -196,18 +203,23 @@ func _build() -> void:
 		var b:=button(tool_panel,"%d  %s\n%s"%[i+1,names[i],costs[i]],Rect2(18+i*151,51,143,83),"tool:"+tools[i])
 		b.add_theme_font_size_override("font_size",14)
 		buttons[tools[i]]=b
-	hint_panel=panel(root,Rect2(330,654,767,46),Color("294b3c"))
+	hint_panel=panel(world_hud,Rect2(330,654,767,46),Color("294b3c"))
 	hint_label=label(hint_panel,"WASD mover  •  Mouse direito girar  •  Scroll zoom",Vector2(14,8),Vector2(738,32),15,CREAM)
 	hint_label.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
 	toast_panel=panel(root,Rect2(420,137,600,53),Color("fff0be"))
 	toast_label=label(toast_panel,"",Vector2(14,8),Vector2(572,36),17)
 	toast_label.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
+	toast_label.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
 	toast_panel.visible=false
+	toast_panel.z_index=10
 	_set_active_buttons()
 
 func _process(delta: float) -> void:
 	toast_time=maxf(0,toast_time-delta)
 	toast_panel.visible=toast_time>0
+	toast_panel.position=Vector2(320,6) if not modal_kind.is_empty() else Vector2(320,137)
+	toast_panel.size.x=800
+	toast_label.size=Vector2(772,36)
 
 func toast(message: String) -> void:
 	toast_label.text=message
@@ -315,6 +327,7 @@ func _money(value: int) -> String:
 	return result
 
 func close_modal() -> void:
+	world_hud.visible=true
 	if is_instance_valid(overlay): overlay.queue_free()
 	overlay=null
 	modal=null
@@ -324,8 +337,9 @@ func close_modal() -> void:
 func _modal(kind: String, height: float = 530) -> Panel:
 	close_modal()
 	modal_kind=kind
+	world_hud.visible=false
 	overlay=ColorRect.new()
-	overlay.color=Color(0.05,0.12,0.08,0.43)
+	overlay.color=Color(0.025,0.07,0.045,0.68)
 	root.add_child(overlay)
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	modal=panel(overlay,Rect2(415,(900-height)/2,610,height))
@@ -345,73 +359,18 @@ func welcome(state: FarmState, has_save: bool) -> void:
 	text_input.text=state.farm_name
 	p.add_child(text_input)
 	button(p,"Voltar para minha fazenda" if has_save else "Escolher meu pedaço de terra",Rect2(34,494,542,55),"start",true)
-	label(p,"VERSÃO 0.11.0   •   EQUIPE, EVOLUÇÃO E PULO",Vector2(34,561),Vector2(542,17),11,MUTED)
+	label(p,"VERSÃO 0.12.0   •   MENUS E ROTINA DA LAVOURA",Vector2(34,561),Vector2(542,17),11,MUTED)
 
-func coop(state: FarmState, index: int, selected_hen: int = -1) -> void:
-	var flock:Dictionary=state.items[index].flock
-	building_index=index
-	var p:=_modal("coop",720)
-	label(p,"GALINHEIRO • CUIDADOS E COMPANHIA",Vector2(30,21),Vector2(550,27),13,MUTED)
-	label(p,"Seu pequeno bando",Vector2(30,58),Vector2(320,44),27)
-	evolution_button(p,state,index,Rect2(352,58,228,42))
-	var status:=FarmAnimals.status(flock)+" • %d ovos a cada %d s"%[FarmAnimals.eggs_per_cycle(flock),roundi(45.0/FarmAnimals.rate(flock))]
-	if flock.nest>=FarmAnimals.capacity(flock): status="Ninho cheio • Colete para retomar a produção"
-	label(p,status,Vector2(30,111),Vector2(550,30),17)
-	var cost:=FarmAnimals.food_cost(flock)
-	label(p,"Ração: %d%%"%roundi(flock.food),Vector2(30,162),Vector2(170,32),19)
-	label(p,"Água: %d%%"%roundi(flock.water),Vector2(30,216),Vector2(170,32),19)
-	for i in range(2):
-		var back:=ColorRect.new()
-		back.color=Color("e4ddc5")
-		back.position=Vector2(202,173+i*54)
-		back.size=Vector2(118,9)
-		p.add_child(back)
-		var fill:=ColorRect.new()
-		fill.color=Color("d5a442") if i==0 else Color("65aab5")
-		fill.size=Vector2(118*float(flock.food if i==0 else flock.water)/100,9)
-		back.add_child(fill)
-	var feed:=button(p,"Comedouro cheio" if cost==0 else "Repor ração • $%d"%cost,Rect2(347,153,233,43),"care:food")
-	feed.disabled=cost==0 or state.money<cost
-	var water:=button(p,"Bebedouro cheio" if flock.water>=100 else "Encher água • Grátis",Rect2(347,207,233,43),"care:water")
-	water.disabled=flock.water>=100
-	label(p,"Sem água ou ração, a produção fica mais lenta.\nSeus animais não morrem; basta voltar a cuidar.",Vector2(30,268),Vector2(550,52),16,MUTED)
-	label(p,"Ninho: %d / %d ovos"%[int(flock.nest),FarmAnimals.capacity(flock)],Vector2(30,341),Vector2(270,35),22)
-	var collect:=button(p,"Coletar %d ovos"%int(flock.nest),Rect2(315,331,265,48),"care:collect",true)
-	collect.disabled=flock.nest==0
-	label(p,"CONHEÇA SUAS GALINHAS",Vector2(30,403),Vector2(550,25),12,MUTED)
-	var scroll:=ScrollContainer.new()
-	scroll.position=Vector2(24,433)
-	scroll.size=Vector2(562,174)
-	p.add_child(scroll)
-	var list:=Control.new()
-	list.custom_minimum_size=Vector2(542,flock.names.size()*56)
-	scroll.add_child(list)
-	for i in range(flock.names.size()):
-		if selected_hen==i: panel(list,Rect2(0,i*56,540,52),Color("f4e5b8"))
-		var swatch:=ColorRect.new()
-		swatch.color=Color(FarmAnimals.COLORS[i])
-		swatch.position=Vector2(8,15+i*56)
-		swatch.size=Vector2(17,17)
-		list.add_child(swatch)
-		label(list,flock.names[i],Vector2(38,3+i*56),Vector2(340,29),18)
-		label(list,FarmAnimals.TRAITS[i],Vector2(38,31+i*56),Vector2(340,20),12,MUTED)
-		button(list,"Renomear",Rect2(380,7+i*56,155,43),"rename_hen:%d"%i)
-	label(p,"%d galinhas • Cuidados compartilhados. Role a lista para ver todas."%flock.names.size(),Vector2(30,613),Vector2(550,23),13,MUTED)
-	button(p,"Ajudante [H]",Rect2(30,652,265,44),"staff_coop")
-	button(p,"Voltar ao terreiro",Rect2(310,652,270,44),"close")
+func coop(state:FarmState,index:int,selected_hen:int=-1) -> void:
+	FarmInteractionUI.coop(self,state,index,selected_hen)
 
 func staff_panel(state: FarmState) -> void:
-	var p:=_modal("staff",744)
+	var p:=FarmGameUI.open(self,"staff","Zeca do Trato","worker",760,620)
 	var worker:Dictionary=state.staff
-	label(p,"GESTÃO • PRIMEIRO AJUDANTE",Vector2(30,21),Vector2(550,26),13,MUTED)
-	label(p,"Zeca do Trato",Vector2(30,57),Vector2(320,43),31)
-	button(p,"Equipe e treinamento",Rect2(330,60,250,40),"crew",true)
-	label(p,"“A Maricota manda. Eu só organizo o sindicato.”",Vector2(30,105),Vector2(550,29),17,MUTED)
-	label(p,"Cuida de um galinheiro por vez, a cada %d segundos:\ncoleta ovos e repõe água e ração quando chegam a 25%%.\nSem serviço, não cobra. Seus outros produtos ficam com você."%FarmStaff.interval(worker),Vector2(30,151),Vector2(550,76),16)
-	label(p,"GALINHEIRO ESCOLHIDO",Vector2(30,244),Vector2(550,24),12,MUTED)
+	label(p,"GALINHEIRO",Vector2(28,142),Vector2(704,27),15,MUTED)
 	staff_choice=OptionButton.new()
-	staff_choice.position=Vector2(30,275)
-	staff_choice.size=Vector2(550,42)
+	staff_choice.position=Vector2(28,185)
+	staff_choice.size=Vector2(704,46)
 	staff_choice.add_theme_font_size_override("font_size",17)
 	for key in ["normal","hover","pressed","disabled"]:
 		staff_choice.add_theme_stylebox_override(key,style(Color("ede7d8") if key=="disabled" else Color("f4edd9"),9))
@@ -427,33 +386,29 @@ func staff_panel(state: FarmState) -> void:
 		staff_choice.disabled=true
 	else: staff_choice.select(coops.find(staff_target))
 	staff_choice.item_selected.connect(func(index: int): staff_target=staff_choice.get_item_id(index); staff_panel(state))
-	label(p,("Irrigação • pausada" if worker.paused else "Irrigação • ativa") if state.legacy_irrigation() else FarmStaff.status(worker),Vector2(30,333),Vector2(550,32),21)
-	var info:="Contratação: $120 • Cada rodada com serviço: $2 + ração.\nRação custa até $8 por reposição. Água é grátis. Saldo: $%d"%state.money
-	if worker.hired:
-		info="%d rodadas • %d ovos coletados • Total gasto: $%d\nCusto por rodada com serviço: $%d + ração (até $8). Saldo: $%d"%[worker.services,worker.eggs,worker.spent,FarmCrew.fee(worker),state.money]
-	if state.legacy_irrigation(): info="%d regas concluídas • Irrigação: $%d • Saldo: $%d\n$2 por canteiro concluído. Sem plantar ou colher automaticamente."%[state.irrigation.watered,state.irrigation.spent,state.money]
-	label(p,info,Vector2(30,377),Vector2(550,58),16)
-	var detail:="A contratação é paga uma vez; recontratar custa outros $120."
-	if worker.hired and worker.coop>=0:
-		var index:=int(worker.coop)
-		var at:Dictionary=state.items[index]
-		var quote:=FarmStaff.quote(at.flock)
-		detail="Atende (%d, %d) • próxima checagem em %ds\nServiço necessário agora: $%d • Ao faltar saldo, pausa sozinho."%[at.x,at.z,ceili(FarmStaff.INTERVAL-worker.timer),quote]
-	elif worker.hired: detail="Galinheiro removido. Atribua outro e clique em Retomar."
-	if state.legacy_irrigation(): detail="%d canteiros selecionados. Ao faltar saldo ou caminho, pausa.\nAtender este galinheiro encerra a rotina de irrigação."%state.irrigation.plots.size()
-	label(p,detail,Vector2(30,443),Vector2(550,52),15,MUTED)
+
+	var status:="Irrigação anterior" if state.legacy_irrigation() else FarmStaff.status(worker)
+	label(p,status,Vector2(28,255),Vector2(704,34),24)
+	for i in range(3):
+		var c:=FarmGameUI.card(self,p,Rect2(28+i*240,308,224,104))
+		FarmGameUI.icon(c,["egg","coins","chicken"][i],Rect2(13,13,42,42))
+		label(c,[str(worker.eggs),"$%d"%worker.spent,str(worker.services)][i],Vector2(70,17),Vector2(137,35),27)
+		label(c,["Ovos coletados","Total gasto","Tratos feitos"][i],Vector2(16,68),Vector2(200,26),16)
+	label(p,"$%d por trato + ração • a cada %d s"%[FarmCrew.fee(worker),FarmStaff.interval(worker)],Vector2(28,431),Vector2(704,29),20)
+	var details:=label(p,"Coleta ovos e repõe água e ração. Sem serviço, sem cobrança.",Vector2(28,465),Vector2(704,25),16,MUTED)
+	details.mouse_filter=Control.MOUSE_FILTER_PASS
+	details.tooltip_text="Repõe suprimentos ao chegarem a 25%. Ração: até $8. Pause quando quiser."
 	if not worker.hired:
-		staff_primary=button(p,"Contratar • conferir custos",Rect2(30,511,550,46),"staff_hire_review",true)
+		staff_primary=FarmGameUI.action(self,p,"Contratar • $120",Rect2(28,516,344,45),"staff_hire_review",true)
 		staff_primary.disabled=staff_target<0 or state.money<FarmStaff.HIRE_COST
 	else:
-		var assign:=button(p,"Atender este galinheiro",Rect2(30,511,270,44),"staff_assign")
+		var assign:=FarmGameUI.action(self,p,"Atribuir galinheiro",Rect2(28,516,224,43),"staff_assign")
 		assign.disabled=staff_target<0 or (staff_target==worker.coop and not state.legacy_irrigation())
-		staff_primary=button(p,"Retomar" if worker.paused else "Pausar",Rect2(310,511,270,44),"staff_pause",true)
+		assign.tooltip_text="Atribuir encerra a irrigação anterior do Zeca."
+		staff_primary=FarmGameUI.action(self,p,"Retomar" if worker.paused else "Pausar",Rect2(268,516,224,43),"staff_pause",true)
 		staff_primary.disabled=worker.coop<0
-		button(p,"Equipe • automatizar com Bento",Rect2(30,565,350,42),"crew",true)
-		button(p,"Dispensar…",Rect2(392,565,188,42),"staff_dismiss_review")
-	label(p,"Construção, janelas e jogo fechado pausam o trabalho e os custos.",Vector2(30,632),Vector2(550,24),13,MUTED)
-	button(p,"Voltar ao campo",Rect2(30,674,550,46),"close")
+		FarmGameUI.action(self,p,"Dispensar…",Rect2(508,516,224,43),"staff_dismiss_review")
+	FarmGameUI.action(self,p,"Equipe e treinamento →",Rect2(392,572,340,32),"crew")
 
 func staff_confirmation(dismiss: bool) -> void:
 	var p:=_modal("staff_confirm",370)
@@ -514,44 +469,11 @@ func evolution(state:FarmState,index:int) -> void:
 	buy.disabled=state.money<int(offer.cost) or FarmProgression.level(item)==2
 	button(p,"Voltar sem comprar",Rect2(30,440,550,43),"building_back")
 
-func barn(state: FarmState,index:int=-1) -> void:
-	building_index=building_choice(state,index,"barn")
-	var p:=_modal("barn",668)
-	label(p,"DENTRO DO CELEIRO • ESTOQUE DA FAZENDA",Vector2(30,23),Vector2(550,27),13,MUTED)
-	label(p,"Sua produção, bem guardada",Vector2(30,61),Vector2(550,43),28)
-	label(p,"Disponível: pode vender ou entregar. Reserva: protegida da venda.\nTodos os celeiros compartilham os produtos da fazenda.",Vector2(30,119),Vector2(550,57),15)
-	label(p,"PRODUTO         DISPONÍVEL / RESERVA / TOTAL",Vector2(30,187),Vector2(550,24),12,MUTED)
-	var keys:=["carrot","wheat","corn","egg"]
-	for i in range(keys.size()):
-		var key:String=keys[i]
-		var title:String="Ovos" if key=="egg" else FarmState.CROPS[key].name
-		panel(p,Rect2(26,219+i*60,558,54),Color("ece4ce"))
-		label(p,"%s: %d / %d / %d"%[title,state.inventory[key],state.reserve[key],int(state.inventory[key])+int(state.reserve[key])],Vector2(38,230+i*60),Vector2(268,32),16)
-		var deposit:=button(p,"Guardar",Rect2(310,225+i*60,123,40),"deposit:"+key)
-		var withdraw:=button(p,"Retirar",Rect2(444,225+i*60,128,40),"withdraw:"+key)
-		deposit.disabled=state.inventory[key]==0 or state.reserve_count()>=state.reserve_capacity()
-		withdraw.disabled=state.reserve[key]==0
-	label(p,"Reserva: %d / %d unidades • capacidade dos seus celeiros.\nGuardar e retirar move toda a quantidade que couber."%[state.reserve_count(),state.reserve_capacity()],Vector2(30,472),Vector2(550,55),16)
-	evolution_button(p,state,building_index,Rect2(30,540,550,40))
-	button(p,"Sair do celeiro",Rect2(30,598,550,44),"close",true)
+func barn(state:FarmState,index:int=-1) -> void:
+	FarmInteractionUI.barn(self,state,index)
 
 func workshop(state:FarmState,index:int=-1) -> void:
-	building_index=building_choice(state,index,"workshop")
-	var p:=_modal("workshop",706)
-	label(p,"OFICINA RURAL • BANCADA DE MELHORIAS",Vector2(30,27),Vector2(550,27),13,MUTED)
-	label(p,"Ferramentas para crescer",Vector2(30,69),Vector2(550,43),28)
-	label(p,"REGADOR MELHORADO\nUma rega manual alcança até 5 canteiros em cruz.",Vector2(30,140),Vector2(550,65),17)
-	var buy:=button(p,"Regador de 5 canteiros instalado" if state.watering_upgrade else "Melhorar regador • $300",Rect2(30,214,550,44),"upgrade",true)
-	buy.disabled=state.watering_upgrade or state.money<300
-	label(p,"REGADOR PROFISSIONAL • OFICINA NÍVEL 2\nAté 9 canteiros em um quadrado, incluindo diagonais.\nRequer o regador de 5 canteiros. Não altera a rega do Zeca.",Vector2(30,292),Vector2(550,87),16)
-	var equipped:=false
-	for item in state.items:
-		if item.kind=="workshop" and FarmProgression.level(item)==2: equipped=true
-	var pro:=button(p,"Regador profissional instalado" if state.professional_watering else "Comprar regador profissional • $450",Rect2(30,391,550,44),"professional_watering",true)
-	pro.disabled=state.professional_watering or not state.watering_upgrade or not equipped or state.money<450
-	label(p,"Ferramentas compradas continuam suas ao remover a oficina.\nEvolua a estrutura abaixo para liberar o equipamento profissional.",Vector2(30,462),Vector2(550,61),15,MUTED)
-	evolution_button(p,state,building_index,Rect2(30,547,550,44))
-	button(p,"Voltar ao campo",Rect2(30,633,550,44),"close")
+	FarmInteractionUI.workshop(self,state,index)
 
 func irrigation_panel(state:FarmState) -> void:
 	var cost:=FarmCrew.fee(state.irrigation_worker())
@@ -585,97 +507,44 @@ func irrigation_panel(state:FarmState) -> void:
 	button(p,"Ativar rotina • $%d por canteiro"%cost,Rect2(30,594,550,46),"irrigation_apply",true)
 	button(p,"Voltar sem alterar",Rect2(30,662,550,44),"staff")
 
-func market(state: FarmState, tab: String = "sales") -> void:
-	market_tab=tab
-	var p:=_modal("market",744)
-	p.position.x=260
-	p.size.x=920
-	label(p,"ARMAZÉM DO VALE • NEGÓCIOS DA VIZINHANÇA",Vector2(30,22),Vector2(850,27),13,MUTED)
-	label(p,"Dona Lúcia compra!" if tab=="sales" else "Um bom vizinho vale ouro",Vector2(30,58),Vector2(850,43),31)
-	button(p,"Vender produtos",Rect2(30,117,280,45),"market_sales",tab=="sales")
-	button(p,"Encomendas • %d"%state.active_orders(),Rect2(325,117,330,45),"market_orders",tab=="orders")
-	label(p,"Saldo: $%s"%_money(state.money),Vector2(688,125),Vector2(200,31),20)
-	if tab=="orders":
-		_orders(state,p)
-	else:
-		sale_quantities.clear()
-		sale_buttons.clear()
-		for column in [[30,"PRODUTO"],[225,"ESTOQUE"],[360,"POR UNIDADE"],[508,"QUANTIDADE"]]:
-			label(p,column[1],Vector2(column[0],183),Vector2(155,24),12,MUTED)
-		var keys:=["carrot","wheat","corn","egg"]
-		for i in range(4):
-			var key:String=keys[i]
-			var price:int=FarmTrade.PRICES[key]
-			label(p,FarmTrade.NAMES[key],Vector2(30,228+i*60),Vector2(190,30),20)
-			label(p,"%d un."%int(state.inventory[key]),Vector2(225,228+i*60),Vector2(115,30),19)
-			label(p,"$%d"%price,Vector2(360,228+i*60),Vector2(125,30),19)
-			var quantity:=SpinBox.new()
-			quantity.position=Vector2(508,220+i*60)
-			quantity.size=Vector2(115,43)
-			quantity.min_value=1
-			quantity.max_value=maxi(1,int(state.inventory[key]))
-			quantity.step=1
-			quantity.rounded=true
-			quantity.update_on_text_changed=true
-			quantity.value=1
-			quantity.editable=state.inventory[key]>0
-			quantity.get_line_edit().add_theme_stylebox_override("read_only",style(Color("eee8d6"),8))
-			quantity.get_line_edit().add_theme_color_override("font_uneditable_color",MUTED)
-			p.add_child(quantity)
-			sale_quantities[key]=quantity
-			var sale:=button(p,"Vender 1 • $%d"%price,Rect2(650,220+i*60,240,43),"sell_product:"+key)
-			sale.disabled=state.inventory[key]<=0
-			sale_buttons[key]=sale
-			quantity.value_changed.connect(func(amount: float): sale.text="Vender %d • $%d"%[int(amount),int(amount)*price])
-		var sell:=button(p,"Vender estoque inteiro • $%d"%state.sale_value(),Rect2(30,467,860,43),"sell",true)
-		sell.disabled=state.sale_value()==0
-		var note:="Reserva no celeiro: %d produtos • Fora das vendas e entregas."%state.reserve_count()
-		if state.active_orders()>0: note+="\nVocê tem encomendas ativas. Confira os pedidos antes de vender."
-		label(p,note,Vector2(30,521),Vector2(860,44),14,MUTED)
-		label(p,"PEDIDO INICIAL • SEM PRAZO • 6 CENOURAS POR $110",Vector2(30,567),Vector2(860,22),12,MUTED)
-		var contract:=button(p,"Pedido da Dona Nena entregue!" if state.contract_done else "Entregar para o bolo da Dona Nena • +1 reputação",Rect2(30,596,860,43),"contract")
-		contract.disabled=state.contract_done or state.inventory.carrot<6
-	button(p,"Voltar ao campo",Rect2(30,669,860,45),"close")
+func market(state:FarmState,tab:String="sales") -> void:
+	FarmInteractionUI.market(self,state,tab)
 
 func _orders(state: FarmState, p: Panel) -> void:
 	for i in range(FarmTrade.KEYS.size()):
 		var key:String=FarmTrade.KEYS[i]
 		var person:Dictionary=FarmTrade.NEIGHBORS[key]
 		var record:Dictionary=state.trade[key]
-		var text:="%s\n%s\n%s • %d entregas"%[person.name,person.ranch,FarmTrade.rank_name(record.reputation),int(record.reputation)]
-		var select:=button(p,text,Rect2(30,190+i*139,237,123),"neighbor:"+key,market_neighbor==key)
-		select.add_theme_font_size_override("font_size",15)
+		var select:=FarmGameUI.action(self,p,"%s\n%d entregas"%[person.name,int(record.reputation)],Rect2(26,182+i*143,231,122),"neighbor:"+key,market_neighbor==key)
+		select.tooltip_text=person.ranch+" • "+FarmTrade.rank_name(record.reputation)
 	var record:Dictionary=state.trade[market_neighbor]
 	var person:Dictionary=FarmTrade.NEIGHBORS[market_neighbor]
 	var request:=FarmTrade.offer(market_neighbor,record)
 	var active:bool=not record.active.is_empty()
-	panel(p,Rect2(290,186,600,453),Color("f6eed9"))
-	label(p,request.title,Vector2(312,202),Vector2(555,40),27)
-	label(p,person.specialty,Vector2(312,249),Vector2(555,27),16,MUTED)
-	label(p,'“%s”'%person.quote,Vector2(312,282),Vector2(555,29),15,MUTED)
+	var c:=FarmGameUI.card(self,p,Rect2(277,182,635,430))
+	label(c,request.title,Vector2(22,20),Vector2(590,40),27).tooltip_text=person.quote
+	label(c,"PRODUTOS • DISPONÍVEL / PEDIDO",Vector2(22,78),Vector2(590,26),14,MUTED)
 	var row:=0
 	for product in request.needs:
 		var need:int=request.needs[product]
 		var available:int=state.inventory[product]
-		label(p,"%s: %d / %d no estoque"%[FarmTrade.NAMES[product],available,need],Vector2(312,327+row*35),Vector2(555,30),19,INK if available>=need else Color("a95734"))
+		FarmGameUI.icon(c,product,Rect2(22,119+row*63,46,46))
+		label(c,FarmTrade.NAMES[product],Vector2(85,124+row*63),Vector2(300,32),22)
+		label(c,"%d / %d"%[available,need],Vector2(417,124+row*63),Vector2(187,32),25,INK if available>=need else Color("a95734"))
 		row+=1
-	label(p,"Recompensa: $%d • +1 reputação"%request.reward,Vector2(312,408),Vector2(555,37),23)
-	label(p,"No armazém, esses produtos valem $%d."%request.base,Vector2(312,449),Vector2(555,27),15,MUTED)
-	label(p,"Restam %s de jogo ativo"%FarmTrade.time_label(float(record.active.deadline)-state.elapsed) if active else "Prazo após aceitar: %d minutos de jogo ativo"%int(request.seconds/60),Vector2(312,486),Vector2(555,28),18)
-	label(p,"O relógio pausa nos menus e na construção.",Vector2(312,518),Vector2(555,27),14,MUTED)
-	order_action=button(p,"Entregar • $%d"%request.reward if active else "Aceitar encomenda",Rect2(312,560,346,46),("deliver_order:" if active else "accept_order:")+market_neighbor,true)
+	FarmGameUI.icon(c,"coins",Rect2(22,264,38,38))
+	label(c,"$%d  + 1 reputação"%request.reward,Vector2(77,268),Vector2(520,36),25).tooltip_text="Venda comum: $%d"%request.base
+	label(c,"Restam %s"%FarmTrade.time_label(float(record.active.deadline)-state.elapsed) if active else "Prazo: %d min após aceitar"%int(request.seconds/60),Vector2(22,319),Vector2(590,28),19).tooltip_text="Tempo de jogo ativo. Pausa nos menus e na construção."
+	order_action=FarmGameUI.action(self,c,"Entregar • $%d"%request.reward if active else "Aceitar encomenda",Rect2(22,366,379,45),("deliver_order:" if active else "accept_order:")+market_neighbor,true)
 	order_action.disabled=not FarmTrade.can_supply(request,state.inventory) if active else not state.claimed
+	order_action.tooltip_text="Usa o estoque disponível. Retire reservas no celeiro para entregar."
 	if active:
-		button(p,"Desistir",Rect2(674,560,193,46),"cancel_order:"+market_neighbor)
-		order_action.tooltip_text="A entrega usa apenas o estoque; retire reservas no celeiro."
-	else:
-		var next_rank:="Pedidos maiores com 2 entregas" if record.reputation<2 else ("Melhores pedidos com 5 entregas" if record.reputation<5 else "Melhor faixa de pedidos liberada")
-		label(p,next_rank,Vector2(312,611),Vector2(555,22),13,MUTED)
-	var footer:="Desistir ou perder o prazo não tira moedas, produtos ou reputação."
-	if record.last_result=="expired": footer="O último prazo terminou. Nada foi retirado; há outro pedido disponível."
-	elif record.last_result=="delivered": footer="Entrega concluída! Sua reputação cresceu e há um novo pedido disponível."
-	elif record.last_result=="cancelled": footer="Pedido cancelado sem multa. Você pode aceitar outra encomenda."
-	label(p,footer,Vector2(30,640),Vector2(860,23),13,MUTED)
+		FarmGameUI.action(self,c,"Desistir",Rect2(417,366,194,45),"cancel_order:"+market_neighbor).tooltip_text="Cancela sem multa e sem perder produtos ou reputação."
+	var footer:="Sem multa se desistir ou perder o prazo."
+	if record.last_result=="expired": footer="Prazo encerrado. Um novo pedido está disponível."
+	elif record.last_result=="delivered": footer="Entrega concluída! Novo pedido disponível."
+	elif record.last_result=="cancelled": footer="Pedido cancelado sem multa."
+	label(p,footer,Vector2(28,644),Vector2(884,29),17,MUTED)
 
 func editor_dialog(kind: String, initial: String) -> void:
 	var p:=_modal(kind,286)

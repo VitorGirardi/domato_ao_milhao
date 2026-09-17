@@ -1,41 +1,59 @@
-# Como testar a versão 0.11.0
+# Como testar a versão 0.12.0
 
-Este roteiro cobre os **corpos conectados**, as **galinhas novas**, o Zeca e as encomendas.
-Abra o executável da pasta `windows-v0.11` e escolha **Voltar para minha fazenda**.
-A versão nova aceita a fazenda anterior; não precisa começar outra.
+Extraia o ZIP e abra `DoMatoAoMilhao.exe`. Escolha **Voltar para minha fazenda**.
+A versão aceita a partida anterior. Não precisa começar outra.
 
-**Regra principal:** o tempo só avança caminhando, com as janelas fechadas.
-Use **TAB** até aparecer o modo de caminhada. Construção e qualquer janela
-pausam plantas, galinhas, ajudante e prazos de encomendas.
+## Menus — teste primeiro
 
-## Equipe automática — Zeca e Bento
+1. Caminhe até o celeiro e use **E**. Confira os cartões e os números separados.
+   **Guardar →** move tudo que couber para a reserva; **← Retirar** devolve ao disponível.
+2. No galinheiro, use **Coletar**, **Repor** e **Encher** nos três cartões.
+   A aba **Galinhas** reúne os nomes; os botões de renomear ficam ali.
+3. Na oficina, compare os desenhos de alcance dos dois regadores.
+   Uma melhoria bloqueada informa o requisito; uma comprada mostra **Equipado**.
+4. Em **F**, digite a quantidade no cartão e confira o total no botão antes de vender.
+   **Vender tudo** preserva a reserva. **Encomendas** separa vizinhos, produtos, prazo e pagamento.
+5. Use **H** para ver Zeca e **Equipe e treinamento** para ver os dois funcionários.
+   O HUD do campo desaparece enquanto um menu está aberto; **X** ou **Esc** fecha.
 
-1. Abra **H → Equipe e treinamento**. São duas vagas nesta versão: galinheiro e irrigação.
-2. Contrate Zeca pelo painel do galinheiro, caso ainda não trabalhe na fazenda.
-3. No cartão de Bento, clique **Contratar • Ver custos**. Confira $120 e $2 por canteiro concluído.
-   Voltar sem alterar não cobra. Confirme para contratar o segundo ajudante.
-4. Clique **Escolher canteiros**, marque os desejados e ative. Feche todas as janelas e use
-   TAB para caminhar: Bento rega enquanto Zeca cuida das galinhas. Nenhum deles planta ou colhe a lavoura.
-5. Teste **Pausar** apenas Bento. Zeca deve continuar no galinheiro. Retome Bento pelo mesmo cartão.
-6. Use **Treinar • Ver ganhos** em cada cartão. Por $240 cada, o nível 2 reduz serviço de $2 para $1,
-   acelera a caminhada 40%, reduz a checagem do Zeca de 15 para 10 s e acelera a rega de Bento 40%.
-   Ração continua sendo cobrada separadamente. Confira total gasto e regas no painel.
-7. Salve com F5, feche e reabra. Contratações, níveis, pausas e canteiros selecionados devem permanecer.
-   Sem saldo ou acesso, apenas o ajudante impedido pausa. Não há cobrança ociosa ou com o jogo fechado.
-8. Bento pode trabalhar sem galinheiro. Remover o galinheiro ou dispensar Zeca não encerra a rega dele.
-   Dispensar Bento encerra a irrigação, sem reembolso da contratação; treinamento permanece numa recontratação.
+## Bento — ciclo automático
+
+1. Em **H → Equipe e treinamento**, contrate Bento por $120 se necessário.
+2. Abra **Rotina e orçamento**. Marque canteiros, escolha o próximo cultivo de cada um
+   e deixe **Regar**, **Colher** e **Replantar** ativos para o ciclo completo.
+3. Defina, por exemplo, $100 de orçamento. **Revisar e ativar** mostra os custos;
+   voltar não modifica a rotina. Confirme **Ativar rotina**.
+4. Feche os menus e use **TAB** para caminhar. Tempo e trabalho só avançam assim.
+   Bento caminha até a lavoura, colhe a madura, replanta a cultura escolhida e rega.
+   A cultura que já estava plantada não muda antes de colher. Zeca segue no galinheiro.
+5. Confira **Resultados**: produção no estoque, contagem de ações e custos separados.
+   Serviço: $2 por tarefa ($1 treinado); sementes: cenoura $4, trigo $6, milho $8.
+   Exemplo sem treinamento: colher, replantar trigo e regar custa $12 ($6 serviços + $6 sementes).
+6. Use um limite pequeno: se a próxima tarefa não couber, Bento pausa sem cobrar parte dela.
+   Editar a rotina, salvar ou reabrir não zera o gasto. **Renovar orçamento…** mostra
+   confirmação antes de liberar novamente o limite. O relatório acumulado permanece.
+7. Teste cada tarefa desmarcada. Canteiros não selecionados ficam fora da rotina.
+   A colheita não é vendida automaticamente: vá ao armazém quando quiser negociar.
+8. Pause Bento no cartão da equipe; Zeca deve continuar. Treinar cada um custa $240,
+   reduz taxa de serviço para $1 e acelera a caminhada e o trabalho.
+9. F5 salva. Feche e reabra para conferir culturas, tarefas, orçamento, relatório e treinamento.
+   Sem saldo, só o trabalhador impedido pausa; sem acesso, libere a passagem e retome.
+
+Save formato **9**. Depois de salvar na 0.12, continue nela ou em versão posterior.
+Testes automáticos usam partida isolada e não alteram a fazenda real.
+Não há trabalho ou cobrança com menus abertos, em construção ou com o jogo fechado.
 
 ## Novidades da 0.11 — teste primeiro
 
 1. Em caminhada (TAB), pressione **Espaço**. Teste parado, andando (WASD) e correndo (Shift).
    Confira subida, pose no ar e aterrissagem. Apertar de novo no ar não dá outro impulso.
    Construção, menus e animações de trabalho bloqueiam o início de um pulo.
-2. Abra seu celeiro, galinheiro ou oficina com **E**. Clique **Evoluir • Ver melhoria**.
+2. Abra seu celeiro, galinheiro ou oficina com **E**. Clique **Evoluir • $…**.
    Confira custo, benefício e localização. **Voltar sem comprar** não gasta dinheiro.
 3. Celeiro: confirme **$360**. A reserva desta construção sobe de 60 para 120 unidades;
    os produtos e a pintura permanecem. Confira as caixas e a cobertura na fachada.
 4. Galinheiro: confirme **$420**. Agora são seis galinhas, com ninho de 24 ovos e quatro
-   ovos por ciclo, consumindo o dobro de água/ração. Role a lista para ver e renomear as novas.
+   ovos por ciclo, consumindo o dobro de água/ração. Abra a aba Galinhas para renomear as novas.
    Observe os ninhos adicionais e a torre de ventilação. Ovos antigos não se perdem.
 5. Oficina: confirme **$500**. Ela ganha armário e bancada equipada. Com o regador de
    cinco canteiros comprado ($300), adquira o profissional por **$450**.
@@ -45,14 +63,14 @@ pausam plantas, galinhas, ajudante e prazos de encomendas.
 7. Remover uma estrutura devolve metade da construção + evolução. Produtos reservados e
    ovos continuam protegendo a remoção; equipamentos adquiridos não desaparecem com a oficina.
 
-Saves anteriores migram para o formato 8. Depois de salvar na 0.11, continue usando esta versão;
+Saves anteriores migram para o formato 9. Depois de salvar na 0.12, continue usando esta versão;
 executáveis antigos não reconhecem o novo formato. Os testes automáticos usam save separado.
 
 ## Novidades da 0.10 — teste primeiro
 
 1. Veja o protagonista, Zeca e Dona Lúcia de frente, perfil e costas. Confira a linha do cabelo,
    as laterais junto às orelhas e o encaixe sob o chapéu; observe também as piscadas.
-2. Caminhe até a porta do celeiro e pressione **E**. O painel mostra disponível, reserva e total
+2. Caminhe até a porta do celeiro e pressione **E**. O painel mostra disponível e reserva
    de cada produto. Guarde e retire um produto; vender não deve consumir a reserva.
    A entrada abre esse menu de estoque; ainda não existe interior 3D explorável.
 3. Em construção (TAB), pressione **9** e coloque a **Oficina rural ($180)**.

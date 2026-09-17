@@ -50,7 +50,7 @@ var picked_trade_board:=false
 
 func _ready() -> void:
 	qa_mode = OS.is_debug_build() and "--qa" in OS.get_cmdline_user_args()
-	if qa_mode: save_path="user://qa_farm_v011.json"
+	if qa_mode: save_path="user://qa_farm_v012.json"
 	get_tree().auto_accept_quit = false
 	_inputs()
 	world = FarmWorld.new()
@@ -612,6 +612,36 @@ func _action(value: String) -> void:
 			hud.market_neighbor=key
 			hud.market(state,"orders")
 		return
+	if value in ["cultivation","cultivation_edit"]:
+		if value=="cultivation" or hud.cultivation_draft.is_empty(): FarmCultivationHUD.prepare(hud,state)
+		FarmCultivationHUD.show(hud,state)
+		return
+	if value=="cultivation_report":
+		FarmCultivationHUD.report(hud,state)
+		return
+	if value=="cultivation_review":
+		var candidate:Dictionary=hud.cultivation_draft.duplicate(true)
+		candidate.enabled=true
+		if not state.field_staff.hired or not FarmCultivation.valid(candidate,state.items):
+			hud.toast("Escolha canteiros e ao menos uma tarefa para Bento.")
+			return
+		FarmCultivationHUD.review(hud,state)
+		return
+	if value in ["cultivation_apply","cultivation_renew"]:
+		var draft:Dictionary=hud.cultivation_draft
+		var error:String=FarmCultivation.renew(state) if value=="cultivation_renew" else FarmCultivation.configure(state,draft.plans,draft.tasks,int(draft.limit))
+		if not error.is_empty(): hud.toast(error); return
+		world.field_anchor=""
+		world.update_staff(state,0)
+		FarmCultivationHUD.report(hud,state)
+		return
+	if value=="cultivation_renew_review":
+		FarmCultivationHUD.review(hud,state,true)
+		return
+	if value.begins_with("coop_tab:"):
+		hud.coop_tab=value.get_slice(":",1)
+		if selected>=0 and selected<state.items.size() and state.items[selected].kind=="coop": hud.coop(state,selected,selected_hen)
+		return
 	if value=="crew":
 		FarmCrewHUD.show(hud,state)
 		return
@@ -1155,6 +1185,7 @@ func _qa() -> void:
 	await _qa_v010()
 	await _qa_v011()
 	await _qa_crew()
+	await _qa_v012()
 	var restored:=FarmState.new()
 	assert(restored.restore(JSON.parse_string(JSON.stringify(state.serialize()))))
 	assert(restored.items.size()==state.items.size())
@@ -1991,3 +2022,85 @@ func _qa_crew() -> void:
 	world.rebuild(state)
 	selected=1
 	print("CREW_INTEGRATION_OK: hire and training confirmations, cancellation, two distinct workers moving concurrently, selected irrigation, coop collection, exact costs, independent pause, menus, persistence")
+
+func _qa_v012() -> void:
+	var previous:=state.serialize()
+	state=FarmState.new()
+	state.claim(Vector2(4,-2)); state.money=10000
+	state.place("coop",Vector2(-4,-4),0)
+	state.place("plot",Vector2(2,0),0)
+	state.place("plot",Vector2(4,0),0)
+	assert(state.place("barn",Vector2(8,-8),0).is_empty())
+	assert(state.place("workshop",Vector2(-4,4),0).is_empty())
+	state.hire_staff(0); state.hire_field_staff()
+	state.items[1].planted=true; state.items[1].growth=1.0
+	world.rebuild(state); build_mode=true
+	_action("cultivation")
+	var checks:=hud.modal.find_children("*","CheckBox",true,false)
+	for check in checks:
+		if check.has_meta("plot") and int(check.get_meta("plot"))==1:
+			check.button_pressed=true
+			var choice:=check.get_parent().get_child(2) as OptionButton
+			choice.select(1); choice.item_selected.emit(1)
+	hud.cultivation_budget.get_line_edit().text="12"
+	hud.cultivation_budget.get_line_edit().text_changed.emit("12")
+	await get_tree().process_frame
+	await get_tree().process_frame
+	assert(hud.cultivation_draft.limit==12 and hud.cultivation_draft.plans[0].crop=="wheat")
+	await _qa_ui_capture("routine-v012")
+	var frozen:=state.serialize()
+	_action("cultivation_review")
+	assert(hud.modal_kind=="cultivation_confirm")
+	await _qa_ui_capture("routine-confirm-v012")
+	_action("cultivation_edit")
+	assert(frozen==state.serialize())
+	_action("cultivation_review"); _action("cultivation_apply")
+	assert(state.cultivation.enabled and state.cultivation.limit==12)
+	_process(5); assert(state.cultivation.spent==0)
+	_action("close")
+	focus=Vector3(1,0,0); yaw=0.1; pitch=0.55; build_distance=17
+	_update_camera(1,true)
+	var money:=state.money
+	var captured:Array=[]
+	for frame in range(3600):
+		state.tick(1.0/60)
+		world.update_staff(state,1.0/60)
+		if frame%20==0: await get_tree().process_frame
+		var motion=world.field_motion
+		if motion.watering and world.field_actor.action_time<0.32 and motion.job_kind not in captured:
+			captured.append(motion.job_kind)
+			await _qa_ui_capture("bento-"+motion.job_kind+"-v012")
+		if state.cultivation.actions.water==1: break
+	assert(state.cultivation.actions=={"water":1,"harvest":1,"plant":1})
+	assert(state.cultivation.spent==12 and state.money==money-12)
+	assert(state.inventory.carrot==3 and state.items[1].crop=="wheat" and state.items[1].watered)
+	assert(captured.size()==3 and state.items[2].crop=="carrot" and not state.items[2].watered)
+	state.items[1].growth=1.0
+	for frame in range(120): world.update_staff(state,1.0/60)
+	assert(state.field_staff.paused and state.field_staff.reason=="budget" and not state.staff.paused)
+	_action("cultivation_report")
+	await _qa_ui_capture("routine-report-v012")
+	_action("cultivation_renew_review"); _action("cultivation_report")
+	assert(state.cultivation.spent==12)
+	_action("cultivation_renew_review"); _action("cultivation_renew")
+	assert(state.cultivation.spent==0 and state.cultivation.services==6 and state.cultivation.seeds==6)
+	var restored:=FarmState.new()
+	assert(restored.restore(JSON.parse_string(JSON.stringify(state.serialize()))) and restored.cultivation==state.cultivation)
+	_action("crew"); await _qa_ui_capture("crew-v012")
+	state.inventory={"carrot":12,"wheat":18,"corn":9,"egg":6}
+	state.reserve={"carrot":0,"wheat":8,"corn":0,"egg":6}
+	hud.barn(state,3); await _qa_ui_capture("barn-v012")
+	state.items[0].flock.nest=12; state.items[0].flock.food=44; state.items[0].flock.water=33
+	hud.coop(state,0,-1); await _qa_ui_capture("coop-v012")
+	hud.workshop(state,4); await _qa_ui_capture("workshop-v012")
+	hud.market(state); await _qa_ui_capture("market-v012")
+	_action("market_orders"); await _qa_ui_capture("orders-v012")
+	_action("close")
+	assert(state.restore(previous)); world.rebuild(state); selected=1
+	print("V012_INTEGRATION_OK: UI crop and budget inputs, review cancellation, animated harvest/replant/water, exact costs, independent budget pause, renewal, report, persistence, game menus")
+
+func _qa_ui_capture(filename:String) -> void:
+	hud.toast_time=0
+	await get_tree().process_frame
+	await RenderingServer.frame_post_draw
+	get_viewport().get_texture().get_image().save_png("res://test-results/"+filename+".png")

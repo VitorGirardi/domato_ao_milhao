@@ -5,13 +5,13 @@
 Protótipo jogável de um tycoon de fazenda 3D estilizado para Windows, em português.
 Godot 4.7.2 + modelos originais feitos no Blender 5.2.1. Campanha solo e offline.
 
-**Versão atual: 0.11.0.** Veja [as prioridades](ROADMAP.md) e [as novidades](CHANGELOG.md).
+**Versão atual: 0.12.0.** Veja [as prioridades](ROADMAP.md) e [as novidades](CHANGELOG.md).
 
 Veja o [roteiro de teste manual](COMO_TESTAR.md), incluindo encomendas e vendas da 0.5.
 
 ## Jogar
 
-O executável local fica em `exports/windows-v0.11/DoMatoAoMilhao.exe` depois da exportação.
+O executável local fica em `exports/windows-v0.12/DoMatoAoMilhao.exe` depois da exportação.
 Ele abre diretamente, sem instalar Godot ou Blender. Os binários não são enviados ao Git.
 
 Para executar a partir do código:
@@ -19,14 +19,29 @@ Para executar a partir do código:
 2. Aguarde a importação dos modelos.
 3. Pressione **F5** para jogar. O cenário é montado pelos scripts durante a execução.
 
-## Novidades da 0.11
+## Novidades da 0.12
+
+- Menus de celeiro, galinheiro, oficina, armazém, encomendas e equipe com ícones,
+  ações curtas, cartões e números separados. O HUD do campo fica oculto nas janelas.
+- Bento pode **regar, colher e replantar**, com tarefas independentes e cultura por canteiro.
+- **H → Equipe e treinamento → Rotina e orçamento**. Selecione os canteiros,
+  defina o limite total e confirme. As culturas atuais ficam até a próxima colheita.
+- Cada tarefa custa $2 ($1 após treinar); replantar soma sementes: cenoura $4,
+  trigo $6 ou milho $8 por canteiro. Cobra somente quando conclui.
+- Sem saldo ou orçamento suficiente para a tarefa inteira, apenas Bento pausa.
+  O limite não renova ao editar, salvar, reabrir ou virar o dia; use **Renovar orçamento**.
+- Resultados mostram produção por cultura, plantios, serviços e sementes acumulados.
+  Renovar o limite preserva esse relatório. A produção vai ao estoque; a venda é sua decisão.
+- Save 9 preserva fazendas anteriores. Irrigação antiga continua até ativar a rotina completa.
+
+## Recursos anteriores — 0.11
 
 **Equipe simultânea:** H → Equipe e treinamento. Zeca cuida de um galinheiro e Bento
 rega os canteiros selecionados. Bento custa $120 para contratar e $2 por rega concluída.
 Os dois têm pausas, gastos e treinamento independentes. A primeira equipe tem duas vagas fixas.
 Treinar cada um custa $240: caminhada 40% mais rápida e serviço de $2 para $1.
 Zeca confere o trato a cada 10 s; Bento também rega 40% mais rápido. Ração é cobrada à parte.
-A economia reduz custos, sem bônus artificial de moedas. Plantio e colheita continuam manuais.
+Na 0.11 a lavoura tinha somente rega automática; a 0.12 também permite plantar e colher.
 Saves antigos mantêm a tarefa do Zeca; Bento não é contratado automaticamente.
 
 
@@ -67,7 +82,7 @@ Não há abertura de portões ou transporte até um depósito nesta etapa.
 
 ## Personagens e galinhas — corpos conectados
 
-A revisão 0.11.0 deixa Zeca mais corpulento, com barriga e tronco largos.
+A revisão 0.8.1 deixou Zeca mais corpulento, com barriga e tronco largos.
 Os dois modelos têm olhos cerca de um terço menores, íris castanha e pupilas
 reduzidas. Um morph facial fecha os olhos em 0,22 segundo; cada personagem
 pisca de forma independente, com pausas entre 2,5 e 5,5 segundos.
@@ -91,7 +106,7 @@ As patas usam pivôs; a galinha ainda não tem esqueleto completo para asas/pesc
 O conceito aprovado está em `art/concepts/characters-approved.png`; é uma imagem
 ilustrativa. As capturas de `tests/render_characters.gd` mostram os GLBs reais no
 Godot. Os fontes editáveis ficam em `art/source/farmer.blend` e `helper.blend`.
-As regras existentes são preservadas; o save 8 acrescenta a rotina de irrigação.
+As regras existentes são preservadas; o save 9 inclui a rotina completa de lavoura.
 
 ## Primeiros passos
 
@@ -259,7 +274,7 @@ entre tarefas, vários funcionários ou automação da lavoura nesta primeira en
 
 ## Limites assumidos do protótipo
 
-Esta é a versão **0.11.0**, destinada a validar o ciclo de jogo e a direção visual.
+Esta é a versão **0.12.0**, destinada a validar o ciclo de jogo e a direção visual.
 O celeiro tem estoque e reserva; a oficina contém a melhoria de ferramenta. Não há interior explorável.
 Os traçados são retos, sem curvas ou desenho livre. Preços e tempos aguardam ajuste com partidas reais.
 Os cuidados das galinhas são por galinheiro; ainda não há reprodução, doenças,
@@ -269,7 +284,7 @@ Os três vizinhos aparecem como perfis e encomendas; ainda não têm ranchos exp
 O personagem tem animações procedurais de caminhada e ações. As galinhas tentam
 desviar localmente de construções e cercas, mas ainda não planejam rotas longas
 nem entendem portões; podem parar quando não encontram uma passagem.
-Sem multiplayer, vários funcionários, tratores dirigíveis, indústrias, clima, estações ou continente.
+A equipe tem duas vagas fixas. Sem multiplayer, vagas livres, tratores dirigíveis, indústrias, clima, estações ou continente.
 O jogo não cresce enquanto está fechado. O relógio representa dias de trabalho simplificados.
 
 ## Salvamento
@@ -286,7 +301,7 @@ Salvamentos das versões 0.1, 0.2, 0.3, 0.4, 0.5 e 0.6 são aceitos; os objetivo
 construções, plantações e conquistas que ficaram registradas. A posição antiga
 de uma construção permanece salva se uma mudança de lugar for cancelada.
 Reserva, melhoria do regador e cores por parte também são salvas. O nome do arquivo
-continua `farm_v1.json`, com formato interno atualizado para 8; a migração preserva
+continua `farm_v1.json`, com formato interno atualizado para 9; a migração preserva
 dinheiro, produtos e construções. Galinheiros antigos recebem ração e água cheias,
 nomes iniciais e ninho vazio, preservando o progresso de produção e os ovos já
 no estoque. Nomes, suprimentos e ovos nos ninhos passam a ser salvos.
@@ -356,7 +371,7 @@ New-Item -ItemType Directory -Force test-results
 godot --path . --resolution 1440x900 --script tests/render_characters.gd
 godot --path . --resolution 1440x900 --fixed-fps 60 --quit-after 4500 -- --qa
 godot --path . --resolution 960x640 --script tests/render_staff.gd
-New-Item -ItemType Directory -Force exports/windows-v0.11
+New-Item -ItemType Directory -Force exports/windows-v0.12
 godot --headless --path . --export-release 'Windows Desktop'
 ```
 
@@ -369,7 +384,7 @@ Na 0.3, testa entrada de mouse, confirmação/cancelamento de traçados, soltura
 interface, materiais por parte, reserva, remoção protegida e rega em área. Os testes
 da simulação somam 409 verificações. Na 0.4 também são validados nomes, suprimentos,
 coleta, migração, limites de produção, cliques em galinhas, pausa, movimentos,
-modelos visuais e humor. Na 0.5, verifica vendas digitadas, pedidos, reputação, pausas, vencimento e acesso ao quadro. Na 0.6, também testa contratação, cancelamento, custos, pausa, falta de saldo, seleção, dispensa e persistência do ajudante. Na 0.8, confere os corpos com skin, os 20 ossos, orientação da pose de repouso, rega e pivôs das galinhas. O teste visual precisa terminar com `CREW_INTEGRATION_OK`, `V011_INTEGRATION_OK`, `V010_INTEGRATION_OK`, `V09_CHARACTER_OK`, `V06_INTEGRATION_OK`, `V05_INTEGRATION_OK`, `V04_INTEGRATION_OK`,
+modelos visuais e humor. Na 0.5, verifica vendas digitadas, pedidos, reputação, pausas, vencimento e acesso ao quadro. Na 0.6, também testa contratação, cancelamento, custos, pausa, falta de saldo, seleção, dispensa e persistência do ajudante. Na 0.8, confere os corpos com skin, os 20 ossos, orientação da pose de repouso, rega e pivôs das galinhas. O teste visual precisa terminar com `V012_INTEGRATION_OK`, `CREW_INTEGRATION_OK`, `V011_INTEGRATION_OK`, `V010_INTEGRATION_OK`, `V09_CHARACTER_OK`, `V06_INTEGRATION_OK`, `V05_INTEGRATION_OK`, `V04_INTEGRATION_OK`,
 `V03_INTEGRATION_OK`, `SAVE_OK` e sem `ERROR` no log (não basta o código de saída).
 As capturas são geradas em `test-results/` e não entram no Git.
 O modo QA só é aceito por compilações de depuração/editor.
@@ -383,3 +398,5 @@ Projeto de Vitor Girardi. Código e modelos originais criados para este projeto.
 Nenhuma licença pública de redistribuição foi concedida para o conteúdo do jogo.
 Godot: licença MIT, incluída em `GODOT_LICENSE.txt`; [licenças de terceiros do motor](https://godotengine.org/license/).
 Blender é a ferramenta de autoria dos modelos; não precisa estar instalado para jogar.
+
+Teste da lavoura: `godot --headless --path . --script tests/test_v012.gd` (35 verificações).

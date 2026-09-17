@@ -4,6 +4,7 @@ extends RefCounted
 var route:=FarmStaffMotion.new()
 var plot:=-1
 var watering:=false
+var job_kind:="water"
 
 func reset() -> void:
 	plot=-1
@@ -18,12 +19,21 @@ func update(world:FarmWorld,state:FarmState,delta:float, field:bool=false) -> vo
 	var worker:=state.irrigation_worker()
 	var name:="BENTO" if field else "ZECA"
 	var efficiency:=FarmCrew.speed(worker)
+	var automated:bool=field and state.cultivation.enabled
 	if worker.paused: return
 	if watering:
 		actor.animate(delta*efficiency,false,false,false)
-		label.text=name+" • REGANDO"
+		label.text=name+" • "+{"water":"REGANDO","harvest":"COLHENDO","plant":"PLANTANDO"}[job_kind]
 		if actor.action_time<=0:
-			state.irrigate(plot) # Recheck funds and dryness at completion; never charge twice.
+			var crop:String=state.items[plot].crop if plot>=0 and plot<state.items.size() else "carrot"
+			var result:String=FarmCultivation.complete(state,plot,job_kind) if automated else state.irrigate(plot)
+			if result.is_empty() and job_kind!="water":
+				var item:Dictionary=state.items[plot]
+				var at:=Vector3(item.x,0,item.z)
+				if job_kind=="plant":
+					world.replace_crop(plot,item.crop)
+					world.irrigation_feedback.planted(at)
+				else: world.irrigation_feedback.harvest(at,crop)
 			world.update_crops(state)
 			watering=false
 			plot=-1
@@ -32,11 +42,12 @@ func update(world:FarmWorld,state:FarmState,delta:float, field:bool=false) -> vo
 		var best:=INF
 		for index in state.irrigation.plots:
 			var item:Dictionary=state.items[int(index)]
-			if not item.planted or item.watered or item.growth>=1: continue
+			var available:String=FarmCultivation.job(state,int(index)) if automated else ("water" if item.planted and not item.watered and item.growth<1 else "")
+			if available.is_empty(): continue
 			var distance:=node.position.distance_to(Vector3(item.x,0,item.z))
-			if distance<best: best=distance; plot=int(index)
+			if distance<best: best=distance; plot=int(index); job_kind=available
 		if plot<0:
-			label.text=name+" • CANTEIROS EM DIA"
+			label.text=name+(" • AGUARDANDO A LAVOURA" if automated else " • CANTEIROS EM DIA")
 			actor.animate(delta*efficiency,false,false,false)
 			return
 		var item:Dictionary=state.items[plot]
@@ -51,7 +62,7 @@ func update(world:FarmWorld,state:FarmState,delta:float, field:bool=false) -> vo
 			plot=-1
 			return
 	var item:Dictionary=state.items[plot]
-	if item.watered or not item.planted or item.growth>=1:
+	if (automated and FarmCultivation.job(state,plot)!=job_kind) or (not automated and (item.watered or not item.planted or item.growth>=1)):
 		plot=-1
 		return
 	var moving:=false
@@ -69,16 +80,17 @@ func update(world:FarmWorld,state:FarmState,delta:float, field:bool=false) -> vo
 		node.rotation.y=lerp_angle(node.rotation.y,atan2(direction.x,direction.z),minf(delta*8,1))
 		remaining-=step
 		moving=true
-	label.text=name+" • INDO REGAR"
+	label.text=name+" • INDO "+{"water":"REGAR","harvest":"COLHER","plant":"PLANTAR"}[job_kind]
 	actor.animate(delta*efficiency,moving,false,false)
 	if node.position.distance_to(route.target)<0.16:
-		if state.money<FarmCrew.fee(worker):
+		if automated and not FarmCultivation.authorize(state,plot,job_kind).is_empty(): return
+		if not automated and state.money<FarmCrew.fee(worker):
 			state.irrigate(plot) # Pauses and reports insufficient funds without altering crop.
 			return
 		var at:=Vector3(item.x,0,item.z)
 		var face:=at-node.position
 		node.rotation.y=atan2(face.x,face.z)
-		actor.play("water")
+		actor.play(job_kind)
 		actor.animate(0.001,false,false,false)
 		watering=true
-		world.irrigation_feedback.water(at,actor.can.global_position,false,"",actor.can)
+		if job_kind=="water": world.irrigation_feedback.water(at,actor.can.global_position,false,"",actor.can)

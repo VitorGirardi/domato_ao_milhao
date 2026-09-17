@@ -22,7 +22,7 @@ static func speed(worker:Dictionary) -> float:
 static func valid(data:Variant) -> bool:
 	if not data is Dictionary or not data.get("hired") is bool or not data.get("paused") is bool: return false
 	if not valid_level(data.get("level")): return false
-	if data.get("reason") not in ["","manual","funds","removed"]: return false
+	if data.get("reason") not in ["","manual","funds","removed","budget"]: return false
 	if not data.hired and not data.paused: return false
 	for key in ["spent","watered"]:
 		var value:Variant=data.get(key)

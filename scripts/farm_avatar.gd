@@ -85,7 +85,8 @@ func animate(delta: float, moving: bool, running: bool, blink:bool=true) -> void
 	var blend:=1-exp(-delta*16)
 	var active:=action_time>0
 	var collecting:=active and action_kind=="collect"
-	var reach:=sin(clampf(1.0-action_time/2.2,0,1)*PI) if collecting else 0.0
+	var bending:=collecting or (active and action_kind in ["plant","harvest"])
+	var reach:=sin(clampf(1.0-action_time/(2.2 if collecting else 0.55),0,1)*PI) if bending else 0.0
 	for side in ["L","R"]:
 		var sign_value:=1.0 if side=="R" else -1.0
 		var thigh:float=-stride*sign_value
@@ -94,12 +95,12 @@ func animate(delta: float, moving: bool, running: bool, blink:bool=true) -> void
 			var tuck:=1.0 if airborne else landing/0.22
 			thigh=-0.42*tuck
 			knee=0.85*tuck
-		if collecting:
+		if bending:
 			thigh=-reach*0.75
 			knee=reach*1.5
 		pose_bone("Thigh."+side,Vector3(thigh,0,0),blend)
 		pose_bone("Shin."+side,Vector3(knee,0,0),blend)
-		pose_bone("Foot."+side,Vector3(-knee-thigh if collecting else -knee*0.45-thigh*0.2,0,0),blend)
+		pose_bone("Foot."+side,Vector3(-knee-thigh if bending else -knee*0.45-thigh*0.2,0,0),blend)
 		var shoulder:float=stride*sign_value*0.7
 		var elbow:float=-0.65 if running and moving else -0.14
 		if airborne:
@@ -108,17 +109,17 @@ func animate(delta: float, moving: bool, running: bool, blink:bool=true) -> void
 		if active:
 			shoulder=-0.58 if action_kind=="water" and side=="R" else -0.38
 			elbow=-0.74 if action_kind=="water" and side=="R" else -0.50
-			if collecting:
+			if bending:
 				shoulder=-0.7-reach*0.5
 				elbow=-0.15
 		pose_bone("UpperArm."+side,Vector3(shoulder,0,-sign_value*0.28),blend)
 		pose_bone("Forearm."+side,Vector3(elbow,0,0),blend)
 		pose_bone("Hand."+side,Vector3(-0.08 if active else 0,0,0),blend)
-	pose_bone("Spine",Vector3(reach*0.75 if collecting else (0.10 if active else (0.06 if running and moving else 0)),0,0),blend)
+	pose_bone("Spine",Vector3(reach*0.75 if bending else (0.10 if active else (0.06 if running and moving else 0)),0,0),blend)
 	pose_bone("Chest",Vector3(0.09 if active else 0,0,0),blend)
 	pose_bone("Neck",Vector3(-0.05 if active else 0,0,0),blend)
 	pose_bone("Head",Vector3(0.04 if active else sin(time*1.4)*0.018,0,0),blend)
-	root.position.y=-reach*0.2 if collecting else (abs(sin(phase*2))*0.018 if moving else 0)
+	root.position.y=-reach*0.2 if bending else (abs(sin(phase*2))*0.018 if moving else 0)
 	if airborne: root.position.y=0
 	elif landing>0: root.position.y=-0.06*landing/0.22
 	if can:

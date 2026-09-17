@@ -441,7 +441,7 @@ func update_field_staff(state:FarmState,delta:float) -> void:
 		for attempt in range(160):
 			var candidate:=origin+Vector3(sin(attempt*TAU/16),0,cos(attempt*TAU/16))*(2.7+int(attempt/16)*0.8)
 			if field_motion.route.walkable(candidate,state): field_root.position=candidate; break
-	var anchor:=str(state.irrigation.plots)+str(state.irrigation.enabled)
+	var anchor:=str(state.irrigation.plots)+str(state.irrigation.enabled)+str(state.cultivation.enabled)+str(state.cultivation.plans)+str(state.cultivation.tasks)
 	if field_anchor!=anchor:
 		field_anchor=anchor
 		field_motion.reset()

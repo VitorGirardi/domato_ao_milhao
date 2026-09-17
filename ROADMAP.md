@@ -107,17 +107,17 @@ Expressões animadas e personalização de roupas ficam para outra etapa.
 - [x] Galinhas com nova silhueta, penas e patas alternadas.
 - [x] Revisar os GLBs reais no Godot e preservar a integração do jogo.
 
-## Entrega atual — 0.9: ações visíveis
+## Entrega anterior — 0.9: ações visíveis
 
 - [x] Corrigir cabelo/chapéu e orientação do regador.
 - [x] Ronda local, acesso ao ninho e coleta animada do Zeca.
 - [x] Evitar cobrança de serviço quando não há acesso ao ninho.
 - [x] Comerciante própria: Dona Lúcia.
 
-## Próximo bloco — ampliar a automação
+## Direção da automação
 
 - Ajustar os custos do Zeca com o teste do autor.
-- Acrescentar uma rotina de lavoura, começando pela irrigação.
+- [x] Rotina de lavoura com rega, colheita e replantio.
 - Evoluir deslocamento, postos e capacidade de trabalho antes de vários funcionários.
 - Depois, avançar para cadeias produtivas e expansão regional.
 
@@ -153,4 +153,14 @@ Expressões animadas e personalização de roupas ficam para outra etapa.
 
 - [x] Equipe inicial de dois ajudantes trabalhando simultaneamente.
 - [x] Contratação, pausa e treinamento por pessoa, com gastos separados.
-- [ ] Novas vagas e especializações: plantio, colheita e transporte.
+- [x] Plantio e colheita configuráveis com Bento.
+- [ ] Novas vagas e transporte.
+
+## Entrega atual — 0.12: clareza e automação
+
+- [x] Menus de interação com ícones, menos texto e ações evidentes.
+- [x] Colher e replantar com Bento; tarefas independentes e cultura por canteiro.
+- [x] Orçamento incluindo sementes, pausa segura e renovação explícita.
+- [x] Relatório de produção e gastos, persistência e migração.
+- [x] Revisão visual, integração e teste de ciclo completo sem venda automática.
+- [ ] Ajustar legibilidade e ritmo após o teste do jogador.
