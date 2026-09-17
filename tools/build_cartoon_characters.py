@@ -105,7 +105,7 @@ def build(name,zeca=False):
     palette={'Skin':'E5A36D' if zeca else 'F1B381','Cheek':'DF9364','Shirt':'C86A43' if zeca else 'FFF3DA',
              'Denim':'647044' if zeca else '287CC0','Seam':'879365' if zeca else '63A5D3',
              'Boot':'75452B','Sole':'453529','Glove':'97603D','Hair':'66351F','Brow':'5A2C1C',
-             'White':'FFFAEA','Dark':'281D19','Eye':'181512','Gold':'EFB34A',
+             'White':'FFFAEA','Dark':'281D19','Eye':'181512','Iris':'806039','Gold':'EFB34A',
              'Hat':'578577' if zeca else 'DDB45C','Band':'34574C' if zeca else 'AE803D'}
     global M
     M={key:material(name+'_'+key,value) for key,value in palette.items()}
@@ -121,19 +121,24 @@ def build(name,zeca=False):
         return -hy*surface**(power/2)-offset
     objs=[ellipsoid('Sculpted head',(0,0,cz),(hx,hy,hz),'Skin',power,rings=24,segments=40),
           ellipsoid('Hair back',(0,.15,1.81),(.505,.31,.35),'Hair',.9,rings=16,segments=32)]
+    eye_parts=[]
+    closed_parts=[]
     for sign in [-1,1]:
         objs.append(ellipsoid('Ear',(sign*(hx+.005),0,1.62),(.115,.10,.15),'Skin'))
         objs.append(ellipsoid('Ear inner',(sign*(hx+.022),-.084,1.62),(.061,.025,.088),'Cheek'))
         objs.append(ellipsoid('Sideburn',(sign*.44,-.13,1.82),(.065,.055,.20),'Hair'))
         x=sign*.192; z=1.765
-        objs.append(ellipsoid('Eye white',(x,face(x,z,.006),z),(.159,.046,.181),'White',rings=18,segments=28))
-        objs.append(ellipsoid('Eye dark outline',(x,face(x,z,.002),z),(.169,.027,.19),'Brow',rings=18,segments=28))
-        objs.append(ellipsoid('Large dark pupil',(x-sign*.008,face(x,z,.053),z-.009),(.111,.025,.136),'Eye',rings=18,segments=28))
-        objs.append(ellipsoid('Eye highlight',(x-.034,face(x,z,.079),z+.065),(.034,.010,.043),'White',rings=10,segments=16))
-        objs.append(ellipsoid('Eye glint',(x+.033,face(x,z,.078),z-.053),(.012,.005,.016),'White',rings=8,segments=12))
-        points=[(sign*.09,face(sign*.09,1.997,.04),1.997),
-                (sign*.19,face(sign*.19,2.025,.04),2.025),
-                (sign*.315,face(sign*.315,1.968,.04),1.968)]
+        eye_parts.extend([
+            ellipsoid('Eye white',(x,face(x,z,.008),z),(.108,.035,.119),'White',rings=18,segments=28),
+            ellipsoid('Eye outline',(x,face(x,z,.003),z),(.114,.023,.125),'Brow',rings=18,segments=28),
+            ellipsoid('Hazel iris',(x,face(x,z,.042),z),(.064,.017,.078),'Iris',rings=18,segments=28),
+            ellipsoid('Pupil',(x,face(x,z,.057),z),(.034,.010,.050),'Eye',rings=16,segments=24),
+            ellipsoid('Eye highlight',(x-.016,face(x,z,.067),z+.030),(.016,.006,.020),'White',rings=10,segments=16)])
+        closed_parts.append(tube('Closed eyelid',[(x-.095,face(x-.095,z,-.024),z+.008),
+            (x,face(x,z,-.024),z-.012),(x+.095,face(x+.095,z,-.024),z+.008)],.009,'Brow',[.3,1,.3]))
+        points=[(sign*.09,face(sign*.09,1.94,.025),1.94),
+                (sign*.19,face(sign*.19,1.963,.025),1.963),
+                (sign*.295,face(sign*.295,1.925,.025),1.925)]
         if zeca and sign==1: points=[(x,y,z+.018) for x,y,z in points]
         objs.append(tube('Expressive eyebrow',points,.037,'Brow',[.6,1,.5]))
     # Smile is a curved ribbon of ivory within a dark lip silhouette.
@@ -193,7 +198,23 @@ def build(name,zeca=False):
     objs.append(tube('Hat band',band,.024,'Band'))
     for x in [-.115,-.063]: objs.append(tube('Hat repair',[(x,-.311,2.22),(x-.008,-.296,2.34)],.0045,'Band'))
     for z in [2.26,2.303]: objs.append(tube('Hat repair', [(-.145,-.317+(z-2.22)*.17,z),(-.035,-.317+(z-2.22)*.17,z)],.0045,'Band'))
-    head=group('Head',objs,(0,0,1.19))
+    for parts,label in [(eye_parts,'BlinkEyes'),(closed_parts,'BlinkCrease')]:
+        for obj in parts:
+            vg=obj.vertex_groups.new(name=label)
+            vg.add(list(range(len(obj.data.vertices))),1,'REPLACE')
+    head=group('Head',objs+eye_parts+closed_parts,(0,0,1.19))
+    head.shape_key_add(name='Basis')
+    blink=head.shape_key_add(name='Blink')
+    eyes_index=head.vertex_groups['BlinkEyes'].index
+    crease_index=head.vertex_groups['BlinkCrease'].index
+    for vertex in head.data.vertices:
+        groups={g.group for g in vertex.groups}
+        co=blink.data[vertex.index].co
+        if eyes_index in groups:
+            co.z=(1.765-1.19)+(co.z-(1.765-1.19))*.015
+            co.y=face(co.x,co.z+1.19,-.018)
+        elif crease_index in groups:
+            co.y=face(co.x,co.z+1.19,.014)
     body_builder['rig_export'](name,body,details,head,zeca)
 
 if __name__=='__main__':

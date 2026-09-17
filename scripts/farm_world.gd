@@ -9,6 +9,7 @@ var border := Node3D.new()
 var item_nodes: Array[Node3D] = []
 var chickens: Array[Dictionary] = []
 var farmer: Node3D
+var vendor_actor:FarmAvatar
 var clock: float = 0.0
 var rng := RandomNumberGenerator.new()
 var build_grid:=MeshInstance3D.new()
@@ -187,6 +188,8 @@ void fragment(){
 		model("rock", self, pos).scale *= 1.6
 	model("market", self, Vector3(-24, 0, 14)).rotation.y = PI / 2
 	var vendor := model("farmer", self, Vector3(-24.5, 0, 14))
+	vendor_actor=FarmAvatar.new()
+	vendor_actor.setup(vendor,self)
 	vendor.rotation.y = PI / 2
 	var board := Label3D.new()
 	board.text = "SEU TONICO\nArmazém do Vale"
@@ -387,7 +390,7 @@ func update_staff(state: FarmState, delta: float) -> void:
 	if worker.services!=staff_services:
 		if staff_services>=0 and delta>0: staff_actor.play("harvest")
 		staff_services=int(worker.services)
-	if delta>0 and not worker.paused: staff_actor.animate(delta,false,false)
+	if delta>0 and not worker.paused: staff_actor.animate(delta,false,false,false)
 
 func _build_coop(index: int, item: Dictionary, root: Node3D, state: FarmState) -> void:
 	var feeder:=model("feeder",root,Vector3(-1.4,0,1.55))
@@ -575,3 +578,7 @@ func _hen_walkable(at: Vector3, state: FarmState) -> bool:
 		var rect:=state.item_rect(item.kind,Vector2(item.x,item.z),item.turn).grow(0.18)
 		if rect.has_point(Vector2(at.x,at.z)): return false
 	return true
+
+func _process(delta:float) -> void:
+	if vendor_actor: vendor_actor.update_blink(delta)
+	if staff_actor and is_instance_valid(staff_root) and staff_root.visible: staff_actor.update_blink(delta)

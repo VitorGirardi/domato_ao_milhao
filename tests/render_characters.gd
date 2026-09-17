@@ -60,6 +60,24 @@ func render_preview() -> void:
 	await process_frame
 	await RenderingServer.frame_post_draw
 	root.get_texture().get_image().save_png("res://test-results/characters-v08-front.png")
+	for frame in range(9):
+		for animator in actors:
+			animator.blink_elapsed=frame*0.0275
+			animator.update_blink(0)
+		await process_frame
+		await RenderingServer.frame_post_draw
+		root.get_texture().get_image().save_png("res://test-results/blink-%02d.png"%frame)
+	for animator in actors:
+		animator.blink_elapsed=0.09
+		animator.update_blink(0)
+		assert(animator.face_mesh.get_blend_shape_value(animator.blink_index)>0.99)
+	await process_frame
+	await RenderingServer.frame_post_draw
+	root.get_texture().get_image().save_png("res://test-results/characters-v081-blink.png")
+	for animator in actors:
+		animator.update_blink(0.2)
+		assert(animator.face_mesh.get_blend_shape_value(animator.blink_index)==0.0)
+		assert(animator.blink_wait>=2.5 and animator.blink_wait<=5.5)
 	camera.position=Vector3(3.1,2.0,6.1)
 	camera.look_at(Vector3(0,1.3,0))
 	await process_frame

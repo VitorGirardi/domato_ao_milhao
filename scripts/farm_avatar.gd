@@ -11,6 +11,11 @@ var can_rest:Transform3D
 var time := 0.0
 var action_time := 0.0
 var action_kind := ""
+var face_mesh:MeshInstance3D
+var blink_index:=-1
+var blink_wait:=2.0
+var blink_elapsed:=-1.0
+var blink_rng:=RandomNumberGenerator.new()
 
 static func prepare_model(node: Node) -> void:
 	# Small facial patches should remain readable beneath the hat and moustache.
@@ -25,6 +30,11 @@ static func prepare_model(node: Node) -> void:
 
 func setup(model: Node3D, world: FarmWorld = null) -> void:
 	root=model
+	face_mesh=root.find_child("HeadSkin",true,false)
+	blink_index=face_mesh.find_blend_shape_by_name("Blink")
+	assert(blink_index>=0,"Character requires the Blink facial shape")
+	blink_rng.randomize()
+	blink_wait=blink_rng.randf_range(1.0,4.0)
 	var found:=root.find_children("*","Skeleton3D",true,false)
 	assert(found.size()==1,"Character requires one humanoid Skeleton3D")
 	skeleton=found[0]
@@ -61,7 +71,8 @@ func play(kind: String) -> void:
 	action_kind=kind
 	action_time=0.85 if kind=="water" else 0.55
 
-func animate(delta: float, moving: bool, running: bool) -> void:
+func animate(delta: float, moving: bool, running: bool, blink:bool=true) -> void:
+	if blink: update_blink(delta)
 	time+=delta
 	action_time=maxf(0,action_time-delta)
 	var phase:=time*(11 if running else 8)
@@ -91,3 +102,17 @@ func animate(delta: float, moving: bool, running: bool) -> void:
 	if can:
 		can.visible=active and action_kind=="water"
 		can.transform=can_rest*Transform3D(Basis(Vector3.RIGHT,-0.2+sin(time*8)*0.04),Vector3.ZERO)
+
+func update_blink(delta:float) -> void:
+	if blink_elapsed<0:
+		blink_wait-=delta
+		if blink_wait<=0: blink_elapsed=0.0
+	else:
+		blink_elapsed+=delta
+		if blink_elapsed>=0.22:
+			blink_elapsed=-1.0
+			blink_wait=blink_rng.randf_range(2.5,5.5)
+	var amount:=0.0
+	if blink_elapsed>=0:
+		amount=smoothstep(0.0,0.075,blink_elapsed)*(1.0-smoothstep(0.105,0.22,blink_elapsed))
+	face_mesh.set_blend_shape_value(blink_index,amount)

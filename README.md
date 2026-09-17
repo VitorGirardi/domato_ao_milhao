@@ -5,13 +5,13 @@
 Protótipo jogável de um tycoon de fazenda 3D estilizado para Windows, em português.
 Godot 4.7.2 + modelos originais feitos no Blender 5.2.1. Campanha solo e offline.
 
-**Versão atual: 0.8.0.** Veja [as prioridades](ROADMAP.md) e [as novidades](CHANGELOG.md).
+**Versão atual: 0.8.1.** Veja [as prioridades](ROADMAP.md) e [as novidades](CHANGELOG.md).
 
 Veja o [roteiro de teste manual](COMO_TESTAR.md), incluindo encomendas e vendas da 0.5.
 
 ## Jogar
 
-O executável local fica em `exports/windows-v0.8/DoMatoAoMilhao.exe` depois da exportação.
+O executável local fica em `exports/windows-v0.8.1/DoMatoAoMilhao.exe` depois da exportação.
 Ele abre diretamente, sem instalar Godot ou Blender. Os binários não são enviados ao Git.
 
 Para executar a partir do código:
@@ -20,6 +20,12 @@ Para executar a partir do código:
 3. Pressione **F5** para jogar. O cenário é montado pelos scripts durante a execução.
 
 ## Personagens e galinhas — corpos conectados
+
+A revisão 0.8.1 deixa Zeca mais corpulento, com barriga e tronco largos.
+Os dois modelos têm olhos cerca de um terço menores, íris castanha e pupilas
+reduzidas. Um morph facial fecha os olhos em 0,22 segundo; cada personagem
+pisca de forma independente, com pausas entre 2,5 e 5,5 segundos.
+Zeca e o vendedor também piscam quando o tempo da fazenda está pausado.
 
 A 0.8 refaz a anatomia do protagonista e do Zeca: ombros, tronco, braços,
 quadril, mãos e pernas compartilham uma malha contínua. Pernas mais longas,
@@ -206,7 +212,7 @@ entre tarefas, vários funcionários ou automação da lavoura nesta primeira en
 
 ## Limites assumidos do protótipo
 
-Esta é a versão **0.8**, destinada a validar o ciclo de jogo e a direção visual.
+Esta é a versão **0.8.1**, destinada a validar o ciclo de jogo e a direção visual.
 O celeiro tem reserva e uma melhoria de ferramenta; não tem interior explorável.
 Os traçados são retos, sem curvas ou desenho livre. Preços e tempos aguardam ajuste com partidas reais.
 Os cuidados das galinhas são por galinheiro; ainda não há reprodução, doenças,
@@ -293,7 +299,7 @@ godot --headless --path . --script tests/test_v06.gd
 New-Item -ItemType Directory -Force test-results
 godot --path . --resolution 1440x900 --script tests/render_characters.gd
 godot --path . --resolution 1440x900 --fixed-fps 60 --quit-after 2400 -- --qa
-New-Item -ItemType Directory -Force exports/windows-v0.8
+New-Item -ItemType Directory -Force exports/windows-v0.8.1
 godot --headless --path . --export-release 'Windows Desktop'
 ```
 

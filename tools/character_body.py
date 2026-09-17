@@ -16,7 +16,7 @@ def smooth(a,b,x):
     return t*t*(3-2*t)
 
 def build_body(api,zeca):
-    wide=1.20 if zeca else 1.0
+    wide=1.35 if zeca else 1.0
     verts=[]; faces=[]; colors=[]
     def vert(co):
         verts.append(tuple(co)); return len(verts)-1
@@ -28,6 +28,10 @@ def build_body(api,zeca):
     profile=[(.97,.27,.155),(1.045,.275,.16),(1.13,.25,.15),
              (1.23,.245,.15),(1.35,.28,.165),(1.48,.30,.165),
              (1.58,.305,.15),(1.68,.26,.115),(1.735,.105,.09),(1.81,.097,.087)]
+    if zeca:
+        profile=[(.97,.30,.19),(1.045,.33,.215),(1.13,.35,.24),
+                 (1.23,.355,.25),(1.35,.34,.235),(1.48,.31,.19),
+                 (1.58,.305,.16),(1.68,.26,.12),(1.735,.105,.09),(1.81,.097,.087)]
     torso=[]
     for z,rx,ry in profile:
         depth=ry*(1.27 if zeca and z<1.4 else wide)
@@ -118,6 +122,11 @@ def build_body(api,zeca):
         reached.add(v); pending.extend(e.other_vert(v) for e in v.link_edges)
     assert len(reached)==len(bm.verts), 'Body has disconnected components'
     bm.to_mesh(data); bm.free()
+    core_positions={tuple(round(c,6) for c in verts[i]) for ring in torso for i in ring}
+    core_group=body.vertex_groups.new(name='TorsoTopology')
+    for vertex in data.vertices:
+        if tuple(round(c,6) for c in vertex.co) in core_positions:
+            core_group.add([vertex.index],1,'REPLACE')
     body['continuous_components']=1
     body['closed_manifold']=True
     body['design']='Connected shoulders, torso, hips and limbs; supporting loops at elbows and knees'
@@ -125,7 +134,7 @@ def build_body(api,zeca):
     subdiv.levels=2; subdiv.render_levels=2
     # Small clothing details follow the same weight field as the body beneath.
     details=[]
-    depth=.172*(1.27 if zeca else 1)
+    depth=.292 if zeca else .172
     details.append(api['box']('Flat chest pocket',(0,-depth-.009,1.405),(.19,.018,.145),'Denim',.025))
     for sign in [-1,1]:
         details.append(api['ellipsoid']('Overall fastener',(sign*.145*wide,-.157*wide,1.51),(.020,.009,.020),'Gold',rings=8,segments=12))
@@ -134,8 +143,8 @@ def build_body(api,zeca):
             details.append(api['tube']('Boot lace',[(x-.058,-.16,z),(x,-.175,z-.008),(x+.058,-.16,z)],.005,'Band'))
     return body,details
 
-def weights(co,zeca):
-    x,y,z=co; wide=1.20 if zeca else 1.0
+def weights(co,zeca,torso=False):
+    x,y,z=co; wide=1.35 if zeca else 1.0
     sign='R' if x>=0 else 'L'; ax=abs(x)/wide
     if z<1.04:
         if ax>.39: return {'Hand.'+sign:1.0}
@@ -149,7 +158,8 @@ def weights(co,zeca):
         if z>.29: return {'Shin.'+sign:1.0}
         t=smooth(.14,.29,z)
         return {'Shin.'+sign:t,'Foot.'+sign:1-t}
-    if ax>.285 and z<1.70:
+    arm_threshold=.22
+    if not torso and ax>arm_threshold and z<1.70:
         if z>1.45:
             t=smooth(.245,.355,ax)
             return {'Clavicle.'+sign:1-t,'UpperArm.'+sign:t}
@@ -173,7 +183,7 @@ def weights(co,zeca):
     return {'Pelvis':1-t,'Spine':t}
 
 def rig_export(name,body,details,head,zeca):
-    wide=1.20 if zeca else 1.0
+    wide=1.35 if zeca else 1.0
     # Keep the cartoon face but give the body room for human limb proportions.
     head.scale=(.73,)*3; head.location=(0,0,1.74)
     bpy.ops.object.select_all(action='DESELECT'); head.select_set(True)
@@ -211,7 +221,9 @@ def rig_export(name,body,details,head,zeca):
     for obj in [body,*details,head]:
         for bone_name,_,_,_ in specs: obj.vertex_groups.new(name=bone_name)
         for vertex in obj.data.vertices:
-            assignment={'Head':1.0} if obj==head else weights(obj.matrix_world@vertex.co,zeca)
+            core=obj.vertex_groups.get('TorsoTopology')
+            is_core=core is not None and any(g.group==core.index for g in vertex.groups)
+            assignment={'Head':1.0} if obj==head else weights(obj.matrix_world@vertex.co,zeca,is_core)
             assignment={key:value for key,value in assignment.items() if value>0.000001}
             total=sum(assignment.values())
             assert total>0 and len(assignment)<=4

@@ -1,5 +1,13 @@
 # Alterações
 
+## 0.8.1 — Zeca corpulento e olhos com piscadas
+
+- Zeca com barriga e tronco mais largos; pesos do corpo separados dos braços pela topologia.
+- Olhos menores, íris castanha, pupilas reduzidas e sobrancelhas reposicionadas nos dois modelos.
+- Morph Blink exportado no GLB e animado no Godot, com fechamento rápido e reabertura suave.
+- Intervalos independentes; Zeca e vendedor piscam mesmo com a simulação pausada.
+- Testes de fechamento/reabertura, capturas da piscada e regressão de movimento, cuidados e save.
+
 ## 0.8.0 — Corpo conectado e galinhas cartoon
 
 - Malha contínua nos ombros, tronco, braços, mãos, quadril e pernas; anatomia alongada e menos arredondada.
