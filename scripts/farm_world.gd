@@ -96,6 +96,7 @@ func box(parent: Node3D, pos: Vector3, size: Vector3, mat: Material) -> MeshInst
 
 func model(key: String, parent: Node3D, pos: Vector3 = Vector3.ZERO) -> Node3D:
 	var node: Node3D = models[key].instantiate()
+	if key in ["farmer","helper"]: FarmAvatar.prepare_model(node)
 	node.position = pos
 	parent.add_child(node)
 	return node

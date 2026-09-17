@@ -1,5 +1,16 @@
 # Alterações
 
+## 0.7.0 — Primeira versão dos personagens cartoon
+
+- Protagonista e Zeca refeitos no Blender com volumes suaves, cabeças grandes e corpos compactos.
+- Olhos grandes com reflexos, sobrancelhas, nariz, sorriso curvado e cabelo em mechas volumosas.
+- Zeca com corpo mais largo, bigode esculpido e macacão verde; protagonista com roupa azul e luvas.
+- Chapéus com abas curvas, alças, botões, bolsos, barras dobradas e botas arredondadas.
+- Seis grupos de articulação preservados para caminhada, rega e trabalho; colisão ajustada à altura.
+- Gerador compartilhado para os dois modelos, integrado ao processo de recriação dos assets.
+- Conceito aprovado guardado separadamente dos modelos; prévias reais dos GLBs geradas pelo Godot.
+- Testes de integração de jogo, regador, ajudante e salvamento; formato de save permanece 5.
+
 ## 0.6.0 — Uma mãozinha no trato
 
 - Zeca do Trato: primeiro ajudante, com modelo Blender próprio baseado no fazendeiro original.

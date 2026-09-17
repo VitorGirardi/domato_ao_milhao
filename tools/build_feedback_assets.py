@@ -82,21 +82,9 @@ def export(name, merge=True):
         use_selection=True,export_apply=True,export_cameras=False,export_lights=False,export_yup=True)
     print('FEEDBACK_ASSET_OK',name)
 
-clear()
-for side,x in [('L',-.18),('R',.18)]:
-    members=[box((x,-.08,.15),(.25,.43,.3),'Boot'),box((x,0,.5),(.22,.25,.55),'Denim')]
-    group('Leg'+side,members,(x,0,.77))
-members=[box((0,0,.95),(.68,.39,.6),'Denim',.06),box((0,0,1.21),(.65,.4,.32),'Cream',.05)]
-for x in [-.22,.22]: members.append(box((x,-.22,1.22),(.09,.05,.32),'Denim',.005))
-group('Body',members,(0,0,.9))
-for side,x in [('L',-.47),('R',.47)]:
-    group('Arm'+side,[sphere((x,0,1.16),(.16,.2,.22),'Cream'),sphere((x,0,.88),(.115,.12,.19),'Skin')],(x,0,1.29))
-members=[sphere((0,0,1.68),(.31,.27,.35),'Skin')]
-for x in [-.12,.12]: members.append(sphere((x,-.247,1.72),(.035,.025,.04),'Eye'))
-members += [sphere((0,-.29,1.62),(.065,.07,.07),'Skin'),cone((0,0,1.96),.49,.07,'Hat'),
-    cone((0,0,2.1),.3,.27,'Hat',.25),cone((0,0,2.01),.305,.075,'Wood')]
-group('Head',members,(0,0,1.4))
-export('farmer',merge=False)
+# The approved cartoon design owns the farmer mesh and its articulation pivots.
+import runpy
+runpy.run_path(str(ROOT/'tools'/'build_cartoon_characters.py'))['build']('farmer')
 
 clear()
 cone((0,0,.22),.24,.4,'Can',.20)

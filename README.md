@@ -5,19 +5,37 @@
 Protótipo jogável de um tycoon de fazenda 3D estilizado para Windows, em português.
 Godot 4.7.2 + modelos originais feitos no Blender 5.2.1. Campanha solo e offline.
 
-**Versão atual: 0.6.0.** Veja [as prioridades](ROADMAP.md) e [as novidades](CHANGELOG.md).
+**Versão atual: 0.7.0.** Veja [as prioridades](ROADMAP.md) e [as novidades](CHANGELOG.md).
 
 Veja o [roteiro de teste manual](COMO_TESTAR.md), incluindo encomendas e vendas da 0.5.
 
 ## Jogar
 
-O executável local fica em `exports/windows-v0.6/DoMatoAoMilhao.exe` depois da exportação.
+O executável local fica em `exports/windows-v0.7/DoMatoAoMilhao.exe` depois da exportação.
 Ele abre diretamente, sem instalar Godot ou Blender. Os binários não são enviados ao Git.
 
 Para executar a partir do código:
 1. Abra o Godot 4.7.2, escolha **Importar** e selecione `project.godot`.
 2. Aguarde a importação dos modelos.
 3. Pressione **F5** para jogar. O cenário é montado pelos scripts durante a execução.
+
+## Personagens cartoon — primeira implementação
+
+A 0.7 traz protagonista e Zeca refeitos no Blender a partir da direção visual
+aprovada: cabeça grande, olhos expressivos, sorriso largo e corpo compacto.
+Os modelos têm superfícies suaves, chapéus com abas curvas, cabelo volumoso,
+bolsos, alças, botões e botas arredondadas. Zeca tem corpo mais largo e bigode.
+O vendedor também usa o novo modelo base do fazendeiro.
+
+As seis partes articuladas preservam caminhada, regador e ações de trabalho.
+A colisão do personagem acompanha a nova altura. As expressões faciais ainda
+são fixas; não há rig facial, roupas trocáveis ou animação de fala. O forcado e
+a cesta do conceito são referências de apresentação, não equipamentos permanentes.
+
+O conceito aprovado está em `art/concepts/characters-approved.png`; é uma imagem
+ilustrativa. As capturas de `tests/render_characters.gd` mostram os GLBs reais no
+Godot. Os fontes editáveis ficam em `art/source/farmer.blend` e `helper.blend`.
+O formato de salvamento e as regras da fazenda permanecem os mesmos da 0.6.
 
 ## Primeiros passos
 
@@ -184,7 +202,7 @@ entre tarefas, vários funcionários ou automação da lavoura nesta primeira en
 
 ## Limites assumidos do protótipo
 
-Esta é a versão **0.6**, destinada a validar o ciclo de jogo e a direção visual.
+Esta é a versão **0.7**, destinada a validar o ciclo de jogo e a direção visual.
 O celeiro tem reserva e uma melhoria de ferramenta; não tem interior explorável.
 Os traçados são retos, sem curvas ou desenho livre. Preços e tempos aguardam ajuste com partidas reais.
 Os cuidados das galinhas são por galinheiro; ainda não há reprodução, doenças,
@@ -207,7 +225,7 @@ Arquivos em `%APPDATA%/Godot/app_userdata/Do Mato ao Milhão/`:
 São preservados terreno, estruturas, textos, cores, cultivos, dinheiro, estoque,
 relógio e progresso. Ao abrir, o personagem volta a um ponto seguro da propriedade.
 Começar outra fazenda exige confirmação no menu e substitui a fazenda atual.
-Salvamentos das versões 0.1, 0.2, 0.3, 0.4 e 0.5 são aceitos; os objetivos são inferidos a partir das
+Salvamentos das versões 0.1, 0.2, 0.3, 0.4, 0.5 e 0.6 são aceitos; os objetivos são inferidos a partir das
 construções, plantações e conquistas que ficaram registradas. A posição antiga
 de uma construção permanece salva se uma mudança de lugar for cancelada.
 Reserva, melhoria do regador e cores por parte também são salvas. O nome do arquivo
@@ -235,7 +253,8 @@ scripts/farm_animals.gd Necessidades, ritmo de produção e validação dos anim
 tests/                Testes da simulação
 tools/build_assets.py Gerador reproduzível do kit original no Blender
 tools/build_feedback_assets.py Personagem articulado, regador e plantas
-tools/build_staff_assets.py Modelo Blender do Zeca, derivado do fazendeiro original
+tools/build_staff_assets.py Entrada de geração do Zeca
+tools/build_cartoon_characters.py Autor dos dois personagens cartoon e suas articulações
 tools/build_trade_assets.py Quadro de encomendas no Blender
 tools/build_animal_assets.py Comedouro, bebedouro, ninho e ovo no Blender
 DESIGN.md             Direção e recorte da primeira versão
@@ -265,13 +284,14 @@ godot --headless --path . --script tests/test_v03.gd
 godot --headless --path . --script tests/test_v04.gd
 godot --headless --path . --script tests/test_v05.gd
 godot --headless --path . --script tests/test_v06.gd
+godot --path . --resolution 1440x900 --script tests/render_characters.gd
 New-Item -ItemType Directory -Force test-results
 godot --path . --resolution 1440x900 --fixed-fps 60 --quit-after 2400 -- --qa
-New-Item -ItemType Directory -Force exports/windows-v0.6
+New-Item -ItemType Directory -Force exports/windows-v0.7
 godot --headless --path . --export-release 'Windows Desktop'
 ```
 
-O teste de integração usa apenas `qa_farm_v06.json`, nunca o salvamento real.
+O teste de integração usa apenas `qa_farm_v07.json`, nunca o salvamento real.
 Valida compra, colocação via controles do jogo, colheita, venda, pintura, texto,
 movimento, câmeras, gravação real, leitura e recuperação de backup.
 Também verifica movimento/cancelamento de construções, poses do personagem,
@@ -280,7 +300,7 @@ Na 0.3, testa entrada de mouse, confirmação/cancelamento de traçados, soltura
 interface, materiais por parte, reserva, remoção protegida e rega em área. Os testes
 da simulação somam 336 verificações. Na 0.4 também são validados nomes, suprimentos,
 coleta, migração, limites de produção, cliques em galinhas, pausa, movimentos,
-modelos visuais e humor. Na 0.5, verifica vendas digitadas, pedidos, reputação, pausas, vencimento e acesso ao quadro. Na 0.6, também testa contratação, cancelamento, custos, pausa, falta de saldo, seleção, dispensa e persistência do ajudante. O teste visual precisa terminar com `V06_INTEGRATION_OK`, `V05_INTEGRATION_OK`, `V04_INTEGRATION_OK`,
+modelos visuais e humor. Na 0.5, verifica vendas digitadas, pedidos, reputação, pausas, vencimento e acesso ao quadro. Na 0.6, também testa contratação, cancelamento, custos, pausa, falta de saldo, seleção, dispensa e persistência do ajudante. Na 0.7, confere os novos modelos, articulações e rega. O teste visual precisa terminar com `V07_CHARACTER_OK`, `V06_INTEGRATION_OK`, `V05_INTEGRATION_OK`, `V04_INTEGRATION_OK`,
 `V03_INTEGRATION_OK`, `SAVE_OK` e sem `ERROR` no log (não basta o código de saída).
 As capturas são geradas em `test-results/` e não entram no Git.
 O modo QA só é aceito por compilações de depuração/editor.

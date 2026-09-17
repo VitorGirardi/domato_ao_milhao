@@ -8,6 +8,17 @@ var time := 0.0
 var action_time := 0.0
 var action_kind := ""
 
+static func prepare_model(node: Node) -> void:
+	# Small facial patches should remain readable beneath the hat and moustache.
+	if node is MeshInstance3D:
+		for surface in range(node.mesh.get_surface_count()):
+			var mat:Material=node.mesh.surface_get_material(surface)
+			if mat is StandardMaterial3D and (mat.resource_name.ends_with("_White") or mat.resource_name.ends_with("_Eye")):
+				var facial:StandardMaterial3D=mat.duplicate()
+				facial.disable_receive_shadows=true
+				node.set_surface_override_material(surface,facial)
+	for child in node.get_children(): prepare_model(child)
+
 func setup(model: Node3D, world: FarmWorld) -> void:
 	root=model
 	for key in ["LegL","LegR","ArmL","ArmR","Body","Head"]:

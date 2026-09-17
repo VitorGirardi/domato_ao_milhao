@@ -50,7 +50,7 @@ var picked_trade_board:=false
 
 func _ready() -> void:
 	qa_mode = OS.is_debug_build() and "--qa" in OS.get_cmdline_user_args()
-	if qa_mode: save_path="user://qa_farm_v06.json"
+	if qa_mode: save_path="user://qa_farm_v07.json"
 	get_tree().auto_accept_quit = false
 	_inputs()
 	world = FarmWorld.new()
@@ -100,9 +100,9 @@ func _player() -> void:
 	var collision := CollisionShape3D.new()
 	var capsule := CapsuleShape3D.new()
 	capsule.radius = 0.37
-	capsule.height = 1.85
+	capsule.height = 2.35
 	collision.shape = capsule
-	collision.position.y = 0.95
+	collision.position.y = 1.18
 	player.add_child(collision)
 	avatar = world.model("farmer",player)
 	actor.setup(avatar,world)
@@ -1071,6 +1071,7 @@ func _qa() -> void:
 	await _qa_v04()
 	await _qa_v05()
 	await _qa_v06()
+	await _qa_v07()
 	var restored:=FarmState.new()
 	assert(restored.restore(JSON.parse_string(JSON.stringify(state.serialize()))))
 	assert(restored.items.size()==state.items.size())
@@ -1620,6 +1621,29 @@ func _qa_v06() -> void:
 		get_viewport().get_texture().get_image().save_png("res://test-results/staff-v06.png")
 	_action("close")
 	print("V06_INTEGRATION_OK: shortcut, hiring confirmation/cancel, care, costs, menu/build pause, low funds, assignment selector, dismiss/cancel, rehire and Blender character")
+
+func _qa_v07() -> void:
+	# Real in-game GLBs, framed from the front for review of the new faces.
+	for model_node in [avatar,world.staff_actor.root]:
+		for part in ["Head","Body","ArmL","ArmR","LegL","LegR"]:
+			assert(model_node.find_child(part,true,false) is MeshInstance3D)
+	avatar.rotation.y=0.15
+	world.staff_root.rotation.y=0.15
+	focus=Vector3(10.5,0,-5)
+	player.position=Vector3(9,0.2,-4.5)
+	yaw=0.15
+	pitch=0.25
+	build_distance=10
+	_update_camera(1,true)
+	for frame in range(12): await get_tree().physics_frame
+	hud.toast_time=0
+	_update_pointer()
+	_update_ui()
+	await get_tree().process_frame
+	if DisplayServer.get_name()!="headless":
+		await RenderingServer.frame_post_draw
+		get_viewport().get_texture().get_image().save_png("res://test-results/characters-v07-game.png")
+	print("V07_CHARACTER_OK: new GLBs, head and limb pivots, walking/watering regression, new collision height and front-facing game capture")
 
 func _qa_mouse(at: Vector2, pressed: bool) -> void:
 	get_viewport().warp_mouse(at)

@@ -74,7 +74,7 @@ ovos; salvar e retomar sem perder produção ou suprimentos.
 subir de reputação e retomar uma encomenda salva sem reiniciar o prazo.
 Preços e tempos ainda precisam do teste do autor para balanceamento.
 
-## Entrega atual — 0.6
+## Entrega anterior — 0.6
 
 - [x] Zeca do Trato, com aparência própria no Blender e posto junto ao galinheiro.
 - [x] Contratação confirmada, custos visíveis e histórico de serviços.
@@ -87,6 +87,17 @@ Preços e tempos ainda precisam do teste do autor para balanceamento.
 
 **Critério de conclusão:** contratar, observar a coleta, pausar sem pagar,
 trocar de galinheiro e retomar a partida com ajudante e histórico preservados.
+
+## Entrega atual — 0.7: personagens
+
+- [x] Registrar o conceito cartoon aprovado pelo autor.
+- [x] Refazer protagonista e Zeca como modelos editáveis no Blender.
+- [x] Preservar as articulações de caminhada, rega e trabalho.
+- [x] Conferir modelos reais no Godot, enquadramento, colisão e salvamento.
+- [x] Atualizar o gerador reproduzível e o roteiro de teste visual.
+
+A direção visual seguirá recebendo ajustes com a avaliação dentro do jogo.
+Expressões animadas e personalização de roupas ficam para outra etapa.
 
 ## Próximo bloco — ampliar a automação
 
