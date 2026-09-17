@@ -50,7 +50,7 @@ var picked_trade_board:=false
 
 func _ready() -> void:
 	qa_mode = OS.is_debug_build() and "--qa" in OS.get_cmdline_user_args()
-	if qa_mode: save_path="user://qa_farm_v08.json"
+	if qa_mode: save_path="user://qa_farm_v09.json"
 	get_tree().auto_accept_quit = false
 	_inputs()
 	world = FarmWorld.new()
@@ -372,7 +372,7 @@ func _update_pointer() -> void:
 			var item:Dictionary=state.items[nearest]
 			hover_hint="[E]  "+_interaction_text(item)
 		elif player.position.distance_to(Vector3(-24,0,14))<4:
-			hover_hint="[E] Conversar com Seu Tonico • Armazém do Vale"
+			hover_hint="[E] Conversar com Dona Lúcia • Armazém do Vale"
 
 func _preview(kind: String) -> void:
 	if ghost_key==kind:
@@ -559,11 +559,11 @@ func _tend_selected() -> void:
 			kind="harvest"
 		elif not was_watered and item.watered:
 			var origin:=avatar.global_transform*Vector3(0.47,1.1,1.0)
-			feedback.water(at,origin,build_mode)
+			feedback.water(at,origin,build_mode,"Regado!",null if build_mode else actor.can)
 			for target in water_targets:
 				if target==selected: continue
 				var neighbor:Dictionary=state.items[target]
-				feedback.water(Vector3(neighbor.x,0,neighbor.z),origin,false)
+				feedback.water(Vector3(neighbor.x,0,neighbor.z),origin,false,"Regado!",null if build_mode else actor.can)
 			kind="water"
 		elif not before and item.planted:
 			feedback.planted(at)
@@ -1071,7 +1071,7 @@ func _qa() -> void:
 	await _qa_v04()
 	await _qa_v05()
 	await _qa_v06()
-	await _qa_v08()
+	await _qa_v09()
 	var restored:=FarmState.new()
 	assert(restored.restore(JSON.parse_string(JSON.stringify(state.serialize()))))
 	assert(restored.items.size()==state.items.size())
@@ -1539,11 +1539,23 @@ func _qa_v06() -> void:
 	var eggs:=int(state.inventory.egg)
 	var balance:=state.money
 	build_mode=false
+	# The simulation batch starts after the caretaker has physically reached the nest.
+	state.staff.timer=8.0
+	for step in range(240): world.update_staff(state,1.0/60)
+	state.staff.timer=0.0
+	assert(state.staff_accessible)
 	_process(15)
 	build_mode=true
 	assert(flock.food==100 and flock.water==100 and flock.nest==0)
 	assert(state.inventory.egg==eggs+6 and state.money==balance-10)
-	assert(state.staff.services==1 and state.staff.eggs==6 and world.staff_actor.action_kind=="harvest")
+	assert(state.staff.services==1 and state.staff.eggs==6 and (world.staff_motion.pending_service or world.staff_motion.collecting))
+	var service_ledger:=state.staff.duplicate(true)
+	var staff_start:=world.staff_root.position
+	for frame in range(360):
+		world.update_staff(state,1.0/60)
+		if world.staff_actor.action_kind=="collect": break
+	assert(world.staff_root.position.distance_to(staff_start)<0.2)
+	assert(world.staff_actor.action_kind=="collect" and state.staff==service_ledger)
 	_action("staff")
 	hud.staff_primary.pressed.emit()
 	assert(state.staff.paused and world.staff_label.text.contains("PAUSADO"))
@@ -1622,7 +1634,7 @@ func _qa_v06() -> void:
 	_action("close")
 	print("V06_INTEGRATION_OK: shortcut, hiring confirmation/cancel, care, costs, menu/build pause, low funds, assignment selector, dismiss/cancel, rehire and Blender character")
 
-func _qa_v08() -> void:
+func _qa_v09() -> void:
 	# Real in-game skins; the isolated renderer also checks bent-joint poses.
 	for model_node in [avatar,world.staff_actor.root]:
 		var skin:MeshInstance3D=model_node.find_child("BodySkin",true,false)
@@ -1645,8 +1657,8 @@ func _qa_v08() -> void:
 	await get_tree().process_frame
 	if DisplayServer.get_name()!="headless":
 		await RenderingServer.frame_post_draw
-		get_viewport().get_texture().get_image().save_png("res://test-results/characters-v08-game.png")
-	print("V08_CHARACTER_OK: continuous body skins, 20-bone humanoids, walking/watering regression, chicken gait pivots, game capture")
+		get_viewport().get_texture().get_image().save_png("res://test-results/characters-v09-game.png")
+	print("V09_CHARACTER_OK: continuous body skins, 20-bone humanoids, walking/watering regression, chicken gait pivots, game capture")
 
 func _qa_mouse(at: Vector2, pressed: bool) -> void:
 	get_viewport().warp_mouse(at)

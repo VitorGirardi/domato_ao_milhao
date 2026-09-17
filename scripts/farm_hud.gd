@@ -337,7 +337,7 @@ func welcome(state: FarmState, has_save: bool) -> void:
 	text_input.text=state.farm_name
 	p.add_child(text_input)
 	button(p,"Voltar para minha fazenda" if has_save else "Escolher meu pedaço de terra",Rect2(34,494,542,55),"start",true)
-	label(p,"VERSÃO 0.8.1   •   PERSONAGENS E GALINHAS",Vector2(34,561),Vector2(542,17),11,MUTED)
+	label(p,"VERSÃO 0.9.0   •   PERSONAGENS E GALINHAS",Vector2(34,561),Vector2(542,17),11,MUTED)
 
 func coop(state: FarmState, index: int, selected_hen: int = -1) -> void:
 	var flock:Dictionary=state.items[index].flock
@@ -503,7 +503,7 @@ func market(state: FarmState, tab: String = "sales") -> void:
 	p.position.x=260
 	p.size.x=920
 	label(p,"ARMAZÉM DO VALE • NEGÓCIOS DA VIZINHANÇA",Vector2(30,22),Vector2(850,27),13,MUTED)
-	label(p,"Seu Tonico compra!" if tab=="sales" else "Um bom vizinho vale ouro",Vector2(30,58),Vector2(850,43),31)
+	label(p,"Dona Lúcia compra!" if tab=="sales" else "Um bom vizinho vale ouro",Vector2(30,58),Vector2(850,43),31)
 	button(p,"Vender produtos",Rect2(30,117,280,45),"market_sales",tab=="sales")
 	button(p,"Encomendas • %d"%state.active_orders(),Rect2(325,117,330,45),"market_orders",tab=="orders")
 	label(p,"Saldo: $%s"%_money(state.money),Vector2(688,125),Vector2(200,31),20)

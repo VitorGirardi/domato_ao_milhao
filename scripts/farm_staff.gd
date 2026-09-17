@@ -37,6 +37,7 @@ static func quote(flock: Dictionary) -> int:
 static func service(farm) -> void:
 	var worker:Dictionary=farm.staff
 	if not running(worker): return
+	if not farm.staff_accessible: return
 	var flock:Dictionary=farm.items[int(worker.coop)].flock
 	var cost:=quote(flock)
 	if cost==0: return

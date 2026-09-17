@@ -7,7 +7,8 @@ var bones:Dictionary={}
 var rest_rotations:Dictionary={}
 var can: Node3D
 var hand_socket:BoneAttachment3D
-var can_rest:Transform3D
+var hand_grip:Vector3
+var carried_egg:Node3D
 var time := 0.0
 var action_time := 0.0
 var action_kind := ""
@@ -51,9 +52,10 @@ func setup(model: Node3D, world: FarmWorld = null) -> void:
 		can=load("res://assets/models/watering_can.glb").instantiate()
 		hand_socket.add_child(can)
 	var hand_rest:=skeleton.get_bone_global_rest(bones["Hand.R"])
-	var desired:=Transform3D(Basis.IDENTITY.scaled(Vector3.ONE*0.62),hand_rest.origin+Vector3(0.035,-0.50,0.06))
-	can_rest=hand_rest.affine_inverse()*desired
-	can.transform=can_rest
+	hand_grip=hand_rest.affine_inverse()*(hand_rest.origin+Vector3(0.025,-0.085,0.045))
+	carried_egg=load("res://assets/models/egg.glb").instantiate()
+	hand_socket.add_child(carried_egg)
+	carried_egg.visible=false
 	can.visible=false
 	animate(1,false,false)
 
@@ -69,7 +71,7 @@ func pose_bone(key: String, angles: Vector3, blend: float = 1.0) -> void:
 
 func play(kind: String) -> void:
 	action_kind=kind
-	action_time=0.85 if kind=="water" else 0.55
+	action_time=2.2 if kind=="collect" else (1.15 if kind=="water" else 0.55)
 
 func animate(delta: float, moving: bool, running: bool, blink:bool=true) -> void:
 	if blink: update_blink(delta)
@@ -79,29 +81,45 @@ func animate(delta: float, moving: bool, running: bool, blink:bool=true) -> void
 	var stride:=sin(phase)*(0.60 if running else 0.40) if moving else 0.0
 	var blend:=1-exp(-delta*16)
 	var active:=action_time>0
+	var collecting:=active and action_kind=="collect"
+	var reach:=sin(clampf(1.0-action_time/2.2,0,1)*PI) if collecting else 0.0
 	for side in ["L","R"]:
 		var sign_value:=1.0 if side=="R" else -1.0
 		var thigh:float=-stride*sign_value
 		var knee:float=maxf(0,-sin(phase)*sign_value)*(1.1 if running else 0.72) if moving else 0.025
+		if collecting:
+			thigh=-reach*0.75
+			knee=reach*1.5
 		pose_bone("Thigh."+side,Vector3(thigh,0,0),blend)
 		pose_bone("Shin."+side,Vector3(knee,0,0),blend)
-		pose_bone("Foot."+side,Vector3(-knee*0.45-thigh*0.2,0,0),blend)
+		pose_bone("Foot."+side,Vector3(-knee-thigh if collecting else -knee*0.45-thigh*0.2,0,0),blend)
 		var shoulder:float=stride*sign_value*0.7
 		var elbow:float=-0.65 if running and moving else -0.14
 		if active:
 			shoulder=-0.58 if action_kind=="water" and side=="R" else -0.38
 			elbow=-0.74 if action_kind=="water" and side=="R" else -0.50
+			if collecting:
+				shoulder=-0.7-reach*0.5
+				elbow=-0.15
 		pose_bone("UpperArm."+side,Vector3(shoulder,0,-sign_value*0.28),blend)
 		pose_bone("Forearm."+side,Vector3(elbow,0,0),blend)
 		pose_bone("Hand."+side,Vector3(-0.08 if active else 0,0,0),blend)
-	pose_bone("Spine",Vector3(0.10 if active else (0.06 if running and moving else 0),0,0),blend)
+	pose_bone("Spine",Vector3(reach*0.75 if collecting else (0.10 if active else (0.06 if running and moving else 0)),0,0),blend)
 	pose_bone("Chest",Vector3(0.09 if active else 0,0,0),blend)
 	pose_bone("Neck",Vector3(-0.05 if active else 0,0,0),blend)
 	pose_bone("Head",Vector3(0.04 if active else sin(time*1.4)*0.018,0,0),blend)
-	root.position.y=abs(sin(phase*2))*0.018 if moving else 0
+	root.position.y=-reach*0.2 if collecting else (abs(sin(phase*2))*0.018 if moving else 0)
 	if can:
 		can.visible=active and action_kind=="water"
-		can.transform=can_rest*Transform3D(Basis(Vector3.RIGHT,-0.2+sin(time*8)*0.04),Vector3.ZERO)
+		# Keep the vessel upright independently of the wrist's imported rest axes.
+		# Pivot about the handle; positive X tilt lowers the forward-facing spout.
+		var hand_pose:=skeleton.get_bone_global_pose(bones["Hand.R"])
+		var grip:=hand_pose*hand_grip
+		var pour:=sin(clampf(1.0-action_time/1.15,0,1)*PI)*0.45 if can.visible else 0.0
+		var vessel_basis:=Basis(Vector3.RIGHT,pour).scaled(Vector3.ONE*0.62)
+		can.transform=hand_pose.affine_inverse()*Transform3D(vessel_basis,grip-vessel_basis*Vector3(0,0.68,-0.06))
+		carried_egg.visible=collecting and action_time<1.15
+		carried_egg.transform=hand_pose.affine_inverse()*Transform3D(Basis.IDENTITY.scaled(Vector3.ONE*0.8),grip)
 
 func update_blink(delta:float) -> void:
 	if blink_elapsed<0:

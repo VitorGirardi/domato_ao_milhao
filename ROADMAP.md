@@ -99,13 +99,20 @@ trocar de galinheiro e retomar a partida com ajudante e histórico preservados.
 A direção visual seguirá recebendo ajustes com a avaliação dentro do jogo.
 Expressões animadas e personalização de roupas ficam para outra etapa.
 
-## Entrega atual — 0.8: anatomia e animais
+## Entrega anterior — 0.8: anatomia e animais
 
 - [x] Corpo humano contínuo e proporções menos arredondadas.
 - [x] Rig de 20 ossos, pesos e revisão de cotovelos/joelhos dobrados.
 - [x] Adaptar caminhada, corrida, rega e trabalho ao esqueleto.
 - [x] Galinhas com nova silhueta, penas e patas alternadas.
 - [x] Revisar os GLBs reais no Godot e preservar a integração do jogo.
+
+## Entrega atual — 0.9: ações visíveis
+
+- [x] Corrigir cabelo/chapéu e orientação do regador.
+- [x] Ronda local, acesso ao ninho e coleta animada do Zeca.
+- [x] Evitar cobrança de serviço quando não há acesso ao ninho.
+- [x] Comerciante própria: Dona Lúcia.
 
 ## Próximo bloco — ampliar a automação
 

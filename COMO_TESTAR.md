@@ -1,16 +1,28 @@
-# Como testar a versão 0.8.1
+# Como testar a versão 0.9.0
 
 Este roteiro cobre os **corpos conectados**, as **galinhas novas**, o Zeca e as encomendas.
-Abra o executável da pasta `windows-v0.8.1` e escolha **Voltar para minha fazenda**.
+Abra o executável da pasta `windows-v0.9` e escolha **Voltar para minha fazenda**.
 A versão nova aceita a fazenda anterior; não precisa começar outra.
 
 **Regra principal:** o tempo só avança caminhando, com as janelas fechadas.
 Use **TAB** até aparecer o modo de caminhada. Construção e qualquer janela
 pausam plantas, galinhas, ajudante e prazos de encomendas.
 
-## 0. Conferir os personagens novos
+## 0. Correções e rotina da 0.9
 
-1. Abra a **0.8.1** e retome sua fazenda. O protagonista já usa o modelo novo.
+1. Gire a câmera ao redor dos chapéus: as mechas devem permanecer sob a aba.
+2. Regue um canteiro seco com E. Confira a mão na alça, o bico à frente e as gotas saindo dele.
+3. Visite o armazém: Dona Lúcia deve aparecer na tenda e nos textos de interação/venda.
+4. Com Zeca contratado e ativo, feche as janelas e use TAB para caminhar.
+   Observe por 20 segundos: ronda, ida ao ninho e, se houver ovos, agachamento e ovo na mão.
+5. A coleta só acontece na checagem de 15 segundos se o ponto de acesso estiver alcançado.
+   Se aparecer CAMINHO BLOQUEADO, libere a frente e os lados do galinheiro.
+   Sem acesso, não há coleta ou cobrança. As rotas são locais e não abrem portões.
+6. Pause em H: Zeca para de andar. Janelas e modo de construção também pausam a rotina.
+
+## Conferir os personagens novos
+
+1. Abra a **0.9.0** e retome sua fazenda. O protagonista já usa o modelo novo.
 2. Use TAB para caminhar. Segure o botão direito e gire a câmera para ver o rosto;
    aproxime com a roda do mouse. Confira ombros ligados ao tronco, cintura e pernas.
    Os braços não devem parecer peças soltas.
@@ -36,7 +48,7 @@ pausam plantas, galinhas, ajudante e prazos de encomendas.
 3. Clique em **Contratar • conferir custos**, leia os valores e confirme **$120**.
    O saldo deve cair exatamente $120. Zeca aparece junto ao galinheiro.
 4. Feche a janela e vá para caminhada com **TAB**. Não recolha os ovos manualmente.
-   Se o ninho já tinha ovos, ele coleta na próxima checagem, em até 15 segundos.
+   Se o ninho já tinha ovos, ele coleta na próxima checagem, na checagem de 15 segundos, com acesso livre ao ninho.
    Num galinheiro novo e bem cuidado, os primeiros dois ovos levam cerca de
    45 segundos; a coleta ocorre nessa checagem ou na seguinte.
 5. Deve aparecer **Zeca concluiu o trato**. Os ovos entram no estoque e o ninho
@@ -59,7 +71,7 @@ depois de aproximadamente 4–5 minutos de caminhada. Ele atende **um galinheiro
 3. Se tiver dois galinheiros, escolha o outro na lista e clique em
    **Atender este galinheiro**. A troca é grátis e reinicia a checagem de 15 segundos.
 4. Para testar salvamento com calma, pause o Zeca, feche a janela, pressione **F5**
-   e saia pelo menu. Abra novamente a **0.8.1**: ele continua contratado e pausado,
+   e saia pelo menu. Abra novamente a **0.9.0**: ele continua contratado e pausado,
    com os mesmos totais e galinheiro. Jogo fechado não gera serviço nem cobrança.
 5. **Dispensar…** abre uma confirmação. **Voltar sem alterar** cancela a dispensa.
    Confirmar é grátis, preserva os produtos e encerra o trabalho. Contratação

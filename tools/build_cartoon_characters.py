@@ -100,7 +100,7 @@ def group(name,objects,pivot):
     bpy.ops.object.origin_set(type='ORIGIN_CURSOR')
     return obj
 
-def build(name,zeca=False):
+def build(name,zeca=False,vendor=False):
     bpy.ops.object.select_all(action='SELECT'); bpy.ops.object.delete(use_global=False)
     palette={'Skin':'E5A36D' if zeca else 'F1B381','Cheek':'DF9364','Shirt':'C86A43' if zeca else 'FFF3DA',
              'Denim':'647044' if zeca else '287CC0','Seam':'879365' if zeca else '63A5D3',
@@ -108,6 +108,9 @@ def build(name,zeca=False):
              'White':'FFFAEA','Dark':'281D19','Eye':'181512','Iris':'806039','Gold':'EFB34A',
              'Hat':'578577' if zeca else 'DDB45C','Band':'34574C' if zeca else 'AE803D'}
     global M
+    if vendor:
+        palette.update({'Shirt':'AC6685','Denim':'347F78','Seam':'73ADA0','Hair':'633726',
+                        'Glove':'F1B381','Hat':'D89949','Band':'D89949','Cheek':'DF927C'})
     M={key:material(name+'_'+key,value) for key,value in palette.items()}
     import runpy
     body_builder=runpy.run_path(str(ROOT/'tools'/'character_body.py'))
@@ -156,11 +159,11 @@ def build(name,zeca=False):
             for i in range(segments):
                 a=row*(segments+1)+i; faces.append((a,a+segments+1,a+segments+2,a+1))
         return mesh(name,verts,faces,color)
-    objs.append(smile_patch('Broad smile outline',.235 if zeca else .324,(1.445,.067),(1.285,.227),'Dark',.014))
-    objs.append(smile_patch('Single cartoon smile',.211 if zeca else .299,(1.434,.066),(1.315,.185),'White',.019))
+    objs.append(smile_patch('Broad smile outline',.235 if zeca or vendor else .324,(1.445,.067),(1.285,.227),'Dark',.014))
+    objs.append(smile_patch('Single cartoon smile',.211 if zeca or vendor else .299,(1.434,.066),(1.315,.185),'White',.019))
     for sign in [-1,1]:
         x=sign*.322; z=1.51
-        if not zeca: objs.append(tube('Smile corner',[(x-sign*.012,face(x,z,.022),z-.012),(x,face(x,z,.018),z+.013)],.010,'Brow',[1,.1]))
+        if not zeca and not vendor: objs.append(tube('Smile corner',[(x-sign*.012,face(x,z,.022),z-.012),(x,face(x,z,.018),z+.013)],.010,'Brow',[1,.1]))
     objs.append(ellipsoid('Button nose',(0,face(0,1.572,.031),1.572),(.105 if zeca else .069,.073,.070 if zeca else .049),'Skin',rings=16,segments=24))
     # Clean sculpted hair tufts; no individual strands or photoreal skin texture.
     for x,z,angle in [(-.30,2.085,-.35),(-.12,2.09,-.20),(.07,2.095,.18),(.27,2.08,.5)]:
@@ -198,6 +201,28 @@ def build(name,zeca=False):
     objs.append(tube('Hat band',band,.024,'Band'))
     for x in [-.115,-.063]: objs.append(tube('Hat repair',[(x,-.311,2.22),(x-.008,-.296,2.34)],.0045,'Band'))
     for z in [2.26,2.303]: objs.append(tube('Hat repair', [(-.145,-.317+(z-2.22)*.17,z),(-.035,-.317+(z-2.22)*.17,z)],.0045,'Band'))
+    if vendor:
+        for obj in list(objs):
+            if obj.name.startswith(('Wavy hat','Rounded hat','Hat band','Hat repair')):
+                objs.remove(obj); bpy.data.objects.remove(obj,do_unlink=True)
+        objs.append(ellipsoid('Hair crown',(0,.10,2.03),(.43,.30,.18),'Hair'))
+        for sign in [-1,1]:
+            for i in range(5):
+                objs.append(ellipsoid('Braided hair',(sign*(.45+.025*math.sin(i*2)),.035,1.66-i*.10),(.092,.095,.083),'Hair'))
+            objs.append(ellipsoid('Braid ribbon',(sign*.45,.02,1.20),(.105,.075,.035),'Band'))
+            objs.append(ellipsoid('Gold earring',(sign*.535,-.015,1.50),(.038,.035,.047),'Gold'))
+            x=sign*.305; z=1.57
+            objs.append(ellipsoid('Soft cheek',(x,face(x,z,.006),z),(.053,.012,.032),'Cheek'))
+    else:
+        # Trim every hair vertex beneath the curved underside of the brim.
+        # Lowering only the fringe center left its tips above the hat.
+        for obj in objs:
+            if obj.data.materials[0]!=M['Hair']: continue
+            for vertex in obj.data.vertices:
+                x,y,z=vertex.co
+                r=math.sqrt((x/.72)**2+(y/.56)**2); a=math.atan2(y/.56,x/.72)
+                underside=2.105+.05*r*r*math.cos(2*a+.4)+.048*r*math.cos(a)
+                vertex.co.z=min(z,underside-.022)
     for parts,label in [(eye_parts,'BlinkEyes'),(closed_parts,'BlinkCrease')]:
         for obj in parts:
             vg=obj.vertex_groups.new(name=label)
@@ -221,3 +246,4 @@ if __name__=='__main__':
     wanted=sys.argv[sys.argv.index('--')+1:] if '--' in sys.argv else []
     if not wanted or 'farmer' in wanted: build('farmer')
     if not wanted or 'helper' in wanted: build('helper',True)
+    if not wanted or 'vendor' in wanted: build('vendor',vendor=True)

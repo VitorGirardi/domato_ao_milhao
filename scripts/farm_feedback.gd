@@ -34,11 +34,11 @@ func floating_text(at: Vector3, text: String, color: Color) -> void:
 	tween.tween_property(label,"outline_modulate:a",0.0,0.6).set_delay(0.8)
 	tween.finished.connect(label.queue_free)
 
-func water(at: Vector3, origin: Vector3, overhead: bool, caption: String = "Regado!") -> void:
+func water(at: Vector3, origin: Vector3, overhead: bool, caption: String = "Regado!", vessel:Node3D=null) -> void:
 	floating_text(at,caption,Color("9ee4ef"))
 	if overhead:
 		var can:=world.model("watering_can",self,at+Vector3(-0.45,1.2,-0.3))
-		can.rotation.z=-0.3
+		can.rotation.x=0.35
 		var fade:=create_tween()
 		fade.tween_property(can,"scale",Vector3.ONE*0.01,0.2).set_delay(0.65)
 		fade.finished.connect(can.queue_free)
@@ -51,12 +51,15 @@ func water(at: Vector3, origin: Vector3, overhead: bool, caption: String = "Rega
 		drop.visible=false
 		add_child(drop)
 		var end:=at+Vector3(rng.randf_range(-0.8,0.8),0.15,rng.randf_range(-0.8,0.8))
-		var start:=origin+Vector3(rng.randf_range(-0.1,0.1),0,0)
+		var start:Array[Vector3]=[origin+Vector3(rng.randf_range(-0.04,0.04),0,0)]
 		var duration:=rng.randf_range(0.32,0.48)
 		var tween:=create_tween()
 		tween.tween_interval(i*0.015)
-		tween.tween_callback(func(): drop.visible=true)
-		tween.tween_method(func(t: float): drop.position=start.lerp(end,t)+Vector3.UP*sin(t*PI)*0.18,0.0,1.0,duration)
+		tween.tween_callback(func():
+			if is_instance_valid(vessel): start[0]=to_local(vessel.global_transform*Vector3(0,0.4,0.57))
+			drop.position=start[0]
+			drop.visible=true)
+		tween.tween_method(func(t: float): drop.position=start[0].lerp(end,t)+Vector3.UP*sin(t*PI)*0.08,0.0,1.0,duration)
 		tween.tween_callback(drop.queue_free)
 
 func harvest(at: Vector3, crop: String) -> void:

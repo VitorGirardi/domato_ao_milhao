@@ -30,12 +30,12 @@ func render_preview() -> void:
 	floor_mesh.material_override=mat
 	scene.add_child(floor_mesh)
 	var actors:Array[FarmAvatar]=[]
-	for i in range(2):
-		var model_name:="farmer" if i==0 else "helper"
+	for i in range(3):
+		var model_name:String=["farmer","helper","vendor"][i]
 		var packed:PackedScene=load("res://assets/models/%s.glb"%model_name)
 		var actor:Node3D=packed.instantiate()
 		FarmAvatar.prepare_model(actor)
-		actor.position.x=-0.95 if i==0 else 0.95
+		actor.position.x=(i-1)*1.7
 		scene.add_child(actor)
 		var animator:=FarmAvatar.new()
 		animator.setup(actor)
@@ -51,7 +51,7 @@ func render_preview() -> void:
 			assert(absf(animator.skeleton.get_bone_pose_rotation(index).normalized().dot(animator.skeleton.get_bone_rest(index).basis.get_rotation_quaternion().normalized()))>0.99999)
 		animator.animate(1,false,false)
 	var camera:=Camera3D.new()
-	camera.position=Vector3(0,1.65,6.8)
+	camera.position=Vector3(0,1.65,9.5)
 	camera.fov=31
 	scene.add_child(camera)
 	camera.look_at(Vector3(0,1.25,0))
@@ -59,7 +59,7 @@ func render_preview() -> void:
 	await process_frame
 	await process_frame
 	await RenderingServer.frame_post_draw
-	root.get_texture().get_image().save_png("res://test-results/characters-v08-front.png")
+	root.get_texture().get_image().save_png("res://test-results/characters-v09-front.png")
 	for frame in range(9):
 		for animator in actors:
 			animator.blink_elapsed=frame*0.0275
@@ -73,16 +73,16 @@ func render_preview() -> void:
 		assert(animator.face_mesh.get_blend_shape_value(animator.blink_index)>0.99)
 	await process_frame
 	await RenderingServer.frame_post_draw
-	root.get_texture().get_image().save_png("res://test-results/characters-v081-blink.png")
+	root.get_texture().get_image().save_png("res://test-results/characters-v09-blink.png")
 	for animator in actors:
 		animator.update_blink(0.2)
 		assert(animator.face_mesh.get_blend_shape_value(animator.blink_index)==0.0)
 		assert(animator.blink_wait>=2.5 and animator.blink_wait<=5.5)
-	camera.position=Vector3(3.1,2.0,6.1)
+	camera.position=Vector3(3.1,2.0,9.1)
 	camera.look_at(Vector3(0,1.3,0))
 	await process_frame
 	await RenderingServer.frame_post_draw
-	root.get_texture().get_image().save_png("res://test-results/characters-v08-angle.png")
+	root.get_texture().get_image().save_png("res://test-results/characters-v09-angle.png")
 	# Deliberately bend elbow and knee, and raise the opposite arm to inspect seams.
 	for animator in actors:
 		animator.pose_bone("UpperArm.R",Vector3(-0.65,0,-0.28))
@@ -95,7 +95,22 @@ func render_preview() -> void:
 	await process_frame
 	await process_frame
 	await RenderingServer.frame_post_draw
-	root.get_texture().get_image().save_png("res://test-results/characters-v08-bend.png")
+	root.get_texture().get_image().save_png("res://test-results/characters-v09-bend.png")
+	for animator in actors:
+		animator.play("water")
+		animator.animate(0.55,false,false)
+		var basis:=animator.root.global_transform.basis.inverse()*animator.can.global_transform.basis
+		assert(basis.y.normalized().dot(Vector3.UP)>0.8,"Watering vessel must remain upright")
+	await process_frame
+	await process_frame
+	await RenderingServer.frame_post_draw
+	root.get_texture().get_image().save_png("res://test-results/characters-v09-water.png")
+	actors[1].play("collect")
+	actors[1].animate(1.2,false,false)
+	assert(actors[1].carried_egg.visible)
+	await process_frame
+	await RenderingServer.frame_post_draw
+	root.get_texture().get_image().save_png("res://test-results/characters-v09-collect.png")
 	for animator in actors: animator.root.visible=false
 	var world:=FarmWorld.new()
 	for i in range(3):
@@ -110,8 +125,8 @@ func render_preview() -> void:
 	await process_frame
 	await process_frame
 	await RenderingServer.frame_post_draw
-	root.get_texture().get_image().save_png("res://test-results/chickens-v08.png")
+	root.get_texture().get_image().save_png("res://test-results/chickens-v09.png")
 	for orphan in [world.structures,world.border,world.build_grid,world.selection]: orphan.free()
 	world.free()
-	print("CHARACTER_RENDER_OK: two skinned GLBs, 20 bones each, front/angle/bent elbow and knee")
+	print("CHARACTER_RENDER_OK: three skinned GLBs, 20 bones each, front/angle/bent joints, upright watering can, collection pose and Blink")
 	quit()

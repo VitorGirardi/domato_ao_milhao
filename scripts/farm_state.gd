@@ -21,7 +21,7 @@ const JOURNEY = [
 	{"key":"plots", "title":"Raízes no chão", "body":"Construa 3 canteiros.\nCada um já vem com sementes.\nCenouras crescem mais rápido!", "button":"Plantar meus canteiros", "action":"plots"},
 	{"key":"water", "title":"Uma dose de cuidado", "body":"Regue 3 canteiros com Cuidar.\nOs marcadores azuis indicam\nquem está precisando de água.", "button":"Cuidar dos canteiros", "action":"water"},
 	{"key":"harvest", "title":"Hora de colher", "body":"TAB faz o tempo passar.\nQuando aparecer COLHER,\nuse Cuidar ou E de perto.", "button":"Caminhar pela fazenda", "action":"harvest"},
-	{"key":"sale", "title":"Seu primeiro negócio", "body":"Seu Tonico compra a produção.\nAbra o armazém e transforme\nsua colheita em moedas.", "button":"Visitar o armazém", "action":"market"},
+	{"key":"sale", "title":"Seu primeiro negócio", "body":"Dona Lúcia compra a produção.\nAbra o armazém e transforme\nsua colheita em moedas.", "button":"Visitar o armazém", "action":"market"},
 	{"key":"contract", "title":"O bolo da Dona Nena", "body":"Entregue 6 cenouras por $110.\nSepare o pedido antes de\nvender o restante do estoque!", "button":"Ver pedido especial", "action":"market"},
 	{"key":"coop", "title":"Companhia no quintal", "body":"Construa seu primeiro\ngalinheiro por $180.\nA Maricota vem de brinde!", "button":"Construir galinheiro", "action":"coop"},
 	{"key":"expand", "title":"Um sonho maior", "body":"Junte $900 para expandir.\nMais espaço para construir\na fazenda do seu jeito.", "button":"Planejar expansão", "action":"expand"}
@@ -43,6 +43,7 @@ var watering_upgrade := false
 var trade:Dictionary=FarmTrade.fresh()
 var trade_notices:Array[String]=[]
 var staff:Dictionary=FarmStaff.fresh()
+var staff_accessible:=true # Runtime arrival gate, recalculated by the world; not saved.
 var staff_notice:=""
 
 func hire_staff(index: int) -> String:

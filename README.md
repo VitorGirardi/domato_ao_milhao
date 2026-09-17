@@ -5,13 +5,13 @@
 Protótipo jogável de um tycoon de fazenda 3D estilizado para Windows, em português.
 Godot 4.7.2 + modelos originais feitos no Blender 5.2.1. Campanha solo e offline.
 
-**Versão atual: 0.8.1.** Veja [as prioridades](ROADMAP.md) e [as novidades](CHANGELOG.md).
+**Versão atual: 0.9.0.** Veja [as prioridades](ROADMAP.md) e [as novidades](CHANGELOG.md).
 
 Veja o [roteiro de teste manual](COMO_TESTAR.md), incluindo encomendas e vendas da 0.5.
 
 ## Jogar
 
-O executável local fica em `exports/windows-v0.8.1/DoMatoAoMilhao.exe` depois da exportação.
+O executável local fica em `exports/windows-v0.9/DoMatoAoMilhao.exe` depois da exportação.
 Ele abre diretamente, sem instalar Godot ou Blender. Os binários não são enviados ao Git.
 
 Para executar a partir do código:
@@ -19,9 +19,22 @@ Para executar a partir do código:
 2. Aguarde a importação dos modelos.
 3. Pressione **F5** para jogar. O cenário é montado pelos scripts durante a execução.
 
+## Novidades da 0.9
+
+- Cabelo aparado sob a superfície curva do chapéu, incluindo as pontas das mechas.
+- Regador orientado pela alça, com recipiente em pé, inclinação de despejo e gotas saindo do bico.
+- Zeca caminha entre pontos próximos do galinheiro, vai ao ninho e se abaixa com um ovo na mão.
+- Rotas locais desviam de construções/cercas; se o ninho estiver inacessível, não há serviço nem cobrança.
+- Dona Lúcia substitui Seu Tonico com modelo próprio, tranças, brincos, roupa e piscadas.
+
+A ronda fica próxima do galinheiro atribuído. A verificação de serviço continua
+a cada 15 segundos e só conclui se Zeca tiver alcançado o ponto de acesso ao ninho.
+Uma frente bloqueada pode adiar a rodada. Mantenha passagem livre ao redor da construção.
+Não há abertura de portões ou transporte até um depósito nesta etapa.
+
 ## Personagens e galinhas — corpos conectados
 
-A revisão 0.8.1 deixa Zeca mais corpulento, com barriga e tronco largos.
+A revisão 0.9.0 deixa Zeca mais corpulento, com barriga e tronco largos.
 Os dois modelos têm olhos cerca de um terço menores, íris castanha e pupilas
 reduzidas. Um morph facial fecha os olhos em 0,22 segundo; cada personagem
 pisca de forma independente, com pausas entre 2,5 e 5,5 segundos.
@@ -73,7 +86,7 @@ O formato de salvamento e as regras da fazenda permanecem os mesmos da 0.6.
 | Girar construção | R / Q |
 | Mover construção selecionada | M |
 | Cuidar de canteiro / editar placa / abrir celeiro ou galinheiro próximo | E |
-| Armazém do Seu Tonico | F |
+| Armazém da Dona Lúcia | F |
 | Encomendas da vizinhança | J |
 | Gerenciar o ajudante | H |
 | Salvar | F5 |
@@ -152,7 +165,7 @@ No Armazém [F], escolha o produto e a quantidade para vender. O preço total ap
 antes da venda. A reserva do celeiro e os ovos ainda no ninho ficam separados.
 Vender todo o estoque continua disponível; confira os pedidos ativos antes.
 
-Abra **Encomendas [J]**, a aba do armazém ou o quadro ao lado do Seu Tonico (E de
+Abra **Encomendas [J]**, a aba do armazém ou o quadro ao lado da Dona Lúcia (E de
 perto; clique na câmera aérea). Dona Nena, Seu Bento e Dona Lola têm três receitas
 cada, com especialidades, quantidades, prazo e pagamento visíveis. Aceitar inicia
 o prazo, sem reservar ou consumir produtos. É permitido um pedido por vizinho.
@@ -212,7 +225,7 @@ entre tarefas, vários funcionários ou automação da lavoura nesta primeira en
 
 ## Limites assumidos do protótipo
 
-Esta é a versão **0.8.1**, destinada a validar o ciclo de jogo e a direção visual.
+Esta é a versão **0.9.0**, destinada a validar o ciclo de jogo e a direção visual.
 O celeiro tem reserva e uma melhoria de ferramenta; não tem interior explorável.
 Os traçados são retos, sem curvas ou desenho livre. Preços e tempos aguardam ajuste com partidas reais.
 Os cuidados das galinhas são por galinheiro; ainda não há reprodução, doenças,
@@ -259,6 +272,7 @@ scripts/farm_avatar.gd Animação do personagem e regador
 scripts/farm_feedback.gd Efeitos visuais temporários das ações
 scripts/farm_staff.gd Rotina, custos e validação do ajudante
 scripts/farm_trade.gd Ofertas, reputação, preços e validação do comércio
+scripts/farm_staff_motion.gd Rotas locais, acesso ao ninho e gesto de coleta
 scripts/farm_animals.gd Necessidades, ritmo de produção e validação dos animais
 tests/                Testes da simulação
 tools/build_assets.py Gerador reproduzível do kit original no Blender
@@ -296,14 +310,16 @@ godot --headless --path . --script tests/test_v03.gd
 godot --headless --path . --script tests/test_v04.gd
 godot --headless --path . --script tests/test_v05.gd
 godot --headless --path . --script tests/test_v06.gd
+godot --headless --path . --script tests/test_v09.gd
 New-Item -ItemType Directory -Force test-results
 godot --path . --resolution 1440x900 --script tests/render_characters.gd
 godot --path . --resolution 1440x900 --fixed-fps 60 --quit-after 2400 -- --qa
-New-Item -ItemType Directory -Force exports/windows-v0.8.1
+godot --path . --resolution 960x640 --script tests/render_staff.gd
+New-Item -ItemType Directory -Force exports/windows-v0.9
 godot --headless --path . --export-release 'Windows Desktop'
 ```
 
-O teste de integração usa apenas `qa_farm_v08.json`, nunca o salvamento real.
+O teste de integração usa apenas `qa_farm_v09.json`, nunca o salvamento real.
 Valida compra, colocação via controles do jogo, colheita, venda, pintura, texto,
 movimento, câmeras, gravação real, leitura e recuperação de backup.
 Também verifica movimento/cancelamento de construções, poses do personagem,
@@ -312,7 +328,7 @@ Na 0.3, testa entrada de mouse, confirmação/cancelamento de traçados, soltura
 interface, materiais por parte, reserva, remoção protegida e rega em área. Os testes
 da simulação somam 336 verificações. Na 0.4 também são validados nomes, suprimentos,
 coleta, migração, limites de produção, cliques em galinhas, pausa, movimentos,
-modelos visuais e humor. Na 0.5, verifica vendas digitadas, pedidos, reputação, pausas, vencimento e acesso ao quadro. Na 0.6, também testa contratação, cancelamento, custos, pausa, falta de saldo, seleção, dispensa e persistência do ajudante. Na 0.8, confere os corpos com skin, os 20 ossos, orientação da pose de repouso, rega e pivôs das galinhas. O teste visual precisa terminar com `V08_CHARACTER_OK`, `V06_INTEGRATION_OK`, `V05_INTEGRATION_OK`, `V04_INTEGRATION_OK`,
+modelos visuais e humor. Na 0.5, verifica vendas digitadas, pedidos, reputação, pausas, vencimento e acesso ao quadro. Na 0.6, também testa contratação, cancelamento, custos, pausa, falta de saldo, seleção, dispensa e persistência do ajudante. Na 0.8, confere os corpos com skin, os 20 ossos, orientação da pose de repouso, rega e pivôs das galinhas. O teste visual precisa terminar com `V09_CHARACTER_OK`, `V06_INTEGRATION_OK`, `V05_INTEGRATION_OK`, `V04_INTEGRATION_OK`,
 `V03_INTEGRATION_OK`, `SAVE_OK` e sem `ERROR` no log (não basta o código de saída).
 As capturas são geradas em `test-results/` e não entram no Git.
 O modo QA só é aceito por compilações de depuração/editor.

@@ -1,5 +1,14 @@
 # Alterações
 
+## 0.9.0 — Trato animado e Dona Lúcia
+
+- Cabelo contido sob a aba dos chapéus; corrigidas as pontas que atravessavam a superfície.
+- Regador independente dos eixos do pulso, preso pela alça e inclinado para despejar; gotas no bico real.
+- Ronda local do Zeca, planejamento de rotas com obstáculos, ida ao ninho, agachamento e ovo visível.
+- Serviço condicionado à chegada ao ninho, sem cobrança quando inacessível; save continua no formato 5.
+- Dona Lúcia com GLB/Blender próprios, tranças, brincos e roupa diferente; textos do armazém atualizados.
+- Testes de rota, destino bloqueado, cobrança após acesso, pausa e sequência renderizada de coleta.
+
 ## 0.8.1 — Zeca corpulento e olhos com piscadas
 
 - Zeca com barriga e tronco mais largos; pesos do corpo separados dos braços pela topologia.

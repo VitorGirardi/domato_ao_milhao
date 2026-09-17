@@ -263,3 +263,6 @@ if '--only-buildings' not in sys.argv:
     runpy.run_path(str(ROOT / 'tools' / 'build_trade_assets.py'), run_name='__main__')
     runpy.run_path(str(ROOT / 'tools' / 'build_staff_assets.py'), run_name='__main__')
     runpy.run_path(str(ROOT / 'tools' / 'build_chicken.py'), run_name='__main__')
+
+if '--only-buildings' not in sys.argv:
+    runpy.run_path(str(ROOT / 'tools' / 'build_cartoon_characters.py'))['build']('vendor',vendor=True)
