@@ -28,7 +28,8 @@ static func pose(actor:FarmAvatar,kind:String,t:float,blend:float) -> void:
 		var sign_value:=1.0 if side=="R" else -1.0
 		var arm:=Vector3(-.25,0,-sign_value*.85)
 		var forearm:=Vector3(-1.25,0,0)
-		var hand:=Vector3(.12,0,0)
+		var hand:=Vector3(.08,0,0)
+		var forearm_twist:=0.0
 		var thigh:=0.0
 		var knee:=.12
 		match kind:
@@ -48,7 +49,8 @@ static func pose(actor:FarmAvatar,kind:String,t:float,blend:float) -> void:
 				var lift:=sin(t*6.7)*sign_value
 				arm=Vector3(-.30-lift*.22,0,-sign_value*.30)
 				forearm=Vector3(-1.35-lift*.28,0,0)
-				hand=Vector3(.12,0,sign_value*1.35)
+				hand=Vector3(.04,0,0)
+				forearm_twist=sign_value*.20
 				thigh=-.07; knee=.14
 				actor.pose_bone("Chest",Vector3(.02,0,sway*.045),blend)
 				actor.pose_bone("Spine",Vector3(.03,0,sway*.055),blend)
@@ -59,7 +61,7 @@ static func pose(actor:FarmAvatar,kind:String,t:float,blend:float) -> void:
 				thigh=-.08; knee=.16
 				actor.pose_bone("Chest",Vector3(-.08,0,sway*.15),blend)
 		actor.pose_bone("UpperArm."+side,arm,blend)
-		actor.pose_bone("Forearm."+side,forearm,blend)
+		actor.pose_bone("Forearm."+side,forearm,blend,forearm_twist)
 		actor.pose_bone("Hand."+side,hand,blend)
 		actor.pose_bone("Thigh."+side,Vector3(thigh,0,sign_value*sway*.06),blend)
 		actor.pose_bone("Shin."+side,Vector3(knee,0,0),blend)

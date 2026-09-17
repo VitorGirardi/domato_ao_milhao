@@ -5,13 +5,13 @@
 Protótipo jogável de um tycoon de fazenda 3D estilizado para Windows, em português.
 Godot 4.7.2 + modelos originais feitos no Blender 5.2.1. Campanha solo e offline.
 
-**Versão atual: 0.18.1.** Veja [as prioridades](ROADMAP.md) e [as novidades](CHANGELOG.md).
+**Versão atual: 0.18.2.** Veja [as prioridades](ROADMAP.md) e [as novidades](CHANGELOG.md).
 
 Veja o [roteiro de teste manual](COMO_TESTAR.md), incluindo encomendas e vendas da 0.5.
 
 ## Jogar
 
-O executável local fica em `exports/windows-v0.18.1/DoMatoAoMilhao.exe` depois da exportação.
+O executável local fica em `exports/windows-v0.18.2/DoMatoAoMilhao.exe` depois da exportação.
 Ele abre diretamente, sem instalar Godot ou Blender. Os binários não são enviados ao Git.
 
 Para executar a partir do código:
@@ -19,7 +19,14 @@ Para executar a partir do código:
 2. Aguarde a importação dos modelos.
 3. Pressione **F5** para jogar. O cenário é montado pelos scripts durante a execução.
 
-## Novidades da 0.18.1
+## Novidades da 0.18.2
+
+- Corrige a Six Seven: a palma gira pelo eixo longitudinal do antebraço, preservando o alinhamento do punho.
+- Polegar mais curto e arredondado, ligado à região correta da palma nos cinco modelos de personagem.
+- Pesos da palma e do polegar definidos pela topologia da mão, sem depender de limites de coordenadas do corpo.
+- Revisão ampliada de danças, caminhada, corrida, rega, coleta e transporte. Save permanece no formato 13.
+
+## Recursos da 0.18.1
 
 - **B → Six Seven**: quarto emote de dança, mãos abertas alternando a altura e balanço do corpo.
 - Dura seis segundos e cancela ao andar, pular ou interagir. Animação original no rig do personagem, sem faixa musical adicionada.

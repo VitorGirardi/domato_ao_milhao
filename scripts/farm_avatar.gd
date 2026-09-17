@@ -71,14 +71,16 @@ func setup(model: Node3D, world: FarmWorld = null) -> void:
 	root.add_child(reaction)
 	animate(1,false,false)
 
-func pose_bone(key: String, angles: Vector3, blend: float = 1.0) -> void:
+func pose_bone(key: String, angles: Vector3, blend: float = 1.0, axial_twist: float = 0.0) -> void:
 	var rest:Quaternion=rest_rotations[key]
 	var model_rotation:=Quaternion(Vector3.RIGHT,angles.x)*Quaternion(Vector3.UP,angles.y)*Quaternion(Vector3.BACK,angles.z)
 	var index:int=bones[key]
 	# Imported poses contain the parent-relative rest rotation, not an identity
 	# delta. Keep that basis when applying rotations around model-space axes.
 	var local_rest:=skeleton.get_bone_rest(index).basis.get_rotation_quaternion()
-	var local_rotation:=local_rest*rest.inverse()*model_rotation*rest
+	# Bone-local Y runs along the limb. Supination must rotate about that
+	# longitudinal axis; model-space Z instead bends the wrist sideways.
+	var local_rotation:=local_rest*rest.inverse()*model_rotation*rest*Quaternion(Vector3.UP,axial_twist)
 	skeleton.set_bone_pose_rotation(index,skeleton.get_bone_pose_rotation(index).slerp(local_rotation,blend))
 
 func stop_emote() -> void:

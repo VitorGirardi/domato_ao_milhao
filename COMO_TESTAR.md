@@ -1,7 +1,15 @@
-# Como testar a versão 0.18.1
+# Como testar a versão 0.18.2
 
 Extraia o ZIP e abra `DoMatoAoMilhao.exe`. Escolha **Voltar para minha fazenda**.
 A versão aceita a partida anterior. Não precisa começar outra.
+
+## Conferir as mãos corrigidas
+
+1. Em caminhada, aproxime a câmera e use **B → Six Seven**. Observe de frente e de lado.
+2. A palma deve acompanhar o antebraço sem dobrar o punho lateralmente em ângulo reto.
+3. Confira também parado, correndo, nas outras danças, regando e colhendo.
+4. Olhe as mãos de Zeca, Lúcia, Chico e Raul: todos receberam o polegar revisado.
+5. Interrompa a dança e regue um canteiro; a orientação deve retornar normalmente.
 
 ## Six Seven
 

@@ -1,5 +1,12 @@
 # Alterações
 
+## 0.18.2 — Correção das mãos
+
+- Substitui a dobra lateral excessiva do punho na Six Seven por rotação axial do antebraço.
+- Refaz a base e proporções do polegar na malha compartilhada e fixa sua influência ao osso da mão.
+- Regenera os cinco personagens no Blender, mantendo corpo contínuo, esqueleto e piscar.
+- Teste de alinhamento dos punhos e revisão aproximada de doze poses em cinco modelos.
+
 ## 0.18.1 — Six Seven
 
 - Quarta dança na roda B, com ícone próprio e botão central.

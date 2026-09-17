@@ -18,6 +18,7 @@ def smooth(a,b,x):
 def build_body(api,zeca):
     wide=1.35 if zeca else 1.0
     verts=[]; faces=[]; colors=[]
+    hand_vertices={"L":set(),"R":set()}
     def vert(co):
         verts.append(tuple(co)); return len(verts)-1
     def face(indices,color):
@@ -70,20 +71,24 @@ def build_body(api,zeca):
             v=Vector((0,1,0))
             center=Vector((sign*x*wide,y,z))
             ring=[vert(center+u*(ru*math.cos(-math.pi/3+math.tau*i/12))+v*(rv*math.sin(-math.pi/3+math.tau*i/12))) for i in range(12)]
+            if r>=9: hand_vertices[side].update(ring)
             color='Shirt' if z>=1.415 else ('Glove' if z<1.074 and not zeca else 'Skin')
-            if r==11:
-                # Leave a single palm-side opening for an integrated thumb.
+            if r==10:
+                # Thumb starts beside the proximal palm, not at the fingertips.
+                # Two quad openings keep its root broad enough after subdivision.
                 for i in range(12):
-                    if i!=8: face((previous[i],previous[(i+1)%12],ring[(i+1)%12],ring[i]),color)
+                    if i not in (7,8): face((previous[i],previous[(i+1)%12],ring[(i+1)%12],ring[i]),color)
                 palm=previous; knuckles=ring
             else: bridge(previous,ring,color)
             previous=ring
         face(tuple(reversed(previous)),'Skin' if zeca else 'Glove')
-        boundary=[palm[8],palm[9],knuckles[9],knuckles[8]]
-        center=sum((Vector(verts[i]) for i in boundary),Vector())/4
+        boundary=[palm[7],palm[8],palm[9],knuckles[9],knuckles[8],knuckles[7]]
+        center=sum((Vector(verts[i]) for i in boundary),Vector())/len(boundary)
         previous=boundary
-        for step,scale in [(Vector((-sign*.045,-.024,.038)),.78),(Vector((-sign*.078,-.033,.03)),.40)]:
+        for step,scale in [(Vector((-sign*.024,-.008,-.010)),.95),(Vector((-sign*.047,-.012,-.020)),.78),(Vector((-sign*.062,-.013,-.024)),.55)]:
             ring=[vert(center+step+(Vector(verts[i])-center)*scale) for i in boundary]
+            assert all((Vector(verts[i])-center).length<.12 for i in ring), 'Thumb extrusion escaped the palm'
+            hand_vertices[side].update(ring)
             bridge(previous,ring,'Skin' if zeca else 'Glove'); previous=ring
         face(tuple(reversed(previous)),'Skin' if zeca else 'Glove')
     # A shared crotch chain divides the hip opening into two leg openings.
@@ -127,6 +132,13 @@ def build_body(api,zeca):
     for vertex in data.vertices:
         if tuple(round(c,6) for c in vertex.co) in core_positions:
             core_group.add([vertex.index],1,'REPLACE')
+    # Anatomical membership must survive thumb vertices crossing the torso's
+    # coordinate threshold. Position-only weights can attach a thumb to a leg.
+    for side,indices in hand_vertices.items():
+        positions={tuple(round(c,6) for c in verts[i]) for i in indices}
+        group=body.vertex_groups.new(name='HandTopology.'+side)
+        for vertex in data.vertices:
+            if tuple(round(c,6) for c in vertex.co) in positions:group.add([vertex.index],1,'REPLACE')
     body['continuous_components']=1
     body['closed_manifold']=True
     body['design']='Connected shoulders, torso, hips and limbs; supporting loops at elbows and knees'
@@ -223,7 +235,11 @@ def rig_export(name,body,details,head,zeca):
         for vertex in obj.data.vertices:
             core=obj.vertex_groups.get('TorsoTopology')
             is_core=core is not None and any(g.group==core.index for g in vertex.groups)
-            assignment={'Head':1.0} if obj==head else weights(obj.matrix_world@vertex.co,zeca,is_core)
+            hand_side=None
+            for side in ['L','R']:
+                marker=obj.vertex_groups.get('HandTopology.'+side)
+                if marker is not None and any(g.group==marker.index for g in vertex.groups):hand_side=side
+            assignment=({'Hand.'+hand_side:1.0} if hand_side else ({'Head':1.0} if obj==head else weights(obj.matrix_world@vertex.co,zeca,is_core)))
             assignment={key:value for key,value in assignment.items() if value>0.000001}
             total=sum(assignment.values())
             assert total>0 and len(assignment)<=4

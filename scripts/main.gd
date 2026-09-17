@@ -51,7 +51,7 @@ var picked_trade_board:=false
 
 func _ready() -> void:
 	qa_mode = OS.is_debug_build() and "--qa" in OS.get_cmdline_user_args()
-	if qa_mode: save_path="user://qa_farm_v018_1.json"
+	if qa_mode: save_path="user://qa_farm_v018_2.json"
 	get_tree().auto_accept_quit = false
 	_inputs()
 	world = FarmWorld.new()
