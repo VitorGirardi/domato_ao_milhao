@@ -5,13 +5,13 @@
 Protótipo jogável de um tycoon de fazenda 3D estilizado para Windows, em português.
 Godot 4.7.2 + modelos originais feitos no Blender 5.2.1. Campanha solo e offline.
 
-**Versão atual: 0.15.0.** Veja [as prioridades](ROADMAP.md) e [as novidades](CHANGELOG.md).
+**Versão atual: 0.16.0.** Veja [as prioridades](ROADMAP.md) e [as novidades](CHANGELOG.md).
 
 Veja o [roteiro de teste manual](COMO_TESTAR.md), incluindo encomendas e vendas da 0.5.
 
 ## Jogar
 
-O executável local fica em `exports/windows-v0.15/DoMatoAoMilhao.exe` depois da exportação.
+O executável local fica em `exports/windows-v0.16/DoMatoAoMilhao.exe` depois da exportação.
 Ele abre diretamente, sem instalar Godot ou Blender. Os binários não são enviados ao Git.
 
 Para executar a partir do código:
@@ -19,7 +19,19 @@ Para executar a partir do código:
 2. Aguarde a importação dos modelos.
 3. Pressione **F5** para jogar. O cenário é montado pelos scripts durante a execução.
 
-## Novidades da 0.15
+## Novidades da 0.16
+
+- **Queijaria ($900)**: TAB → **G**, terreno de 6 × 6 m; E na porta abre a produção.
+- **2 L de leite → 1 queijo**. Escolha de 1 a 4 queijos; qualquer lote leva **90 s** de jogo ativo.
+- Prévia antes de consumir leite, preparo, aviso de lote pronto e coleta manual. Menus e construção pausam.
+- **F → Leite e queijo** vende queijos a **$52/un.**; Vender tudo inclui queijos já recolhidos.
+- Pedidos de queijo da **Dona Nena**: 3, 4 ou 5 unidades por **$64/un. + 1 reputação**.
+  Aceite antes de entregar. Sem prazo ou multa; o pedido não reserva seu estoque.
+- Mover mantém o lote. Remover durante preparo ou antes de recolher é bloqueado.
+- **Save 11** preserva produção em andamento, estoque e pedido. Migra saves anteriores.
+- Construção original no Blender, ícones e telas próprias; sem automação da queijaria nesta etapa.
+
+## Recursos da 0.15
 
 - **B · Emotes** abre a roda: Dança da Galinha, Passinho do Milho e Rei da Colheita.
 - Gargalhada, coração e “Cadê meu milho?!” aparecem acima do personagem por alguns segundos.
@@ -27,7 +39,7 @@ Para executar a partir do código:
 - Mimosa caminha, vira, pasta abaixando o pescoço, mastiga e descansa em pé.
 - Curral reorganizado para dar espaço ao trajeto. A vaca aguarda se o jogador estiver no caminho.
 - Animações no Godot sobre os modelos Blender. Save continua no formato 10.
-- Próximo bloco: queijaria e produtos derivados, depois de testar o ciclo do leite.
+- A 0.16 acrescenta queijaria e encomendas de queijo.
 
 ## Recursos da 0.14
 
@@ -308,7 +320,7 @@ entre tarefas, vários funcionários ou automação da lavoura nesta primeira en
 
 ## Limites assumidos do protótipo
 
-Esta é a versão **0.15.0**, destinada a validar o ciclo de jogo e a direção visual.
+Esta é a versão **0.16.0**, destinada a validar o ciclo de jogo e a direção visual.
 O celeiro tem estoque e reserva; a oficina contém a melhoria de ferramenta. Não há interior explorável.
 Os traçados são retos, sem curvas ou desenho livre. Preços e tempos aguardam ajuste com partidas reais.
 Os cuidados das galinhas são por galinheiro; ainda não há reprodução, doenças,
@@ -335,7 +347,7 @@ Salvamentos das versões 0.1, 0.2, 0.3, 0.4, 0.5 e 0.6 são aceitos; os objetivo
 construções, plantações e conquistas que ficaram registradas. A posição antiga
 de uma construção permanece salva se uma mudança de lugar for cancelada.
 Reserva, melhoria do regador e cores por parte também são salvas. O nome do arquivo
-continua `farm_v1.json`, com formato interno atualizado para 10; a migração preserva
+continua `farm_v1.json`, com formato interno atualizado para 11; a migração preserva
 dinheiro, produtos e construções. Galinheiros antigos recebem ração e água cheias,
 nomes iniciais e ninho vazio, preservando o progresso de produção e os ovos já
 no estoque. Nomes, suprimentos e ovos nos ninhos passam a ser salvos.
@@ -405,20 +417,20 @@ New-Item -ItemType Directory -Force test-results
 godot --path . --resolution 1440x900 --script tests/render_characters.gd
 godot --path . --resolution 1440x900 --fixed-fps 60 --quit-after 12000 -- --qa
 godot --path . --resolution 960x640 --script tests/render_staff.gd
-New-Item -ItemType Directory -Force exports/windows-v0.15
+New-Item -ItemType Directory -Force exports/windows-v0.16
 godot --headless --path . --export-release 'Windows Desktop'
 ```
 
-O teste de integração usa apenas `qa_farm_v015.json`, nunca o salvamento real.
+O teste de integração usa apenas `qa_farm_v016.json`, nunca o salvamento real.
 Valida compra, colocação via controles do jogo, colheita, venda, pintura, texto,
 movimento, câmeras, gravação real, leitura e recuperação de backup.
 Também verifica movimento/cancelamento de construções, poses do personagem,
 rega, colheita, etapas visuais, botões do guia e remoção dos efeitos temporários.
 Na 0.3, testa entrada de mouse, confirmação/cancelamento de traçados, soltura sobre a
 interface, materiais por parte, reserva, remoção protegida e rega em área. Os testes
-da simulação somam 409 verificações. Na 0.4 também são validados nomes, suprimentos,
+da simulação cobrem economia, produção e salvamento. Na 0.4 também são validados nomes, suprimentos,
 coleta, migração, limites de produção, cliques em galinhas, pausa, movimentos,
-modelos visuais e humor. Na 0.5, verifica vendas digitadas, pedidos, reputação, pausas, vencimento e acesso ao quadro. Na 0.6, também testa contratação, cancelamento, custos, pausa, falta de saldo, seleção, dispensa e persistência do ajudante. Na 0.8, confere os corpos com skin, os 20 ossos, orientação da pose de repouso, rega e pivôs das galinhas. O teste visual precisa terminar com `V015_INTEGRATION_OK`, `COW_V015_OK`, `V014_INTEGRATION_OK`, `V013_INTEGRATION_OK`, `V012_INTEGRATION_OK`, `CREW_INTEGRATION_OK`, `V011_INTEGRATION_OK`, `V010_INTEGRATION_OK`, `V09_CHARACTER_OK`, `V06_INTEGRATION_OK`, `V05_INTEGRATION_OK`, `V04_INTEGRATION_OK`,
+modelos visuais e humor. Na 0.5, verifica vendas digitadas, pedidos, reputação, pausas, vencimento e acesso ao quadro. Na 0.6, também testa contratação, cancelamento, custos, pausa, falta de saldo, seleção, dispensa e persistência do ajudante. Na 0.8, confere os corpos com skin, os 20 ossos, orientação da pose de repouso, rega e pivôs das galinhas. O teste visual precisa terminar com `V016_INTEGRATION_OK`, `V015_INTEGRATION_OK`, `COW_V015_OK`, `V014_INTEGRATION_OK`, `V013_INTEGRATION_OK`, `V012_INTEGRATION_OK`, `CREW_INTEGRATION_OK`, `V011_INTEGRATION_OK`, `V010_INTEGRATION_OK`, `V09_CHARACTER_OK`, `V06_INTEGRATION_OK`, `V05_INTEGRATION_OK`, `V04_INTEGRATION_OK`,
 `V03_INTEGRATION_OK`, `SAVE_OK` e sem `ERROR` no log (não basta o código de saída).
 As capturas são geradas em `test-results/` e não entram no Git.
 O modo QA só é aceito por compilações de depuração/editor.
@@ -438,3 +450,5 @@ Teste da lavoura: `godot --headless --path . --script tests/test_v012.gd` (35 ve
 Teste do curral: `godot --headless --path . --script tests/test_v014.gd` (26 verificações).
 
 Teste isolado de humor e Mimosa: `godot --headless --path . --fixed-fps 60 --quit-after 12000 -- --qa --qa-v015`. Exija `V015_INTEGRATION_OK` e `COW_V015_OK`, sem `ERROR`. Sem `--headless`, também gera capturas de cada animação.
+
+Teste isolado da queijaria: `godot --headless --path . --fixed-fps 60 --quit-after 12000 -- --qa --qa-v016`. Exija `V016_INTEGRATION_OK`, sem `ERROR`. Simulação: `godot --headless --path . --script tests/test_v016.gd --quit-after 120`, com `V016_STATE_OK`.

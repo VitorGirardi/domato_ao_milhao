@@ -1,9 +1,29 @@
-# Como testar a versão 0.15.0
+# Como testar a versão 0.16.0
 
 Extraia o ZIP e abra `DoMatoAoMilhao.exe`. Escolha **Voltar para minha fazenda**.
 A versão aceita a partida anterior. Não precisa começar outra.
 
-## Humor e Mimosa — teste primeiro
+## Queijaria — teste primeiro
+
+1. Retome sua fazenda e colete leite da Mimosa. A queijaria usa o leite do estoque, não o que está no curral.
+2. **TAB → G / Queijaria**: custa **$900**, ocupa **6 × 6 m**. Posicione em área livre e gire com Q/R se quiser.
+3. Volte à caminhada, aproxime-se da porta e aperte **E · Fazer queijo**.
+4. Escolha **1 a 4 queijos**. Cada queijo usa **2 L**. Revise e volte: nenhum leite deve ser consumido.
+5. Escolha novamente e confirme: leite descontado uma vez; qualquer lote demora **90 segundos**.
+6. Feche o menu e fique em caminhada. Reabra para conferir o progresso. O tempo pausa em menus e construção.
+7. Salve com F5 no meio do lote e reabra o jogo: o preparo deve continuar de onde parou, sem descontar leite outra vez.
+8. Ao aparecer **Queijo pronto · Recolher lote**, clique no aviso ou use E na queijaria. Recolha uma vez.
+9. **F → Leite e queijo → Vender queijo**: venda uma unidade por **$52** e confira saldo e quantidade.
+   **Vender tudo** inclui o queijo recolhido; não inclui produção ainda dentro da queijaria.
+10. **Encomendas → Pedidos de queijo**, ou botão da queijaria: aceite o pedido da Dona Nena.
+    O primeiro pede **3 queijos por $192 + 1 reputação**. Depois, pedidos de 4 e 5 queijos.
+    Não há prazo; cancelar não cobra. Vendas normais podem consumir estoque que você pretendia entregar.
+11. Mova a queijaria durante um lote: produção e tempo permanecem. Remover com lote ativo/pronto é bloqueado.
+
+Save agora é **formato 11**. Use a 0.16 ou posterior depois de salvar; versões antigas não reconhecem os novos produtos.
+Nesta etapa, início e coleta são manuais. A produção não avança com o jogo fechado.
+
+## Humor e Mimosa
 
 1. Em caminhada, parado no chão, aperte **B** ou clique **B · Emotes**.
 2. Escolha Dança da Galinha, Passinho do Milho ou Rei da Colheita. Cada dança dura 6 segundos.
@@ -29,7 +49,7 @@ A versão aceita a partida anterior. Não precisa começar outra.
 8. Mova o curral na câmera de construção. A vaca, os suprimentos e o leite devem permanecer.
    Curral ocupado não pode ser removido nesta versão; use Mover.
 9. Salve com F5 e reabra. Compra, cuidados, leite pronto e estoque permanecem.
-   Save novo: **formato 10**. Depois de salvar na 0.14, use esta versão ou posterior.
+   Save atual: **formato 11**. Depois de salvar na 0.16, use esta versão ou posterior.
 
 A coleta é pelo menu nesta etapa; ordenha manual animada, queijaria e ajudante das vacas vêm depois.
 Pastar é visual nesta etapa: continue repondo ração e água no menu.

@@ -41,6 +41,7 @@ func _ready() -> void:
 	models["trade_board"]=load("res://assets/models/trade_board.glb")
 	models["helper"]=load("res://assets/models/helper.glb")
 	models["vendor"]=load("res://assets/models/vendor.glb")
+	models["cheesery"]=load("res://assets/models/cheesery.glb")
 	models["corral"]=load("res://assets/models/corral.glb")
 	models["cow"]=load("res://assets/models/cow.glb")
 	models["workshop"]=load("res://assets/models/workshop.glb")
@@ -352,7 +353,7 @@ func rebuild(state: FarmState) -> void:
 				entry.font_size=26
 				entry.pixel_size=0.008
 				root.add_child(entry)
-			if item.kind in ["barn", "coop", "workshop", "corral", "fence", "sign"]:
+			if item.kind in ["barn", "coop", "workshop", "corral", "cheesery", "fence", "sign"]:
 				var body := StaticBody3D.new()
 				body.set_meta("item_index",i)
 				var shape := CollisionShape3D.new()

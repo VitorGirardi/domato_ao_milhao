@@ -51,7 +51,7 @@ var picked_trade_board:=false
 
 func _ready() -> void:
 	qa_mode = OS.is_debug_build() and "--qa" in OS.get_cmdline_user_args()
-	if qa_mode: save_path="user://qa_farm_v015.json"
+	if qa_mode: save_path="user://qa_farm_v016.json"
 	get_tree().auto_accept_quit = false
 	_inputs()
 	world = FarmWorld.new()
@@ -277,6 +277,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_8: _action("tool:expand")
 			KEY_9: _action("tool:workshop")
 			KEY_0: _action("tool:corral")
+			KEY_G: _action("tool:cheesery")
 	if not hud.modal_kind.is_empty():
 		return
 	if event is InputEventMouseMotion and Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT):
@@ -490,8 +491,8 @@ func _find_item(at: Vector2) -> int:
 
 func _distance_to_item(i: int) -> float:
 	var item:Dictionary=state.items[i]
-	if item.kind in ["barn","workshop","corral"]:
-		var door:=Vector3(item.x,0,item.z)+Vector3(0,0,3.0 if item.kind in ["barn","corral"] else 1.9).rotated(Vector3.UP,item.turn*PI/2)
+	if item.kind in ["barn","workshop","corral","cheesery"]:
+		var door:=Vector3(item.x,0,item.z)+Vector3(0,0,3.0 if item.kind in ["barn","corral","cheesery"] else 1.9).rotated(Vector3.UP,item.turn*PI/2)
 		return Vector2(player.position.x-door.x,player.position.z-door.z).length()
 	var area:=state.item_rect(item.kind,Vector2(item.x,item.z),item.turn)
 	var position_2d:=Vector2(player.position.x,player.position.z)
@@ -502,13 +503,13 @@ func _nearest() -> int:
 	nearby_hen=-1
 	var best:=-1
 	var distance:=2.6
-	if selected>=0 and selected<state.items.size() and state.items[selected].kind in ["plot","sign","barn","coop","workshop","corral"]:
+	if selected>=0 and selected<state.items.size() and state.items[selected].kind in ["plot","sign","barn","coop","workshop","corral","cheesery"]:
 		var current_distance:=_distance_to_item(selected)
 		if current_distance<distance:
 			best=selected
 			distance=current_distance
 	for i in range(state.items.size()):
-		if state.items[i].kind not in ["plot","sign","barn","coop","workshop","corral"]: continue
+		if state.items[i].kind not in ["plot","sign","barn","coop","workshop","corral","cheesery"]: continue
 		var d:=_distance_to_item(i)
 		if d<distance and (best<0 or d+0.05<distance):
 			best=i
@@ -532,6 +533,7 @@ func _nearby_context() -> Dictionary:
 	match item.kind:
 		"barn": context.text="Abrir celeiro"
 		"coop": context.text="Cuidar das galinhas"
+		"cheesery": context.text="Queijo pronto · Recolher" if item.cheese.ready>0 else ("Queijo · faltam %ds"%ceili(item.cheese.remaining) if item.cheese.batch>0 else "Fazer queijo")
 		"corral": context.text="Cuidar da vaca"
 		"workshop": context.text="Abrir oficina"
 		"sign": context.text="Editar placa"
@@ -608,6 +610,7 @@ func _tend_selected() -> void:
 	elif item.kind=="barn": hud.barn(state,selected)
 	elif item.kind=="workshop": hud.workshop(state,selected)
 	elif item.kind=="coop": hud.coop(state,selected,selected_hen)
+	elif item.kind=="cheesery": FarmCheeseHUD.show(hud,state,selected)
 	elif item.kind=="corral": FarmDairyHUD.show(hud,state,selected)
 
 func _action(value: String) -> void:
@@ -621,6 +624,35 @@ func _action(value: String) -> void:
 		hud.close_modal(); actor.emote(key)
 		return
 	actor.stop_emote()
+	if value=="cheese_shop": FarmCheeseHUD.shop(hud,state);return
+	if value=="cheese_market": FarmCheeseHUD.stock(hud,state);return
+	if value=="cheese_orders": FarmCheeseHUD.orders(hud,state);return
+	if value.begins_with("cheese:"):
+		var act:=value.get_slice(":",1)
+		match act:
+			"review":
+				if hud.modal_kind=="cheesery": FarmCheeseHUD.review(hud,state)
+			"back": FarmCheeseHUD.show(hud,state,hud.building_index)
+			"start":
+				if hud.modal_kind!="cheese_confirm": return
+				var error:=FarmCheese.start(state,hud.building_index,hud.cheese_batch)
+				FarmCheeseHUD.show(hud,state,hud.building_index)
+				hud.toast(error if not error.is_empty() else "Leite no tacho! Feche o menu para produzir.")
+			"collect":
+				if hud.modal_kind!="cheesery": return
+				var amount:=FarmCheese.collect(state,hud.building_index)
+				FarmCheeseHUD.show(hud,state,hud.building_index);hud.toast("%d queijo(s) recolhidos"%amount)
+			"sell":
+				if hud.modal_kind!="cheese_stock": return
+				var earned:=FarmCheese.sell(state,int(hud.cheese_quantity.value))
+				FarmCheeseHUD.stock(hud,state);hud.toast("Queijo vendido · +$%d"%earned)
+			"accept","cancel","deliver":
+				if hud.modal_kind!="cheese_orders": return
+				if act=="accept" and state.claimed: state.cheese_order.active=true
+				elif act=="cancel": state.cheese_order.active=false
+				elif act=="deliver" and FarmCheese.deliver(state): hud.toast("Dona Nena aprovou! +1 reputação")
+				FarmCheeseHUD.orders(hud,state)
+		_update_ui();return
 	if value=="milk_market":
 		FarmDairyHUD.stock(hud,state)
 		return
@@ -649,6 +681,10 @@ func _action(value: String) -> void:
 			var full:=FarmFieldAlerts.full_coops(state)
 			if not full.is_empty():
 				selected=full[0]; hud.coop(state,selected)
+			else:
+				var cheese:=FarmFieldAlerts.ready_cheeseries(state)
+				if not cheese.is_empty():
+					selected=cheese[0];FarmCheeseHUD.show(hud,state,selected)
 		return
 	if (dragging or not route.is_empty()) and value!="route_confirm":
 		_cancel_route()
@@ -1084,6 +1120,11 @@ func _chime(kind: String = "build") -> void:
 	sound.play()
 
 func _qa() -> void:
+	if "--qa-v016" in OS.get_cmdline_user_args():
+		_action("start")
+		await _qa_v016()
+		get_tree().quit()
+		return
 	if "--qa-v015" in OS.get_cmdline_user_args():
 		_action("start")
 		await _qa_v015()
@@ -1246,6 +1287,7 @@ func _qa() -> void:
 	await _qa_v013()
 	await _qa_v014()
 	await _qa_v015()
+	await _qa_v016()
 	var restored:=FarmState.new()
 	assert(restored.restore(JSON.parse_string(JSON.stringify(state.serialize()))))
 	assert(restored.items.size()==state.items.size())
@@ -2366,3 +2408,54 @@ func _qa_cow_v015() -> void:
 	assert(cow.node.transform.is_equal_approx(stopped) and cow.bones.CowNeck.node.transform.is_equal_approx(pose))
 	print("COW_V015_OK: walk/graze/rest, safe turn envelope, lowered muzzle, player obstruction, zero-delta pause, unchanged economy; distance=",distance," muzzle=",lowest)
 	feedback.visible=true;world.irrigation_feedback.visible=true
+
+func _qa_v016() -> void:
+	var previous:=state.serialize()
+	state=FarmState.new();state.claim(Vector2(4,-2));state.money=5000;state.milk_stock=8
+	world.rebuild(state);build_mode=true;_action("close")
+	var key:=InputEventKey.new();key.keycode=KEY_G;key.physical_keycode=KEY_G;key.pressed=true
+	Input.parse_input_event(key);await get_tree().process_frame;await get_tree().process_frame
+	assert(tool=="cheesery")
+	turn=0;pointer=Vector2(4,0);pointer_valid=true;_click_world()
+	assert(state.items.size()==1 and state.items[0].kind=="cheesery" and state.money==4100)
+	_update_ui();await _qa_ui_capture("cheesery-build-v016")
+	selected=0;build_mode=false;player.position=Vector3(4,0,4.2);_update_ui()
+	assert(_nearby_context().text=="Fazer queijo")
+	_interact_nearest();assert(hud.modal_kind=="cheesery")
+	var q:SpinBox=hud.modal.find_children("*","SpinBox",true,false)[0]
+	q.value=4
+	_action("cheese:review");assert(state.milk_stock==8 and hud.modal_kind=="cheese_confirm")
+	await _qa_ui_capture("cheese-confirm-v016")
+	_action("cheese:back");assert(state.milk_stock==8)
+	q=hud.modal.find_children("*","SpinBox",true,false)[0];q.value=4
+	_action("cheese:review");_action("cheese:start")
+	assert(state.milk_stock==0 and state.items[0].cheese.batch==4)
+	_action("cheese:start");assert(state.items[0].cheese.batch==4)
+	var frozen:=state.serialize();_process(30);assert(state.serialize()==frozen)
+	_action("close");build_mode=true;_process(30);assert(state.serialize()==frozen)
+	state.tick(45);FarmCheeseHUD.show(hud,state,0)
+	await _qa_ui_capture("cheese-progress-v016")
+	var disk:Variant=JSON.parse_string(JSON.stringify(state.serialize()))
+	assert(state.restore(disk) and state.items[0].cheese.remaining==45)
+	state.tick(45);_action("close");build_mode=false;_update_ui()
+	assert(hud.walking.attention.visible and hud.walking.attention.text.begins_with("Queijo pronto"))
+	_action("field_attention");assert(hud.modal_kind=="cheesery")
+	await _qa_ui_capture("cheese-ready-v016")
+	_action("cheese:collect");_action("cheese:collect");assert(state.cheese_stock==4)
+	_action("market");_action("cheese_shop");assert(hud.modal_kind=="dairy_shop")
+	await _qa_ui_capture("cheese-shop-v016")
+	_action("cheese_market");hud.cheese_quantity.value=1
+	var money:=state.money;_action("cheese:sell")
+	assert(state.money==money+52 and state.cheese_stock==3)
+	_action("cheese_orders");_action("cheese:accept")
+	await _qa_ui_capture("cheese-order-v016")
+	assert(state.cheese_order.active)
+	_action("cheese:cancel");assert(not state.cheese_order.active and state.cheese_stock==3)
+	_action("cheese:accept");_action("cheese:deliver")
+	assert(state.money==money+244 and state.cheese_stock==0 and state.trade.nena.reputation==1)
+	_action("cheese:deliver");assert(state.money==money+244)
+	_action("close");build_mode=true;focus=Vector3(4,0,0);yaw=.55;pitch=.48;build_distance=14
+	_update_camera(1,true);hud.world_hud.visible=false;hud.build_hud.visible=false;hud.walking.root.visible=false
+	await _qa_ui_capture("cheesery-world-v016")
+	assert(state.restore(previous));world.rebuild(state);build_mode=true;_update_ui()
+	print("V016_INTEGRATION_OK: G placement, E entrance, quantity/review/cancel/start, no duplicate input/collection/payment, menu/build pause, saved batch, partial sale, cheese orders, Blender model")

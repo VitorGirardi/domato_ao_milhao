@@ -1,5 +1,15 @@
 # Alterações
 
+## 0.16.0 — Queijaria do vale
+
+- Queijaria de $900, modelo Blender original, atalho G e interação E.
+- Lotes de até quatro queijos: dois litros por unidade, 90 segundos por lote.
+- Confirmação de consumo, progresso, coleta e aviso acionável de lote pronto.
+- Estoque de queijo, venda parcial por $52 e inclusão na venda geral.
+- Encomendas de queijo da Dona Nena, sem prazo, com pagamento e reputação.
+- Save 11, migração, preservação ao mover e bloqueio de remoção com produção.
+- Testes de produção, duplicação, vendas, pedidos, validação de save e interface.
+
 ## 0.15.0 — Resenha no campo
 
 - Roda de emotes em B, três dancinhas e três reações visuais temporárias.

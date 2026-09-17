@@ -178,7 +178,7 @@ Expressões animadas e personalização de roupas ficam para outra etapa.
 - [x] Modelos originais Blender, movimentos da vaca e menu de cuidados.
 - [x] Coleta, estoque, venda e salvamento; queijaria vem depois do ciclo manual.
 
-## Entrega atual — 0.15: humor e Mimosa
+## Entrega anterior — 0.15: humor e Mimosa
 
 - [x] Botão/atalho para abrir uma roda de emotes.
 - [x] Dancinhas bem engraçadas com o corpo articulado; movimento cancela a dança.
@@ -187,6 +187,16 @@ Expressões animadas e personalização de roupas ficam para outra etapa.
 - [x] Mimosa caminhando, pastando, mastigando e descansando.
 - [ ] Autor testar o repertório e sugerir ajustes de humor.
 
+## Entrega atual — 0.16: queijaria
+
+- [x] Construir e posicionar queijaria original do Blender.
+- [x] Escolher lote, confirmar leite, acompanhar preparo e recolher queijos.
+- [x] Venda por quantidade, estoque e pedidos de queijo da Dona Nena.
+- [x] Aviso de lote pronto, persistência e proteção contra perda de produção.
+- [x] Testes de economia, migração e fluxo completo.
+- [ ] Autor validar preços e ritmo da produção em sua fazenda.
+
 ## Depois
 
-- Queijaria, encomendas de queijo e automação das vacas após testar o ciclo manual.
+- Melhorias de capacidade e novas receitas após validar o ciclo manual.
+- Funcionário da queijaria e automação das vacas, com custos e orçamento claros.

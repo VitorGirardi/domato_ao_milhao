@@ -32,7 +32,7 @@ static func barn(hud:FarmHUD,state:FarmState,index:int) -> void:
 		withdraw.disabled=state.reserve[key]<=0
 		deposit.tooltip_text="Guarda toda a quantidade que couber. A reserva não é vendida."
 		withdraw.tooltip_text="Devolve a reserva deste produto ao estoque disponível."
-	FarmGameUI.action(hud,p,"Leite · %d L"%state.milk_stock,Rect2(26,536,228,42),"milk_market")
+	FarmGameUI.action(hud,p,"Leite e queijo",Rect2(26,536,228,42),"cheese_shop")
 	FarmGameUI.icon(p,"lock",Rect2(270,552,28,28))
 	hud.label(p,"Reserva protegida",Vector2(306,553),Vector2(246,28),16)
 	evolution(hud,p,state,hud.building_index,Rect2(564,543,246,43))
@@ -108,7 +108,7 @@ static func market(hud:FarmHUD,state:FarmState,tab:String) -> void:
 	FarmGameUI.action(hud,p,"Encomendas • %d"%state.active_orders(),Rect2(247,111,254,43),"market_orders",tab=="orders")
 	FarmGameUI.icon(p,"coins",Rect2(698,112,36,36))
 	hud.label(p,"$%s"%hud._money(state.money),Vector2(743,115),Vector2(170,34),24)
-	FarmGameUI.action(hud,p,"Leite · %d L"%state.milk_stock,Rect2(519,111,164,43),"milk_market")
+	FarmGameUI.action(hud,p,"Leite e queijo",Rect2(519,111,164,43),"cheese_shop")
 	if tab=="orders":
 		hud._orders(state,p)
 		return

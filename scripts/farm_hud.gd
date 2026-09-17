@@ -13,6 +13,8 @@ var coop_tab:="care"
 var cultivation_draft:Dictionary={}
 var cultivation_budget:SpinBox
 var milk_quantity:SpinBox
+var cheese_quantity:SpinBox
+var cheese_batch:=1
 var money_label: Label
 var clock_label: Label
 var mode_label: Label
@@ -92,7 +94,7 @@ func style(color: Color, radius: int = 14, border_color: Color = Color("e3d9b9")
 	s.content_margin_right = 14
 	s.content_margin_top = 10
 	s.content_margin_bottom = 10
-	s.shadow_color = Color(0.06, 0.15, 0.08, 0.12)
+	s.shadow_color = Color(0.06, 0.16, 0.08, 0.12)
 	s.shadow_size = 5
 	return s
 
@@ -203,11 +205,11 @@ func _build() -> void:
 		var key:String=crops[i]
 		crop_buttons[key]=button(tool_panel,FarmState.CROPS[key].name,Rect2(653+i*117,8,109,33),"crop:"+key)
 	mode_button=button(tool_panel,"Caminhar  [TAB]",Rect2(1150,8,221,34),"mode",true)
-	var tools=["inspect","plot","barn","coop","fence","sign","path","expand","workshop","corral"]
-	var names=["Cuidar","Canteiro","Celeiro","Galinheiro","Cerca","Placa","Caminho","Expandir","Oficina rural","Curral"]
-	var costs=["Selecionar / regar","$20 • sementes","$240","$180 • 3 galinhas","$12","$25 • seu texto","$5","$900 • +8 m","$180 • melhorias","$650 • 1 vaga"]
+	var tools=["inspect","plot","barn","coop","fence","sign","path","expand","workshop","corral","cheesery"]
+	var names=["Cuidar","Canteiro","Celeiro","Galinheiro","Cerca","Placa","Caminho","Expandir","Oficina","Curral","Queijaria"]
+	var costs=["Selecionar","$20 • semente","$240","$180 • 3 aves","$12","$25 • seu texto","$5","$900 • +8 m","$180","$650 • 1 vaga","$900 • queijos"]
 	for i in range(tools.size()):
-		var b:=button(tool_panel,"%d  %s\n%s"%[(i+1)%10,names[i],costs[i]],Rect2(18+i*136,51,129,83),"tool:"+tools[i])
+		var b:=button(tool_panel,"%s  %s\n%s"%[str((i+1)%10) if i<10 else "G",names[i],costs[i]],Rect2(18+i*124,51,118,83),"tool:"+tools[i])
 		b.add_theme_font_size_override("font_size",14)
 		buttons[tools[i]]=b
 	hint_panel=panel(build_hud,Rect2(330,654,767,46),Color("294b3c"))
@@ -237,7 +239,7 @@ func update(state: FarmState, build_mode: bool, selected: int, tool: String, cro
 	build_hud.visible=build_mode or not state.claimed
 	walking.root.visible=not build_mode and state.claimed
 	money_label.text="$ %s" % _money(state.money)
-	var total:=state.milk_stock
+	var total:=state.milk_stock+state.cheese_stock
 	for value in state.inventory.values():
 		total+=int(value)
 	stock_label.text="%d produtos no estoque   •   Venda: $%d"%[total,state.sale_value()]
@@ -300,6 +302,8 @@ func update(state: FarmState, build_mode: bool, selected: int, tool: String, cro
 			if item.planted:
 				status="Pronto para colher!" if item.growth>=1 else ("Crescendo: %d%%"%int(item.growth*100) if item.watered else "Precisa de água")
 			details_label.text="%s\n%s\n\nClique com Cuidar ou use E\nperto do canteiro."%[FarmState.CROPS[item.crop].name,status]
+		elif item.kind=="cheesery":
+			details_label.text="[E] Abrir queijaria\n2 L → 1 queijo · lotes de até 4\nProntos: %d"%item.cheese.ready
 		elif item.kind=="corral":
 			details_label.text="Uma vaga para vaca\n[E] Comprar, cuidar e coletar leite.\nLeite no curral: %d / 8 L"%item.dairy.milk
 		elif item.kind=="coop":
@@ -371,7 +375,7 @@ func welcome(state: FarmState, has_save: bool) -> void:
 	text_input.text=state.farm_name
 	p.add_child(text_input)
 	button(p,"Voltar para minha fazenda" if has_save else "Escolher meu pedaço de terra",Rect2(34,494,542,55),"start",true)
-	label(p,"VERSÃO 0.15.0   •   RESENHA NO CAMPO",Vector2(34,561),Vector2(542,17),11,MUTED)
+	label(p,"VERSÃO 0.16.0   •   QUEIJARIA DO VALE",Vector2(34,561),Vector2(542,17),11,MUTED)
 
 func coop(state:FarmState,index:int,selected_hen:int=-1) -> void:
 	FarmInteractionUI.coop(self,state,index,selected_hen)
@@ -556,7 +560,8 @@ func _orders(state: FarmState, p: Panel) -> void:
 	if record.last_result=="expired": footer="Prazo encerrado. Um novo pedido está disponível."
 	elif record.last_result=="delivered": footer="Entrega concluída! Novo pedido disponível."
 	elif record.last_result=="cancelled": footer="Pedido cancelado sem multa."
-	label(p,footer,Vector2(28,644),Vector2(884,29),17,MUTED)
+	label(p,footer,Vector2(28,644),Vector2(540,29),17,MUTED)
+	FarmGameUI.action(self,p,"Pedidos de queijo",Rect2(606,638,306,45),"cheese_orders")
 
 func editor_dialog(kind: String, initial: String) -> void:
 	var p:=_modal(kind,286)

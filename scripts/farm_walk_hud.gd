@@ -56,8 +56,10 @@ func update(hud:FarmHUD,state:FarmState,context:Dictionary,crop:String) -> void:
 		seeds[key].modulate=Color.WHITE if key==crop else Color("b9b9a4")
 	var paused:=FarmFieldAlerts.paused_text(state)
 	var full:=FarmFieldAlerts.full_coops(state)
-	attention.visible=not paused.is_empty() or not full.is_empty()
+	var cheese:=FarmFieldAlerts.ready_cheeseries(state)
+	attention.visible=not paused.is_empty() or not full.is_empty() or not cheese.is_empty()
 	attention.text=paused if not paused.is_empty() else ("Ninho cheio · Coletar ovos" if full.size()==1 else "%d ninhos cheios · Ver"%full.size())
+	if paused.is_empty() and full.is_empty() and not cheese.is_empty(): attention.text="Queijo pronto · Recolher lote"
 	if paused.length()>48: attention.text="Ajudantes pausados · Ver equipe"
 	attention.tooltip_text=paused if not paused.is_empty() else "A produção volta após a coleta."
 	if hud.toast_time>0 and not paused.is_empty() and hud.toast_label.text.begins_with(paused): attention.visible=false
