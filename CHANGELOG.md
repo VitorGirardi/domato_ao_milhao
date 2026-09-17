@@ -1,5 +1,18 @@
 # Alterações
 
+## 0.4.0 — Um quintal cheio de personalidade
+
+- Maricota, Clotilde e Pipoca com nomes editáveis, cores próprias e identificação ao clicar.
+- Painel de cuidados acessível pelo galinheiro, por uma galinha ou com E de perto.
+- Ração para 360 s e água para 300 s de tempo ativo; primeira carga incluída, reposição de ração até $8 e água grátis.
+- Produção de 2 ovos a cada 45, 90 ou 180 s conforme os suprimentos, sem morte dos animais.
+- Ninhos com até 12 ovos visíveis; coleta manual, sem duplicação e com remoção do galinheiro protegida.
+- Comedouro, bebedouro, ninho e ovo originais criados no Blender, com fontes `.blend` e modelos `.glb`.
+- Fiscalização, dança e reunião da Maricota; nomes personalizados usados nas mensagens.
+- Clotilde cisca, Pipoca descansa e as galinhas tentam desviar de obstáculos próximos.
+- Migração dos formatos 1 e 2 para 3, preservando estoque e progresso de produção anterior.
+- 181 verificações da simulação e testes visuais de cuidados, seleção, salvamento e comportamentos.
+
 ## 0.3.0 — Sua fazenda, do seu jeito
 
 - Cercas e caminhos por arraste em linha, com prévia, orçamento e confirmação.

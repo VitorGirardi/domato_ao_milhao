@@ -17,6 +17,7 @@ var quest_progress: ProgressBar
 var move_button: Button
 var paint_selector: OptionButton
 var barn_button: Button
+var coop_button: Button
 var stock_label: Label
 var hint_label: Label
 var toast_label: Label
@@ -166,6 +167,7 @@ func _build() -> void:
 	button(select_panel,"Editar placa",Rect2(18,354,128,39),"edit_sign")
 	button(select_panel,"Remover",Rect2(158,354,130,39),"remove")
 	barn_button=button(select_panel,"Reserva e bancada",Rect2(18,407,270,39),"barn",true)
+	coop_button=button(select_panel,"Cuidar das galinhas",Rect2(18,407,270,39),"coop",true)
 	tool_panel=panel(root,Rect2(24,720,1392,157))
 	tool_title=label(tool_panel,"CONSTRUA SEU COMEÇO",Vector2(18,12),Vector2(305,25),13,MUTED)
 	walk_tip=label(tool_panel,"A vida acontece no seu ritmo. Cuide dos canteiros e descubra o vale.",Vector2(18,49),Vector2(1340,26),15,MUTED)
@@ -247,6 +249,7 @@ func update(state: FarmState, build_mode: bool, selected: int, tool: String, cro
 		quest_label.text="Você plantou, cuidou e prosperou.\nContinue criando sua fazenda!\n\nFaturamento: $%d"%state.revenue
 	move_button.disabled=selected<0 or tool=="move"
 	barn_button.visible=selected>=0 and selected<state.items.size() and state.items[selected].kind=="barn"
+	coop_button.visible=selected>=0 and selected<state.items.size() and state.items[selected].kind=="coop"
 	var multipart:bool=selected>=0 and selected<state.items.size() and state.items[selected].kind in ["barn","coop"]
 	paint_selector.set_item_disabled(1,not multipart)
 	paint_selector.set_item_disabled(2,not multipart)
@@ -261,7 +264,7 @@ func update(state: FarmState, build_mode: bool, selected: int, tool: String, cro
 				status="Pronto para colher!" if item.growth>=1 else ("Crescendo: %d%%"%int(item.growth*100) if item.watered else "Precisa de água")
 			details_label.text="%s\n%s\n\nClique com Cuidar ou use E\nperto do canteiro."%[FarmState.CROPS[item.crop].name,status]
 		elif item.kind=="coop":
-			details_label.text="3 galinhas, muita personalidade.\n2 ovos a cada 45 segundos.\n\nÁgua e ração incluídas nesta\nprimeira versão."
+			details_label.text="%s\nRação: %d%% • Água: %d%%\nNinho: %d / 12 ovos\n\nUse Cuidar das galinhas."%[FarmAnimals.status(item.flock),roundi(item.flock.food),roundi(item.flock.water),int(item.flock.nest)]
 		elif item.kind=="sign":
 			details_label.text='“%s”\n\nPinte ou escreva sua mensagem.'%item.text
 		elif item.kind=="barn":
@@ -325,7 +328,64 @@ func welcome(state: FarmState, has_save: bool) -> void:
 	text_input.text=state.farm_name
 	p.add_child(text_input)
 	button(p,"Voltar para minha fazenda" if has_save else "Escolher meu pedaço de terra",Rect2(34,494,542,55),"start",true)
-	label(p,"VERSÃO 0.3   •   SUA FAZENDA, DO SEU JEITO",Vector2(34,561),Vector2(542,17),11,MUTED)
+	label(p,"VERSÃO 0.4   •   UM QUINTAL CHEIO DE PERSONALIDADE",Vector2(34,561),Vector2(542,17),11,MUTED)
+
+func coop(state: FarmState, index: int, selected_hen: int = -1) -> void:
+	var flock:Dictionary=state.items[index].flock
+	var p:=_modal("coop",720)
+	label(p,"GALINHEIRO • CUIDADOS E COMPANHIA",Vector2(30,21),Vector2(550,27),13,MUTED)
+	label(p,"Seu pequeno bando",Vector2(30,58),Vector2(550,44),30)
+	var status:=FarmAnimals.status(flock)+" • 2 ovos a cada %d s"%roundi(45.0/FarmAnimals.rate(flock))
+	if flock.nest>=FarmAnimals.NEST_CAPACITY: status="Ninho cheio • Colete para retomar a produção"
+	label(p,status,Vector2(30,111),Vector2(550,30),17)
+	var cost:=FarmAnimals.food_cost(flock)
+	label(p,"Ração: %d%%"%roundi(flock.food),Vector2(30,162),Vector2(170,32),19)
+	label(p,"Água: %d%%"%roundi(flock.water),Vector2(30,216),Vector2(170,32),19)
+	for i in range(2):
+		var back:=ColorRect.new()
+		back.color=Color("e4ddc5")
+		back.position=Vector2(202,173+i*54)
+		back.size=Vector2(118,9)
+		p.add_child(back)
+		var fill:=ColorRect.new()
+		fill.color=Color("d5a442") if i==0 else Color("65aab5")
+		fill.size=Vector2(118*float(flock.food if i==0 else flock.water)/100,9)
+		back.add_child(fill)
+	var feed:=button(p,"Comedouro cheio" if cost==0 else "Repor ração • $%d"%cost,Rect2(347,153,233,43),"care:food")
+	feed.disabled=cost==0 or state.money<cost
+	var water:=button(p,"Bebedouro cheio" if flock.water>=100 else "Encher água • Grátis",Rect2(347,207,233,43),"care:water")
+	water.disabled=flock.water>=100
+	label(p,"Sem água ou ração, a produção fica mais lenta.\nSeus animais não morrem; basta voltar a cuidar.",Vector2(30,268),Vector2(550,52),16,MUTED)
+	label(p,"Ninho: %d / 12 ovos"%int(flock.nest),Vector2(30,341),Vector2(270,35),22)
+	var collect:=button(p,"Coletar %d ovos"%int(flock.nest),Rect2(315,331,265,48),"care:collect",true)
+	collect.disabled=flock.nest==0
+	label(p,"CONHEÇA SUAS GALINHAS",Vector2(30,403),Vector2(550,25),12,MUTED)
+	for i in range(3):
+		if selected_hen==i: panel(p,Rect2(24,435+i*56,562,52),Color("f4e5b8"))
+		var swatch:=ColorRect.new()
+		swatch.color=Color(FarmAnimals.COLORS[i])
+		swatch.position=Vector2(32,448+i*56)
+		swatch.size=Vector2(17,17)
+		p.add_child(swatch)
+		label(p,flock.names[i],Vector2(62,436+i*56),Vector2(340,29),18)
+		label(p,FarmAnimals.TRAITS[i],Vector2(62,464+i*56),Vector2(340,20),12,MUTED)
+		button(p,"Renomear",Rect2(425,440+i*56,155,43),"rename_hen:%d"%i)
+	label(p,"Cuidados compartilhados pelas três galinhas deste galinheiro.",Vector2(30,613),Vector2(550,23),13,MUTED)
+	button(p,"Voltar ao terreiro",Rect2(30,652,550,44),"close")
+
+func hen_editor(initial: String) -> void:
+	var p:=_modal("hen_name",285)
+	label(p,"Um nome com personalidade",Vector2(28,26),Vector2(554,43),27)
+	label(p,"De 1 a 24 caracteres. O cargo de gerente é vitalício!",Vector2(28,81),Vector2(554,32),16,MUTED)
+	text_input=LineEdit.new()
+	text_input.position=Vector2(28,127)
+	text_input.size=Vector2(554,45)
+	text_input.max_length=24
+	text_input.text=initial
+	p.add_child(text_input)
+	text_input.grab_focus()
+	button(p,"Cancelar",Rect2(28,210,165,45),"coop")
+	button(p,"Salvar nome",Rect2(209,210,373,45),"apply_hen_name",true)
 
 func confirm_route(state: FarmState, plan: Array) -> void:
 	var p:=_modal("route",370)

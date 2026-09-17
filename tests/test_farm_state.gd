@@ -35,7 +35,8 @@ func _initialize() -> void:
 	check(farm.sell_all()==0 and farm.money==1212,"Empty sale is idempotent")
 	check(farm.place("coop",Vector2(10,-6),0).is_empty(),"Coop construction")
 	farm.tick(91)
-	check(farm.inventory.egg==4,"Coop handles multiple production cycles")
+	check(farm.items[1].flock.nest==4 and farm.inventory.egg==0,"Coop produces into nest across multiple cycles")
+	farm.care_coop(1,"collect")
 	check(not farm.deliver_contract(),"Contract requires stock")
 	farm.inventory.carrot=6
 	check(farm.deliver_contract(),"Contract consumes carrots and pays")

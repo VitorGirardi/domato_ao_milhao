@@ -34,8 +34,8 @@ func floating_text(at: Vector3, text: String, color: Color) -> void:
 	tween.tween_property(label,"outline_modulate:a",0.0,0.6).set_delay(0.8)
 	tween.finished.connect(label.queue_free)
 
-func water(at: Vector3, origin: Vector3, overhead: bool) -> void:
-	floating_text(at,"Regado!",Color("9ee4ef"))
+func water(at: Vector3, origin: Vector3, overhead: bool, caption: String = "Regado!") -> void:
+	floating_text(at,caption,Color("9ee4ef"))
 	if overhead:
 		var can:=world.model("watering_can",self,at+Vector3(-0.45,1.2,-0.3))
 		can.rotation.z=-0.3
@@ -75,3 +75,12 @@ func harvest(at: Vector3, crop: String) -> void:
 
 func planted(at: Vector3) -> void:
 	floating_text(at,"Sementes no chão",Color("d7ebb4"))
+
+func collect_eggs(at: Vector3, amount: int) -> void:
+	floating_text(at,"+%d ovos"%amount,Color("ffde7c"))
+	for i in range(mini(amount,6)):
+		var egg:=world.model("egg",self,at+Vector3((i-2.5)*0.15,1.0,1.8))
+		var tween:=create_tween().set_parallel()
+		tween.tween_property(egg,"position:y",2.5,0.75).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tween.tween_property(egg,"scale",Vector3.ONE*0.01,0.25).set_delay(0.6)
+		tween.finished.connect(egg.queue_free)

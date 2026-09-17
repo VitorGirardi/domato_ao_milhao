@@ -122,10 +122,42 @@ func water_targets(index: int) -> Array:
 
 func remove_item(index: int) -> String:
 	if index<0 or index>=items.size(): return "Selecione uma construção."
+	if items[index].kind=="coop" and items[index].flock.nest>0:
+		return "Colete os ovos antes de remover o galinheiro."
 	if items[index].kind=="barn" and reserve_count()>reserve_capacity()-60:
 		return "Retire a reserva do celeiro antes de removê-lo."
 	money+=int(ITEMS[items[index].kind].cost)/2
 	items.remove_at(index)
+	return ""
+
+func care_coop(index: int, action: String) -> String:
+	if index<0 or index>=items.size() or items[index].kind!="coop": return "Selecione um galinheiro."
+	var flock:Dictionary=items[index].flock
+	match action:
+		"food":
+			var cost:=FarmAnimals.food_cost(flock)
+			if cost==0: return "O comedouro já está cheio."
+			if money<cost: return "Faltam moedas para repor a ração."
+			money-=cost
+			flock.food=100.0
+			return "Comedouro cheio! -$%d"%cost
+		"water":
+			if flock.water>=100: return "O bebedouro já está cheio."
+			flock.water=100.0
+			return "Água fresquinha, por conta da casa."
+		"collect":
+			var amount:=int(flock.nest)
+			if amount==0: return "O ninho ainda está vazio."
+			inventory.egg+=amount
+			flock.nest=0
+			return "+%d ovos no estoque!"%amount
+	return "Cuidado desconhecido."
+
+func rename_hen(index: int, hen: int, value: String) -> String:
+	if index<0 or index>=items.size() or items[index].kind!="coop" or hen<0 or hen>=3: return "Selecione uma galinha."
+	value=value.strip_edges()
+	if not FarmAnimals.valid_name(value): return "Use um nome de 1 a 24 caracteres."
+	items[index].flock.names[hen]=value
 	return ""
 
 func paint_item(index: int, part: String, color: int) -> String:
@@ -227,6 +259,7 @@ func place(kind: String, at: Vector2, turn: int, crop: String = "carrot") -> Str
 	items.append({"kind": kind, "x": at.x, "z": at.y, "turn": posmod(turn, 4),
 		"paint": 0, "text": "Aqui o fiado só amanhã", "crop": crop,
 		"growth": 0.0, "watered": false, "planted": kind == "plot", "egg_time": 0.0})
+	if kind=="coop": items[-1].flock=FarmAnimals.fresh()
 	refresh_journey()
 	return ""
 
@@ -273,11 +306,7 @@ func tick(delta: float) -> bool:
 		if item.kind == "plot" and item.planted and item.watered:
 			item.growth = minf(1.0, float(item.growth) + delta / float(CROPS[item.crop].seconds))
 		if item.kind == "coop":
-			item.egg_time += delta
-			while item.egg_time >= 45.0:
-				item.egg_time -= 45.0
-				inventory.egg += 2
-				eggs = true
+			if FarmAnimals.tick(item,delta): eggs=true
 	return eggs
 
 func sale_value() -> int:
@@ -318,7 +347,7 @@ func expand() -> String:
 	return ""
 
 func serialize() -> Dictionary:
-	return {"version": 2, "money": money, "claimed": claimed,
+	return {"version": 3, "money": money, "claimed": claimed,
 		"center": [center.x, center.y], "land_size": land_size,
 		"items": items.duplicate(true), "inventory": inventory.duplicate(),
 		"elapsed": elapsed, "revenue": revenue, "harvests": harvests,
@@ -327,7 +356,7 @@ func serialize() -> Dictionary:
 
 func restore(data: Variant) -> bool:
 	# Validate before mutating live state. Invalid files never partially replace it.
-	if not data is Dictionary or (data.get("version")!=1 and data.get("version")!=2):
+	if not data is Dictionary or (data.get("version")!=1 and data.get("version")!=2 and data.get("version")!=3):
 		return false
 	for key in ["money", "land_size", "elapsed", "revenue", "harvests"]:
 		if not _number(data.get(key)) or float(data[key]) < 0:
@@ -377,6 +406,9 @@ func restore(data: Variant) -> bool:
 			var color:Variant=item.get(part,-1)
 			if not _number(color) or color < -1 or color>=PALETTE.size() or float(color)!=floorf(float(color)): return false
 		if item.kind=="barn": barn_count+=1
+		if item.kind=="coop":
+			if data.version==3 and not item.has("flock"): return false
+			if item.has("flock") and not FarmAnimals.valid(item.flock): return false
 		var area := item_rect(item.kind, Vector2(item.x, item.z), int(item.turn))
 		var land := Rect2(Vector2(data.center[0], data.center[1]) - Vector2.ONE * float(data.land_size) / 2, Vector2.ONE * float(data.land_size))
 		if not land.encloses(area):
@@ -394,6 +426,10 @@ func restore(data: Variant) -> bool:
 	center = Vector2(data.center[0], data.center[1])
 	land_size = float(data.land_size)
 	items = data.items.duplicate(true)
+	for item in items:
+		if item.kind=="coop":
+			if not item.has("flock"): item.flock=FarmAnimals.fresh()
+			item.flock.nest=int(item.flock.nest)
 	inventory = data.inventory.duplicate()
 	for key in inventory:
 		inventory[key] = int(inventory[key])

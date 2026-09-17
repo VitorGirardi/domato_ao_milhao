@@ -41,15 +41,21 @@ var drag_start := Vector2.ZERO
 var route: Array = []
 var route_ghost:=Node3D.new()
 var route_key:=""
+var selected_hen := -1
+var picked_hen := -1
+var nearby_hen := -1
+var silly_kind := "inspect"
+var silly_event_index := 0
 
 func _ready() -> void:
 	qa_mode = OS.is_debug_build() and "--qa" in OS.get_cmdline_user_args()
-	if qa_mode: save_path="user://qa_farm_v03.json"
+	if qa_mode: save_path="user://qa_farm_v04.json"
 	get_tree().auto_accept_quit = false
 	_inputs()
 	world = FarmWorld.new()
 	add_child(world)
 	var loaded := false if qa_mode else _load_game()
+	next_silly=state.elapsed+75
 	world.rebuild(state)
 	add_child(feedback)
 	feedback.setup(world)
@@ -137,24 +143,34 @@ func _process(delta: float) -> void:
 	action_cooldown=maxf(0,action_cooldown-delta)
 	if session_started and not build_mode and hud.modal_kind.is_empty():
 		if state.tick(delta):
-			hud.toast("Có-có-contabilidade: +2 ovos por galinheiro!")
+			hud.toast("Tem novidade no ninho! Visite o galinheiro para coletar os ovos.")
 		world.update_crops(state)
 		silly_timer = maxf(0,silly_timer-delta)
 		if state.elapsed > next_silly and not world.chickens.is_empty():
-			next_silly = state.elapsed + 110
-			silly_timer = 14
-			hud.toast("A Maricota se declarou gerente. Vai fiscalizar você!")
-		world.animate(delta,player.position,silly_timer>0)
+			_start_silly()
+		world.animate(delta,player.position,state,silly_kind if silly_timer>0 else "")
 	if session_started:
 		save_timer += delta
 		if save_timer >= 30:
 			save_timer=0
 			_save_game(false)
 	_update_pointer()
+	world.update_animals(state)
 	ui_timer += delta
 	if ui_timer >= 0.15:
 		ui_timer = 0
 		_update_ui()
+
+func _start_silly() -> void:
+	if world.chickens.is_empty(): return
+	next_silly=state.elapsed+110
+	silly_timer=14
+	silly_kind=["inspect","dance","meeting"][silly_event_index%3]
+	silly_event_index+=1
+	var first:Dictionary=world.chickens[0]
+	var name:String=state.items[first.coop].flock.names[0]
+	var messages={"inspect":"%s assumiu a gerência. Fiscalização a caminho!", "dance":"%s inventou a dança do ovo. O talento é discutível.", "meeting":"%s convocou uma reunião. Pauta única: mais milho."}
+	hud.toast(messages[silly_kind]%name)
 
 func _update_camera(delta: float, immediate: bool = false) -> void:
 	var target := focus if build_mode else player.position + Vector3(0,1.1,0)
@@ -410,18 +426,25 @@ func _click_world() -> void:
 		var direction:=camera.project_ray_normal(mouse)
 		var at:Vector3=ray+direction*(-ray.y/direction.y)
 		selected=_pick_item(mouse,Vector2(at.x,at.z))
+		selected_hen=picked_hen
 		if selected>=0:
-			if not build_mode and _distance_to_item(selected)>3:
+			var distance:=_distance_to_item(selected)
+			if selected_hen>=0:
+				for hen in world.chickens:
+					if hen.coop==selected and hen.hen==selected_hen: distance=minf(distance,player.position.distance_to(hen.node.position))
+			if not build_mode and distance>3:
 				hud.toast("Chegue mais perto ou use a câmera de construção.")
 			else:
 				_tend_selected()
 	_update_ui()
 
 func _pick_item(mouse: Vector2, ground: Vector2) -> int:
+	picked_hen=-1
 	var origin:=camera.project_ray_origin(mouse)
 	var end:=origin+camera.project_ray_normal(mouse)*200
-	var hit:=get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(origin,end,1,[player.get_rid()]))
+	var hit:=get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(origin,end,3,[player.get_rid()]))
 	if not hit.is_empty() and hit.collider.has_meta("item_index"):
+		picked_hen=int(hit.collider.get_meta("hen_index",-1))
 		return int(hit.collider.get_meta("item_index"))
 	return _find_item(ground)
 
@@ -440,24 +463,32 @@ func _distance_to_item(i: int) -> float:
 	return position_2d.distance_to(closest)
 
 func _nearest() -> int:
+	nearby_hen=-1
 	var best:=-1
 	var distance:=2.6
-	if selected>=0 and selected<state.items.size() and state.items[selected].kind in ["plot","sign","barn"]:
+	if selected>=0 and selected<state.items.size() and state.items[selected].kind in ["plot","sign","barn","coop"]:
 		var current_distance:=_distance_to_item(selected)
 		if current_distance<distance:
 			best=selected
 			distance=current_distance
 	for i in range(state.items.size()):
-		if state.items[i].kind not in ["plot","sign","barn"]: continue
+		if state.items[i].kind not in ["plot","sign","barn","coop"]: continue
 		var d:=_distance_to_item(i)
 		if d<distance and (best<0 or d+0.05<distance):
 			best=i
+			distance=d
+	for hen in world.chickens:
+		var d:float=player.position.distance_to(hen.node.position)
+		if d<distance:
+			best=hen.coop
+			nearby_hen=hen.hen
 			distance=d
 	return best
 
 func _interaction_text(item: Dictionary) -> String:
 	if item.kind=="sign": return "Editar placa"
 	if item.kind=="barn": return "Abrir reserva e bancada do celeiro"
+	if item.kind=="coop": return "Galinhas • %d ovos no ninho • Cuidar"%int(item.flock.nest)
 	if not item.planted: return "Plantar %s • $%d"%[FarmState.CROPS[crop].name,FarmState.CROPS[crop].seed]
 	if item.growth>=1: return "Colher "+FarmState.CROPS[item.crop].name
 	if not item.watered: return "Regar "+FarmState.CROPS[item.crop].name
@@ -469,6 +500,7 @@ func _interact_nearest() -> void:
 		hud.market(state)
 		return
 	selected=_nearest()
+	selected_hen=nearby_hen
 	if selected>=0:
 		_tend_selected()
 	else:
@@ -518,6 +550,7 @@ func _tend_selected() -> void:
 	elif item.kind=="sign":
 		hud.editor_dialog("sign",item.text)
 	elif item.kind=="barn": hud.barn(state)
+	elif item.kind=="coop": hud.coop(state,selected,selected_hen)
 
 func _action(value: String) -> void:
 	if (dragging or not route.is_empty()) and value!="route_confirm":
@@ -526,6 +559,35 @@ func _action(value: String) -> void:
 	if move_index>=0 and value not in ["move","save"]:
 		move_index=-1
 		tool="inspect"
+	if value.begins_with("care:"):
+		if selected<0 or selected>=state.items.size() or state.items[selected].kind!="coop": return
+		var item:Dictionary=state.items[selected]
+		var care:=value.get_slice(":",1)
+		var eggs_before:=int(state.inventory.egg)
+		var water_before:=float(item.flock.water)
+		var food_before:=float(item.flock.food)
+		var message:=state.care_coop(selected,care)
+		world.update_animals(state)
+		var at:=Vector3(item.x,0,item.z)
+		if state.inventory.egg>eggs_before:
+			feedback.collect_eggs(at,int(state.inventory.egg)-eggs_before)
+			_chime("harvest")
+		elif item.flock.water>water_before:
+			feedback.water(at+Vector3(1.6,0,-0.8).rotated(Vector3.UP,item.turn*PI/2),at+Vector3.UP,true,"Água fresca!")
+			_chime("water")
+		elif item.flock.food>food_before:
+			feedback.floating_text(at,"Hora do rango!",Color("ffde7c"))
+			_chime("plant")
+		hud.coop(state,selected,selected_hen)
+		hud.toast(message)
+		_update_ui()
+		return
+	if value.begins_with("rename_hen:"):
+		if selected<0 or selected>=state.items.size() or state.items[selected].kind!="coop": return
+		selected_hen=int(value.get_slice(":",1))
+		if selected_hen<0 or selected_hen>=3: return
+		hud.hen_editor(state.items[selected].flock.names[selected_hen])
+		return
 	if value.begins_with("tool:"):
 		if not session_started: return
 		var key:=value.get_slice(":",1)
@@ -561,6 +623,17 @@ func _action(value: String) -> void:
 		_update_ui()
 		return
 	match value:
+		"coop":
+			if selected>=0 and selected<state.items.size() and state.items[selected].kind=="coop": hud.coop(state,selected,selected_hen)
+		"apply_hen_name":
+			if hud.modal_kind!="hen_name": return
+			var error:=state.rename_hen(selected,selected_hen,hud.text_input.text)
+			if not error.is_empty():
+				hud.toast(error)
+				return
+			world.update_animals(state)
+			hud.coop(state,selected,selected_hen)
+			hud.toast("Nome novo, a mesma personalidade!")
 		"route_confirm":
 			var error:=state.place_batch(route)
 			if not error.is_empty():
@@ -656,6 +729,8 @@ func _action(value: String) -> void:
 			player.position=Vector3(4,0.2,10)
 			next_silly=75
 			silly_timer=0
+			silly_event_index=0
+			selected_hen=-1
 			session_started=false
 			hud.welcome(state,false)
 			_save_game(false,true)
@@ -902,6 +977,7 @@ func _qa() -> void:
 	_process(0.1)
 	assert(silly_timer>0)
 	await _qa_v03()
+	await _qa_v04()
 	var restored:=FarmState.new()
 	assert(restored.restore(JSON.parse_string(JSON.stringify(state.serialize()))))
 	assert(restored.items.size()==state.items.size())
@@ -909,15 +985,18 @@ func _qa() -> void:
 	assert(_save_game(false))
 	var saved_money:=state.money
 	var saved_reserve:=state.reserve.duplicate()
+	var saved_flock:Dictionary=state.items[1].flock.duplicate(true)
 	state=FarmState.new()
 	assert(_load_game() and state.money==saved_money)
 	assert(state.reserve==saved_reserve and state.watering_upgrade and state.items[0].door_paint==2)
+	assert(state.items[1].flock==saved_flock)
 	var damaged:=FileAccess.open(save_path,FileAccess.WRITE)
 	damaged.store_string("{damaged")
 	damaged.close()
 	state=FarmState.new()
 	assert(_load_game() and state.money==saved_money)
 	assert(state.reserve==saved_reserve and state.watering_upgrade and state.items[0].roof_paint==5)
+	assert(state.items[1].flock==saved_flock)
 	DirAccess.remove_absolute(save_path)
 	DirAccess.remove_absolute(save_path+".bak")
 	print("INTEGRATION_OK: terrain, construction, crops, sale, paint, signs, camera, movement, persistence")
@@ -1067,6 +1146,129 @@ func _qa_v03() -> void:
 		await RenderingServer.frame_post_draw
 		get_viewport().get_texture().get_image().save_png("res://test-results/farm-v03.png")
 	print("V03_INTEGRATION_OK: mouse drag, release over HUD, price confirmation, cancel, independent materials, barn, protected reserve, tool upgrade, area watering")
+
+func _qa_v04() -> void:
+	selected=1
+	selected_hen=-1
+	tool="inspect"
+	focus=Vector3(12,0,-6)
+	yaw=0.30
+	pitch=0.70
+	build_distance=20
+	_update_camera(1,true)
+	var flock:Dictionary=state.items[1].flock
+	flock.food=12.0
+	flock.water=0.0
+	flock.nest=6
+	state.items[1].egg_time=12.0
+	world.update_animals(state)
+	var view:Dictionary=world.coop_views[1]
+	assert(view.feed.visible and not view.water.visible)
+	assert(view.eggs[5].visible and not view.eggs[6].visible)
+	assert(view.badge.text.contains("6 OVOS"))
+	await get_tree().physics_frame
+	if DisplayServer.get_name()!="headless":
+		var hen:Node3D=world.chickens[2].node
+		var at:=camera.unproject_position(hen.position+Vector3(0,0.5,0))
+		await _qa_mouse(at,true)
+		await _qa_mouse(at,false)
+		assert(selected==1 and selected_hen==2 and hud.modal_kind=="coop")
+	else: _action("coop")
+	var frozen:=state.serialize()
+	_process(5)
+	assert(state.serialize()==frozen)
+	await get_tree().process_frame
+	if DisplayServer.get_name()!="headless":
+		await RenderingServer.frame_post_draw
+		get_viewport().get_texture().get_image().save_png("res://test-results/coop-care-v04.png")
+	_action("rename_hen:0")
+	assert(hud.modal_kind=="hen_name")
+	hud.text_input.text="   "
+	_action("apply_hen_name")
+	assert(hud.modal_kind=="hen_name" and flock.names[0]=="Maricota")
+	hud.text_input.text="Dona Có-Có"
+	_action("apply_hen_name")
+	assert(hud.modal_kind=="coop" and flock.names[0]=="Dona Có-Có")
+	assert(world.chickens[0].label.text=="Dona Có-Có")
+	var balance:=state.money
+	var cost:=FarmAnimals.food_cost(flock)
+	_action("care:food")
+	assert(flock.food==100 and state.money==balance-cost)
+	_action("care:water")
+	assert(flock.water==100 and state.money==balance-cost and view.water.visible)
+	var previous_eggs:=int(state.inventory.egg)
+	_action("care:collect")
+	assert(flock.nest==0 and state.inventory.egg==previous_eggs+6)
+	assert(not view.eggs[0].visible)
+	_action("care:collect")
+	assert(state.inventory.egg==previous_eggs+6)
+	_action("close")
+	flock.nest=4
+	var before:Dictionary=flock.duplicate(true)
+	_action("move")
+	pointer=Vector2(12,-8)
+	pointer_valid=true
+	turn=1
+	_click_world()
+	assert(move_index==-1 and state.items[1].turn==1 and state.items[1].flock==before)
+	assert(world.coop_views[1].eggs[3].visible and not world.coop_views[1].eggs[4].visible)
+	_action("remove")
+	assert(state.items[1].kind=="coop" and state.items[1].flock==before)
+	# E can open the coop, while the mouse can identify an individual hen.
+	_action("mode")
+	player.position=Vector3(12,0.2,-5.1)
+	selected=1
+	_interact_nearest()
+	assert(hud.modal_kind=="coop")
+	_action("close")
+	_action("mode")
+	silly_event_index=0
+	var seen:Array=[]
+	for i in range(3):
+		_start_silly()
+		seen.append(silly_kind)
+		assert(hud.toast_label.text.contains("Dona Có-Có"))
+		var peak:=0.0
+		for frame in range(60):
+			world.animate(1.0/60,player.position,state,silly_kind)
+			peak=maxf(peak,absf(world.chickens[0].node.rotation.z))
+		if silly_kind=="dance": assert(peak>0.15)
+	assert(seen==["inspect","dance","meeting"])
+	for frame in range(120): world.animate(1.0/60,player.position,state)
+	for hen in world.chickens: assert(world._hen_walkable(hen.node.position,state))
+	var before_neighbor:=state.money
+	assert(state.place("coop",Vector2(12,-4),0).is_empty())
+	world.rebuild(state)
+	assert(world.chickens.size()==6)
+	for hen in world.chickens: assert(world._hen_walkable(hen.node.position,state))
+	assert(state.remove_item(state.items.size()-1).is_empty())
+	state.money=before_neighbor
+	# Restore front-facing presentation and show actual needs models and nest eggs.
+	assert(state.move_item(1,Vector2(12,-8),0).is_empty())
+	world.rebuild(state)
+	player.position=Vector3(9,0.2,-4.5)
+	selected=1
+	focus=Vector3(12,0,-6.5)
+	yaw=0.40
+	pitch=0.57
+	build_distance=20
+	_update_camera(1,true)
+	_update_ui()
+	if DisplayServer.get_name()!="headless": Input.warp_mouse(Vector2(600,770))
+	await get_tree().create_timer(1.6).timeout
+	hud.toast_time=0
+	await get_tree().process_frame
+	assert(feedback.get_child_count()==0)
+	if DisplayServer.get_name()!="headless":
+		await RenderingServer.frame_post_draw
+		get_viewport().get_texture().get_image().save_png("res://test-results/animals-v04.png")
+	_action("coop")
+	await get_tree().process_frame
+	if DisplayServer.get_name()!="headless":
+		await RenderingServer.frame_post_draw
+		get_viewport().get_texture().get_image().save_png("res://test-results/coop-ready-v04.png")
+	_action("close")
+	print("V04_INTEGRATION_OK: Blender props, hen picking, rename validation, paused needs, feeding, water, collection, movement, humor, obstacle steering")
 
 func _qa_mouse(at: Vector2, pressed: bool) -> void:
 	Input.warp_mouse(at)

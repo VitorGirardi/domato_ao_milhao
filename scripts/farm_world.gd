@@ -14,10 +14,11 @@ var selection:=Node3D.new()
 var selection_edges: Array[MeshInstance3D]=[]
 var highlighted_index: int = -1
 var paint_materials: Dictionary = {}
+var coop_views: Dictionary = {}
 
 func _ready() -> void:
 	rng.seed = 24517
-	for key in ["barn", "coop", "fence", "sign", "tree", "rock", "chicken", "farmer", "market", "carrot", "wheat", "corn", "flower", "sprout", "watering_can", "harvest_carrot", "harvest_wheat", "harvest_corn"]:
+	for key in ["barn", "coop", "fence", "sign", "tree", "rock", "chicken", "farmer", "market", "carrot", "wheat", "corn", "flower", "sprout", "watering_can", "harvest_carrot", "harvest_wheat", "harvest_corn", "feeder", "waterer", "nest", "egg"]:
 		models[key] = load("res://assets/models/%s.glb" % key)
 	add_child(structures)
 	add_child(border)
@@ -245,6 +246,7 @@ func rebuild(state: FarmState) -> void:
 		node.free()
 	item_nodes.clear()
 	chickens.clear()
+	coop_views.clear()
 	for i in range(state.items.size()):
 		var item: Dictionary = state.items[i]
 		var root := Node3D.new()
@@ -305,11 +307,92 @@ func rebuild(state: FarmState) -> void:
 				label.outline_size = 0
 				root.add_child(label)
 			if item.kind == "coop":
-				for c in range(3):
-					var hen := model("chicken", structures, Vector3(item.x + c - 1, 0, item.z + 2.4))
-					chickens.append({"node": hen, "home": Vector3(item.x, 0, item.z), "phase": i * 2.0 + c * 2.1})
+				_build_coop(i,item,root,state)
 	update_crops(state)
 	update_border(state)
+	update_animals(state)
+
+func _build_coop(index: int, item: Dictionary, root: Node3D, state: FarmState) -> void:
+	var feeder:=model("feeder",root,Vector3(-1.4,0,1.55))
+	var waterer:=model("waterer",root,Vector3(1.6,0,-0.8))
+	var nest:=model("nest",root,Vector3(1.25,0,1.55))
+	var eggs:Array[Node3D]=[]
+	for n in range(FarmAnimals.NEST_CAPACITY):
+		eggs.append(model("egg",nest,Vector3((n%4-1.5)*0.19,0.17,(n/4-1)*0.18)))
+	var badge:=Label3D.new()
+	badge.font_size=32
+	badge.pixel_size=0.008
+	badge.position=Vector3(0,3.15,0)
+	badge.billboard=BaseMaterial3D.BILLBOARD_ENABLED
+	badge.outline_modulate=Color("294739")
+	root.add_child(badge)
+	coop_views[index]={"feed":feeder.find_child("Feed",true,false),"water":waterer.find_child("Water",true,false),"eggs":eggs,"badge":badge}
+	for c in range(3):
+		var start:=Vector3(c-1,0,2.6).rotated(Vector3.UP,root.rotation.y)+root.position
+		if not _hen_walkable(start,state):
+			for attempt in range(160):
+				var angle:float=attempt*TAU/16+c*0.4
+				var radius:float=2.6+int(attempt/16)*1.5
+				var candidate:=root.position+Vector3(sin(angle),0,cos(angle))*radius
+				if _hen_walkable(candidate,state):
+					start=candidate
+					break
+		var hen:=model("chicken",structures,start)
+		_color_hen(hen,c)
+		var body:=StaticBody3D.new()
+		body.collision_layer=2
+		body.collision_mask=0
+		body.set_meta("item_index",index)
+		body.set_meta("hen_index",c)
+		var shape:=CollisionShape3D.new()
+		var capsule:=CapsuleShape3D.new()
+		capsule.radius=0.32
+		capsule.height=1.05
+		shape.shape=capsule
+		shape.position.y=0.5
+		body.add_child(shape)
+		hen.add_child(body)
+		var label:=Label3D.new()
+		label.position.y=1.25
+		label.font_size=28
+		label.pixel_size=0.006
+		label.billboard=BaseMaterial3D.BILLBOARD_ENABLED
+		label.outline_modulate=Color("294739")
+		hen.add_child(label)
+		chickens.append({"node":hen,"home":root.position,"turn":root.rotation.y,"phase":index*2.0+c*2.1,"coop":index,"hen":c,"label":label})
+
+func _color_hen(node: Node, color_index: int) -> void:
+	if node is MeshInstance3D:
+		for surface in range(node.mesh.get_surface_count()):
+			var source:Material=node.mesh.surface_get_material(surface)
+			if source and (source.resource_name.begins_with("White") or source.resource_name.begins_with("Cream")):
+				var key:="hen:%d:%d"%[source.get_instance_id(),color_index]
+				if not paint_materials.has(key):
+					var replacement:StandardMaterial3D=source.duplicate()
+					replacement.albedo_color=Color(FarmAnimals.COLORS[color_index])
+					paint_materials[key]=replacement
+				node.set_surface_override_material(surface,paint_materials[key])
+	for child in node.get_children(): _color_hen(child,color_index)
+
+func update_animals(state: FarmState) -> void:
+	for index in coop_views:
+		var flock:Dictionary=state.items[index].flock
+		var view:Dictionary=coop_views[index]
+		view.feed.visible=flock.food>0
+		view.feed.scale.y=maxf(0.05,float(flock.food)/100.0)
+		view.feed.position.y=0.105+float(flock.food)*0.00095
+		view.water.visible=flock.water>0
+		view.water.position.y=0.07+float(flock.water)*0.0007
+		for i in range(view.eggs.size()): view.eggs[i].visible=i<int(flock.nest)
+		view.badge.text="%d OVOS • COLETAR"%int(flock.nest) if flock.nest>0 else ""
+		if minf(flock.food,flock.water)<25:
+			var need:="REPOR ÁGUA E RAÇÃO" if flock.food<25 and flock.water<25 else ("REPOR RAÇÃO" if flock.food<25 else "REPOR ÁGUA")
+			view.badge.text+=("\n" if flock.nest>0 else "")+need
+		view.badge.modulate=Color("ffe092") if flock.nest>0 else Color("9ee4ef")
+		view.badge.visible=not view.badge.text.is_empty()
+	for chicken in chickens:
+		chicken.label.text=state.items[chicken.coop].flock.names[chicken.hen]
+		chicken.label.visible=highlighted_index==chicken.coop
 
 func paint(root: Node, item: Dictionary) -> void:
 	if root is MeshInstance3D:
@@ -371,17 +454,42 @@ func _tint_model(node: Node, color: Material) -> void:
 	if node is MeshInstance3D: node.material_override=color
 	for child in node.get_children(): _tint_model(child,color)
 
-func animate(delta: float, player_pos: Vector3, silly: bool) -> void:
+func animate(delta: float, player_pos: Vector3, state: FarmState, event: String = "") -> void:
 	clock += delta
 	for chicken in chickens:
 		var hen: Node3D = chicken.node
 		var phase: float = chicken.phase
-		var target: Vector3 = chicken.home + Vector3(sin(clock * 0.42 + phase) * 2.5, 0, 2.8 + cos(clock * 0.32 + phase) * 1.3)
-		if silly and phase == chickens[0].phase:
+		var local:=Vector3(sin(clock*0.30+phase)*2.5,0,2.8+cos(clock*0.22+phase)*0.6)
+		var resting:=sin(clock*0.55+phase)>0.35
+		if chicken.hen==1 and resting: local=Vector3(-2.0,0,1.7)
+		var target:Vector3=chicken.home+local.rotated(Vector3.UP,chicken.turn)
+		var is_manager:bool=chicken.coop==chickens[0].coop and chicken.hen==0
+		if event=="inspect" and is_manager:
 			target = player_pos + Vector3(sin(clock) * 1.3, 0, cos(clock) * 1.3)
+		elif event=="meeting" and chicken.coop==chickens[0].coop:
+			target=chicken.home+Vector3((chicken.hen-1)*0.75,0,2.3).rotated(Vector3.UP,chicken.turn)
 		var direction := target - hen.position
 		direction.y = 0
+		var dancing:bool=event=="dance" and is_manager
+		hen.rotation.x=sin(clock*7+phase)*0.18 if resting and chicken.hen==1 else 0.0
+		hen.rotation.z=sin(clock*9)*0.2 if dancing else 0.0
+		hen.position.y=absf(sin(clock*9))*0.26 if dancing else 0.0
+		if resting and chicken.hen==2 and event.is_empty(): continue
 		if direction.length() > 0.1:
 			hen.rotation.y = lerp_angle(hen.rotation.y, atan2(direction.x, direction.z), delta * 4)
-			hen.position += direction.normalized() * minf(direction.length(), delta * (2.8 if silly else 0.7))
-			hen.position.y = abs(sin(clock * 13 + phase)) * 0.045
+			var step:=direction.normalized()*minf(direction.length(),delta*(2.0 if event=="inspect" and is_manager else 0.65))
+			for angle in [0.0,PI/4,-PI/4,PI/2,-PI/2]:
+				var candidate:=hen.position+step.rotated(Vector3.UP,angle)
+				if _hen_walkable(candidate,state):
+					hen.position.x=candidate.x
+					hen.position.z=candidate.z
+					break
+			if not dancing: hen.position.y=abs(sin(clock*13+phase))*0.045
+
+func _hen_walkable(at: Vector3, state: FarmState) -> bool:
+	if at.x < -31 or at.x>44 or at.z < -39 or at.z>43: return false
+	for item in state.items:
+		if item.kind in ["plot","path"]: continue
+		var rect:=state.item_rect(item.kind,Vector2(item.x,item.z),item.turn).grow(0.18)
+		if rect.has_point(Vector2(at.x,at.z)): return false
+	return true
