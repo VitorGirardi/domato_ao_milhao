@@ -14,6 +14,11 @@ var action_time := 0.0
 var airborne:=false
 var landing:=0.0
 var action_kind := ""
+var emote_kind:=""
+var emote_time:=0.0
+var emote_elapsed:=0.0
+var reaction:Sprite3D
+var reaction_time:=0.0
 var face_mesh:MeshInstance3D
 var blink_index:=-1
 var blink_wait:=2.0
@@ -59,6 +64,11 @@ func setup(model: Node3D, world: FarmWorld = null) -> void:
 	hand_socket.add_child(carried_egg)
 	carried_egg.visible=false
 	can.visible=false
+	reaction=Sprite3D.new()
+	reaction.pixel_size=.016; reaction.billboard=BaseMaterial3D.BILLBOARD_ENABLED
+	reaction.no_depth_test=true; reaction.shaded=false
+	reaction.position=Vector3(0,3.25,0); reaction.visible=false
+	root.add_child(reaction)
 	animate(1,false,false)
 
 func pose_bone(key: String, angles: Vector3, blend: float = 1.0) -> void:
@@ -71,11 +81,36 @@ func pose_bone(key: String, angles: Vector3, blend: float = 1.0) -> void:
 	var local_rotation:=local_rest*rest.inverse()*model_rotation*rest
 	skeleton.set_bone_pose_rotation(index,skeleton.get_bone_pose_rotation(index).slerp(local_rotation,blend))
 
+func stop_emote() -> void:
+	emote_kind=""; emote_time=0; emote_elapsed=0
+	if root: root.position.y=0
+
+func emote(kind:String) -> bool:
+	if action_time>0 or airborne: return false
+	if FarmEmotes.DANCES.has(kind):
+		emote_kind=kind; emote_time=6.0; emote_elapsed=0
+		return true
+	if FarmEmotes.REACTIONS.has(kind):
+		reaction.texture=load("res://assets/ui/emote_%s.svg"%kind)
+		reaction_time=2.8; reaction.visible=true
+		return true
+	return false
+
 func play(kind: String) -> void:
+	stop_emote()
 	action_kind=kind
 	action_time=2.2 if kind=="collect" else (1.15 if kind=="water" else 0.55)
 
 func animate(delta: float, moving: bool, running: bool, blink:bool=true) -> void:
+	if moving or airborne or action_time>0: stop_emote()
+	emote_time=maxf(0,emote_time-delta)
+	if emote_time<=0 and not emote_kind.is_empty(): stop_emote()
+	emote_elapsed+=delta
+	reaction_time=maxf(0,reaction_time-delta)
+	if reaction:
+		reaction.visible=reaction_time>0
+		reaction.position.y=3.15+sin((2.8-reaction_time)*2)*.13
+		reaction.modulate.a=minf(1,reaction_time*3)
 	if blink: update_blink(delta)
 	time+=delta
 	landing=maxf(0,landing-delta)
@@ -83,6 +118,10 @@ func animate(delta: float, moving: bool, running: bool, blink:bool=true) -> void
 	var phase:=time*(11 if running else 8)
 	var stride:=sin(phase)*(0.60 if running else 0.40) if moving else 0.0
 	var blend:=1-exp(-delta*16)
+	if emote_time>0:
+		FarmEmotes.pose(self,emote_kind,emote_elapsed,blend)
+		can.visible=false;carried_egg.visible=false
+		return
 	var active:=action_time>0
 	var collecting:=active and action_kind=="collect"
 	var bending:=collecting or (active and action_kind in ["plant","harvest"])

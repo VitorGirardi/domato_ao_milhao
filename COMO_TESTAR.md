@@ -1,9 +1,21 @@
-# Como testar a versão 0.14.0
+# Como testar a versão 0.15.0
 
 Extraia o ZIP e abra `DoMatoAoMilhao.exe`. Escolha **Voltar para minha fazenda**.
 A versão aceita a partida anterior. Não precisa começar outra.
 
-## Curral — teste primeiro
+## Humor e Mimosa — teste primeiro
+
+1. Em caminhada, parado no chão, aperte **B** ou clique **B · Emotes**.
+2. Escolha Dança da Galinha, Passinho do Milho ou Rei da Colheita. Cada dança dura 6 segundos.
+3. Repita e interrompa com WASD, Espaço, E, F ou TAB: o personagem deve responder imediatamente.
+4. Teste gargalhada, coração e “Cadê meu milho?!”. A reação aparece acima do chapéu e some em 2,8 s.
+5. Abra B e feche com Esc: o relógio pausa apenas enquanto a roda está aberta. Durante a dança a fazenda continua.
+6. No curral com vaca, fique em caminhada e feche os menus por 40 segundos. Mimosa deve andar, virar,
+   abaixar a cabeça junto aos tufos de capim, mastigar e descansar. As patas acompanham a caminhada.
+7. Abra o menu do curral ou use TAB: a rotina pausa. Volte à caminhada para continuar.
+8. Salve e reabra: vaca, leite e suprimentos ficam preservados; a pose temporária pode reiniciar.
+
+## Curral e leite
 
 1. Em **TAB → construção**, aperte **0** ou clique em Curral. Custa **$650** e ocupa 8 × 6 m.
 2. Volte à caminhada. Perto do portão, pressione **E · Cuidar da vaca**.
@@ -20,7 +32,7 @@ A versão aceita a partida anterior. Não precisa começar outra.
    Save novo: **formato 10**. Depois de salvar na 0.14, use esta versão ou posterior.
 
 A coleta é pelo menu nesta etapa; ordenha manual animada, queijaria e ajudante das vacas vêm depois.
-Dancinhas e emojis estão na fila, ainda não há botão de emotes nesta versão.
+Pastar é visual nesta etapa: continue repondo ração e água no menu.
 
 ## HUD da caminhada
 

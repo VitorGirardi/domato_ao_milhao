@@ -1,5 +1,14 @@
 # Alterações
 
+## 0.15.0 — Resenha no campo
+
+- Roda de emotes em B, três dancinhas e três reações visuais temporárias.
+- Cancelamento por movimento, pulo, trabalho, interação e menus.
+- Mimosa caminha entre pontos de pastagem, mastiga com pescoço articulado e descansa em pé.
+- Cochos e abrigo reposicionados para liberar a circulação; espera pelo jogador no caminho.
+- Modelos Blender atualizados, inspeção de poses e testes de controles, limites e pausa.
+- Save 10 e regras de produção de leite mantidos. Pastar é uma animação; reponha ração no menu.
+
 ## 0.14.0 — Curral e leite
 
 - Curral com uma vaga, compra da Mimosa, ração, água e leite.

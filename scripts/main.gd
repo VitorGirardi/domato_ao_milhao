@@ -51,7 +51,7 @@ var picked_trade_board:=false
 
 func _ready() -> void:
 	qa_mode = OS.is_debug_build() and "--qa" in OS.get_cmdline_user_args()
-	if qa_mode: save_path="user://qa_farm_v014.json"
+	if qa_mode: save_path="user://qa_farm_v015.json"
 	get_tree().auto_accept_quit = false
 	_inputs()
 	world = FarmWorld.new()
@@ -109,6 +109,7 @@ func _player() -> void:
 	actor.setup(avatar,world)
 
 func _try_jump() -> bool:
+	actor.stop_emote()
 	if not session_started or build_mode or not hud.modal_kind.is_empty() or not player.is_on_floor() or actor.action_time>0: return false
 	player.velocity.y=6.8
 	actor.airborne=true
@@ -121,6 +122,7 @@ func _physics_process(delta: float) -> void:
 	var movement := Vector2.ZERO
 	if hud.modal_kind.is_empty() and session_started:
 		movement = Input.get_vector("left","right","forward","back")
+	if movement.length()>0 or build_mode or not hud.modal_kind.is_empty(): actor.stop_emote()
 	var right := Vector3(cos(yaw),0,-sin(yaw))
 	var back := Vector3(sin(yaw),0,cos(yaw))
 	var direction := right * movement.x + back * movement.y
@@ -260,6 +262,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_F: _action("market")
 			KEY_J: _action("market_orders")
 			KEY_H: _action("staff")
+			KEY_B: _action("emotes")
 			KEY_F5: _action("save")
 			KEY_M: _action("move")
 			KEY_R: turn=posmod(turn+1,4)
@@ -545,6 +548,7 @@ func _nearby_context() -> Dictionary:
 	return context
 
 func _interact_nearest() -> void:
+	actor.stop_emote()
 	if not hud.modal_kind.is_empty(): return
 	var context:=_nearby_context()
 	if context.is_empty(): return
@@ -557,6 +561,7 @@ func _interact_nearest() -> void:
 			_tend_selected()
 
 func _tend_selected() -> void:
+	actor.stop_emote()
 	if not build_mode and actor.airborne: return
 	if selected<0 or selected>=state.items.size(): return
 	var item:Dictionary=state.items[selected]
@@ -606,6 +611,16 @@ func _tend_selected() -> void:
 	elif item.kind=="corral": FarmDairyHUD.show(hud,state,selected)
 
 func _action(value: String) -> void:
+	if value=="emotes":
+		if not session_started or build_mode or actor.airborne or actor.action_time>0 or not hud.modal_kind.is_empty(): return
+		actor.stop_emote(); FarmEmotes.show(hud)
+		return
+	if value.begins_with("emote:"):
+		if hud.modal_kind!="emotes" or build_mode or not session_started: return
+		var key:=value.get_slice(":",1)
+		hud.close_modal(); actor.emote(key)
+		return
+	actor.stop_emote()
 	if value=="milk_market":
 		FarmDairyHUD.stock(hud,state)
 		return
@@ -1069,6 +1084,11 @@ func _chime(kind: String = "build") -> void:
 	sound.play()
 
 func _qa() -> void:
+	if "--qa-v015" in OS.get_cmdline_user_args():
+		_action("start")
+		await _qa_v015()
+		get_tree().quit()
+		return
 	# In-engine integration run. Isolated state; never reads/writes the player's save.
 	await get_tree().process_frame
 	await get_tree().process_frame
@@ -1225,6 +1245,7 @@ func _qa() -> void:
 	await _qa_v012()
 	await _qa_v013()
 	await _qa_v014()
+	await _qa_v015()
 	var restored:=FarmState.new()
 	assert(restored.restore(JSON.parse_string(JSON.stringify(state.serialize()))))
 	assert(restored.items.size()==state.items.size())
@@ -2139,6 +2160,7 @@ func _qa_v012() -> void:
 	print("V012_INTEGRATION_OK: UI crop and budget inputs, review cancellation, animated harvest/replant/water, exact costs, independent budget pause, renewal, report, persistence, game menus")
 
 func _qa_ui_capture(filename:String) -> void:
+	if DisplayServer.get_name()=="headless": return
 	hud.toast_time=0
 	await get_tree().process_frame
 	await RenderingServer.frame_post_draw
@@ -2246,3 +2268,101 @@ func _qa_v014() -> void:
 	assert(state.milk_stock==1 and state.items[0].dairy.milk==8)
 	_action("close");assert(state.restore(previous));world.rebuild(state);build_mode=true;_update_ui()
 	print("V014_INTEGRATION_OK: cow purchase/cancel, menu pause, milk collection/sale, real assets, nearby E, persistence")
+
+func _qa_v015() -> void:
+	var previous:=state.serialize()
+	state=FarmState.new();state.claim(Vector2(4,-2));world.rebuild(state)
+	build_mode=false;_action("close");player.position=Vector3(4,0.3,-2)
+	player.velocity=Vector3.ZERO;actor.action_time=0;actor.airborne=false;actor.landing=0
+	focus=Vector3(4,0,-2);yaw=0.0;pitch=.36;walk_distance=5.5;avatar.rotation.y=0
+	for i in range(40): await get_tree().physics_frame
+	_update_camera(1,true);_update_ui()
+	var key:=InputEventKey.new();key.physical_keycode=KEY_B;key.keycode=KEY_B;key.unicode=98;key.pressed=true
+	Input.parse_input_event(key);await get_tree().process_frame
+	await get_tree().process_frame
+	print("EMOTE_GATE ",session_started," ",build_mode," ",actor.airborne," ",actor.action_time," ",hud.modal_kind)
+	assert(hud.modal_kind=="emotes")
+	var frozen:=state.serialize();_process(5);assert(frozen==state.serialize())
+	await _qa_ui_capture("emotes-wheel-v015")
+	_action("emote:chicken")
+	assert(actor.emote_kind=="chicken" and actor.action_time==0 and hud.modal_kind.is_empty())
+	var stationary:=player.position
+	DirAccess.make_dir_recursive_absolute("res://test-results/dances-v015")
+	for dance in FarmEmotes.DANCES:
+		assert(actor.emote(dance))
+		for frame in range(32):
+			actor.animate(.05,false,false)
+			await get_tree().process_frame
+			if DisplayServer.get_name()!="headless":
+				await RenderingServer.frame_post_draw
+				get_viewport().get_texture().get_image().save_png("res://test-results/dances-v015/%s-%02d.png"%[dance,frame])
+		assert(player.position.distance_to(stationary)<.05 and not actor.can.visible)
+	actor.emote("chicken")
+	Input.action_press("forward");await get_tree().physics_frame;await get_tree().physics_frame
+	Input.action_release("forward")
+	assert(actor.emote_time==0 and player.velocity.length()>0)
+	for i in range(5): await get_tree().physics_frame
+	actor.emote("shuffle")
+	assert(_try_jump() and actor.emote_time==0)
+	assert(not actor.emote("victory"))
+	for i in range(70): await get_tree().physics_frame
+	actor.emote("victory");_action("market")
+	assert(actor.emote_time==0 and hud.modal_kind=="market")
+	_action("close")
+	actor.play("water");assert(not actor.emote("chicken"));actor.action_time=0
+	actor.emote("shuffle");actor.animate(6.1,false,false);assert(actor.emote_time==0 and actor.root.position.y==0)
+	var count:=actor.root.get_child_count()
+	for reaction_key in FarmEmotes.REACTIONS: assert(actor.emote(reaction_key))
+	assert(actor.root.get_child_count()==count and actor.reaction.visible)
+	actor.emote("laugh");await _qa_ui_capture("emote-reaction-v015")
+	actor.animate(3,false,false);assert(not actor.reaction.visible)
+	actor.emote("chicken");_interact_nearest();assert(actor.emote_time==0)
+	build_mode=true;_action("emotes");assert(hud.modal_kind.is_empty())
+	await _qa_cow_v015()
+	assert(state.restore(previous));world.rebuild(state);_update_ui()
+	print("V015_INTEGRATION_OK: B wheel, paused selection, three grounded dances, movement/jump/menu/interact cancellation, work and airborne gates, expiry, bounded reactions, no economy/save changes")
+
+func _qa_cow_v015() -> void:
+	state=FarmState.new();state.claim(Vector2(4,-2));state.money=5000
+	assert(state.place("corral",Vector2(4,0),0).is_empty())
+	assert(FarmDairy.care(state,0,"buy").is_empty())
+	world.rebuild(state);build_mode=true;hud.close_modal()
+	player.position=Vector3(4,0,7)
+	focus=Vector3(4,0,0);yaw=-.85;pitch=.45;build_distance=12;_update_camera(1,true)
+	hud.world_hud.visible=false;hud.build_hud.visible=false;hud.walking.root.visible=false
+	feedback.visible=false;world.irrigation_feedback.visible=false
+	var cow:Dictionary=world.cows[0]
+	assert(cow.bones.has("CowNeck"))
+	var mouth:MeshInstance3D=cow.node.find_child("Muzzle",true,false)
+	var upright:float=mouth.to_global(mouth.get_aabb().get_center()).y
+	var phases:Dictionary={};var distance:=0.0;var lowest:=upright
+	var frozen:=state.serialize()
+	DirAccess.make_dir_recursive_absolute("res://test-results/cow-v015")
+	for frame in range(2400):
+		var before:Vector3=cow.node.position
+		world.animate(1.0/60,player.position,state)
+		distance+=before.distance_to(cow.node.position)
+		phases[cow.motion.phase]=true
+		lowest=minf(lowest,mouth.to_global(mouth.get_aabb().get_center()).y)
+		assert(cow.node.position.x>=-1.18 and cow.node.position.x<=.48)
+		assert(cow.node.position.z>=-.01 and cow.node.position.z<=.43)
+		# 1.72 m covers the cow's full turn, leaving fences and relocated fixtures clear.
+		assert(cow.node.position.x-1.72> -3.61 and cow.node.position.x+1.72<2.325)
+		assert(cow.node.position.z-1.72> -1.71 and cow.node.position.z+1.72<2.61)
+		if frame%30==0 and DisplayServer.get_name()!="headless":
+			await get_tree().process_frame
+			await RenderingServer.frame_post_draw
+			get_viewport().get_texture().get_image().save_png("res://test-results/cow-v015/%03d.png"%(frame/30))
+	assert(distance>3.0 and phases.has_all(["walk","rest","graze"]))
+	print("COW_HEIGHT ",upright," -> ",lowest)
+	assert(lowest<upright-.65 and lowest>.08,"Muzzle lowers toward grass and stays above ground")
+	assert(state.serialize()==frozen,"Visual grazing does not create feed or milk")
+	cow.motion.phase="walk";cow.motion.graze=0
+	var stopped:Transform3D=cow.node.transform
+	for i in range(120):world.animate(1.0/60,cow.node.global_position,state)
+	assert(cow.node.transform.is_equal_approx(stopped),"Wait for farmer instead of pushing")
+	var pose:Transform3D=cow.bones.CowNeck.node.transform
+	world.animate(0,player.position,state)
+	assert(cow.node.transform.is_equal_approx(stopped) and cow.bones.CowNeck.node.transform.is_equal_approx(pose))
+	print("COW_V015_OK: walk/graze/rest, safe turn envelope, lowered muzzle, player obstruction, zero-delta pause, unchanged economy; distance=",distance," muzzle=",lowest)
+	feedback.visible=true;world.irrigation_feedback.visible=true
