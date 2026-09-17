@@ -1,12 +1,52 @@
-# Como testar a versão 0.10.0
+# Como testar a versão 0.11.0
 
 Este roteiro cobre os **corpos conectados**, as **galinhas novas**, o Zeca e as encomendas.
-Abra o executável da pasta `windows-v0.10` e escolha **Voltar para minha fazenda**.
+Abra o executável da pasta `windows-v0.11` e escolha **Voltar para minha fazenda**.
 A versão nova aceita a fazenda anterior; não precisa começar outra.
 
 **Regra principal:** o tempo só avança caminhando, com as janelas fechadas.
 Use **TAB** até aparecer o modo de caminhada. Construção e qualquer janela
 pausam plantas, galinhas, ajudante e prazos de encomendas.
+
+## Equipe automática — Zeca e Bento
+
+1. Abra **H → Equipe e treinamento**. São duas vagas nesta versão: galinheiro e irrigação.
+2. Contrate Zeca pelo painel do galinheiro, caso ainda não trabalhe na fazenda.
+3. No cartão de Bento, clique **Contratar • Ver custos**. Confira $120 e $2 por canteiro concluído.
+   Voltar sem alterar não cobra. Confirme para contratar o segundo ajudante.
+4. Clique **Escolher canteiros**, marque os desejados e ative. Feche todas as janelas e use
+   TAB para caminhar: Bento rega enquanto Zeca cuida das galinhas. Nenhum deles planta ou colhe a lavoura.
+5. Teste **Pausar** apenas Bento. Zeca deve continuar no galinheiro. Retome Bento pelo mesmo cartão.
+6. Use **Treinar • Ver ganhos** em cada cartão. Por $240 cada, o nível 2 reduz serviço de $2 para $1,
+   acelera a caminhada 40%, reduz a checagem do Zeca de 15 para 10 s e acelera a rega de Bento 40%.
+   Ração continua sendo cobrada separadamente. Confira total gasto e regas no painel.
+7. Salve com F5, feche e reabra. Contratações, níveis, pausas e canteiros selecionados devem permanecer.
+   Sem saldo ou acesso, apenas o ajudante impedido pausa. Não há cobrança ociosa ou com o jogo fechado.
+8. Bento pode trabalhar sem galinheiro. Remover o galinheiro ou dispensar Zeca não encerra a rega dele.
+   Dispensar Bento encerra a irrigação, sem reembolso da contratação; treinamento permanece numa recontratação.
+
+## Novidades da 0.11 — teste primeiro
+
+1. Em caminhada (TAB), pressione **Espaço**. Teste parado, andando (WASD) e correndo (Shift).
+   Confira subida, pose no ar e aterrissagem. Apertar de novo no ar não dá outro impulso.
+   Construção, menus e animações de trabalho bloqueiam o início de um pulo.
+2. Abra seu celeiro, galinheiro ou oficina com **E**. Clique **Evoluir • Ver melhoria**.
+   Confira custo, benefício e localização. **Voltar sem comprar** não gasta dinheiro.
+3. Celeiro: confirme **$360**. A reserva desta construção sobe de 60 para 120 unidades;
+   os produtos e a pintura permanecem. Confira as caixas e a cobertura na fachada.
+4. Galinheiro: confirme **$420**. Agora são seis galinhas, com ninho de 24 ovos e quatro
+   ovos por ciclo, consumindo o dobro de água/ração. Role a lista para ver e renomear as novas.
+   Observe os ninhos adicionais e a torre de ventilação. Ovos antigos não se perdem.
+5. Oficina: confirme **$500**. Ela ganha armário e bancada equipada. Com o regador de
+   cinco canteiros comprado ($300), adquira o profissional por **$450**.
+   Monte nove canteiros em 3 × 3 e regue o central: os secos devem receber água, inclusive diagonais.
+6. Salve com F5 e reabra. Níveis, nomes, estoque e ferramentas devem permanecer.
+   Cada construção evolui individualmente, até o nível 2 nesta versão.
+7. Remover uma estrutura devolve metade da construção + evolução. Produtos reservados e
+   ovos continuam protegendo a remoção; equipamentos adquiridos não desaparecem com a oficina.
+
+Saves anteriores migram para o formato 8. Depois de salvar na 0.11, continue usando esta versão;
+executáveis antigos não reconhecem o novo formato. Os testes automáticos usam save separado.
 
 ## Novidades da 0.10 — teste primeiro
 
@@ -42,7 +82,7 @@ pausam plantas, galinhas, ajudante e prazos de encomendas.
 
 ## Conferir os personagens novos
 
-1. Abra a **0.10.0** e retome sua fazenda. O protagonista já usa o modelo novo.
+1. Abra a **0.11.0** e retome sua fazenda. O protagonista já usa o modelo novo.
 2. Use TAB para caminhar. Segure o botão direito e gire a câmera para ver o rosto;
    aproxime com a roda do mouse. Confira ombros ligados ao tronco, cintura e pernas.
    Os braços não devem parecer peças soltas.
@@ -91,7 +131,7 @@ depois de aproximadamente 4–5 minutos de caminhada. Ele atende **um galinheiro
 3. Se tiver dois galinheiros, escolha o outro na lista e clique em
    **Atender este galinheiro**. A troca é grátis e reinicia a checagem de 15 segundos.
 4. Para testar salvamento com calma, pause o Zeca, feche a janela, pressione **F5**
-   e saia pelo menu. Abra novamente a **0.10.0**: ele continua contratado e pausado,
+   e saia pelo menu. Abra novamente a **0.11.0**: ele continua contratado e pausado,
    com os mesmos totais e galinheiro. Jogo fechado não gera serviço nem cobrança.
 5. **Dispensar…** abre uma confirmação. **Voltar sem alterar** cancela a dispensa.
    Confirmar é grátis, preserva os produtos e encerra o trabalho. Contratação

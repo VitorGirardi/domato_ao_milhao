@@ -11,6 +11,8 @@ var hand_grip:Vector3
 var carried_egg:Node3D
 var time := 0.0
 var action_time := 0.0
+var airborne:=false
+var landing:=0.0
 var action_kind := ""
 var face_mesh:MeshInstance3D
 var blink_index:=-1
@@ -76,6 +78,7 @@ func play(kind: String) -> void:
 func animate(delta: float, moving: bool, running: bool, blink:bool=true) -> void:
 	if blink: update_blink(delta)
 	time+=delta
+	landing=maxf(0,landing-delta)
 	action_time=maxf(0,action_time-delta)
 	var phase:=time*(11 if running else 8)
 	var stride:=sin(phase)*(0.60 if running else 0.40) if moving else 0.0
@@ -87,6 +90,10 @@ func animate(delta: float, moving: bool, running: bool, blink:bool=true) -> void
 		var sign_value:=1.0 if side=="R" else -1.0
 		var thigh:float=-stride*sign_value
 		var knee:float=maxf(0,-sin(phase)*sign_value)*(1.1 if running else 0.72) if moving else 0.025
+		if airborne or landing>0:
+			var tuck:=1.0 if airborne else landing/0.22
+			thigh=-0.42*tuck
+			knee=0.85*tuck
 		if collecting:
 			thigh=-reach*0.75
 			knee=reach*1.5
@@ -95,6 +102,9 @@ func animate(delta: float, moving: bool, running: bool, blink:bool=true) -> void
 		pose_bone("Foot."+side,Vector3(-knee-thigh if collecting else -knee*0.45-thigh*0.2,0,0),blend)
 		var shoulder:float=stride*sign_value*0.7
 		var elbow:float=-0.65 if running and moving else -0.14
+		if airborne:
+			shoulder=-0.5
+			elbow=-0.65
 		if active:
 			shoulder=-0.58 if action_kind=="water" and side=="R" else -0.38
 			elbow=-0.74 if action_kind=="water" and side=="R" else -0.50
@@ -109,6 +119,8 @@ func animate(delta: float, moving: bool, running: bool, blink:bool=true) -> void
 	pose_bone("Neck",Vector3(-0.05 if active else 0,0,0),blend)
 	pose_bone("Head",Vector3(0.04 if active else sin(time*1.4)*0.018,0,0),blend)
 	root.position.y=-reach*0.2 if collecting else (abs(sin(phase*2))*0.018 if moving else 0)
+	if airborne: root.position.y=0
+	elif landing>0: root.position.y=-0.06*landing/0.22
 	if can:
 		can.visible=active and action_kind=="water"
 		# Keep the vessel upright independently of the wrist's imported rest axes.

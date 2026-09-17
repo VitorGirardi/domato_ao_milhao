@@ -5,19 +5,25 @@ extends RefCounted
 const NEST_CAPACITY := 12
 const FOOD_SECONDS := 360.0
 const WATER_SECONDS := 300.0
-const TRAITS := ["Fiscal do terreiro", "Especialista em lanches", "Sonhadora profissional"]
-const COLORS := ["fff2d9", "a86b39", "555c68"]
+const TRAITS := ["Fiscal do terreiro", "Especialista em lanches", "Sonhadora profissional", "Rainha da paçoca", "Chefe do poleiro", "Auditora de ovos"]
+const COLORS := ["fff2d9", "a86b39", "555c68", "d9ab6c", "9c786a", "e3e0d0"]
 
 static func fresh() -> Dictionary:
 	return {"food":100.0,"water":100.0,"nest":0,"names":["Maricota","Clotilde","Pipoca"]}
 
-static func valid(value: Variant) -> bool:
+static func capacity(flock:Dictionary) -> int:
+	return 24 if flock.names.size()==6 else 12
+
+static func eggs_per_cycle(flock:Dictionary) -> int:
+	return 4 if flock.names.size()==6 else 2
+
+static func valid(value: Variant, level:int=1) -> bool:
 	if not value is Dictionary: return false
 	for key in ["food","water","nest"]:
 		var number:Variant=value.get(key)
 		if not (number is int or number is float) or not is_finite(float(number)) or number<0: return false
-	if value.food>100 or value.water>100 or value.nest>NEST_CAPACITY or float(value.nest)!=floorf(float(value.nest)): return false
-	if not value.get("names") is Array or value.names.size()!=3: return false
+	if value.food>100 or value.water>100 or value.nest>(24 if level==2 else 12) or float(value.nest)!=floorf(float(value.nest)): return false
+	if not value.get("names") is Array or value.names.size()!=(6 if level==2 else 3): return false
 	for name in value.names:
 		if not name is String or not valid_name(name): return false
 	return true
@@ -45,18 +51,20 @@ static func tick(item: Dictionary, delta: float) -> bool:
 	var flock:Dictionary=item.flock
 	var before:=int(flock.nest)
 	var remaining:=maxf(0,delta)
+	var consumption:=2.0 if flock.names.size()==6 else 1.0
+	var limit:=capacity(flock)
 	# Split only at depletion boundaries so one large tick equals many small ticks.
 	while remaining>0.000001:
 		var span:=remaining
-		if flock.food>0: span=minf(span,float(flock.food)*FOOD_SECONDS/100.0)
-		if flock.water>0: span=minf(span,float(flock.water)*WATER_SECONDS/100.0)
-		if flock.nest<NEST_CAPACITY:
+		if flock.food>0: span=minf(span,float(flock.food)*FOOD_SECONDS/(100.0*consumption))
+		if flock.water>0: span=minf(span,float(flock.water)*WATER_SECONDS/(100.0*consumption))
+		if flock.nest<limit:
 			var progress:float=float(item.egg_time)+span*rate(flock)
 			var cycles:=int(floorf((progress+0.0000001)/45.0))
-			flock.nest=mini(NEST_CAPACITY,int(flock.nest)+cycles*2)
-			item.egg_time=0.0 if flock.nest==NEST_CAPACITY else maxf(0,progress-cycles*45.0)
-		flock.food=maxf(0,float(flock.food)-span*100.0/FOOD_SECONDS)
-		flock.water=maxf(0,float(flock.water)-span*100.0/WATER_SECONDS)
+			flock.nest=mini(limit,int(flock.nest)+cycles*eggs_per_cycle(flock))
+			item.egg_time=0.0 if flock.nest==limit else maxf(0,progress-cycles*45.0)
+		flock.food=maxf(0,float(flock.food)-span*100.0*consumption/FOOD_SECONDS)
+		flock.water=maxf(0,float(flock.water)-span*100.0*consumption/WATER_SECONDS)
 		if flock.food<0.000001: flock.food=0.0
 		if flock.water<0.000001: flock.water=0.0
 		remaining-=span

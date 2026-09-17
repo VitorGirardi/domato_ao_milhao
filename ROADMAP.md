@@ -140,3 +140,17 @@ Expressões animadas e personalização de roupas ficam para outra etapa.
 - [x] Compatibilidade com saves anteriores e testes de economia/rotas.
 - [ ] Interior explorável do celeiro.
 - [ ] Novas ferramentas e máquinas na oficina rural.
+
+
+## Entrega 0.11 — investir e ver a fazenda crescer
+
+- [x] Dois níveis de celeiro, galinheiro e oficina, com prévia de compra.
+- [x] Benefícios reais de capacidade, produção e ferramentas.
+- [x] Detalhes visuais próprios por evolução, preservando a área ocupada.
+- [x] Pulo em Espaço, pose no ar, aterrissagem e colisão nos telhados.
+- [x] Save compatível e testes de custos, migração e interação.
+- [ ] Ajustar preços e ritmo de progressão a partir do teste do jogador.
+
+- [x] Equipe inicial de dois ajudantes trabalhando simultaneamente.
+- [x] Contratação, pausa e treinamento por pessoa, com gastos separados.
+- [ ] Novas vagas e especializações: plantio, colheita e transporte.

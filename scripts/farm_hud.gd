@@ -27,6 +27,7 @@ var staff_target:=-1
 var staff_choice:OptionButton
 var staff_primary:Button
 var irrigation_draft:Array=[]
+var building_index:=-1
 var stock_label: Label
 var hint_label: Label
 var toast_label: Label
@@ -271,13 +272,14 @@ func update(state: FarmState, build_mode: bool, selected: int, tool: String, cro
 	if selected>=0 and selected<state.items.size():
 		var item:Dictionary=state.items[selected]
 		select_label.text=FarmState.ITEMS[item.kind].name.to_upper()
+		if FarmProgression.UPGRADES.has(item.kind): select_label.text+=" • NÍVEL %d"%FarmProgression.level(item)
 		if item.kind=="plot":
 			var status:="Pronto para replantar"
 			if item.planted:
 				status="Pronto para colher!" if item.growth>=1 else ("Crescendo: %d%%"%int(item.growth*100) if item.watered else "Precisa de água")
 			details_label.text="%s\n%s\n\nClique com Cuidar ou use E\nperto do canteiro."%[FarmState.CROPS[item.crop].name,status]
 		elif item.kind=="coop":
-			details_label.text="%s\nRação: %d%% • Água: %d%%\nNinho: %d / 12 ovos\n\nUse Cuidar das galinhas."%[FarmAnimals.status(item.flock),roundi(item.flock.food),roundi(item.flock.water),int(item.flock.nest)]
+			details_label.text="%s\nRação: %d%% • Água: %d%%\nNinho: %d / %d ovos\n\nUse Cuidar das galinhas."%[FarmAnimals.status(item.flock),roundi(item.flock.food),roundi(item.flock.water),int(item.flock.nest),FarmAnimals.capacity(item.flock)]
 		elif item.kind=="sign":
 			details_label.text='“%s”\n\nPinte ou escreva sua mensagem.'%item.text
 		elif item.kind=="barn":
@@ -296,7 +298,7 @@ func update(state: FarmState, build_mode: bool, selected: int, tool: String, cro
 	elif build_mode:
 		hint_label.text="Clique para construir / cuidar  •  R / Q girar  •  TAB caminhar"
 	else:
-		hint_label.text="WASD andar  •  Mouse direito girar  •  E cuidar  •  TAB construir"
+		hint_label.text="WASD andar • Espaço pular • E cuidar • TAB construir"
 
 func _set_active_buttons() -> void:
 	for key in buttons:
@@ -343,15 +345,17 @@ func welcome(state: FarmState, has_save: bool) -> void:
 	text_input.text=state.farm_name
 	p.add_child(text_input)
 	button(p,"Voltar para minha fazenda" if has_save else "Escolher meu pedaço de terra",Rect2(34,494,542,55),"start",true)
-	label(p,"VERSÃO 0.10.0   •   ESTOQUE, OFICINA E IRRIGAÇÃO",Vector2(34,561),Vector2(542,17),11,MUTED)
+	label(p,"VERSÃO 0.11.0   •   EQUIPE, EVOLUÇÃO E PULO",Vector2(34,561),Vector2(542,17),11,MUTED)
 
 func coop(state: FarmState, index: int, selected_hen: int = -1) -> void:
 	var flock:Dictionary=state.items[index].flock
+	building_index=index
 	var p:=_modal("coop",720)
 	label(p,"GALINHEIRO • CUIDADOS E COMPANHIA",Vector2(30,21),Vector2(550,27),13,MUTED)
-	label(p,"Seu pequeno bando",Vector2(30,58),Vector2(550,44),30)
-	var status:=FarmAnimals.status(flock)+" • 2 ovos a cada %d s"%roundi(45.0/FarmAnimals.rate(flock))
-	if flock.nest>=FarmAnimals.NEST_CAPACITY: status="Ninho cheio • Colete para retomar a produção"
+	label(p,"Seu pequeno bando",Vector2(30,58),Vector2(320,44),27)
+	evolution_button(p,state,index,Rect2(352,58,228,42))
+	var status:=FarmAnimals.status(flock)+" • %d ovos a cada %d s"%[FarmAnimals.eggs_per_cycle(flock),roundi(45.0/FarmAnimals.rate(flock))]
+	if flock.nest>=FarmAnimals.capacity(flock): status="Ninho cheio • Colete para retomar a produção"
 	label(p,status,Vector2(30,111),Vector2(550,30),17)
 	var cost:=FarmAnimals.food_cost(flock)
 	label(p,"Ração: %d%%"%roundi(flock.food),Vector2(30,162),Vector2(170,32),19)
@@ -371,21 +375,28 @@ func coop(state: FarmState, index: int, selected_hen: int = -1) -> void:
 	var water:=button(p,"Bebedouro cheio" if flock.water>=100 else "Encher água • Grátis",Rect2(347,207,233,43),"care:water")
 	water.disabled=flock.water>=100
 	label(p,"Sem água ou ração, a produção fica mais lenta.\nSeus animais não morrem; basta voltar a cuidar.",Vector2(30,268),Vector2(550,52),16,MUTED)
-	label(p,"Ninho: %d / 12 ovos"%int(flock.nest),Vector2(30,341),Vector2(270,35),22)
+	label(p,"Ninho: %d / %d ovos"%[int(flock.nest),FarmAnimals.capacity(flock)],Vector2(30,341),Vector2(270,35),22)
 	var collect:=button(p,"Coletar %d ovos"%int(flock.nest),Rect2(315,331,265,48),"care:collect",true)
 	collect.disabled=flock.nest==0
 	label(p,"CONHEÇA SUAS GALINHAS",Vector2(30,403),Vector2(550,25),12,MUTED)
-	for i in range(3):
-		if selected_hen==i: panel(p,Rect2(24,435+i*56,562,52),Color("f4e5b8"))
+	var scroll:=ScrollContainer.new()
+	scroll.position=Vector2(24,433)
+	scroll.size=Vector2(562,174)
+	p.add_child(scroll)
+	var list:=Control.new()
+	list.custom_minimum_size=Vector2(542,flock.names.size()*56)
+	scroll.add_child(list)
+	for i in range(flock.names.size()):
+		if selected_hen==i: panel(list,Rect2(0,i*56,540,52),Color("f4e5b8"))
 		var swatch:=ColorRect.new()
 		swatch.color=Color(FarmAnimals.COLORS[i])
-		swatch.position=Vector2(32,448+i*56)
+		swatch.position=Vector2(8,15+i*56)
 		swatch.size=Vector2(17,17)
-		p.add_child(swatch)
-		label(p,flock.names[i],Vector2(62,436+i*56),Vector2(340,29),18)
-		label(p,FarmAnimals.TRAITS[i],Vector2(62,464+i*56),Vector2(340,20),12,MUTED)
-		button(p,"Renomear",Rect2(425,440+i*56,155,43),"rename_hen:%d"%i)
-	label(p,"Cuidados compartilhados pelas três galinhas deste galinheiro.",Vector2(30,613),Vector2(550,23),13,MUTED)
+		list.add_child(swatch)
+		label(list,flock.names[i],Vector2(38,3+i*56),Vector2(340,29),18)
+		label(list,FarmAnimals.TRAITS[i],Vector2(38,31+i*56),Vector2(340,20),12,MUTED)
+		button(list,"Renomear",Rect2(380,7+i*56,155,43),"rename_hen:%d"%i)
+	label(p,"%d galinhas • Cuidados compartilhados. Role a lista para ver todas."%flock.names.size(),Vector2(30,613),Vector2(550,23),13,MUTED)
 	button(p,"Ajudante [H]",Rect2(30,652,265,44),"staff_coop")
 	button(p,"Voltar ao terreiro",Rect2(310,652,270,44),"close")
 
@@ -393,9 +404,10 @@ func staff_panel(state: FarmState) -> void:
 	var p:=_modal("staff",744)
 	var worker:Dictionary=state.staff
 	label(p,"GESTÃO • PRIMEIRO AJUDANTE",Vector2(30,21),Vector2(550,26),13,MUTED)
-	label(p,"Zeca do Trato",Vector2(30,57),Vector2(550,43),31)
+	label(p,"Zeca do Trato",Vector2(30,57),Vector2(320,43),31)
+	button(p,"Equipe e treinamento",Rect2(330,60,250,40),"crew",true)
 	label(p,"“A Maricota manda. Eu só organizo o sindicato.”",Vector2(30,105),Vector2(550,29),17,MUTED)
-	label(p,"Cuida de um galinheiro por vez, a cada 15 segundos:\ncoleta ovos e repõe água e ração quando chegam a 25%.\nSem serviço, não cobra. Seus outros produtos ficam com você.",Vector2(30,151),Vector2(550,76),16)
+	label(p,"Cuida de um galinheiro por vez, a cada %d segundos:\ncoleta ovos e repõe água e ração quando chegam a 25%%.\nSem serviço, não cobra. Seus outros produtos ficam com você."%FarmStaff.interval(worker),Vector2(30,151),Vector2(550,76),16)
 	label(p,"GALINHEIRO ESCOLHIDO",Vector2(30,244),Vector2(550,24),12,MUTED)
 	staff_choice=OptionButton.new()
 	staff_choice.position=Vector2(30,275)
@@ -415,11 +427,11 @@ func staff_panel(state: FarmState) -> void:
 		staff_choice.disabled=true
 	else: staff_choice.select(coops.find(staff_target))
 	staff_choice.item_selected.connect(func(index: int): staff_target=staff_choice.get_item_id(index); staff_panel(state))
-	label(p,("Irrigação • pausada" if worker.paused else "Irrigação • ativa") if state.irrigation.enabled else FarmStaff.status(worker),Vector2(30,333),Vector2(550,32),21)
+	label(p,("Irrigação • pausada" if worker.paused else "Irrigação • ativa") if state.legacy_irrigation() else FarmStaff.status(worker),Vector2(30,333),Vector2(550,32),21)
 	var info:="Contratação: $120 • Cada rodada com serviço: $2 + ração.\nRação custa até $8 por reposição. Água é grátis. Saldo: $%d"%state.money
 	if worker.hired:
-		info="%d rodadas • %d ovos coletados • Total gasto: $%d\nCusto por rodada com serviço: $2 + ração (até $8). Saldo: $%d"%[worker.services,worker.eggs,worker.spent,state.money]
-	if state.irrigation.enabled: info="%d regas concluídas • Irrigação: $%d • Saldo: $%d\n$2 por canteiro concluído. Sem plantar ou colher automaticamente."%[state.irrigation.watered,state.irrigation.spent,state.money]
+		info="%d rodadas • %d ovos coletados • Total gasto: $%d\nCusto por rodada com serviço: $%d + ração (até $8). Saldo: $%d"%[worker.services,worker.eggs,worker.spent,FarmCrew.fee(worker),state.money]
+	if state.legacy_irrigation(): info="%d regas concluídas • Irrigação: $%d • Saldo: $%d\n$2 por canteiro concluído. Sem plantar ou colher automaticamente."%[state.irrigation.watered,state.irrigation.spent,state.money]
 	label(p,info,Vector2(30,377),Vector2(550,58),16)
 	var detail:="A contratação é paga uma vez; recontratar custa outros $120."
 	if worker.hired and worker.coop>=0:
@@ -428,17 +440,17 @@ func staff_panel(state: FarmState) -> void:
 		var quote:=FarmStaff.quote(at.flock)
 		detail="Atende (%d, %d) • próxima checagem em %ds\nServiço necessário agora: $%d • Ao faltar saldo, pausa sozinho."%[at.x,at.z,ceili(FarmStaff.INTERVAL-worker.timer),quote]
 	elif worker.hired: detail="Galinheiro removido. Atribua outro e clique em Retomar."
-	if state.irrigation.enabled: detail="%d canteiros selecionados. Ao faltar saldo ou caminho, pausa.\nAtender este galinheiro encerra a rotina de irrigação."%state.irrigation.plots.size()
+	if state.legacy_irrigation(): detail="%d canteiros selecionados. Ao faltar saldo ou caminho, pausa.\nAtender este galinheiro encerra a rotina de irrigação."%state.irrigation.plots.size()
 	label(p,detail,Vector2(30,443),Vector2(550,52),15,MUTED)
 	if not worker.hired:
 		staff_primary=button(p,"Contratar • conferir custos",Rect2(30,511,550,46),"staff_hire_review",true)
 		staff_primary.disabled=staff_target<0 or state.money<FarmStaff.HIRE_COST
 	else:
 		var assign:=button(p,"Atender este galinheiro",Rect2(30,511,270,44),"staff_assign")
-		assign.disabled=staff_target<0 or (staff_target==worker.coop and not state.irrigation.enabled)
+		assign.disabled=staff_target<0 or (staff_target==worker.coop and not state.legacy_irrigation())
 		staff_primary=button(p,"Retomar" if worker.paused else "Pausar",Rect2(310,511,270,44),"staff_pause",true)
 		staff_primary.disabled=worker.coop<0
-		button(p,"Rotina de irrigação…",Rect2(30,565,350,42),"irrigation",true)
+		button(p,"Equipe • automatizar com Bento",Rect2(30,565,350,42),"crew",true)
 		button(p,"Dispensar…",Rect2(392,565,188,42),"staff_dismiss_review")
 	label(p,"Construção, janelas e jogo fechado pausam o trabalho e os custos.",Vector2(30,632),Vector2(550,24),13,MUTED)
 	button(p,"Voltar ao campo",Rect2(30,674,550,46),"close")
@@ -477,7 +489,33 @@ func confirm_route(state: FarmState, plan: Array) -> void:
 	var confirm:=button(p,"Construir por $%d"%state.batch_cost(plan),Rect2(218,283,362,49),"route_confirm",true)
 	confirm.disabled=not error.is_empty()
 
-func barn(state: FarmState) -> void:
+func building_choice(state:FarmState,index:int,kind:String) -> int:
+	if index>=0 and index<state.items.size() and state.items[index].kind==kind: return index
+	for i in range(state.items.size()):
+		if state.items[i].kind==kind: return i
+	return -1
+
+func evolution_button(parent:Control,state:FarmState,index:int,rect:Rect2) -> void:
+	if index<0: return
+	var level:=FarmProgression.level(state.items[index])
+	var b:=button(parent,"Nível 2 • Concluído" if level==2 else "Evoluir • Ver melhoria",rect,"evolution:%d"%index,true)
+	b.disabled=level==2
+
+func evolution(state:FarmState,index:int) -> void:
+	building_index=index
+	var item:Dictionary=state.items[index]
+	var offer:Dictionary=FarmProgression.UPGRADES[item.kind]
+	var p:=_modal("evolution",510)
+	label(p,"EVOLUÇÃO DA FAZENDA • NÍVEL 1 → 2",Vector2(30,24),Vector2(550,27),13,MUTED)
+	label(p,offer.title,Vector2(30,65),Vector2(550,43),29)
+	label(p,offer.benefit,Vector2(30,128),Vector2(550,116),16)
+	label(p,"Construção em (%d, %d) • Saldo: $%d\nMantém o lugar, a pintura e o conteúdo da construção.\nA remoção devolve metade do valor investido na estrutura."%[item.x,item.z,state.money],Vector2(30,263),Vector2(550,91),16)
+	var buy:=button(p,"Confirmar evolução • $%d"%offer.cost,Rect2(30,375,550,46),"evolution_buy:%d"%index,true)
+	buy.disabled=state.money<int(offer.cost) or FarmProgression.level(item)==2
+	button(p,"Voltar sem comprar",Rect2(30,440,550,43),"building_back")
+
+func barn(state: FarmState,index:int=-1) -> void:
+	building_index=building_choice(state,index,"barn")
 	var p:=_modal("barn",668)
 	label(p,"DENTRO DO CELEIRO • ESTOQUE DA FAZENDA",Vector2(30,23),Vector2(550,27),13,MUTED)
 	label(p,"Sua produção, bem guardada",Vector2(30,61),Vector2(550,43),28)
@@ -493,24 +531,34 @@ func barn(state: FarmState) -> void:
 		var withdraw:=button(p,"Retirar",Rect2(444,225+i*60,128,40),"withdraw:"+key)
 		deposit.disabled=state.inventory[key]==0 or state.reserve_count()>=state.reserve_capacity()
 		withdraw.disabled=state.reserve[key]==0
-	label(p,"Reserva: %d / %d unidades • cada celeiro acrescenta 60.\nGuardar e retirar move toda a quantidade que couber."%[state.reserve_count(),state.reserve_capacity()],Vector2(30,472),Vector2(550,55),16)
-	label(p,"Melhorias de ferramentas ficam na Oficina rural [9].",Vector2(30,550),Vector2(550,27),15,MUTED)
+	label(p,"Reserva: %d / %d unidades • capacidade dos seus celeiros.\nGuardar e retirar move toda a quantidade que couber."%[state.reserve_count(),state.reserve_capacity()],Vector2(30,472),Vector2(550,55),16)
+	evolution_button(p,state,building_index,Rect2(30,540,550,40))
 	button(p,"Sair do celeiro",Rect2(30,598,550,44),"close",true)
 
-func workshop(state:FarmState) -> void:
-	var p:=_modal("workshop",425)
+func workshop(state:FarmState,index:int=-1) -> void:
+	building_index=building_choice(state,index,"workshop")
+	var p:=_modal("workshop",706)
 	label(p,"OFICINA RURAL • BANCADA DE MELHORIAS",Vector2(30,27),Vector2(550,27),13,MUTED)
 	label(p,"Ferramentas para crescer",Vector2(30,69),Vector2(550,43),28)
-	label(p,"REGADOR MELHORADO\nUma rega manual alcança até 5 canteiros em cruz.\nA melhoria permanece sua ao mover ou remover a oficina.",Vector2(30,142),Vector2(550,98),17)
-	var buy:=button(p,"Melhoria já instalada" if state.watering_upgrade else "Melhorar regador • $300",Rect2(30,269,550,46),"upgrade",true)
+	label(p,"REGADOR MELHORADO\nUma rega manual alcança até 5 canteiros em cruz.",Vector2(30,140),Vector2(550,65),17)
+	var buy:=button(p,"Regador de 5 canteiros instalado" if state.watering_upgrade else "Melhorar regador • $300",Rect2(30,214,550,44),"upgrade",true)
 	buy.disabled=state.watering_upgrade or state.money<300
-	button(p,"Voltar ao campo",Rect2(30,345,550,44),"close")
+	label(p,"REGADOR PROFISSIONAL • OFICINA NÍVEL 2\nAté 9 canteiros em um quadrado, incluindo diagonais.\nRequer o regador de 5 canteiros. Não altera a rega do Zeca.",Vector2(30,292),Vector2(550,87),16)
+	var equipped:=false
+	for item in state.items:
+		if item.kind=="workshop" and FarmProgression.level(item)==2: equipped=true
+	var pro:=button(p,"Regador profissional instalado" if state.professional_watering else "Comprar regador profissional • $450",Rect2(30,391,550,44),"professional_watering",true)
+	pro.disabled=state.professional_watering or not state.watering_upgrade or not equipped or state.money<450
+	label(p,"Ferramentas compradas continuam suas ao remover a oficina.\nEvolua a estrutura abaixo para liberar o equipamento profissional.",Vector2(30,462),Vector2(550,61),15,MUTED)
+	evolution_button(p,state,building_index,Rect2(30,547,550,44))
+	button(p,"Voltar ao campo",Rect2(30,633,550,44),"close")
 
 func irrigation_panel(state:FarmState) -> void:
+	var cost:=FarmCrew.fee(state.irrigation_worker())
 	var p:=_modal("irrigation",740)
-	label(p,"ZECA • ROTINA DE IRRIGAÇÃO",Vector2(30,25),Vector2(550,29),13,MUTED)
+	label(p,("BENTO" if state.field_staff.hired else "ZECA")+" • ROTINA DE IRRIGAÇÃO",Vector2(30,25),Vector2(550,29),13,MUTED)
 	label(p,"Escolha os canteiros",Vector2(30,65),Vector2(550,43),29)
-	label(p,"$2 por canteiro regado, cobrado só ao concluir.\nAtende os selecionados quando estiverem plantados e secos.\nEnquanto esta rotina estiver ativa, Zeca não cuida das galinhas.",Vector2(30,120),Vector2(550,87),16)
+	label(p,"$%d por canteiro regado, cobrado só ao concluir.\nAtende os selecionados quando estiverem plantados e secos.\n%s"%[cost,"Bento rega enquanto Zeca pode cuidar das galinhas." if state.field_staff.hired else "Zeca fica na irrigação até você mudar a tarefa."],Vector2(30,120),Vector2(550,87),16)
 	var scroll:=ScrollContainer.new()
 	scroll.position=Vector2(30,224)
 	scroll.size=Vector2(550,305)
@@ -534,7 +582,7 @@ func irrigation_panel(state:FarmState) -> void:
 			elif not on: irrigation_draft.erase(i)
 			count_label.text="%d selecionados • nenhum custo para ativar"%irrigation_draft.size())
 	if rows.get_child_count()==0: label(p,"Construa canteiros para escolher nesta lista.",Vector2(40,243),Vector2(520,40),17)
-	button(p,"Ativar rotina • $2 por canteiro",Rect2(30,594,550,46),"irrigation_apply",true)
+	button(p,"Ativar rotina • $%d por canteiro"%cost,Rect2(30,594,550,46),"irrigation_apply",true)
 	button(p,"Voltar sem alterar",Rect2(30,662,550,44),"staff")
 
 func market(state: FarmState, tab: String = "sales") -> void:

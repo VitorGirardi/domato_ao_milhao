@@ -23,6 +23,12 @@ func review() -> void:
 	world.update_staff(state,0.1)
 	assert(state.staff.paused and not state.items[2].watered and state.money==cash,"Blocked garden cannot charge")
 	assert(world.staff_root.position==start,"Switching routines keeps Zeca in place")
+	assert(state.hire_field_staff().is_empty())
+	state.pause_staff()
+	assert(state.configure_irrigation([2]).is_empty())
+	cash=state.money
+	world.update_staff(state,0.1)
+	assert(state.field_staff.paused and not state.staff.paused and state.money==cash,"Blocked Bento does not pause or charge Zeca")
 	var camera:=Camera3D.new()
 	world.add_child(camera)
 	camera.position=Vector3(5,3.5,7)

@@ -50,7 +50,7 @@ var picked_trade_board:=false
 
 func _ready() -> void:
 	qa_mode = OS.is_debug_build() and "--qa" in OS.get_cmdline_user_args()
-	if qa_mode: save_path="user://qa_farm_v010.json"
+	if qa_mode: save_path="user://qa_farm_v011.json"
 	get_tree().auto_accept_quit = false
 	_inputs()
 	world = FarmWorld.new()
@@ -107,6 +107,13 @@ func _player() -> void:
 	avatar = world.model("farmer",player)
 	actor.setup(avatar,world)
 
+func _try_jump() -> bool:
+	if not session_started or build_mode or not hud.modal_kind.is_empty() or not player.is_on_floor() or actor.action_time>0: return false
+	player.velocity.y=6.8
+	actor.airborne=true
+	actor.landing=0.0
+	return true
+
 func _physics_process(delta: float) -> void:
 	if not is_instance_valid(hud):
 		return
@@ -129,8 +136,11 @@ func _physics_process(delta: float) -> void:
 		player.velocity.z = direction.z * speed
 		if direction.length() > 0.1:
 			avatar.rotation.y = lerp_angle(avatar.rotation.y,atan2(direction.x,direction.z),delta*12)
+	var was_airborne:=actor.airborne
 	player.velocity.y -= 18*delta
 	player.move_and_slide()
+	actor.airborne=not player.is_on_floor() and not build_mode
+	if was_airborne and player.is_on_floor(): actor.landing=0.22
 	actor.animate(delta,not build_mode and Vector2(player.velocity.x,player.velocity.z).length()>0.2,Input.is_action_pressed("run"))
 	player.position.x = clampf(player.position.x,-31,44)
 	player.position.z = clampf(player.position.z,-39,43)
@@ -247,6 +257,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		if not hud.modal_kind.is_empty():
 			return
 		match event.physical_keycode:
+			KEY_SPACE: _try_jump()
 			KEY_TAB: _action("mode")
 			KEY_E: _interact_nearest()
 			KEY_F: _action("market")
@@ -541,6 +552,7 @@ func _interact_nearest() -> void:
 		hud.toast("Aproxime-se de um canteiro, placa ou do armazém.")
 
 func _tend_selected() -> void:
+	if not build_mode and actor.airborne: return
 	if selected<0 or selected>=state.items.size(): return
 	var item:Dictionary=state.items[selected]
 	if item.kind=="plot":
@@ -583,8 +595,8 @@ func _tend_selected() -> void:
 		_update_ui()
 	elif item.kind=="sign":
 		hud.editor_dialog("sign",item.text)
-	elif item.kind=="barn": hud.barn(state)
-	elif item.kind=="workshop": hud.workshop(state)
+	elif item.kind=="barn": hud.barn(state,selected)
+	elif item.kind=="workshop": hud.workshop(state,selected)
 	elif item.kind=="coop": hud.coop(state,selected,selected_hen)
 
 func _action(value: String) -> void:
@@ -600,6 +612,53 @@ func _action(value: String) -> void:
 			hud.market_neighbor=key
 			hud.market(state,"orders")
 		return
+	if value=="crew":
+		FarmCrewHUD.show(hud,state)
+		return
+	if value in ["crew_hire_review","crew_dismiss_review"] or value.begins_with("crew_train_review:"):
+		var kind:="hire" if value=="crew_hire_review" else ("dismiss" if value=="crew_dismiss_review" else value.get_slice(":",1))
+		FarmCrewHUD.confirm(hud,state,kind)
+		return
+	if value in ["crew_hire","crew_pause","crew_dismiss"] or value.begins_with("crew_train:"):
+		var error:=""
+		match value:
+			"crew_hire": error=state.hire_field_staff()
+			"crew_pause": error=state.pause_field_staff()
+			"crew_dismiss": state.dismiss_field_staff()
+			_: error=state.train_worker(value.get_slice(":",1))
+		world.update_staff(state,0)
+		FarmCrewHUD.show(hud,state)
+		if not error.is_empty(): hud.toast(error)
+		_update_ui()
+		return
+	if value.begins_with("evolution:"):
+		var index:=int(value.get_slice(":",1))
+		if index>=0 and index<state.items.size() and FarmProgression.UPGRADES.has(state.items[index].kind): hud.evolution(state,index)
+		return
+	if value.begins_with("evolution_buy:"):
+		var index:=int(value.get_slice(":",1))
+		var error:=state.upgrade_building(index)
+		if not error.is_empty(): hud.toast(error); return
+		world.rebuild(state)
+		selected=index
+		_action("building_back")
+		hud.toast("Construção evoluída para o nível 2!")
+		_update_ui()
+		return
+	if value=="building_back":
+		var index:=hud.building_index
+		if index<0 or index>=state.items.size(): hud.close_modal(); return
+		selected=index
+		match state.items[index].kind:
+			"barn": hud.barn(state,index)
+			"coop": hud.coop(state,index,selected_hen)
+			"workshop": hud.workshop(state,index)
+		return
+	if value=="professional_watering":
+		var error:=state.buy_professional_watering()
+		hud.workshop(state,selected)
+		hud.toast("Regador profissional instalado: até 9 canteiros!" if error.is_empty() else error)
+		return
 	if value=="irrigation":
 		hud.irrigation_draft=state.irrigation.plots.duplicate()
 		hud.irrigation_panel(state)
@@ -608,9 +667,11 @@ func _action(value: String) -> void:
 		var error:=state.configure_irrigation(hud.irrigation_draft)
 		if not error.is_empty(): hud.toast(error); return
 		world.staff_anchor=""
+		world.field_anchor=""
 		world.update_staff(state,0)
-		hud.staff_panel(state)
-		hud.toast("Irrigação ativada: $2 por canteiro concluído. Feche a janela para começar.")
+		if state.field_staff.hired: FarmCrewHUD.show(hud,state)
+		else: hud.staff_panel(state)
+		hud.toast("Irrigação: $%d por canteiro. Feche a janela para começar."%FarmCrew.fee(state.irrigation_worker()))
 		return
 	if value.begins_with("staff"):
 		if not session_started: return
@@ -690,7 +751,7 @@ func _action(value: String) -> void:
 	if value.begins_with("rename_hen:"):
 		if selected<0 or selected>=state.items.size() or state.items[selected].kind!="coop": return
 		selected_hen=int(value.get_slice(":",1))
-		if selected_hen<0 or selected_hen>=3: return
+		if selected_hen<0 or selected_hen>=state.items[selected].flock.names.size(): return
 		hud.hen_editor(state.items[selected].flock.names[selected_hen])
 		return
 	if value.begins_with("tool:"):
@@ -723,7 +784,7 @@ func _action(value: String) -> void:
 		return
 	if value.begins_with("deposit:") or value.begins_with("withdraw:"):
 		var amount:=state.transfer_reserve(value.get_slice(":",1),value.begins_with("deposit:"))
-		hud.barn(state)
+		hud.barn(state,selected)
 		hud.toast("%d produtos transferidos. A reserva está protegida da venda geral."%amount)
 		_update_ui()
 		return
@@ -755,11 +816,11 @@ func _action(value: String) -> void:
 			_chime()
 		"route_cancel": hud.close_modal()
 		"barn":
-			if selected>=0 and selected<state.items.size() and state.items[selected].kind=="workshop": hud.workshop(state)
-			elif state.count_items("barn")>0: hud.barn(state)
+			if selected>=0 and selected<state.items.size() and state.items[selected].kind=="workshop": hud.workshop(state,selected)
+			elif state.count_items("barn")>0: hud.barn(state,selected)
 		"upgrade":
 			var error:=state.buy_watering_upgrade()
-			hud.workshop(state)
+			hud.workshop(state,selected)
 			hud.toast("Regador melhorado! Até 5 canteiros por rega." if error.is_empty() else error)
 		"move":
 			if selected<0 or selected>=state.items.size():
@@ -861,7 +922,7 @@ func _journey_action() -> void:
 	var key:String=FarmState.JOURNEY[step].action
 	if key=="market":
 		if FarmState.JOURNEY[step].key=="contract" and state.inventory.carrot<6 and state.reserve.carrot>0:
-			hud.barn(state)
+			hud.barn(state,selected)
 		else: hud.market(state)
 	elif key=="harvest":
 		if build_mode: _action("mode")
@@ -1092,6 +1153,8 @@ func _qa() -> void:
 	await _qa_v06()
 	await _qa_v09()
 	await _qa_v010()
+	await _qa_v011()
+	await _qa_crew()
 	var restored:=FarmState.new()
 	assert(restored.restore(JSON.parse_string(JSON.stringify(state.serialize()))))
 	assert(restored.items.size()==state.items.size())
@@ -1777,3 +1840,154 @@ func _qa_v010() -> void:
 	world.rebuild(state)
 	selected=1
 	print("V010_INTEGRATION_OK: barn stock, workshop upgrade, checkbox selection, paused menus, walking irrigation, exact charge, no duplicate watering, pause")
+
+func _qa_v011() -> void:
+	var previous:=state.serialize()
+	state=FarmState.new()
+	state.claim(Vector2(4,-2))
+	state.money=10000
+	for entry in [["barn",Vector2(8,-8)],["coop",Vector2(-4,-4)],["workshop",Vector2(-4,4)]]:
+		assert(state.place(entry[0],entry[1],0).is_empty())
+	world.rebuild(state)
+	build_mode=true
+	for i in range(3):
+		selected=i
+		var snapshot:=state.serialize()
+		_action("evolution:%d"%i)
+		assert(hud.modal_kind=="evolution")
+		await get_tree().process_frame
+		await RenderingServer.frame_post_draw
+		get_viewport().get_texture().get_image().save_png("res://test-results/evolution-confirm-v011.png")
+		_action("building_back")
+		assert(state.serialize()==snapshot)
+		_action("evolution:%d"%i)
+		_action("evolution_buy:%d"%i)
+		assert(FarmProgression.level(state.items[i])==2)
+		assert(world.item_nodes[i].get_node_or_null("Level2Details")!=null)
+		await get_tree().process_frame
+		await RenderingServer.frame_post_draw
+		get_viewport().get_texture().get_image().save_png("res://test-results/%s-menu-v011.png"%state.items[i].kind)
+	assert(world.chickens.size()==6)
+	selected=1
+	_action("rename_hen:5")
+	assert(hud.modal_kind=="hen_name")
+	_action("close")
+	selected=2
+	_action("upgrade")
+	_action("professional_watering")
+	assert(state.professional_watering)
+	_action("close")
+	assert(not _try_jump(),"No jumping in construction")
+	build_mode=false
+	player.position=Vector3(4,0.2,7)
+	player.velocity=Vector3.ZERO
+	for frame in range(35): await get_tree().physics_frame
+	assert(player.is_on_floor())
+	_action("market")
+	assert(not _try_jump(),"No jumping through menus")
+	_action("close")
+	actor.play("water")
+	assert(not _try_jump(),"No jumping during work")
+	actor.action_time=0
+	var ground:=player.position.y
+	var event:=InputEventKey.new()
+	event.physical_keycode=KEY_SPACE
+	event.keycode=KEY_SPACE
+	event.pressed=true
+	_unhandled_input(event)
+	assert(player.velocity.y>6 and actor.airborne)
+	var peak:=ground
+	DirAccess.make_dir_recursive_absolute("res://test-results/jump-v011")
+	for frame in range(80):
+		await get_tree().physics_frame
+		peak=maxf(peak,player.position.y)
+		if frame==8: assert(not _try_jump(),"No double jump")
+		if frame%4==0:
+			await RenderingServer.frame_post_draw
+			get_viewport().get_texture().get_image().save_png("res://test-results/jump-v011/frame-%02d.png"%frame)
+	assert(peak-ground>1.0 and peak-ground<1.5 and player.is_on_floor())
+	assert(absf(player.position.y-ground)<0.05 and not actor.airborne)
+	player.position=Vector3(8,6,-8)
+	player.velocity=Vector3.ZERO
+	for frame in range(100): await get_tree().physics_frame
+	assert(player.is_on_floor() and player.position.y>4.3,"Roof supports the character above the visible barn")
+	build_mode=true
+	assert(state.restore(previous))
+	world.rebuild(state)
+	selected=1
+	print("V011_INTEGRATION_OK: evolution preview/cancel/purchase, visual additions, six hens, sixth name, tool unlock, space jump, no double jump, menu/work gates, landing")
+
+func _qa_crew() -> void:
+	var previous:=state.serialize()
+	state=FarmState.new()
+	state.claim(Vector2(4,-2))
+	state.money=10000
+	state.place("coop",Vector2(-4,-4),0)
+	state.place("plot",Vector2(2,0),0)
+	state.place("plot",Vector2(4,0),0)
+	state.hire_staff(0)
+	world.rebuild(state)
+	build_mode=true
+	_action("crew")
+	assert(hud.modal_kind=="crew")
+	var money:=state.money
+	_action("crew_hire_review")
+	assert(hud.modal_kind=="crew_confirm")
+	_action("crew")
+	assert(state.money==money and not state.field_staff.hired)
+	_action("crew_hire_review")
+	_action("crew_hire")
+	assert(state.money==money-120 and world.field_root.visible and world.staff_root.visible)
+	for kind in ["coop","field"]:
+		_action("crew_train_review:"+kind)
+		var snapshot:=state.serialize()
+		_action("crew")
+		assert(snapshot==state.serialize())
+		_action("crew_train_review:"+kind)
+		_action("crew_train:"+kind)
+	assert(state.staff.level==2 and state.field_staff.level==2)
+	_action("irrigation")
+	var checks:=hud.modal.find_children("*","CheckBox",true,false)
+	for check in checks: check.button_pressed=true
+	_action("irrigation_apply")
+	assert(hud.modal_kind=="crew" and not state.legacy_irrigation())
+	await get_tree().process_frame
+	await RenderingServer.frame_post_draw
+	get_viewport().get_texture().get_image().save_png("res://test-results/crew-menu-v011.png")
+	var frozen:=state.serialize()
+	_process(5)
+	assert(state.serialize()==frozen)
+	_action("close")
+	focus=Vector3(0,0,-2)
+	yaw=0.1; pitch=0.55; build_distance=17
+	_update_camera(1,true)
+	state.items[0].flock.nest=4
+	money=state.money
+	var captured:=false
+	var field_start:=world.field_root.position
+	var coop_start:=world.staff_root.position
+	for frame in range(1800):
+		state.tick(1.0/60)
+		world.update_staff(state,1.0/60)
+		if frame%20==0: await get_tree().process_frame
+		if world.field_actor.can.visible and not captured:
+			await RenderingServer.frame_post_draw
+			get_viewport().get_texture().get_image().save_png("res://test-results/crew-working-v011.png")
+			captured=true
+		if state.field_staff.watered==2 and state.staff.services==1: break
+	assert(captured and state.field_staff.watered==2 and state.staff.services==1 and state.inventory.egg==4)
+	assert(state.money==money-3,"Two trained regas and one trained coop service cost exactly three coins")
+	assert(field_start.distance_to(world.field_root.position)>0.4 and coop_start.distance_to(world.staff_root.position)>0.4)
+	_action("crew_pause")
+	assert(state.field_staff.paused and not state.staff.paused)
+	var stopped:=world.field_root.position
+	for frame in range(100): world.update_staff(state,1.0/60)
+	assert(world.field_root.position==stopped)
+	_action("crew_dismiss_review")
+	_action("crew")
+	assert(state.field_staff.hired)
+	_action("close")
+	assert(state.restore(previous))
+	world.rebuild(state)
+	selected=1
+	print("CREW_INTEGRATION_OK: hire and training confirmations, cancellation, two distinct workers moving concurrently, selected irrigation, coop collection, exact costs, independent pause, menus, persistence")

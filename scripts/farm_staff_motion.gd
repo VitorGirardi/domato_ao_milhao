@@ -69,7 +69,7 @@ func update(world:FarmWorld,state:FarmState,delta:float) -> void:
 	var destination:=origin+local.rotated(Vector3.UP,turn)
 	if target.distance_to(destination)>0.1: plan(node.position,destination,state)
 	var moving:=false
-	var remaining:=minf(delta,0.1)*1.6
+	var remaining:=minf(delta,0.1)*1.6*FarmCrew.speed(state.staff)
 	while not path.is_empty() and remaining>0:
 		var direction:=path[0]-node.position
 		direction.y=0

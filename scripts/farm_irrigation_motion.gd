@@ -10,14 +10,18 @@ func reset() -> void:
 	watering=false
 	route.reset(0)
 
-func update(world:FarmWorld,state:FarmState,delta:float) -> void:
+func update(world:FarmWorld,state:FarmState,delta:float, field:bool=false) -> void:
 	delta=minf(delta,0.1)
-	var actor:=world.staff_actor
-	var node:=world.staff_root
-	if state.staff.paused: return
+	var actor:=world.field_actor if field else world.staff_actor
+	var node:=world.field_root if field else world.staff_root
+	var label:=world.field_label if field else world.staff_label
+	var worker:=state.irrigation_worker()
+	var name:="BENTO" if field else "ZECA"
+	var efficiency:=FarmCrew.speed(worker)
+	if worker.paused: return
 	if watering:
-		actor.animate(delta,false,false,false)
-		world.staff_label.text="ZECA • REGANDO"
+		actor.animate(delta*efficiency,false,false,false)
+		label.text=name+" • REGANDO"
 		if actor.action_time<=0:
 			state.irrigate(plot) # Recheck funds and dryness at completion; never charge twice.
 			world.update_crops(state)
@@ -32,18 +36,18 @@ func update(world:FarmWorld,state:FarmState,delta:float) -> void:
 			var distance:=node.position.distance_to(Vector3(item.x,0,item.z))
 			if distance<best: best=distance; plot=int(index)
 		if plot<0:
-			world.staff_label.text="ZECA • CANTEIROS EM DIA"
-			actor.animate(delta,false,false,false)
+			label.text=name+" • CANTEIROS EM DIA"
+			actor.animate(delta*efficiency,false,false,false)
 			return
 		var item:Dictionary=state.items[plot]
 		for offset in [Vector3(0,0,1.6),Vector3(1.6,0,0),Vector3(0,0,-1.6),Vector3(-1.6,0,0)]:
 			route.plan(node.position,Vector3(item.x,0,item.z)+offset,state)
 			if not route.blocked: break
 		if route.blocked:
-			state.staff.paused=true
-			state.staff.reason="manual"
-			state.staff_notice="Zeca pausou: caminho bloqueado até o canteiro. Libere a passagem e retome em H."
-			world.staff_label.text="ZECA • CAMINHO BLOQUEADO"
+			worker.paused=true
+			worker.reason="manual"
+			state.staff_notice="Ajudante pausou: caminho bloqueado até o canteiro. Libere a passagem e retome em H."
+			label.text=name+" • CAMINHO BLOQUEADO"
 			plot=-1
 			return
 	var item:Dictionary=state.items[plot]
@@ -51,7 +55,7 @@ func update(world:FarmWorld,state:FarmState,delta:float) -> void:
 		plot=-1
 		return
 	var moving:=false
-	var remaining:=delta*1.6
+	var remaining:=delta*1.6*efficiency
 	while not route.path.is_empty() and remaining>0:
 		var direction:=route.path[0]-node.position
 		direction.y=0
@@ -65,10 +69,10 @@ func update(world:FarmWorld,state:FarmState,delta:float) -> void:
 		node.rotation.y=lerp_angle(node.rotation.y,atan2(direction.x,direction.z),minf(delta*8,1))
 		remaining-=step
 		moving=true
-	world.staff_label.text="ZECA • INDO REGAR"
-	actor.animate(delta,moving,false,false)
+	label.text=name+" • INDO REGAR"
+	actor.animate(delta*efficiency,moving,false,false)
 	if node.position.distance_to(route.target)<0.16:
-		if state.money<2:
+		if state.money<FarmCrew.fee(worker):
 			state.irrigate(plot) # Pauses and reports insufficient funds without altering crop.
 			return
 		var at:=Vector3(item.x,0,item.z)

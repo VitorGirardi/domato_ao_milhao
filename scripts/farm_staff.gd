@@ -8,17 +8,21 @@ const INTERVAL:=15.0
 const REFILL_AT:=25.0
 
 static func fresh() -> Dictionary:
-	return {"hired":false,"paused":true,"coop":-1,"timer":0.0,"services":0,"eggs":0,"spent":0,"reason":""}
+	return {"hired":false,"paused":true,"level":1,"coop":-1,"timer":0.0,"services":0,"eggs":0,"spent":0,"reason":""}
+
+static func interval(worker:Dictionary) -> float:
+	return 10.0 if FarmCrew.level(worker)==2 else INTERVAL
 
 static func valid(data: Variant, items: Array) -> bool:
 	if not data is Dictionary: return false
+	if not FarmCrew.valid_level(data.get("level",1)): return false
 	if not data.get("hired") is bool or not data.get("paused") is bool: return false
 	for key in ["coop","services","eggs","spent"]:
 		var value:Variant=data.get(key)
 		if not (value is int or value is float) or not is_finite(float(value)) or float(value)!=floorf(float(value)): return false
 		if value<(-1 if key=="coop" else 0): return false
 	var timer:Variant=data.get("timer")
-	if not (timer is int or timer is float) or not is_finite(float(timer)) or timer<0 or timer>=INTERVAL: return false
+	if not (timer is int or timer is float) or not is_finite(float(timer)) or timer<0 or timer>=interval(data): return false
 	if data.get("reason") not in ["","manual","funds","removed"]: return false
 	if data.coop>=items.size(): return false
 	if data.coop>=0 and items[int(data.coop)].kind!="coop": return false
@@ -37,10 +41,11 @@ static func quote(flock: Dictionary) -> int:
 static func service(farm) -> void:
 	var worker:Dictionary=farm.staff
 	if not running(worker): return
-	if farm.irrigation.enabled: return
+	if farm.legacy_irrigation(): return
 	if not farm.staff_accessible: return
 	var flock:Dictionary=farm.items[int(worker.coop)].flock
 	var cost:=quote(flock)
+	if cost>0: cost-=SERVICE_COST-FarmCrew.fee(worker)
 	if cost==0: return
 	if farm.money<cost:
 		worker.paused=true

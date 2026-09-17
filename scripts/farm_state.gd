@@ -41,16 +41,61 @@ var contract_done: bool = false
 var milestones: Dictionary = {}
 var reserve: Dictionary = {"carrot":0, "wheat":0, "corn":0, "egg":0}
 var watering_upgrade := false
+var professional_watering := false
 var trade:Dictionary=FarmTrade.fresh()
 var trade_notices:Array[String]=[]
 var staff:Dictionary=FarmStaff.fresh()
+var field_staff:Dictionary=FarmCrew.fresh()
 var staff_accessible:=true # Runtime arrival gate, recalculated by the world; not saved.
 var staff_notice:=""
 var irrigation:Dictionary={"enabled":false,"plots":[],"watered":0,"spent":0}
 
+func irrigation_worker() -> Dictionary:
+	return field_staff if field_staff.hired else staff
+
+func legacy_irrigation() -> bool:
+	return irrigation.enabled and not field_staff.hired
+
+func hire_field_staff() -> String:
+	if not claimed: return "Escolha seu terreno primeiro."
+	if field_staff.hired: return "Bento já trabalha aqui."
+	if money<FarmCrew.HIRE_COST: return "Contratar Bento custa $120."
+	money-=FarmCrew.HIRE_COST
+	field_staff.spent+=FarmCrew.HIRE_COST
+	field_staff.hired=true
+	field_staff.paused=not irrigation.enabled
+	field_staff.reason=""
+	return ""
+
+func pause_field_staff() -> String:
+	if not field_staff.hired: return "Contrate Bento primeiro."
+	if not irrigation.enabled or irrigation.plots.is_empty(): return "Escolha os canteiros e ative a irrigação."
+	field_staff.paused=not field_staff.paused
+	field_staff.reason="manual" if field_staff.paused else ""
+	return ""
+
+func dismiss_field_staff() -> void:
+	field_staff.hired=false
+	field_staff.paused=true
+	field_staff.reason=""
+	irrigation.enabled=false
+
+func train_worker(kind:String) -> String:
+	if kind not in ["coop","field"]: return "Ajudante desconhecido."
+	var worker:Dictionary=staff if kind=="coop" else field_staff
+	if not worker.hired: return "Contrate esse ajudante primeiro."
+	if FarmCrew.level(worker)==2: return "Treinamento já concluído."
+	if money<FarmCrew.TRAIN_COST: return "O treinamento custa $240."
+	money-=FarmCrew.TRAIN_COST
+	worker.spent+=FarmCrew.TRAIN_COST
+	worker.level=2
+	if kind=="coop": worker.timer=0.0
+	return ""
+
 func configure_irrigation(plots:Array) -> String:
-	if not staff.hired: return "Contrate o Zeca primeiro em H."
-	if staff.coop<0 or staff.coop>=items.size() or items[staff.coop].kind!="coop": return "Atribua um galinheiro ao Zeca em H antes de ativar a irrigação."
+	var worker:=irrigation_worker()
+	if not worker.hired: return "Contrate um ajudante primeiro em H."
+	if not field_staff.hired and (staff.coop<0 or staff.coop>=items.size() or items[staff.coop].kind!="coop"): return "Atribua um galinheiro ao Zeca em H antes de ativar a irrigação."
 	if plots.is_empty(): return "Selecione pelo menos um canteiro."
 	var unique:Array=[]
 	for index in plots:
@@ -58,24 +103,27 @@ func configure_irrigation(plots:Array) -> String:
 		if index not in unique: unique.append(index)
 	irrigation.plots=unique
 	irrigation.enabled=true
-	staff.paused=false
-	staff.reason=""
-	staff.timer=0.0
+	worker.paused=false
+	worker.reason=""
+	if not field_staff.hired: staff.timer=0.0
 	return ""
 
 func irrigate(index:int) -> String:
-	if not irrigation.enabled or not staff.hired or staff.paused: return "Rotina pausada."
+	var worker:=irrigation_worker()
+	if not irrigation.enabled or not worker.hired or worker.paused: return "Rotina pausada."
 	if index not in irrigation.plots or index<0 or index>=items.size(): return "Canteiro não selecionado."
 	var item:Dictionary=items[index]
 	if item.kind!="plot" or not item.planted or item.watered or item.growth>=1: return "Sem necessidade de rega."
-	if money<2:
-		staff.paused=true
-		staff.reason="funds"
-		staff_notice="Zeca pausou: faltam $2 para regar. Retome em H quando tiver saldo."
+	var cost:=FarmCrew.fee(worker)
+	if money<cost:
+		worker.paused=true
+		worker.reason="funds"
+		staff_notice="Ajudante pausou: faltam $%d para regar. Retome em H quando tiver saldo."%cost
 		return staff_notice
-	money-=2
-	staff.spent+=2
-	irrigation.spent+=2
+	money-=cost
+	worker.spent+=cost
+	if field_staff.hired: field_staff.watered+=1
+	irrigation.spent+=cost
 	irrigation.watered+=1
 	item.watered=true
 	refresh_journey()
@@ -97,7 +145,7 @@ func hire_staff(index: int) -> String:
 func assign_staff(index: int) -> String:
 	if not staff.hired: return "Contrate o Zeca primeiro."
 	if index<0 or index>=items.size() or items[index].kind!="coop": return "Escolha um galinheiro válido."
-	irrigation.enabled=false
+	if not field_staff.hired: irrigation.enabled=false
 	if staff.coop==index: return ""
 	staff.coop=index
 	staff.timer=0.0
@@ -111,7 +159,7 @@ func pause_staff() -> String:
 	return ""
 
 func dismiss_staff() -> void:
-	irrigation.enabled=false
+	if not field_staff.hired: irrigation.enabled=false
 	staff.hired=false
 	staff.paused=true
 	staff.coop=-1
@@ -229,7 +277,10 @@ func reserve_count() -> int:
 	return total
 
 func reserve_capacity() -> int:
-	return count_items("barn")*60
+	var total:=0
+	for item in items:
+		if item.kind=="barn": total+=FarmProgression.reserve_slots(item)
+	return total
 
 func transfer_reserve(key: String, deposit: bool) -> int:
 	if not reserve.has(key) or count_items("barn")==0: return 0
@@ -237,6 +288,29 @@ func transfer_reserve(key: String, deposit: bool) -> int:
 	reserve[key]+=amount if deposit else -amount
 	inventory[key]+=-amount if deposit else amount
 	return amount
+
+func upgrade_building(index:int) -> String:
+	if index<0 or index>=items.size() or not FarmProgression.UPGRADES.has(items[index].kind): return "Escolha celeiro, galinheiro ou oficina."
+	var item:Dictionary=items[index]
+	if FarmProgression.level(item)>=2: return "Esta construção já está no nível máximo desta versão."
+	var price:int=FarmProgression.UPGRADES[item.kind].cost
+	if money<price: return "Faltam moedas: esta evolução custa $%d."%price
+	money-=price
+	item.level=2
+	if item.kind=="coop": item.flock.names.append_array(["Paçoca","Jurema","Dona Geminha"])
+	return ""
+
+func buy_professional_watering() -> String:
+	if professional_watering: return "Regador profissional já instalado."
+	if not watering_upgrade: return "Compre primeiro o regador de 5 canteiros por $300."
+	var equipped:=false
+	for item in items:
+		if item.kind=="workshop" and FarmProgression.level(item)==2: equipped=true
+	if not equipped: return "Evolua uma oficina para o nível 2."
+	if money<450: return "O regador profissional custa $450."
+	money-=450
+	professional_watering=true
+	return ""
 
 func buy_watering_upgrade() -> String:
 	if count_items("workshop")==0: return "Construa uma oficina rural para usar a bancada."
@@ -254,16 +328,17 @@ func water_targets(index: int) -> Array:
 	for i in range(items.size()):
 		var item:Dictionary=items[i]
 		if item.kind!="plot" or not item.planted or item.watered or item.growth>=1: continue
-		if i==index or (watering_upgrade and Vector2(item.x-target.x,item.z-target.z).length()<=2.01): result.append(i)
+		var offset:=Vector2(item.x-target.x,item.z-target.z)
+		if i==index or (watering_upgrade and offset.length()<=2.01) or (professional_watering and maxf(absf(offset.x),absf(offset.y))<=2.01): result.append(i)
 	return result
 
 func remove_item(index: int) -> String:
 	if index<0 or index>=items.size(): return "Selecione uma construção."
 	if items[index].kind=="coop" and items[index].flock.nest>0:
 		return "Colete os ovos antes de remover o galinheiro."
-	if items[index].kind=="barn" and reserve_count()>reserve_capacity()-60:
+	if items[index].kind=="barn" and reserve_count()>reserve_capacity()-FarmProgression.reserve_slots(items[index]):
 		return "Retire a reserva do celeiro antes de removê-lo."
-	money+=int(ITEMS[items[index].kind].cost)/2
+	money+=(int(ITEMS[items[index].kind].cost)+FarmProgression.investment(items[index]))/2
 	items.remove_at(index)
 	var remaining_plots:Array=[]
 	for plot in irrigation.plots:
@@ -271,8 +346,9 @@ func remove_item(index: int) -> String:
 	irrigation.plots=remaining_plots
 	if remaining_plots.is_empty() and irrigation.enabled:
 		irrigation.enabled=false
-		staff.paused=true
-		staff.reason="removed"
+		var worker:=irrigation_worker()
+		worker.paused=true
+		worker.reason="removed"
 	if staff.coop==index:
 		staff.coop=-1
 		staff.paused=true
@@ -305,7 +381,7 @@ func care_coop(index: int, action: String) -> String:
 	return "Cuidado desconhecido."
 
 func rename_hen(index: int, hen: int, value: String) -> String:
-	if index<0 or index>=items.size() or items[index].kind!="coop" or hen<0 or hen>=3: return "Selecione uma galinha."
+	if index<0 or index>=items.size() or items[index].kind!="coop" or hen<0 or hen>=items[index].flock.names.size(): return "Selecione uma galinha."
 	value=value.strip_edges()
 	if not FarmAnimals.valid_name(value): return "Use um nome de 1 a 24 caracteres."
 	items[index].flock.names[hen]=value
@@ -409,7 +485,7 @@ func place(kind: String, at: Vector2, turn: int, crop: String = "carrot") -> Str
 		return "Semente desconhecida."
 	money -= int(ITEMS[kind].cost)
 	items.append({"kind": kind, "x": at.x, "z": at.y, "turn": posmod(turn, 4),
-		"paint": 0, "text": "Aqui o fiado só amanhã", "crop": crop,
+		"level":1, "paint": 0, "text": "Aqui o fiado só amanhã", "crop": crop,
 		"growth": 0.0, "watered": false, "planted": kind == "plot", "egg_time": 0.0})
 	if kind=="coop": items[-1].flock=FarmAnimals.fresh()
 	refresh_journey()
@@ -456,8 +532,8 @@ func tick(delta: float) -> bool:
 	var remaining:=maxf(0,delta)
 	# Split at service boundaries so large and small simulation steps agree.
 	while remaining>0.0000001:
-		var active:bool=FarmStaff.running(staff) and not irrigation.enabled
-		var span:=minf(remaining,FarmStaff.INTERVAL-float(staff.timer)) if active else remaining
+		var active:bool=FarmStaff.running(staff) and not legacy_irrigation()
+		var span:=minf(remaining,FarmStaff.interval(staff)-float(staff.timer)) if active else remaining
 		elapsed+=span
 		_expire_orders()
 		for item in items:
@@ -467,7 +543,7 @@ func tick(delta: float) -> bool:
 				if FarmAnimals.tick(item,span): eggs=true
 		if active:
 			staff.timer+=span
-			if staff.timer>=FarmStaff.INTERVAL-0.0000001:
+			if staff.timer>=FarmStaff.interval(staff)-0.0000001:
 				staff.timer=0.0
 				FarmStaff.service(self)
 		remaining-=span
@@ -513,7 +589,7 @@ func expand() -> String:
 	return ""
 
 func serialize() -> Dictionary:
-	return {"version": 6, "irrigation":irrigation.duplicate(true), "money": money, "claimed": claimed,
+	return {"version": 8, "field_staff":field_staff.duplicate(true), "professional_watering":professional_watering, "irrigation":irrigation.duplicate(true), "money": money, "claimed": claimed,
 		"center": [center.x, center.y], "land_size": land_size,
 		"items": items.duplicate(true), "inventory": inventory.duplicate(),
 		"elapsed": elapsed, "revenue": revenue, "harvests": harvests,
@@ -522,7 +598,7 @@ func serialize() -> Dictionary:
 
 func restore(data: Variant) -> bool:
 	# Validate before mutating live state. Invalid files never partially replace it.
-	if not data is Dictionary or not _number(data.get("version")) or data.version<1 or data.version>6 or float(data.version)!=floorf(float(data.version)):
+	if not data is Dictionary or not _number(data.get("version")) or data.version<1 or data.version>8 or float(data.version)!=floorf(float(data.version)):
 		return false
 	for key in ["money", "land_size", "elapsed", "revenue", "harvests"]:
 		if not _number(data.get(key)) or float(data[key]) < 0:
@@ -548,6 +624,9 @@ func restore(data: Variant) -> bool:
 	for value in data.get("milestones",{}).values():
 		if not value is bool: return false
 	if not data.get("watering_upgrade",false) is bool: return false
+	if not data.get("professional_watering",false) is bool: return false
+	if data.version>=7 and not data.has("professional_watering"): return false
+	if data.get("professional_watering",false) and not data.get("watering_upgrade",false): return false
 	var saved_reserve:Variant=data.get("reserve",{"carrot":0,"wheat":0,"corn":0,"egg":0})
 	if not saved_reserve is Dictionary or saved_reserve.size()!=4: return false
 	var stored_total:=0
@@ -573,15 +652,19 @@ func restore(data: Variant) -> bool:
 		for part in ["roof_paint","door_paint"]:
 			var color:Variant=item.get(part,-1)
 			if not _number(color) or color < -1 or color>=PALETTE.size() or float(color)!=floorf(float(color)): return false
-		if item.kind=="barn": barn_count+=1
+		var level:Variant=item.get("level",1)
+		if not _number(level) or level<1 or level>2 or float(level)!=floorf(float(level)): return false
+		if data.version>=7 and not item.has("level"): return false
+		if level==2 and not FarmProgression.UPGRADES.has(item.kind): return false
+		if item.kind=="barn": barn_count+=FarmProgression.reserve_slots(item)
 		if item.kind=="coop":
 			if data.version>=3 and not item.has("flock"): return false
-			if item.has("flock") and not FarmAnimals.valid(item.flock): return false
+			if item.has("flock") and not FarmAnimals.valid(item.flock,int(level)): return false
 		var area := item_rect(item.kind, Vector2(item.x, item.z), int(item.turn))
 		var land := Rect2(Vector2(data.center[0], data.center[1]) - Vector2.ONE * float(data.land_size) / 2, Vector2.ONE * float(data.land_size))
 		if not land.encloses(area):
 			return false
-	if stored_total>barn_count*60: return false
+	if stored_total>barn_count: return false
 	for i in range(data.items.size()):
 		var first: Dictionary = data.items[i]
 		var area := item_rect(first.kind,Vector2(first.x,first.z),int(first.turn)).grow(-0.05)
@@ -591,6 +674,9 @@ func restore(data: Variant) -> bool:
 				return false
 	if data.version>=5 and not data.has("staff"): return false
 	if data.has("staff") and not FarmStaff.valid(data.staff,data.items): return false
+	if data.version>=8 and not data.has("field_staff"): return false
+	var saved_field:Variant=data.get("field_staff",FarmCrew.fresh())
+	if not FarmCrew.valid(saved_field): return false
 	var saved_irrigation:Variant=data.get("irrigation",{"enabled":false,"plots":[],"watered":0,"spent":0})
 	if data.version>=6 and not data.has("irrigation"): return false
 	if not saved_irrigation is Dictionary or not saved_irrigation.get("enabled") is bool or not saved_irrigation.get("plots") is Array: return false
@@ -600,13 +686,14 @@ func restore(data: Variant) -> bool:
 	for index in saved_irrigation.plots:
 		if not _number(index) or index!=floorf(index) or index<0 or index>=data.items.size() or data.items[int(index)].kind!="plot" or index in unique_plots: return false
 		unique_plots.append(int(index))
-	if saved_irrigation.enabled and (unique_plots.is_empty() or not data.get("staff",{}).get("hired",false)): return false
+	if saved_irrigation.enabled and (unique_plots.is_empty() or not (data.get("staff",{}).get("hired",false) or saved_field.hired)): return false
 	money = int(data.money)
 	claimed = data.claimed
 	center = Vector2(data.center[0], data.center[1])
 	land_size = float(data.land_size)
 	items = data.items.duplicate(true)
 	for item in items:
+		item.level=int(item.get("level",1))
 		if item.kind=="coop":
 			if not item.has("flock"): item.flock=FarmAnimals.fresh()
 			item.flock.nest=int(item.flock.nest)
@@ -622,6 +709,7 @@ func restore(data: Variant) -> bool:
 	reserve=saved_reserve.duplicate()
 	for key in reserve: reserve[key]=int(reserve[key])
 	watering_upgrade=data.get("watering_upgrade",false)
+	professional_watering=data.get("professional_watering",false)
 	trade=data.get("trade",FarmTrade.fresh(contract_done)).duplicate(true)
 	for record in trade.values():
 		record.reputation=int(record.reputation)
@@ -634,6 +722,9 @@ func restore(data: Variant) -> bool:
 	staff=data.get("staff",FarmStaff.fresh()).duplicate(true)
 	for key in ["coop","services","eggs","spent"]: staff[key]=int(staff[key])
 	staff.timer=float(staff.timer)
+	staff.level=int(staff.get("level",1))
+	field_staff=saved_field.duplicate(true)
+	for key in ["level","spent","watered"]: field_staff[key]=int(field_staff[key])
 	staff_notice=""
 	irrigation=saved_irrigation.duplicate(true)
 	irrigation.plots=unique_plots

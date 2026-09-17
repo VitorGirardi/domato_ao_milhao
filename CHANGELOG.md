@@ -1,5 +1,21 @@
 # Alterações
 
+## 0.11.0 — Equipe, evolução da fazenda e pulo
+
+- Zeca no galinheiro e Bento na irrigação simultaneamente, com contratação, pausa, gastos e treinamento independentes.
+- Bento custa $120. Treinamento por $240 por pessoa reduz serviço de $2 para $1 e acelera o trabalho.
+- Dois postos de trabalho nesta primeira equipe; plantio e colheita seguem manuais.
+- Migração preserva rotinas antigas sem contratar ninguém automaticamente.
+
+- Espaço pula em caminhada, com pose no ar, aterrissagem e bloqueio de pulo duplo, menus e trabalho.
+- Colisões dos telhados acompanham sua altura e inclinação.
+- Celeiro, galinheiro e oficina ganham nível 2 com custos, prévia, confirmação e detalhes Blender próprios.
+- Reserva de 120 por celeiro melhorado; seis galinhas, 24 ovos no ninho e quatro ovos por ciclo no galinheiro melhorado.
+- Galinhas adicionais consomem o dobro de suprimentos; nomes, necessidades e ovos existentes permanecem.
+- Oficina equipada libera regador profissional para nove canteiros; requer a melhoria anterior.
+- Save 8, migração dos formatos anteriores, reembolso da estrutura evoluída e equipamentos permanentes.
+- Testes de cancelamento, custos, capacidade, produção, migração, seis personagens animais e salto real.
+
 ## 0.10.0 — Estoque, oficina rural e irrigação
 
 - Cabelo contínuo sobre a cabeça dos três personagens, chapéus ajustados e revisão em quatro ângulos.

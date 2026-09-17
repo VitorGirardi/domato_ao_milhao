@@ -23,6 +23,11 @@ var staff_actor:FarmAvatar
 var staff_label:Label3D
 var staff_anchor:=""
 var staff_site:=""
+var field_root:Node3D
+var field_actor:FarmAvatar
+var field_label:Label3D
+var field_motion:=FarmIrrigationMotion.new()
+var field_anchor:=""
 var staff_services:=-1
 var staff_motion:=FarmStaffMotion.new()
 var irrigation_motion:=FarmIrrigationMotion.new()
@@ -36,6 +41,7 @@ func _ready() -> void:
 	models["helper"]=load("res://assets/models/helper.glb")
 	models["vendor"]=load("res://assets/models/vendor.glb")
 	models["workshop"]=load("res://assets/models/workshop.glb")
+	for kind in ["barn","coop","workshop"]: models[kind+"_level2"]=load("res://assets/models/%s_level2.glb"%kind)
 	add_child(irrigation_feedback)
 	irrigation_feedback.setup(self)
 	add_child(structures)
@@ -330,10 +336,15 @@ func rebuild(state: FarmState) -> void:
 		else:
 			var visual := model(item.kind, root)
 			paint(visual,item)
+			if FarmProgression.level(item)==2 and FarmProgression.UPGRADES.has(item.kind):
+				var extension:=model(item.kind+"_level2",root)
+				extension.name="Level2Details"
+				paint(extension,item)
 			if item.kind in ["barn","workshop"]:
 				var entry:=Label3D.new()
 				entry.text="CELEIRO • ESTOQUE\n[E] Entrar" if item.kind=="barn" else "OFICINA RURAL\n[E] Melhorias"
 				entry.position=Vector3(0,2.1,2.75 if item.kind=="barn" else 1.8)
+				entry.text+=" • NÍVEL %d"%FarmProgression.level(item)
 				entry.font_size=26
 				entry.pixel_size=0.008
 				root.add_child(entry)
@@ -343,11 +354,33 @@ func rebuild(state: FarmState) -> void:
 				var shape := CollisionShape3D.new()
 				var box_shape := BoxShape3D.new()
 				var size: Vector2 = FarmState.ITEMS[item.kind].size
-				var height: float = 1.05 if item.kind=="fence" else (1.8 if item.kind=="sign" else (3.3 if item.kind=="barn" else 2.2))
+				var height: float = 1.05 if item.kind=="fence" else (1.8 if item.kind=="sign" else (2.9 if item.kind=="barn" else (2.07 if item.kind=="coop" else 2.4)))
 				box_shape.size = Vector3(size.x * 0.85, height, size.y * 0.82)
 				shape.shape = box_shape
 				shape.position.y = height / 2
 				body.add_child(shape)
+				if item.kind in ["barn","coop"]:
+					var barn_roof:bool=item.kind=="barn"
+					var half_width:=2.825 if barn_roof else 1.575
+					var half_depth:=2.575 if barn_roof else 1.375
+					var base_height:=2.92 if barn_roof else 2.07
+					var peak:=4.52 if barn_roof else 2.87
+					var points:=PackedVector3Array()
+					for z in [-half_depth,half_depth]:
+						points.append_array([Vector3(-half_width,base_height,z),Vector3(half_width,base_height,z),Vector3(0,peak,z)])
+					var roof_shape:=ConvexPolygonShape3D.new()
+					roof_shape.points=points
+					var roof_collision:=CollisionShape3D.new()
+					roof_collision.shape=roof_shape
+					body.add_child(roof_collision)
+				elif item.kind=="workshop":
+					var roof_collision:=CollisionShape3D.new()
+					var roof_shape:=BoxShape3D.new()
+					roof_shape.size=Vector3(3.95,0.13,3.65)
+					roof_collision.shape=roof_shape
+					roof_collision.position.y=2.55
+					roof_collision.rotation.x=-0.1
+					body.add_child(roof_collision)
 				root.add_child(body)
 			if item.kind == "sign":
 				var label := Label3D.new()
@@ -366,9 +399,59 @@ func rebuild(state: FarmState) -> void:
 	update_border(state)
 	update_animals(state)
 	staff_anchor=""
+	field_anchor=""
 	update_staff(state,0)
 
+func _field_colors(node:Node) -> void:
+	if node is MeshInstance3D:
+		for surface in range(node.mesh.get_surface_count()):
+			var original:Material=node.mesh.surface_get_material(surface)
+			var color_key:=original.resource_name.trim_prefix("helper_") if original else ""
+			if color_key in ["Shirt","Denim","Hat","Band","Seam"]:
+				var tint:StandardMaterial3D=original.duplicate()
+				tint.albedo_color=Color({"Shirt":"6b9fc2","Denim":"725347","Hat":"d7ae62","Band":"775345","Seam":"bc9970"}[color_key])
+				node.set_surface_override_material(surface,tint)
+	for child in node.get_children(): _field_colors(child)
+
+func update_field_staff(state:FarmState,delta:float) -> void:
+	if not state.field_staff.hired:
+		if is_instance_valid(field_root): field_root.visible=false
+		return
+	var created:=not is_instance_valid(field_root)
+	if created:
+		field_root=Node3D.new()
+		add_child(field_root)
+		var visual:=model("helper",field_root)
+		_field_colors(visual)
+		field_actor=FarmAvatar.new()
+		field_actor.setup(visual,self)
+		field_label=Label3D.new()
+		field_label.position=Vector3(0,2.65,0)
+		field_label.font_size=30
+		field_label.pixel_size=0.008
+		field_label.billboard=BaseMaterial3D.BILLBOARD_ENABLED
+		field_label.modulate=Color("b6e8ff")
+		field_root.add_child(field_label)
+	field_root.visible=true
+	if created or not field_motion.route.walkable(field_root.position,state):
+		var origin:=Vector3(state.center.x,0,state.center.y)
+		if not state.irrigation.plots.is_empty():
+			var item:Dictionary=state.items[int(state.irrigation.plots[0])]
+			origin=Vector3(item.x,0,item.z)
+		for attempt in range(160):
+			var candidate:=origin+Vector3(sin(attempt*TAU/16),0,cos(attempt*TAU/16))*(2.7+int(attempt/16)*0.8)
+			if field_motion.route.walkable(candidate,state): field_root.position=candidate; break
+	var anchor:=str(state.irrigation.plots)+str(state.irrigation.enabled)
+	if field_anchor!=anchor:
+		field_anchor=anchor
+		field_motion.reset()
+		field_actor.action_time=0
+	field_label.text="BENTO • PAUSADO" if state.field_staff.paused else "BENTO DA HORTA"
+	if delta>0 and state.irrigation.enabled:
+		field_motion.update(self,state,delta,true)
+
 func update_staff(state: FarmState, delta: float) -> void:
+	update_field_staff(state,delta)
 	var worker:Dictionary=state.staff
 	var visible_worker:bool=worker.hired and worker.coop>=0
 	if not visible_worker:
@@ -391,7 +474,7 @@ func update_staff(state: FarmState, delta: float) -> void:
 	staff_root.visible=true
 	var item:Dictionary=state.items[int(worker.coop)]
 	var site:="%d:%s:%s:%s"%[worker.coop,item.x,item.z,item.turn]
-	var anchor:=site+str(state.irrigation.enabled)
+	var anchor:=site+str(state.legacy_irrigation())
 	if anchor!=staff_anchor:
 		staff_anchor=anchor
 		staff_motion.reset(int(worker.eggs))
@@ -415,17 +498,17 @@ func update_staff(state: FarmState, delta: float) -> void:
 		staff_motion.last_eggs=int(worker.eggs)
 		staff_services=int(worker.services)
 	if delta>0:
-		if state.irrigation.enabled: irrigation_motion.update(self,state,delta)
+		if state.legacy_irrigation(): irrigation_motion.update(self,state,delta)
 		else: staff_motion.update(self,state,delta)
 	var nest_access:=Vector3(item.x,0,item.z)+Vector3(1.25,0,2.6).rotated(Vector3.UP,item.turn*PI/2)
-	state.staff_accessible=not state.irrigation.enabled and staff_root.position.distance_to(nest_access)<0.2 and staff_motion.walkable(nest_access,state)
+	state.staff_accessible=not state.legacy_irrigation() and staff_root.position.distance_to(nest_access)<0.2 and staff_motion.walkable(nest_access,state)
 
 func _build_coop(index: int, item: Dictionary, root: Node3D, state: FarmState) -> void:
 	var feeder:=model("feeder",root,Vector3(-1.4,0,1.55))
 	var waterer:=model("waterer",root,Vector3(1.6,0,-0.8))
 	var nest:=model("nest",root,Vector3(1.25,0,1.55))
 	var eggs:Array[Node3D]=[]
-	for n in range(FarmAnimals.NEST_CAPACITY):
+	for n in range(FarmAnimals.capacity(item.flock)):
 		eggs.append(model("egg",nest,Vector3((n%4-1.5)*0.19,0.17,(n/4-1)*0.18)))
 	var badge:=Label3D.new()
 	badge.font_size=32
@@ -435,8 +518,8 @@ func _build_coop(index: int, item: Dictionary, root: Node3D, state: FarmState) -
 	badge.outline_modulate=Color("294739")
 	root.add_child(badge)
 	coop_views[index]={"feed":feeder.find_child("Feed",true,false),"water":waterer.find_child("Water",true,false),"eggs":eggs,"badge":badge}
-	for c in range(3):
-		var start:=Vector3(c-1,0,2.6).rotated(Vector3.UP,root.rotation.y)+root.position
+	for c in range(item.flock.names.size()):
+		var start:=Vector3((c%3)-1,0,2.6+(c/3)*0.7).rotated(Vector3.UP,root.rotation.y)+root.position
 		if not _hen_walkable(start,state):
 			for attempt in range(160):
 				var angle:float=attempt*TAU/16+c*0.4
@@ -610,3 +693,4 @@ func _hen_walkable(at: Vector3, state: FarmState) -> bool:
 func _process(delta:float) -> void:
 	if vendor_actor: vendor_actor.update_blink(delta)
 	if staff_actor and is_instance_valid(staff_root) and staff_root.visible: staff_actor.update_blink(delta)
+	if field_actor and is_instance_valid(field_root) and field_root.visible: field_actor.update_blink(delta)
