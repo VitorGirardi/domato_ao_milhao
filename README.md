@@ -5,11 +5,11 @@
 Protótipo jogável de um tycoon de fazenda 3D estilizado para Windows, em português.
 Godot 4.7.2 + modelos originais feitos no Blender 5.2.1. Campanha solo e offline.
 
-**Versão atual: 0.4.0.** Veja [as prioridades](ROADMAP.md) e [as novidades](CHANGELOG.md).
+**Versão atual: 0.5.0.** Veja [as prioridades](ROADMAP.md) e [as novidades](CHANGELOG.md).
 
 ## Jogar
 
-O executável local fica em `exports/windows-v0.4/DoMatoAoMilhao.exe` depois da exportação.
+O executável local fica em `exports/windows-v0.5/DoMatoAoMilhao.exe` depois da exportação.
 Ele abre diretamente, sem instalar Godot ou Blender. Os binários não são enviados ao Git.
 
 Para executar a partir do código:
@@ -44,6 +44,7 @@ Para executar a partir do código:
 | Mover construção selecionada | M |
 | Cuidar de canteiro / editar placa / abrir celeiro ou galinheiro próximo | E |
 | Armazém do Seu Tonico | F |
+| Encomendas da vizinhança | J |
 | Salvar | F5 |
 | Cancelar ferramenta / fechar janela / menu | Esc |
 | Ferramentas da barra | 1–8 |
@@ -114,6 +115,30 @@ Maricota alterna fiscalização do fazendeiro, dança do ovo e reunião por mais
 milho. Clotilde gosta de ciscar e Pipoca faz pausas pelo terreiro. Os eventos
 são apenas divertidos: não cobram dinheiro, roubam produtos ou exigem resposta.
 
+## Vizinhos e encomendas
+
+No Armazém [F], escolha o produto e a quantidade para vender. O preço total aparece
+antes da venda. A reserva do celeiro e os ovos ainda no ninho ficam separados.
+Vender todo o estoque continua disponível; confira os pedidos ativos antes.
+
+Abra **Encomendas [J]**, a aba do armazém ou o quadro ao lado do Seu Tonico (E de
+perto; clique na câmera aérea). Dona Nena, Seu Bento e Dona Lola têm três receitas
+cada, com especialidades, quantidades, prazo e pagamento visíveis. Aceitar inicia
+o prazo, sem reservar ou consumir produtos. É permitido um pedido por vizinho.
+A entrega consome todos os produtos necessários de uma vez e paga uma única vez.
+
+Cada entrega dá um ponto de reputação com aquele vizinho. Com 2 pontos você vira
+Parceiro; com 5, Preferido. Os pedidos passam a exigir duas e três vezes as
+quantidades iniciais, pagando 35% e 45% acima da venda comum, em vez de 25%
+(valores arredondados para cima). O pedido já aceito mantém suas condições.
+Os prazos são 8, 10 e 12 minutos de tempo ativo, conforme o nível. Construção,
+janelas e jogo fechado pausam o relógio. Salvar não reinicia o prazo.
+
+Desistir ou deixar vencer passa à próxima oferta sem perder dinheiro, produtos
+ou reputação. O pedido introdutório de seis cenouras por $110 continua sem prazo,
+uma única vez, e também rende um ponto com Nena. Partidas antigas que já o
+concluíram recebem esse ponto na migração.
+
 ## O que esta versão entrega
 
 - Vale 3D com rio, colinas, árvores e armazém de um vizinho.
@@ -123,7 +148,7 @@ são apenas divertidos: não cobram dinheiro, roubam produtos ou exigem resposta
 - Cenoura (32 s), trigo (46 s), milho (62 s); irrigação, crescimento, colheita e replantio.
 - Três galinhas identificáveis por cor e nome; água, ração e produção conforme o cuidado.
 - Ovos visíveis nos ninhos, coleta manual, nomes editáveis e três eventos da gerente.
-- Venda de estoque e um contrato de seis cenouras por $110.
+- Venda por produto e quantidade, três vizinhos, nove receitas de encomendas e reputação individual.
 - Pintura, placas, metas, expansão, efeitos sonoros de interação e salvamento local.
 - Caminhada articulada, regador com gotas e animação, colheita com produtos e texto flutuante.
 - Três estágios visuais das plantações, marcadores, seleção destacada e grade de construção.
@@ -133,13 +158,13 @@ são apenas divertidos: não cobram dinheiro, roubam produtos ou exigem resposta
 
 ## Limites assumidos do protótipo
 
-Esta é a versão **0.4**, destinada a validar o ciclo de jogo e a direção visual.
+Esta é a versão **0.5**, destinada a validar o ciclo de jogo e a direção visual.
 O celeiro tem reserva e uma melhoria de ferramenta; não tem interior explorável.
 Os traçados são retos, sem curvas ou desenho livre. Preços e tempos aguardam ajuste com partidas reais.
 Os cuidados das galinhas são por galinheiro; ainda não há reprodução, doenças,
 venda de animais ou outras espécies.
 O comércio tem preços fixos e fica acessível pela interface, além do armazém no mapa.
-Há um único vizinho comerciante, sem simulação econômica independente.
+Os três vizinhos aparecem como perfis e encomendas; ainda não têm ranchos exploráveis nem simulação econômica independente.
 O personagem tem animações procedurais de caminhada e ações. As galinhas tentam
 desviar localmente de construções e cercas, mas ainda não planejam rotas longas
 nem entendem portões; podem parar quando não encontram uma passagem.
@@ -156,15 +181,15 @@ Arquivos em `%APPDATA%/Godot/app_userdata/Do Mato ao Milhão/`:
 São preservados terreno, estruturas, textos, cores, cultivos, dinheiro, estoque,
 relógio e progresso. Ao abrir, o personagem volta a um ponto seguro da propriedade.
 Começar outra fazenda exige confirmação no menu e substitui a fazenda atual.
-Salvamentos das versões 0.1, 0.2 e 0.3 são aceitos; os objetivos são inferidos a partir das
+Salvamentos das versões 0.1, 0.2, 0.3 e 0.4 são aceitos; os objetivos são inferidos a partir das
 construções, plantações e conquistas que ficaram registradas. A posição antiga
 de uma construção permanece salva se uma mudança de lugar for cancelada.
 Reserva, melhoria do regador e cores por parte também são salvas. O nome do arquivo
-continua `farm_v1.json`, com formato interno atualizado para 3; a migração preserva
+continua `farm_v1.json`, com formato interno atualizado para 4; a migração preserva
 dinheiro, produtos e construções. Galinheiros antigos recebem ração e água cheias,
 nomes iniciais e ninho vazio, preservando o progresso de produção e os ovos já
 no estoque. Nomes, suprimentos e ovos nos ninhos passam a ser salvos.
-Após salvar na 0.4, continue usando a 0.4 ou posterior.
+Reputação, ofertas e prazos aceitos também são preservados. Após salvar na 0.5, continue usando a 0.5 ou posterior.
 
 ## Organização
 
@@ -178,10 +203,12 @@ scripts/farm_hud.gd   Interface em português
 scripts/main.gd       Câmeras, personagem, interações e persistência
 scripts/farm_avatar.gd Animação do personagem e regador
 scripts/farm_feedback.gd Efeitos visuais temporários das ações
+scripts/farm_trade.gd Ofertas, reputação, preços e validação do comércio
 scripts/farm_animals.gd Necessidades, ritmo de produção e validação dos animais
 tests/                Testes da simulação
 tools/build_assets.py Gerador reproduzível do kit original no Blender
 tools/build_feedback_assets.py Personagem articulado, regador e plantas
+tools/build_trade_assets.py Quadro de encomendas no Blender
 tools/build_animal_assets.py Comedouro, bebedouro, ninho e ovo no Blender
 DESIGN.md             Direção e recorte da primeira versão
 ROADMAP.md            Prioridades e etapas futuras
@@ -208,22 +235,23 @@ godot --headless --editor --path . --import
 godot --headless --path . --script tests/test_farm_state.gd
 godot --headless --path . --script tests/test_v03.gd
 godot --headless --path . --script tests/test_v04.gd
+godot --headless --path . --script tests/test_v05.gd
 New-Item -ItemType Directory -Force test-results
-godot --path . --quit-after 2400 -- --qa
-New-Item -ItemType Directory -Force exports/windows-v0.4
+godot --path . --resolution 1440x900 --fixed-fps 60 --quit-after 2400 -- --qa
+New-Item -ItemType Directory -Force exports/windows-v0.5
 godot --headless --path . --export-release 'Windows Desktop'
 ```
 
-O teste de integração usa apenas `qa_farm_v04.json`, nunca o salvamento real.
+O teste de integração usa apenas `qa_farm_v05.json`, nunca o salvamento real.
 Valida compra, colocação via controles do jogo, colheita, venda, pintura, texto,
 movimento, câmeras, gravação real, leitura e recuperação de backup.
 Também verifica movimento/cancelamento de construções, poses do personagem,
 rega, colheita, etapas visuais, botões do guia e remoção dos efeitos temporários.
 Na 0.3, testa entrada de mouse, confirmação/cancelamento de traçados, soltura sobre a
 interface, materiais por parte, reserva, remoção protegida e rega em área. Os testes
-da simulação somam 181 verificações. Na 0.4 também são validados nomes, suprimentos,
+da simulação somam 258 verificações. Na 0.4 também são validados nomes, suprimentos,
 coleta, migração, limites de produção, cliques em galinhas, pausa, movimentos,
-modelos visuais e humor. O teste visual precisa terminar com `V04_INTEGRATION_OK`,
+modelos visuais e humor. Na 0.5, verifica vendas digitadas, pedidos, reputação, pausas, vencimento e acesso ao quadro. O teste visual precisa terminar com `V05_INTEGRATION_OK`, `V04_INTEGRATION_OK`,
 `V03_INTEGRATION_OK`, `SAVE_OK` e sem `ERROR` no log (não basta o código de saída).
 As capturas são geradas em `test-results/` e não entram no Git.
 O modo QA só é aceito por compilações de depuração/editor.

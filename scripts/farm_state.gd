@@ -40,6 +40,68 @@ var contract_done: bool = false
 var milestones: Dictionary = {}
 var reserve: Dictionary = {"carrot":0, "wheat":0, "corn":0, "egg":0}
 var watering_upgrade := false
+var trade:Dictionary=FarmTrade.fresh()
+var trade_notices:Array[String]=[]
+
+func accept_order(key: String) -> String:
+	if not claimed: return "Escolha seu terreno antes de aceitar encomendas."
+	if not trade.has(key): return "Vizinho desconhecido."
+	var record:Dictionary=trade[key]
+	if not record.active.is_empty(): return "Você já tem uma encomenda deste vizinho."
+	var level:=FarmTrade.tier(int(record.reputation))
+	record.active={"tier":level,"accepted_at":elapsed,"deadline":elapsed+FarmTrade.duration(level)}
+	record.last_result=""
+	return ""
+
+func deliver_order(key: String) -> String:
+	if not trade.has(key): return "Vizinho desconhecido."
+	var record:Dictionary=trade[key]
+	if record.active.is_empty(): return "Aceite a encomenda primeiro."
+	if elapsed>=float(record.active.deadline):
+		_expire_orders()
+		return "O prazo terminou. Nenhum produto foi retirado."
+	var requested:=FarmTrade.offer(key,record)
+	if not FarmTrade.can_supply(requested,inventory): return "Faltam produtos no estoque. Retire reservas no celeiro, se precisar."
+	for product in requested.needs: inventory[product]-=int(requested.needs[product])
+	money+=int(requested.reward)
+	revenue+=int(requested.reward)
+	record.reputation+=1
+	record.cycle+=1
+	record.active={}
+	record.last_result="delivered"
+	refresh_journey()
+	return ""
+
+func cancel_order(key: String) -> String:
+	if not trade.has(key) or trade[key].active.is_empty(): return "Nenhuma encomenda ativa deste vizinho."
+	trade[key].active={}
+	trade[key].cycle+=1
+	trade[key].last_result="cancelled"
+	return ""
+
+func _expire_orders() -> void:
+	for key in trade:
+		var record:Dictionary=trade[key]
+		if not record.active.is_empty() and elapsed>=float(record.active.deadline):
+			record.active={}
+			record.cycle+=1
+			record.last_result="expired"
+			trade_notices.append(FarmTrade.NEIGHBORS[key].name)
+
+func active_orders() -> int:
+	var count:=0
+	for record in trade.values():
+		if not record.active.is_empty(): count+=1
+	return count
+
+func sell_product(key: String, quantity: int) -> int:
+	if not FarmTrade.PRICES.has(key) or quantity<=0 or quantity>int(inventory.get(key,0)): return 0
+	var total:=quantity*int(FarmTrade.PRICES[key])
+	inventory[key]-=quantity
+	money+=total
+	revenue+=total
+	refresh_journey()
+	return total
 
 func line_plan(kind: String, start: Vector2, finish: Vector2, rotation: int = 0) -> Array:
 	if kind not in ["fence","path"]: return []
@@ -301,6 +363,7 @@ func tick(delta: float) -> bool:
 	if not claimed:
 		return false
 	elapsed += delta
+	_expire_orders()
 	var eggs := false
 	for item in items:
 		if item.kind == "plot" and item.planted and item.watered:
@@ -331,6 +394,7 @@ func deliver_contract() -> bool:
 	money += 110
 	revenue += 110
 	contract_done = true
+	trade.nena.reputation+=1
 	refresh_journey()
 	return true
 
@@ -347,16 +411,16 @@ func expand() -> String:
 	return ""
 
 func serialize() -> Dictionary:
-	return {"version": 3, "money": money, "claimed": claimed,
+	return {"version": 4, "money": money, "claimed": claimed,
 		"center": [center.x, center.y], "land_size": land_size,
 		"items": items.duplicate(true), "inventory": inventory.duplicate(),
 		"elapsed": elapsed, "revenue": revenue, "harvests": harvests,
 		"farm_name": farm_name, "contract_done": contract_done, "milestones": milestones.duplicate(),
-		"reserve":reserve.duplicate(), "watering_upgrade":watering_upgrade}
+		"reserve":reserve.duplicate(), "watering_upgrade":watering_upgrade,"trade":trade.duplicate(true)}
 
 func restore(data: Variant) -> bool:
 	# Validate before mutating live state. Invalid files never partially replace it.
-	if not data is Dictionary or (data.get("version")!=1 and data.get("version")!=2 and data.get("version")!=3):
+	if not data is Dictionary or (data.get("version")!=1 and data.get("version")!=2 and data.get("version")!=3 and data.get("version")!=4):
 		return false
 	for key in ["money", "land_size", "elapsed", "revenue", "harvests"]:
 		if not _number(data.get(key)) or float(data[key]) < 0:
@@ -371,6 +435,8 @@ func restore(data: Variant) -> bool:
 		return false
 	if not data.get("claimed") is bool or not data.get("contract_done") is bool:
 		return false
+	if data.version==4 and not data.has("trade"): return false
+	if data.has("trade") and not FarmTrade.valid(data.trade,float(data.elapsed)): return false
 	if not data.get("farm_name") is String or data.farm_name.length() > 32:
 		return false
 	if not data.get("inventory") is Dictionary or not data.get("items") is Array or data.items.size() > 1200:
@@ -407,7 +473,7 @@ func restore(data: Variant) -> bool:
 			if not _number(color) or color < -1 or color>=PALETTE.size() or float(color)!=floorf(float(color)): return false
 		if item.kind=="barn": barn_count+=1
 		if item.kind=="coop":
-			if data.version==3 and not item.has("flock"): return false
+			if data.version>=3 and not item.has("flock"): return false
 			if item.has("flock") and not FarmAnimals.valid(item.flock): return false
 		var area := item_rect(item.kind, Vector2(item.x, item.z), int(item.turn))
 		var land := Rect2(Vector2(data.center[0], data.center[1]) - Vector2.ONE * float(data.land_size) / 2, Vector2.ONE * float(data.land_size))
@@ -442,6 +508,16 @@ func restore(data: Variant) -> bool:
 	reserve=saved_reserve.duplicate()
 	for key in reserve: reserve[key]=int(reserve[key])
 	watering_upgrade=data.get("watering_upgrade",false)
+	trade=data.get("trade",FarmTrade.fresh(contract_done)).duplicate(true)
+	for record in trade.values():
+		record.reputation=int(record.reputation)
+		record.cycle=int(record.cycle)
+		if not record.active.is_empty():
+			record.active.tier=int(record.active.tier)
+			record.active.accepted_at=float(record.active.accepted_at)
+			record.active.deadline=float(record.active.deadline)
+	trade_notices.clear()
+	_expire_orders()
 	refresh_journey()
 	return true
 

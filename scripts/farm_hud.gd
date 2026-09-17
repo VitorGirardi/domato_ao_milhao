@@ -18,6 +18,11 @@ var move_button: Button
 var paint_selector: OptionButton
 var barn_button: Button
 var coop_button: Button
+var market_tab:="sales"
+var market_neighbor:="nena"
+var sale_quantities:Dictionary={}
+var sale_buttons:Dictionary={}
+var order_action:Button
 var stock_label: Label
 var hint_label: Label
 var toast_label: Label
@@ -328,7 +333,7 @@ func welcome(state: FarmState, has_save: bool) -> void:
 	text_input.text=state.farm_name
 	p.add_child(text_input)
 	button(p,"Voltar para minha fazenda" if has_save else "Escolher meu pedaço de terra",Rect2(34,494,542,55),"start",true)
-	label(p,"VERSÃO 0.4   •   UM QUINTAL CHEIO DE PERSONALIDADE",Vector2(34,561),Vector2(542,17),11,MUTED)
+	label(p,"VERSÃO 0.5   •   BONS VIZINHOS, BONS NEGÓCIOS",Vector2(34,561),Vector2(542,17),11,MUTED)
 
 func coop(state: FarmState, index: int, selected_hen: int = -1) -> void:
 	var flock:Dictionary=state.items[index].flock
@@ -427,25 +432,97 @@ func barn(state: FarmState) -> void:
 	upgrade.disabled=state.watering_upgrade or state.money<300
 	button(p,"Voltar ao campo",Rect2(30,589,550,46),"close")
 
-func market(state: FarmState) -> void:
-	var p:=_modal("market",590)
-	label(p,"ARMAZÉM DO VALE",Vector2(30,25),Vector2(530,27),13,MUTED)
-	label(p,"Seu Tonico compra!",Vector2(30,62),Vector2(550,44),32)
-	label(p,'“Dinheiro não nasce em árvore.\nMas às vezes nasce num canteiro.”',Vector2(30,115),Vector2(550,60),18)
-	var keys:=["carrot","wheat","corn","egg"]
-	for i in range(4):
-		var key:String=keys[i]
-		var title:String="Ovos" if key=="egg" else FarmState.CROPS[key].name
-		var price:int=10 if key=="egg" else FarmState.CROPS[key].price
-		label(p,"%s"%title,Vector2(30,204+i*35),Vector2(220,29),19)
-		label(p,"%d un.    ×    $%d"%[state.inventory[key],price],Vector2(295,204+i*35),Vector2(265,29),18)
-	label(p,"Reserva no celeiro: %d produtos • Fora da venda abaixo"%state.reserve_count(),Vector2(30,341),Vector2(550,18),12,MUTED)
-	var sell:=button(p,"Vender estoque  •  $%d"%state.sale_value(),Rect2(30,360,550,47),"sell",true)
-	sell.disabled=state.sale_value()==0
-	label(p,"PEDIDO ESPECIAL  •  6 CENOURAS POR $110",Vector2(30,427),Vector2(550,24),13,MUTED)
-	var contract:=button(p,"Pedido entregue!" if state.contract_done else "Entregar para o bolo da Dona Nena",Rect2(30,458,550,43),"contract")
-	contract.disabled=state.contract_done or state.inventory.carrot<6
-	button(p,"Voltar ao campo",Rect2(30,526,550,42),"close")
+func market(state: FarmState, tab: String = "sales") -> void:
+	market_tab=tab
+	var p:=_modal("market",744)
+	p.position.x=260
+	p.size.x=920
+	label(p,"ARMAZÉM DO VALE • NEGÓCIOS DA VIZINHANÇA",Vector2(30,22),Vector2(850,27),13,MUTED)
+	label(p,"Seu Tonico compra!" if tab=="sales" else "Um bom vizinho vale ouro",Vector2(30,58),Vector2(850,43),31)
+	button(p,"Vender produtos",Rect2(30,117,280,45),"market_sales",tab=="sales")
+	button(p,"Encomendas • %d"%state.active_orders(),Rect2(325,117,330,45),"market_orders",tab=="orders")
+	label(p,"Saldo: $%s"%_money(state.money),Vector2(688,125),Vector2(200,31),20)
+	if tab=="orders":
+		_orders(state,p)
+	else:
+		sale_quantities.clear()
+		sale_buttons.clear()
+		for column in [[30,"PRODUTO"],[225,"ESTOQUE"],[360,"POR UNIDADE"],[508,"QUANTIDADE"]]:
+			label(p,column[1],Vector2(column[0],183),Vector2(155,24),12,MUTED)
+		var keys:=["carrot","wheat","corn","egg"]
+		for i in range(4):
+			var key:String=keys[i]
+			var price:int=FarmTrade.PRICES[key]
+			label(p,FarmTrade.NAMES[key],Vector2(30,228+i*60),Vector2(190,30),20)
+			label(p,"%d un."%int(state.inventory[key]),Vector2(225,228+i*60),Vector2(115,30),19)
+			label(p,"$%d"%price,Vector2(360,228+i*60),Vector2(125,30),19)
+			var quantity:=SpinBox.new()
+			quantity.position=Vector2(508,220+i*60)
+			quantity.size=Vector2(115,43)
+			quantity.min_value=1
+			quantity.max_value=maxi(1,int(state.inventory[key]))
+			quantity.step=1
+			quantity.rounded=true
+			quantity.update_on_text_changed=true
+			quantity.value=1
+			quantity.editable=state.inventory[key]>0
+			quantity.get_line_edit().add_theme_stylebox_override("read_only",style(Color("eee8d6"),8))
+			quantity.get_line_edit().add_theme_color_override("font_uneditable_color",MUTED)
+			p.add_child(quantity)
+			sale_quantities[key]=quantity
+			var sale:=button(p,"Vender 1 • $%d"%price,Rect2(650,220+i*60,240,43),"sell_product:"+key)
+			sale.disabled=state.inventory[key]<=0
+			sale_buttons[key]=sale
+			quantity.value_changed.connect(func(amount: float): sale.text="Vender %d • $%d"%[int(amount),int(amount)*price])
+		var sell:=button(p,"Vender estoque inteiro • $%d"%state.sale_value(),Rect2(30,467,860,43),"sell",true)
+		sell.disabled=state.sale_value()==0
+		var note:="Reserva no celeiro: %d produtos • Fora das vendas e entregas."%state.reserve_count()
+		if state.active_orders()>0: note+="\nVocê tem encomendas ativas. Confira os pedidos antes de vender."
+		label(p,note,Vector2(30,521),Vector2(860,44),14,MUTED)
+		label(p,"PEDIDO INICIAL • SEM PRAZO • 6 CENOURAS POR $110",Vector2(30,567),Vector2(860,22),12,MUTED)
+		var contract:=button(p,"Pedido da Dona Nena entregue!" if state.contract_done else "Entregar para o bolo da Dona Nena • +1 reputação",Rect2(30,596,860,43),"contract")
+		contract.disabled=state.contract_done or state.inventory.carrot<6
+	button(p,"Voltar ao campo",Rect2(30,669,860,45),"close")
+
+func _orders(state: FarmState, p: Panel) -> void:
+	for i in range(FarmTrade.KEYS.size()):
+		var key:String=FarmTrade.KEYS[i]
+		var person:Dictionary=FarmTrade.NEIGHBORS[key]
+		var record:Dictionary=state.trade[key]
+		var text:="%s\n%s\n%s • %d entregas"%[person.name,person.ranch,FarmTrade.rank_name(record.reputation),int(record.reputation)]
+		var select:=button(p,text,Rect2(30,190+i*139,237,123),"neighbor:"+key,market_neighbor==key)
+		select.add_theme_font_size_override("font_size",15)
+	var record:Dictionary=state.trade[market_neighbor]
+	var person:Dictionary=FarmTrade.NEIGHBORS[market_neighbor]
+	var request:=FarmTrade.offer(market_neighbor,record)
+	var active:bool=not record.active.is_empty()
+	panel(p,Rect2(290,186,600,453),Color("f6eed9"))
+	label(p,request.title,Vector2(312,202),Vector2(555,40),27)
+	label(p,person.specialty,Vector2(312,249),Vector2(555,27),16,MUTED)
+	label(p,'“%s”'%person.quote,Vector2(312,282),Vector2(555,29),15,MUTED)
+	var row:=0
+	for product in request.needs:
+		var need:int=request.needs[product]
+		var available:int=state.inventory[product]
+		label(p,"%s: %d / %d no estoque"%[FarmTrade.NAMES[product],available,need],Vector2(312,327+row*35),Vector2(555,30),19,INK if available>=need else Color("a95734"))
+		row+=1
+	label(p,"Recompensa: $%d • +1 reputação"%request.reward,Vector2(312,408),Vector2(555,37),23)
+	label(p,"No armazém, esses produtos valem $%d."%request.base,Vector2(312,449),Vector2(555,27),15,MUTED)
+	label(p,"Restam %s de jogo ativo"%FarmTrade.time_label(float(record.active.deadline)-state.elapsed) if active else "Prazo após aceitar: %d minutos de jogo ativo"%int(request.seconds/60),Vector2(312,486),Vector2(555,28),18)
+	label(p,"O relógio pausa nos menus e na construção.",Vector2(312,518),Vector2(555,27),14,MUTED)
+	order_action=button(p,"Entregar • $%d"%request.reward if active else "Aceitar encomenda",Rect2(312,560,346,46),("deliver_order:" if active else "accept_order:")+market_neighbor,true)
+	order_action.disabled=not FarmTrade.can_supply(request,state.inventory) if active else not state.claimed
+	if active:
+		button(p,"Desistir",Rect2(674,560,193,46),"cancel_order:"+market_neighbor)
+		order_action.tooltip_text="A entrega usa apenas o estoque; retire reservas no celeiro."
+	else:
+		var next_rank:="Pedidos maiores com 2 entregas" if record.reputation<2 else ("Melhores pedidos com 5 entregas" if record.reputation<5 else "Melhor faixa de pedidos liberada")
+		label(p,next_rank,Vector2(312,611),Vector2(555,22),13,MUTED)
+	var footer:="Desistir ou perder o prazo não tira moedas, produtos ou reputação."
+	if record.last_result=="expired": footer="O último prazo terminou. Nada foi retirado; há outro pedido disponível."
+	elif record.last_result=="delivered": footer="Entrega concluída! Sua reputação cresceu e há um novo pedido disponível."
+	elif record.last_result=="cancelled": footer="Pedido cancelado sem multa. Você pode aceitar outra encomenda."
+	label(p,footer,Vector2(30,640),Vector2(860,23),13,MUTED)
 
 func editor_dialog(kind: String, initial: String) -> void:
 	var p:=_modal(kind,286)

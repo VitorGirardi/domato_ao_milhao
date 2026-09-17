@@ -46,10 +46,11 @@ var picked_hen := -1
 var nearby_hen := -1
 var silly_kind := "inspect"
 var silly_event_index := 0
+var picked_trade_board:=false
 
 func _ready() -> void:
 	qa_mode = OS.is_debug_build() and "--qa" in OS.get_cmdline_user_args()
-	if qa_mode: save_path="user://qa_farm_v04.json"
+	if qa_mode: save_path="user://qa_farm_v05.json"
 	get_tree().auto_accept_quit = false
 	_inputs()
 	world = FarmWorld.new()
@@ -144,6 +145,9 @@ func _process(delta: float) -> void:
 	if session_started and not build_mode and hud.modal_kind.is_empty():
 		if state.tick(delta):
 			hud.toast("Tem novidade no ninho! Visite o galinheiro para coletar os ovos.")
+		if not state.trade_notices.is_empty():
+			hud.toast("Prazo de %s encerrado. Sem multa. Veja novos pedidos em J."%state.trade_notices[0] if state.trade_notices.size()==1 else "%d prazos encerrados. Sem multa; consulte o quadro com J."%state.trade_notices.size())
+			state.trade_notices.clear()
 		world.update_crops(state)
 		silly_timer = maxf(0,silly_timer-delta)
 		if state.elapsed > next_silly and not world.chickens.is_empty():
@@ -238,6 +242,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_TAB: _action("mode")
 			KEY_E: _interact_nearest()
 			KEY_F: _action("market")
+			KEY_J: _action("market_orders")
 			KEY_F5: _action("save")
 			KEY_M: _action("move")
 			KEY_R: turn=posmod(turn+1,4)
@@ -328,6 +333,7 @@ func _update_pointer() -> void:
 	if state.claimed and build_mode and tool=="inspect":
 		var hovered:=_pick_item(mouse,Vector2(at.x,at.z))
 		world.show_selection(state,hovered if hovered>=0 else selected)
+		if picked_trade_board: hover_hint="Quadro dos vizinhos • Clique para ver encomendas • J"
 	if not state.claimed:
 		_preview("land")
 		ghost.position = Vector3(pointer.x,0.06,pointer.y)
@@ -351,7 +357,9 @@ func _update_pointer() -> void:
 			hover_hint="Segure e arraste em linha • Solte para conferir o custo"
 	elif not build_mode:
 		var nearest:=_nearest()
-		if nearest>=0:
+		if player.position.distance_to(FarmWorld.TRADE_BOARD_AT)<2.8:
+			hover_hint="[E] Quadro dos vizinhos • Encomendas e reputação"
+		elif nearest>=0:
 			var item:Dictionary=state.items[nearest]
 			hover_hint="[E]  "+_interaction_text(item)
 		elif player.position.distance_to(Vector3(-24,0,14))<4:
@@ -427,6 +435,11 @@ func _click_world() -> void:
 		var at:Vector3=ray+direction*(-ray.y/direction.y)
 		selected=_pick_item(mouse,Vector2(at.x,at.z))
 		selected_hen=picked_hen
+		if picked_trade_board:
+			if build_mode or player.position.distance_to(FarmWorld.TRADE_BOARD_AT)<3:
+				hud.market(state,"orders")
+			else: hud.toast("Chegue mais perto do quadro ou use J para consultar.")
+			return
 		if selected>=0:
 			var distance:=_distance_to_item(selected)
 			if selected_hen>=0:
@@ -440,9 +453,13 @@ func _click_world() -> void:
 
 func _pick_item(mouse: Vector2, ground: Vector2) -> int:
 	picked_hen=-1
+	picked_trade_board=false
 	var origin:=camera.project_ray_origin(mouse)
 	var end:=origin+camera.project_ray_normal(mouse)*200
 	var hit:=get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(origin,end,3,[player.get_rid()]))
+	if not hit.is_empty() and hit.collider.has_meta("trade_board"):
+		picked_trade_board=true
+		return -1
 	if not hit.is_empty() and hit.collider.has_meta("item_index"):
 		picked_hen=int(hit.collider.get_meta("hen_index",-1))
 		return int(hit.collider.get_meta("item_index"))
@@ -496,6 +513,9 @@ func _interaction_text(item: Dictionary) -> String:
 
 func _interact_nearest() -> void:
 	if build_mode: return
+	if player.position.distance_to(FarmWorld.TRADE_BOARD_AT)<2.8:
+		hud.market(state,"orders")
+		return
 	if player.position.distance_to(Vector3(-24,0,14))<4:
 		hud.market(state)
 		return
@@ -559,6 +579,43 @@ func _action(value: String) -> void:
 	if move_index>=0 and value not in ["move","save"]:
 		move_index=-1
 		tool="inspect"
+	if value.begins_with("neighbor:"):
+		var key:=value.get_slice(":",1)
+		if FarmTrade.NEIGHBORS.has(key):
+			hud.market_neighbor=key
+			hud.market(state,"orders")
+		return
+	if value.begins_with("sell_product:"):
+		var key:=value.get_slice(":",1)
+		if hud.modal_kind!="market" or hud.market_tab!="sales" or not hud.sale_quantities.has(key): return
+		var quantity:=int(hud.sale_quantities[key].value)
+		var earned:=state.sell_product(key,quantity)
+		hud.market(state)
+		hud.toast("Venda concluída: +$%d. O restante ficou com você."%earned if earned>0 else "Não há essa quantidade no estoque.")
+		if earned>0: _chime()
+		_update_ui()
+		return
+	if value.begins_with("accept_order:") or value.begins_with("deliver_order:") or value.begins_with("cancel_order:"):
+		var key:=value.get_slice(":",1)
+		if not state.trade.has(key): return
+		var before_money:=state.money
+		var error:=""
+		var message:=""
+		if value.begins_with("accept_order:"):
+			error=state.accept_order(key)
+			message="Encomenda aceita! O prazo avança só enquanto você joga."
+		elif value.begins_with("deliver_order:"):
+			error=state.deliver_order(key)
+			message="Entrega concluída! +$%d e +1 reputação com %s."%[state.money-before_money,FarmTrade.NEIGHBORS[key].name]
+			if error.is_empty(): _chime("harvest")
+		else:
+			error=state.cancel_order(key)
+			message="Encomenda cancelada. Nada foi cobrado ou retirado."
+		hud.market_neighbor=key
+		hud.market(state,"orders")
+		hud.toast(message if error.is_empty() else error)
+		_update_ui()
+		return
 	if value.begins_with("care:"):
 		if selected<0 or selected>=state.items.size() or state.items[selected].kind!="coop": return
 		var item:Dictionary=state.items[selected]
@@ -686,6 +743,10 @@ func _action(value: String) -> void:
 			else: pitch=0.45
 		"market":
 			if session_started: hud.market(state)
+		"market_sales":
+			if session_started: hud.market(state)
+		"market_orders":
+			if session_started: hud.market(state,"orders")
 		"sell":
 			var earned:=state.sell_all()
 			hud.market(state)
@@ -781,7 +842,7 @@ func _save_game(notify: bool, force: bool = false) -> bool:
 	if file==null:
 		hud.toast("Não foi possível salvar. Verifique espaço e permissões.")
 		return false
-	file.store_string(JSON.stringify(state.serialize()))
+	file.store_string(JSON.stringify(state.serialize(),"",true,true))
 	file.flush()
 	var error:=file.get_error()
 	file.close()
@@ -978,6 +1039,7 @@ func _qa() -> void:
 	assert(silly_timer>0)
 	await _qa_v03()
 	await _qa_v04()
+	await _qa_v05()
 	var restored:=FarmState.new()
 	assert(restored.restore(JSON.parse_string(JSON.stringify(state.serialize()))))
 	assert(restored.items.size()==state.items.size())
@@ -986,17 +1048,20 @@ func _qa() -> void:
 	var saved_money:=state.money
 	var saved_reserve:=state.reserve.duplicate()
 	var saved_flock:Dictionary=state.items[1].flock.duplicate(true)
+	var saved_trade:Dictionary=state.trade.duplicate(true)
 	state=FarmState.new()
 	assert(_load_game() and state.money==saved_money)
 	assert(state.reserve==saved_reserve and state.watering_upgrade and state.items[0].door_paint==2)
-	assert(state.items[1].flock==saved_flock)
+	_qa_saved_flock(state.items[1].flock,saved_flock)
+	assert(state.trade==saved_trade and state.active_orders()>0)
 	var damaged:=FileAccess.open(save_path,FileAccess.WRITE)
 	damaged.store_string("{damaged")
 	damaged.close()
 	state=FarmState.new()
 	assert(_load_game() and state.money==saved_money)
 	assert(state.reserve==saved_reserve and state.watering_upgrade and state.items[0].roof_paint==5)
-	assert(state.items[1].flock==saved_flock)
+	_qa_saved_flock(state.items[1].flock,saved_flock)
+	assert(state.trade==saved_trade and state.active_orders()>0)
 	DirAccess.remove_absolute(save_path)
 	DirAccess.remove_absolute(save_path+".bak")
 	print("INTEGRATION_OK: terrain, construction, crops, sale, paint, signs, camera, movement, persistence")
@@ -1005,6 +1070,12 @@ func _qa() -> void:
 	print("RENDERER: ",RenderingServer.get_video_adapter_name())
 	print("FPS: ",Engine.get_frames_per_second()," | physics movement test ms: ",Time.get_ticks_msec()-start)
 	get_tree().quit()
+
+func _qa_saved_flock(actual: Dictionary, expected: Dictionary) -> void:
+	assert(actual.names==expected.names and actual.nest==expected.nest)
+	# Decimal JSON round trips can differ by a few units in the last float digit.
+	assert(absf(float(actual.food)-float(expected.food))<0.000000001)
+	assert(absf(float(actual.water)-float(expected.water))<0.000000001)
 
 func _qa_v03() -> void:
 	_action("mode")
@@ -1269,6 +1340,133 @@ func _qa_v04() -> void:
 		get_viewport().get_texture().get_image().save_png("res://test-results/coop-ready-v04.png")
 	_action("close")
 	print("V04_INTEGRATION_OK: Blender props, hen picking, rename validation, paused needs, feeding, water, collection, movement, humor, obstacle steering")
+
+func _qa_v05() -> void:
+	state.inventory={"carrot":12,"wheat":12,"corn":12,"egg":12}
+	var kept_reserve:=state.reserve.duplicate()
+	_action("market")
+	assert(hud.modal_kind=="market" and hud.market_tab=="sales")
+	hud.sale_quantities.carrot.value=3
+	assert(hud.sale_buttons.carrot.text=="Vender 3 • $36")
+	hud.sale_quantities.wheat.value=2
+	assert(hud.sale_buttons.wheat.text=="Vender 2 • $34" and hud.sale_buttons.carrot.text=="Vender 3 • $36")
+	# Type into the actual quantity field, without requiring Enter before selling.
+	await get_tree().process_frame
+	var edit:LineEdit=hud.sale_quantities.carrot.get_line_edit()
+	edit.grab_focus()
+	edit.select_all()
+	await get_tree().process_frame
+	var key:=InputEventKey.new()
+	key.keycode=KEY_5
+	key.unicode=53
+	key.pressed=true
+	Input.parse_input_event(key)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	key.pressed=false
+	Input.parse_input_event(key)
+	assert(hud.sale_quantities.carrot.value==5 and hud.sale_buttons.carrot.text=="Vender 5 • $60")
+	var balance:=state.money
+	hud.sale_buttons.carrot.pressed.emit()
+	assert(state.money==balance+60 and state.inventory.carrot==7 and state.inventory.wheat==12)
+	assert(state.reserve==kept_reserve)
+	hud.sale_quantities.wheat.value=2
+	hud.sale_buttons.wheat.pressed.emit()
+	assert(state.inventory.wheat==10)
+	await get_tree().process_frame
+	if DisplayServer.get_name()!="headless":
+		await RenderingServer.frame_post_draw
+		get_viewport().get_texture().get_image().save_png("res://test-results/sales-v05.png")
+	_action("market_orders")
+	_action("neighbor:nena")
+	assert(hud.market_tab=="orders" and hud.market_neighbor=="nena")
+	hud.order_action.pressed.emit()
+	assert(state.active_orders()==1 and not hud.order_action.disabled)
+	var frozen:=state.serialize()
+	build_mode=false
+	_process(7)
+	assert(state.serialize()==frozen)
+	build_mode=true
+	_action("neighbor:bento")
+	hud.order_action.pressed.emit()
+	assert(state.active_orders()==2)
+	var stock:=state.inventory.duplicate()
+	balance=state.money
+	_action("cancel_order:bento")
+	assert(state.active_orders()==1 and state.inventory==stock and state.money==balance)
+	_action("neighbor:nena")
+	var reward:int=FarmTrade.offer("nena",state.trade.nena).reward
+	hud.order_action.pressed.emit()
+	assert(state.trade.nena.reputation==1 and state.money==balance+reward)
+	stock=state.inventory.duplicate()
+	balance=state.money
+	_action("deliver_order:nena")
+	assert(state.inventory==stock and state.money==balance)
+	state.inventory.carrot=6
+	_action("market_sales")
+	_action("contract")
+	assert(state.contract_done and state.trade.nena.reputation==2)
+	_action("neighbor:lola")
+	hud.order_action.pressed.emit()
+	assert(state.trade.lola.active.size()>0)
+	_action("close")
+	frozen=state.serialize()
+	_process(7)
+	assert(state.serialize()==frozen) # Build mode also pauses deadlines.
+	state.elapsed=float(state.trade.lola.active.deadline)-0.5
+	next_silly=state.elapsed+1000
+	stock=state.inventory.duplicate()
+	balance=state.money
+	build_mode=false
+	_process(0.5)
+	assert(state.trade.lola.active.is_empty() and state.trade.lola.last_result=="expired")
+	assert(state.money==balance and state.inventory==stock and state.trade_notices.is_empty())
+	assert(hud.toast_label.text.contains("Sem multa"))
+	build_mode=true
+	_action("neighbor:nena")
+	assert(FarmTrade.offer("nena",state.trade.nena).tier==1)
+	hud.order_action.pressed.emit()
+	assert(state.trade.nena.active.deadline==state.elapsed+600)
+	assert(hud.order_action.disabled) # Twelve wheat required, ten available.
+	await get_tree().process_frame
+	if DisplayServer.get_name()!="headless":
+		await RenderingServer.frame_post_draw
+		get_viewport().get_texture().get_image().save_png("res://test-results/orders-v05.png")
+	_action("close")
+	# Physical noticeboard uses both ray picking and nearby E interaction.
+	player.position=FarmWorld.TRADE_BOARD_AT+Vector3(2,0.2,0)
+	build_mode=false
+	_interact_nearest()
+	assert(hud.modal_kind=="market" and hud.market_tab=="orders")
+	_action("close")
+	build_mode=true
+	tool="inspect"
+	focus=FarmWorld.TRADE_BOARD_AT+Vector3(0,0,-1)
+	yaw=1.15
+	pitch=0.52
+	build_distance=20
+	_update_camera(1,true)
+	await get_tree().physics_frame
+	if DisplayServer.get_name()!="headless":
+		var at:=camera.unproject_position(FarmWorld.TRADE_BOARD_AT+Vector3(0,1.7,0))
+		await _qa_mouse(at,true)
+		await _qa_mouse(at,false)
+		assert(picked_trade_board and hud.modal_kind=="market" and hud.market_tab=="orders")
+		_action("close")
+		Input.warp_mouse(Vector2(600,770))
+	hud.toast_time=0
+	_update_ui()
+	await get_tree().process_frame
+	if DisplayServer.get_name()!="headless":
+		await RenderingServer.frame_post_draw
+		get_viewport().get_texture().get_image().save_png("res://test-results/board-v05.png")
+	var shortcut:=InputEventKey.new()
+	shortcut.physical_keycode=KEY_J
+	shortcut.pressed=true
+	_unhandled_input(shortcut)
+	assert(hud.modal_kind=="market" and hud.market_tab=="orders")
+	_action("close")
+	print("V05_INTEGRATION_OK: selective sale, typed quantity, offer UI, acceptance, delivery, reputation tier, paused deadline, expiry, physical board and keyboard shortcut")
 
 func _qa_mouse(at: Vector2, pressed: bool) -> void:
 	Input.warp_mouse(at)

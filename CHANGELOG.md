@@ -1,5 +1,17 @@
 # Alterações
 
+## 0.5.0 — Negócios com a vizinhança
+
+- Dona Nena, Seu Bento e Dona Lola com especialidades, frases e nove receitas de pedidos.
+- Quadro de encomendas original feito no Blender, junto ao armazém; acesso também pela aba e por J.
+- Venda por produto e quantidade, com total atualizado durante a digitação.
+- Um pedido ativo por vizinho, entrega integral e pagamento único; reserva e ninhos ficam separados.
+- Reputação por entrega, níveis em 2 e 5 pontos e pedidos maiores com bônus de 25%, 35% e 45%.
+- Prazos de 8, 10 e 12 minutos de simulação, pausados na construção, nas janelas e com o jogo fechado.
+- Desistência e vencimento sem multa, perda de estoque ou redução de reputação.
+- Formato de salvamento 4, migração dos formatos 1–3 e crédito do pedido introdutório já concluído.
+- 258 verificações da simulação, testes das telas, entradas, pausas, prazos e recuperação do backup.
+
 ## 0.4.0 — Um quintal cheio de personalidade
 
 - Maricota, Clotilde e Pipoca com nomes editáveis, cores próprias e identificação ao clicar.

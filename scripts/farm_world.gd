@@ -1,6 +1,8 @@
 class_name FarmWorld
 extends Node3D
 
+const TRADE_BOARD_AT:=Vector3(-22.1,0,15.4)
+
 var models: Dictionary = {}
 var structures := Node3D.new()
 var border := Node3D.new()
@@ -20,6 +22,7 @@ func _ready() -> void:
 	rng.seed = 24517
 	for key in ["barn", "coop", "fence", "sign", "tree", "rock", "chicken", "farmer", "market", "carrot", "wheat", "corn", "flower", "sprout", "watering_can", "harvest_carrot", "harvest_wheat", "harvest_corn", "feeder", "waterer", "nest", "egg"]:
 		models[key] = load("res://assets/models/%s.glb" % key)
+	models["trade_board"]=load("res://assets/models/trade_board.glb")
 	add_child(structures)
 	add_child(border)
 	_environment()
@@ -187,6 +190,7 @@ void fragment(){
 	board.modulate = Color("fff1ce")
 	board.outline_modulate = Color("344737")
 	add_child(board)
+	_trade_board()
 	for i in range(9):
 		var cloud := Node3D.new()
 		cloud.position = Vector3(rng.randf_range(-70, 70), rng.randf_range(24, 33), rng.randf_range(-65, 45))
@@ -202,6 +206,31 @@ void fragment(){
 			node.scale = Vector3(7, 2.5 + j % 2, 4)
 			node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			cloud.add_child(node)
+
+func _trade_board() -> void:
+	var root:=Node3D.new()
+	root.position=TRADE_BOARD_AT
+	root.rotation.y=PI/2
+	add_child(root)
+	model("trade_board",root)
+	var body:=StaticBody3D.new()
+	body.set_meta("trade_board",true)
+	var shape:=CollisionShape3D.new()
+	var box_shape:=BoxShape3D.new()
+	box_shape.size=Vector3(2.5,2.6,0.30)
+	shape.shape=box_shape
+	shape.position.y=1.3
+	body.add_child(shape)
+	root.add_child(body)
+	for entry in [["ENCOMENDAS",Vector3(0,2.22,0.19),0.005],["Nena",Vector3(-0.70,1.57,0.19),0.0035],["Bento",Vector3(0,1.57,0.19),0.0035],["Lola",Vector3(0.70,1.57,0.19),0.0035]]:
+		var text:=Label3D.new()
+		text.text=entry[0]
+		text.position=entry[1]
+		text.pixel_size=entry[2]
+		text.font_size=32
+		text.modulate=Color("fff7df") if entry[0]=="ENCOMENDAS" else Color("294739")
+		text.outline_size=0
+		root.add_child(text)
 
 func _river() -> void:
 	var surface := SurfaceTool.new()
