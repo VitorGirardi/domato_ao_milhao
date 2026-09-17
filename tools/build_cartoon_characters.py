@@ -111,6 +111,8 @@ def build(name,zeca=False,vendor=False):
     if vendor:
         palette.update({'Shirt':'AC6685','Denim':'347F78','Seam':'73ADA0','Hair':'633726',
                         'Glove':'F1B381','Hat':'D89949','Band':'D89949','Cheek':'DF927C'})
+    if name=='cheesemaker':
+        palette.update({'Shirt':'D9B04C','Denim':'E8DEC5','Seam':'BFAF90','Hat':'F2E7CE','Band':'B78042','Hair':'584638','Brow':'584638','Boot':'6F5340'})
     M={key:material(name+'_'+key,value) for key,value in palette.items()}
     import runpy
     body_builder=runpy.run_path(str(ROOT/'tools'/'character_body.py'))

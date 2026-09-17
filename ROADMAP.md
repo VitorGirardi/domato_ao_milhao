@@ -187,7 +187,7 @@ Expressões animadas e personalização de roupas ficam para outra etapa.
 - [x] Mimosa caminhando, pastando, mastigando e descansando.
 - [ ] Autor testar o repertório e sugerir ajustes de humor.
 
-## Entrega atual — 0.16: queijaria
+## Entrega anterior — 0.16: queijaria
 
 - [x] Construir e posicionar queijaria original do Blender.
 - [x] Escolher lote, confirmar leite, acompanhar preparo e recolher queijos.
@@ -196,7 +196,16 @@ Expressões animadas e personalização de roupas ficam para outra etapa.
 - [x] Testes de economia, migração e fluxo completo.
 - [ ] Autor validar preços e ritmo da produção em sua fazenda.
 
+## Entrega atual — 0.17: Chico Queijeiro
+
+- [x] Contratar, escolher queijaria, lote e limite de gastos.
+- [x] Buscar leite no estoque, iniciar lotes e recolher queijo com animações.
+- [x] Cobranças atômicas, orçamento explícito, pausa, dispensa e relatório.
+- [x] Navegação com obstáculos, aparência própria e acessórios Blender.
+- [x] Salvamento, migração e testes sem alterar a partida real.
+- [ ] Autor avaliar ritmo, custos e aparência quando puder jogar.
+
 ## Depois
 
-- Melhorias de capacidade e novas receitas após validar o ciclo manual.
-- Funcionário da queijaria e automação das vacas, com custos e orçamento claros.
+- Melhorias de capacidade e novas receitas após avaliar o ciclo atual.
+- Cuidados e coleta de leite automatizados no curral, com orçamento separado.

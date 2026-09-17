@@ -37,6 +37,7 @@ var items: Array = []
 var inventory: Dictionary = {"carrot": 0, "wheat": 0, "corn": 0, "egg": 0}
 var milk_stock:int=0
 var cheese_stock:int=0
+var cheese_worker:Dictionary=FarmCheeseWorker.fresh()
 var cheese_order:Dictionary={"active":false,"cycle":0}
 var elapsed: float = 0.0
 var revenue: int = 0
@@ -353,6 +354,7 @@ func remove_item(index: int) -> String:
 		return "Retire a reserva do celeiro antes de removê-lo."
 	money+=(int(ITEMS[items[index].kind].cost)+FarmProgression.investment(items[index]))/2
 	FarmCultivation.remove(self,index)
+	FarmCheeseWorker.remove(self,index)
 	items.remove_at(index)
 	var remaining_plots:Array=[]
 	for plot in irrigation.plots:
@@ -608,7 +610,7 @@ func expand() -> String:
 	return ""
 
 func serialize() -> Dictionary:
-	return {"version": 11, "cheese_stock":cheese_stock, "cheese_order":cheese_order.duplicate(), "milk_stock":milk_stock, "cultivation":cultivation.duplicate(true), "field_staff":field_staff.duplicate(true), "professional_watering":professional_watering, "irrigation":irrigation.duplicate(true), "money": money, "claimed": claimed,
+	return {"version": 12, "cheese_worker":cheese_worker.duplicate(), "cheese_stock":cheese_stock, "cheese_order":cheese_order.duplicate(), "milk_stock":milk_stock, "cultivation":cultivation.duplicate(true), "field_staff":field_staff.duplicate(true), "professional_watering":professional_watering, "irrigation":irrigation.duplicate(true), "money": money, "claimed": claimed,
 		"center": [center.x, center.y], "land_size": land_size,
 		"items": items.duplicate(true), "inventory": inventory.duplicate(),
 		"elapsed": elapsed, "revenue": revenue, "harvests": harvests,
@@ -617,7 +619,7 @@ func serialize() -> Dictionary:
 
 func restore(data: Variant) -> bool:
 	# Validate before mutating live state. Invalid files never partially replace it.
-	if not data is Dictionary or not _number(data.get("version")) or data.version<1 or data.version>11 or float(data.version)!=floorf(float(data.version)):
+	if not data is Dictionary or not _number(data.get("version")) or data.version<1 or data.version>12 or float(data.version)!=floorf(float(data.version)):
 		return false
 	if data.version>=11 and (not data.has("cheese_stock") or not data.has("cheese_order")): return false
 	if not FarmCultivation.integer(data.get("cheese_stock",0)) or not FarmCheese.valid_order(data.get("cheese_order",{"active":false,"cycle":0})): return false
@@ -700,6 +702,9 @@ func restore(data: Variant) -> bool:
 	if data.version>=5 and not data.has("staff"): return false
 	if data.has("staff") and not FarmStaff.valid(data.staff,data.items): return false
 	if data.version>=8 and not data.has("field_staff"): return false
+	if data.version>=12 and not data.has("cheese_worker"): return false
+	var saved_cheese_worker:Variant=data.get("cheese_worker",FarmCheeseWorker.fresh())
+	if not FarmCheeseWorker.valid(saved_cheese_worker,data.items): return false
 	var saved_field:Variant=data.get("field_staff",FarmCrew.fresh())
 	if not FarmCrew.valid(saved_field): return false
 	var saved_irrigation:Variant=data.get("irrigation",{"enabled":false,"plots":[],"watered":0,"spent":0})
@@ -730,6 +735,8 @@ func restore(data: Variant) -> bool:
 		if item.kind=="coop":
 			if not item.has("flock"): item.flock=FarmAnimals.fresh()
 			item.flock.nest=int(item.flock.nest)
+	cheese_worker=saved_cheese_worker.duplicate()
+	for key in ["site","batch_size","budget","spent","total_spent","started","collected"]: cheese_worker[key]=int(cheese_worker[key])
 	cheese_stock=int(data.get("cheese_stock",0));cheese_order=data.get("cheese_order",{"active":false,"cycle":0}).duplicate()
 	milk_stock=int(data.get("milk_stock",0))
 	inventory = data.inventory.duplicate()

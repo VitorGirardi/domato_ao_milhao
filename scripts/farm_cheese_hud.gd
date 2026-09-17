@@ -9,7 +9,7 @@ static func show(hud:FarmHUD,state:FarmState,index:int) -> void:
 	if index<0 or index>=state.items.size() or state.items[index].kind!="cheesery": return
 	hud.building_index=index
 	var data:Dictionary=state.items[index].cheese
-	var p:=FarmGameUI.open(hud,"cheesery","Queijaria","cheese",820,572)
+	var p:=FarmGameUI.open(hud,"cheesery","Queijaria","cheese",820,640)
 	var labels:Array[Label]=[]
 	var shown:=maxi(1,maxi(data.batch,data.ready))
 	for i in range(3):
@@ -34,6 +34,7 @@ static func show(hud:FarmHUD,state:FarmState,index:int) -> void:
 		if state.milk_stock<2:hud.label(p,"Colete leite no curral para começar.",Vector2(28,425),Vector2(764,30),20)
 	FarmGameUI.action(hud,p,"Estoque · %d queijos"%state.cheese_stock,Rect2(28,494,368,48),"cheese_market")
 	FarmGameUI.action(hud,p,"Encomendas de queijo",Rect2(414,494,378,48),"cheese_orders")
+	FarmGameUI.action(hud,p,"Chico Queijeiro · "+("Gerenciar" if state.cheese_worker.hired else "Contratar"),Rect2(28,566,764,45),"chico")
 static func review(hud:FarmHUD,state:FarmState) -> void:
 	var p:=FarmGameUI.open(hud,"cheese_confirm","Confirmar lote","cheese",740,404)
 	var amount:=hud.cheese_batch

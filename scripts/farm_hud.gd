@@ -15,6 +15,10 @@ var cultivation_budget:SpinBox
 var milk_quantity:SpinBox
 var cheese_quantity:SpinBox
 var cheese_batch:=1
+var chico_site:=-1
+var chico_batch:=4
+var chico_budget:=40
+var chico_confirm:=""
 var money_label: Label
 var clock_label: Label
 var mode_label: Label
@@ -94,7 +98,7 @@ func style(color: Color, radius: int = 14, border_color: Color = Color("e3d9b9")
 	s.content_margin_right = 14
 	s.content_margin_top = 10
 	s.content_margin_bottom = 10
-	s.shadow_color = Color(0.06, 0.16, 0.08, 0.12)
+	s.shadow_color = Color(0.06, 0.17, 0.08, 0.12)
 	s.shadow_size = 5
 	return s
 
@@ -375,7 +379,7 @@ func welcome(state: FarmState, has_save: bool) -> void:
 	text_input.text=state.farm_name
 	p.add_child(text_input)
 	button(p,"Voltar para minha fazenda" if has_save else "Escolher meu pedaço de terra",Rect2(34,494,542,55),"start",true)
-	label(p,"VERSÃO 0.16.0   •   QUEIJARIA DO VALE",Vector2(34,561),Vector2(542,17),11,MUTED)
+	label(p,"VERSÃO 0.17.0   •   CHICO QUEIJEIRO",Vector2(34,561),Vector2(542,17),11,MUTED)
 
 func coop(state:FarmState,index:int,selected_hen:int=-1) -> void:
 	FarmInteractionUI.coop(self,state,index,selected_hen)

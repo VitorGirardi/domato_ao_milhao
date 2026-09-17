@@ -1,5 +1,15 @@
 # Alterações
 
+## 0.17.0 — Chico Queijeiro
+
+- Contratação, atribuição a uma queijaria, lote e verba de serviços.
+- Transporte animado de leite e queijo, preparo, coleta e rondas de espera.
+- Taxa de $4 somente ao iniciar lote; coleta grátis, sem venda automática.
+- Orçamento com renovação explícita, pausa, dispensa e relatórios preservados.
+- Caminhos bloqueados interrompem o trabalho sem cobrança; retomada pelo painel.
+- Personagem e acessórios originais Blender, rig articulado e piscar.
+- Save 12, migração, remapeamento de atribuição e testes de economia, interface e navegação.
+
 ## 0.16.0 — Queijaria do vale
 
 - Queijaria de $900, modelo Blender original, atalho G e interação E.

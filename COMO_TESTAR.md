@@ -1,9 +1,28 @@
-# Como testar a versão 0.16.0
+# Como testar a versão 0.17.0
 
 Extraia o ZIP e abra `DoMatoAoMilhao.exe`. Escolha **Voltar para minha fazenda**.
 A versão aceita a partida anterior. Não precisa começar outra.
 
-## Queijaria — teste primeiro
+## Chico Queijeiro — para testar quando puder
+
+1. Retome a fazenda. Abra **E na queijaria → Chico Queijeiro**, ou **H → Equipe e treinamento → Chico**.
+2. Revise a contratação de **$160** e volte: não deve cobrar. Confirme para contratar.
+3. Escolha a queijaria, **2 queijos por lote** e **$8 de limite total**. Revise e aplique.
+4. Tenha **8 L de leite no estoque**, coletados no curral. Chico espera o leite do lote inteiro, sem buscar na vaca.
+5. Feche os menus e fique em caminhada. Observe buscar leite, levar o recipiente, preparar, rondar e recolher os queijos.
+6. Após dois lotes, o relatório deve mostrar **2 lotes, 4 queijos recolhidos e $8 de serviços**.
+   Sem mais verba, nenhum lote novo começa. Produção leva 90 s/lote, mais caminhada e manuseio.
+7. Abra e aplique a rotina novamente: os $8 usados permanecem. **Renovar orçamento** libera outra verba só ao confirmar.
+8. Pause durante a caminhada: nenhuma taxa/leite é descontada até completar um novo início de lote.
+   Lotes já iniciados seguem a produção normal quando a fazenda está ativa; a coleta espera você retomar o Chico.
+9. Bloqueie o caminho até a frente da queijaria: ele pausa sem cobrar. Libere e use **Retomar**.
+10. Salve no meio do trabalho e reabra: atribuição, verba e relatório ficam. A animação pode recomeçar; cobrança não duplica.
+11. Dispense Chico: leite e queijos ficam, assim como o lote em preparo. Recontratar custa $160 e preserva o histórico.
+12. Venda queijos ou entregue pedidos manualmente. Chico não vende nem entrega encomendas.
+
+Save atual: **formato 12**. Depois de salvar, use a 0.17 ou posterior. Nenhum funcionário é contratado automaticamente ao migrar.
+
+## Queijaria
 
 1. Retome sua fazenda e colete leite da Mimosa. A queijaria usa o leite do estoque, não o que está no curral.
 2. **TAB → G / Queijaria**: custa **$900**, ocupa **6 × 6 m**. Posicione em área livre e gire com Q/R se quiser.
@@ -20,8 +39,8 @@ A versão aceita a partida anterior. Não precisa começar outra.
     Não há prazo; cancelar não cobra. Vendas normais podem consumir estoque que você pretendia entregar.
 11. Mova a queijaria durante um lote: produção e tempo permanecem. Remover com lote ativo/pronto é bloqueado.
 
-Save agora é **formato 11**. Use a 0.16 ou posterior depois de salvar; versões antigas não reconhecem os novos produtos.
-Nesta etapa, início e coleta são manuais. A produção não avança com o jogo fechado.
+Save agora é **formato 12**. Use a 0.17 ou posterior depois de salvar.
+Início e coleta podem ser manuais ou feitos por Chico. A produção não avança com o jogo fechado.
 
 ## Humor e Mimosa
 
@@ -49,7 +68,7 @@ Nesta etapa, início e coleta são manuais. A produção não avança com o jogo
 8. Mova o curral na câmera de construção. A vaca, os suprimentos e o leite devem permanecer.
    Curral ocupado não pode ser removido nesta versão; use Mover.
 9. Salve com F5 e reabra. Compra, cuidados, leite pronto e estoque permanecem.
-   Save atual: **formato 11**. Depois de salvar na 0.16, use esta versão ou posterior.
+   Save atual: **formato 12**. Depois de salvar na 0.17, use esta versão ou posterior.
 
 A coleta é pelo menu nesta etapa; ordenha manual animada, queijaria e ajudante das vacas vêm depois.
 Pastar é visual nesta etapa: continue repondo ração e água no menu.

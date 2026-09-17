@@ -5,6 +5,7 @@ const TRADE_BOARD_AT:=Vector3(-22.1,0,15.4)
 
 var models: Dictionary = {}
 var cows:Array[Dictionary]=[]
+var chico_motion:=FarmCheeseWorkerMotion.new()
 var structures := Node3D.new()
 var border := Node3D.new()
 var item_nodes: Array[Node3D] = []
@@ -41,6 +42,7 @@ func _ready() -> void:
 	models["trade_board"]=load("res://assets/models/trade_board.glb")
 	models["helper"]=load("res://assets/models/helper.glb")
 	models["vendor"]=load("res://assets/models/vendor.glb")
+	for asset in ["cheesemaker","milk_can","cheese_tray"]:models[asset]=load("res://assets/models/%s.glb"%asset)
 	models["cheesery"]=load("res://assets/models/cheesery.glb")
 	models["corral"]=load("res://assets/models/corral.glb")
 	models["cow"]=load("res://assets/models/cow.glb")
@@ -426,6 +428,7 @@ func rebuild(state: FarmState) -> void:
 	update_crops(state)
 	update_border(state)
 	update_animals(state)
+	chico_motion.reset()
 	staff_anchor=""
 	field_anchor=""
 	update_staff(state,0)
@@ -478,7 +481,11 @@ func update_field_staff(state:FarmState,delta:float) -> void:
 	if delta>0 and state.irrigation.enabled:
 		field_motion.update(self,state,delta,true)
 
+func update_cheese_worker(state:FarmState,delta:float) -> void:
+	chico_motion.update(self,state,delta)
+
 func update_staff(state: FarmState, delta: float) -> void:
+	update_cheese_worker(state,delta)
 	update_field_staff(state,delta)
 	var worker:Dictionary=state.staff
 	var visible_worker:bool=worker.hired and worker.coop>=0

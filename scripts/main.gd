@@ -51,7 +51,7 @@ var picked_trade_board:=false
 
 func _ready() -> void:
 	qa_mode = OS.is_debug_build() and "--qa" in OS.get_cmdline_user_args()
-	if qa_mode: save_path="user://qa_farm_v016.json"
+	if qa_mode: save_path="user://qa_farm_v017.json"
 	get_tree().auto_accept_quit = false
 	_inputs()
 	world = FarmWorld.new()
@@ -624,6 +624,26 @@ func _action(value: String) -> void:
 		hud.close_modal(); actor.emote(key)
 		return
 	actor.stop_emote()
+	if value=="chico": FarmCheeseWorkerHUD.show(hud,state);return
+	if value.begins_with("chico:"):
+		var act:=value.get_slice(":",1)
+		if act.begins_with("review_"):
+			if hud.modal_kind=="chico": FarmCheeseWorkerHUD.review(hud,state,act.trim_prefix("review_"))
+			return
+		var w:=state.cheese_worker
+		if act=="confirm" and hud.modal_kind=="chico_confirm":
+			var error:=""
+			match hud.chico_confirm:
+				"hire": error=FarmCheeseWorker.hire(state)
+				"apply","renew": error=FarmCheeseWorker.configure(state,hud.chico_site,hud.chico_batch,hud.chico_budget,hud.chico_confirm=="renew")
+				"dismiss": FarmCheeseWorker.dismiss(state)
+			if not error.is_empty():hud.toast(error)
+		elif act=="pause" and hud.modal_kind=="chico" and w.hired:
+			if w.paused and w.site>=0:w.paused=false;w.reason=""
+			else:w.paused=true;w.reason="manual"
+		else:return
+		world.chico_motion.reset();world.update_cheese_worker(state,0)
+		FarmCheeseWorkerHUD.show(hud,state);_update_ui();return
 	if value=="cheese_shop": FarmCheeseHUD.shop(hud,state);return
 	if value=="cheese_market": FarmCheeseHUD.stock(hud,state);return
 	if value=="cheese_orders": FarmCheeseHUD.orders(hud,state);return
@@ -676,7 +696,8 @@ func _action(value: String) -> void:
 		FarmWalkHUD.objectives(hud,state)
 		return
 	if value=="field_attention":
-		if not FarmFieldAlerts.paused_text(state).is_empty(): FarmCrewHUD.show(hud,state)
+		if state.cheese_worker.hired and state.cheese_worker.paused and state.cheese_worker.reason in ["funds","budget","removed","blocked"]: FarmCheeseWorkerHUD.show(hud,state)
+		elif not FarmFieldAlerts.paused_text(state).is_empty(): FarmCrewHUD.show(hud,state)
 		else:
 			var full:=FarmFieldAlerts.full_coops(state)
 			if not full.is_empty():
@@ -1120,6 +1141,11 @@ func _chime(kind: String = "build") -> void:
 	sound.play()
 
 func _qa() -> void:
+	if "--qa-v017" in OS.get_cmdline_user_args():
+		_action("start")
+		await _qa_v017()
+		get_tree().quit()
+		return
 	if "--qa-v016" in OS.get_cmdline_user_args():
 		_action("start")
 		await _qa_v016()
@@ -1288,6 +1314,7 @@ func _qa() -> void:
 	await _qa_v014()
 	await _qa_v015()
 	await _qa_v016()
+	await _qa_v017()
 	var restored:=FarmState.new()
 	assert(restored.restore(JSON.parse_string(JSON.stringify(state.serialize()))))
 	assert(restored.items.size()==state.items.size())
@@ -2459,3 +2486,59 @@ func _qa_v016() -> void:
 	await _qa_ui_capture("cheesery-world-v016")
 	assert(state.restore(previous));world.rebuild(state);build_mode=true;_update_ui()
 	print("V016_INTEGRATION_OK: G placement, E entrance, quantity/review/cancel/start, no duplicate input/collection/payment, menu/build pause, saved batch, partial sale, cheese orders, Blender model")
+
+func _qa_v017() -> void:
+	var previous:=state.serialize()
+	state=FarmState.new();state.claim(Vector2(4,-2));state.money=5000;state.milk_stock=16
+	assert(state.place("cheesery",Vector2(4,0),0).is_empty())
+	world.rebuild(state);build_mode=true;_action("close");selected=0;tool="inspect";move_index=-1;ghost.visible=false
+	_action("chico");_action("chico:review_hire")
+	var money:=state.money
+	_action("chico");assert(state.money==money and not state.cheese_worker.hired)
+	_action("chico:review_hire");_action("chico:confirm")
+	assert(state.cheese_worker.hired and state.money==money-160)
+	var controls:=hud.modal.find_children("*","SpinBox",true,false)
+	controls[0].value=2;controls[1].value=8
+	_action("chico:review_apply");await _qa_ui_capture("chico-confirm-v017")
+	_action("chico:confirm");assert(state.cheese_worker.site==0 and state.cheese_worker.budget==8 and state.cheese_worker.batch_size==2)
+	await _qa_ui_capture("chico-manager-v017")
+	var frozen:=state.serialize();_process(20);assert(state.serialize()==frozen)
+	_action("close");_process(20);assert(state.serialize()==frozen)
+	focus=Vector3(4,1,2.8);yaw=-.65;pitch=.35;build_distance=10;_update_camera(1,true)
+	player.position=Vector3(15,0,10);hud.world_hud.visible=false;hud.build_hud.visible=false;hud.walking.root.visible=false
+	DirAccess.make_dir_recursive_absolute("res://test-results/chico-v017")
+	var phases:Dictionary={};var walked:=0.0
+	for frame in range(2600):
+		var before:Vector3=world.chico_motion.node.position
+		state.tick(.1);world.update_staff(state,.1)
+		walked+=before.distance_to(world.chico_motion.node.position)
+		phases[world.chico_motion.phase]=true
+		assert(world.chico_motion.route.walkable(world.chico_motion.node.position,state))
+		if frame%5==0 and (frame<120 or (frame>930 and frame<1080)) and DisplayServer.get_name()!="headless":
+			await get_tree().process_frame;await RenderingServer.frame_post_draw
+			get_viewport().get_texture().get_image().save_png("res://test-results/chico-v017/%04d.png"%frame)
+	var w:=state.cheese_worker
+	assert(w.started==2 and w.collected==4 and w.spent==8 and w.total_spent==8 and state.milk_stock==8 and state.cheese_stock==4)
+	assert(w.paused and w.reason=="budget" and walked>8 and phases.has_all(["bring","mix","store","put"]))
+	var held:=state.serialize();world.update_staff(state,30);assert(state.serialize()==held)
+	_action("chico");await _qa_ui_capture("chico-budget-v017")
+	_action("chico:review_apply");_action("chico:confirm");FarmCheeseWorker.job(state);assert(w.spent==8 and w.paused)
+	_action("chico:review_renew");_action("chico");assert(w.spent==8)
+	_action("chico:review_renew");_action("chico:confirm");assert(w.spent==0 and w.total_spent==8)
+	_action("close");world.update_staff(state,.1)
+	w.paused=true;w.reason="manual";var milk:=state.milk_stock;money=state.money
+	for i in range(50):world.update_staff(state,.1)
+	assert(state.milk_stock==milk and state.money==money)
+	assert(state.place("fence",Vector2(2,4),0).is_empty());world.rebuild(state);w.paused=false;w.reason=""
+	for i in range(50):world.update_staff(state,.1)
+	assert(w.paused and w.reason=="blocked" and state.milk_stock==milk and w.spent==0)
+	assert(state.remove_item(1).is_empty());world.rebuild(state)
+	_action("chico");_action("chico:pause")
+	for i in range(200):world.update_staff(state,.1)
+	assert(w.started==3 and w.spent==4 and state.milk_stock==4)
+	var disk:Variant=JSON.parse_string(JSON.stringify(state.serialize()))
+	assert(state.restore(disk) and state.cheese_worker.started==3 and state.items[0].cheese.batch==2)
+	_action("chico");_action("chico:review_dismiss");_action("chico:confirm")
+	assert(not state.cheese_worker.hired and state.items[0].cheese.batch==2)
+	assert(state.restore(previous));world.rebuild(state);build_mode=true;_update_ui()
+	print("V017_INTEGRATION_OK: hire/cancel, draft quantity/budget, animated routes and props, exact fees, free collection, cap, renewal/cancel, manual pause, blocked path/resume, persistence and dismissal; walked=",walked)
