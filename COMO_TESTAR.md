@@ -1,9 +1,23 @@
-# Como testar a versão 0.12.0
+# Como testar a versão 0.13.0
 
 Extraia o ZIP e abra `DoMatoAoMilhao.exe`. Escolha **Voltar para minha fazenda**.
 A versão aceita a partida anterior. Não precisa começar outra.
 
-## Menus — teste primeiro
+## HUD da caminhada — teste primeiro
+
+1. Use TAB para caminhar: grandes painéis somem; permanecem horário, saldo, objetivo e atalhos.
+2. Aproxime-se do celeiro: aparece **E · Abrir celeiro**. Aperte E ou clique nessa ação.
+3. Aproxime-se de canteiros secos, maduros e vazios. Confira **Regar**, **Colher** e **Plantar**.
+   Só o canteiro vazio exibe sementes. Escolha uma cultura e plante; o custo aparece na ação.
+4. Um cultivo regado crescendo mostra sua porcentagem, sem botão de ação ativo.
+5. Clique no objetivo pequeno no canto esquerdo. O painel mostra detalhes e a próxima ação.
+   Enquanto ele estiver aberto, o tempo pausa. Feche com X ou Esc.
+6. Deixe um ninho encher: o aviso leva ao galinheiro. Ao coletar, desaparece.
+   Bento sem orçamento exibe o motivo e acesso à equipe. A pausa manual não gera alerta.
+7. Afaste-se das construções: o botão de interação some. Use TAB para recuperar a barra completa.
+8. F5 salva; feche e reabra. A fazenda anterior continua compatível.
+
+## Menus
 
 1. Caminhe até o celeiro e use **E**. Confira os cartões e os números separados.
    **Guardar →** move tudo que couber para a reserva; **← Retirar** devolve ao disponível.

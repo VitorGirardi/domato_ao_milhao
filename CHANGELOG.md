@@ -1,5 +1,13 @@
 # Alterações
 
+## 0.13.0 — Mais fazenda na tela
+
+- HUD compacto na caminhada, objetivo sob demanda e controles discretos.
+- Ação contextual compartilha o alvo da tecla E; escolha de sementes somente em canteiro vazio.
+- Avisos acionáveis de ninho cheio e ajudantes pausados; menos notificações repetitivas.
+- Testes de interações reais, transições dos avisos, pausa de objetivos e alternância de câmeras.
+- Save formato 9 preservado.
+
 ## 0.12.0 — Menus de jogo e lavoura automática
 
 - Ícones rurais originais, ações curtas, cartões e hierarquia nos menus de interação.

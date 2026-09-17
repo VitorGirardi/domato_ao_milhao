@@ -26,6 +26,7 @@ var ghost_key := ""
 var pointer := Vector2.ZERO
 var pointer_valid := false
 var hover_hint := ""
+var field_alerts:=FarmFieldAlerts.new()
 var session_started := false
 var save_timer := 0.0
 var ui_timer := 0.0
@@ -50,7 +51,7 @@ var picked_trade_board:=false
 
 func _ready() -> void:
 	qa_mode = OS.is_debug_build() and "--qa" in OS.get_cmdline_user_args()
-	if qa_mode: save_path="user://qa_farm_v012.json"
+	if qa_mode: save_path="user://qa_farm_v013.json"
 	get_tree().auto_accept_quit = false
 	_inputs()
 	world = FarmWorld.new()
@@ -153,19 +154,15 @@ func _process(delta: float) -> void:
 		return
 	action_cooldown=maxf(0,action_cooldown-delta)
 	if session_started and not build_mode and hud.modal_kind.is_empty():
-		var staff_spent:=int(state.staff.spent)
-		var staff_eggs:=int(state.staff.eggs)
-		if state.tick(delta):
-			hud.toast("Tem novidade no ninho! Visite o galinheiro para coletar os ovos.")
-		if state.staff.spent>staff_spent:
-			hud.toast("Zeca concluiu o trato • +%d ovos no estoque • -$%d"%[state.staff.eggs-staff_eggs,state.staff.spent-staff_spent])
+		state.tick(delta)
 		if not state.trade_notices.is_empty():
 			hud.toast("Prazo de %s encerrado. Sem multa. Veja novos pedidos em J."%state.trade_notices[0] if state.trade_notices.size()==1 else "%d prazos encerrados. Sem multa; consulte o quadro com J."%state.trade_notices.size())
 			state.trade_notices.clear()
-		if not state.staff_notice.is_empty():
-			hud.toast(state.staff_notice)
-			state.staff_notice=""
 		world.update_staff(state,delta)
+		var alert:=field_alerts.poll(state)
+		if not alert.is_empty(): hud.toast(alert)
+		elif not state.staff_notice.is_empty(): hud.toast(state.staff_notice)
+		state.staff_notice=""
 		world.update_crops(state)
 		silly_timer = maxf(0,silly_timer-delta)
 		if state.elapsed > next_silly and not world.chickens.is_empty():
@@ -377,14 +374,8 @@ func _update_pointer() -> void:
 		if tool in ["fence","path"] and move_index<0 and error.is_empty():
 			hover_hint="Segure e arraste em linha • Solte para conferir o custo"
 	elif not build_mode:
-		var nearest:=_nearest()
-		if player.position.distance_to(FarmWorld.TRADE_BOARD_AT)<2.8:
-			hover_hint="[E] Quadro dos vizinhos • Encomendas e reputação"
-		elif nearest>=0:
-			var item:Dictionary=state.items[nearest]
-			hover_hint="[E]  "+_interaction_text(item)
-		elif player.position.distance_to(Vector3(-24,0,14))<4:
-			hover_hint="[E] Conversar com Dona Lúcia • Armazém do Vale"
+		var context:=_nearby_context()
+		hover_hint=str(context.get("text",""))
 
 func _preview(kind: String) -> void:
 	if ghost_key==kind:
@@ -526,30 +517,42 @@ func _nearest() -> int:
 			distance=d
 	return best
 
-func _interaction_text(item: Dictionary) -> String:
-	if item.kind=="sign": return "Editar placa"
-	if item.kind=="barn": return "Entrar no celeiro • Ver estoque"
-	if item.kind=="workshop": return "Oficina rural • Melhorar ferramentas"
-	if item.kind=="coop": return "Galinhas • %d ovos no ninho • Cuidar"%int(item.flock.nest)
-	if not item.planted: return "Plantar %s • $%d"%[FarmState.CROPS[crop].name,FarmState.CROPS[crop].seed]
-	if item.growth>=1: return "Colher "+FarmState.CROPS[item.crop].name
-	if not item.watered: return "Regar "+FarmState.CROPS[item.crop].name
-	return "%s crescendo • %d%%"%[FarmState.CROPS[item.crop].name,int(item.growth*100)]
+func _nearby_context() -> Dictionary:
+	if build_mode or not state.claimed: return {}
+	if player.position.distance_to(FarmWorld.TRADE_BOARD_AT)<2.8: return {"text":"Ver encomendas","action":"orders"}
+	if player.position.distance_to(Vector3(-24,0,14))<4: return {"text":"Conversar com Lúcia","action":"market"}
+	var index:=_nearest()
+	if index<0: return {}
+	var item:Dictionary=state.items[index]
+	var context:Dictionary={"text":"","action":"item","index":index,"hen":nearby_hen,"ready":true,"seeds":false}
+	match item.kind:
+		"barn": context.text="Abrir celeiro"
+		"coop": context.text="Cuidar das galinhas"
+		"workshop": context.text="Abrir oficina"
+		"sign": context.text="Editar placa"
+		"plot":
+			if not item.planted:
+				context.text="Plantar %s · $%d"%[FarmState.CROPS[crop].name,FarmState.CROPS[crop].seed]
+				context.seeds=true
+			elif item.growth>=1: context.text="Colher "+FarmState.CROPS[item.crop].name
+			elif not item.watered: context.text="Regar "+FarmState.CROPS[item.crop].name
+			else:
+				context.text="%s crescendo · %d%%"%[FarmState.CROPS[item.crop].name,int(item.growth*100)]
+				context.ready=false
+			if actor.airborne or action_cooldown>0: context.ready=false
+	return context
 
 func _interact_nearest() -> void:
-	if build_mode: return
-	if player.position.distance_to(FarmWorld.TRADE_BOARD_AT)<2.8:
-		hud.market(state,"orders")
-		return
-	if player.position.distance_to(Vector3(-24,0,14))<4:
-		hud.market(state)
-		return
-	selected=_nearest()
-	selected_hen=nearby_hen
-	if selected>=0:
-		_tend_selected()
-	else:
-		hud.toast("Aproxime-se de um canteiro, placa ou do armazém.")
+	if not hud.modal_kind.is_empty(): return
+	var context:=_nearby_context()
+	if context.is_empty(): return
+	match context.action:
+		"orders": hud.market(state,"orders")
+		"market": hud.market(state)
+		"item":
+			if not context.ready: return
+			selected=int(context.index); selected_hen=int(context.hen)
+			_tend_selected()
 
 func _tend_selected() -> void:
 	if not build_mode and actor.airborne: return
@@ -600,6 +603,19 @@ func _tend_selected() -> void:
 	elif item.kind=="coop": hud.coop(state,selected,selected_hen)
 
 func _action(value: String) -> void:
+	if value=="nearby_interact":
+		_interact_nearest()
+		return
+	if value=="objectives":
+		FarmWalkHUD.objectives(hud,state)
+		return
+	if value=="field_attention":
+		if not FarmFieldAlerts.paused_text(state).is_empty(): FarmCrewHUD.show(hud,state)
+		else:
+			var full:=FarmFieldAlerts.full_coops(state)
+			if not full.is_empty():
+				selected=full[0]; hud.coop(state,selected)
+		return
 	if (dragging or not route.is_empty()) and value!="route_confirm":
 		_cancel_route()
 		if hud.modal_kind=="route": hud.close_modal()
@@ -920,6 +936,7 @@ func _action(value: String) -> void:
 				hud.toast("Espaço livre. Metade do custo voltou para você.")
 		"reset_ask": hud.confirm_reset()
 		"reset_confirm":
+			field_alerts=FarmFieldAlerts.new()
 			state=FarmState.new()
 			world.rebuild(state)
 			selected=-1
@@ -941,6 +958,7 @@ func _action(value: String) -> void:
 
 func _update_ui() -> void:
 	hud.update(state,build_mode,selected,tool,crop,hover_hint)
+	hud.walking.update(hud,state,_nearby_context(),crop)
 	var step:=state.journey_step()
 	if session_started and journey_seen>=0 and step>journey_seen:
 		hud.toast("Etapa concluída: "+FarmState.JOURNEY[journey_seen].title+"!")
@@ -1186,6 +1204,7 @@ func _qa() -> void:
 	await _qa_v011()
 	await _qa_crew()
 	await _qa_v012()
+	await _qa_v013()
 	var restored:=FarmState.new()
 	assert(restored.restore(JSON.parse_string(JSON.stringify(state.serialize()))))
 	assert(restored.items.size()==state.items.size())
@@ -2104,3 +2123,64 @@ func _qa_ui_capture(filename:String) -> void:
 	await get_tree().process_frame
 	await RenderingServer.frame_post_draw
 	get_viewport().get_texture().get_image().save_png("res://test-results/"+filename+".png")
+
+func _qa_v013() -> void:
+	var previous:=state.serialize()
+	state=FarmState.new(); state.claim(Vector2(4,-2)); state.money=10000
+	assert(state.place("barn",Vector2(8,-8),0).is_empty())
+	assert(state.place("coop",Vector2(-4,-4),0).is_empty())
+	assert(state.place("plot",Vector2(2,0),0).is_empty())
+	world.rebuild(state)
+	build_mode=false; _action("close"); selected=-1
+	player.position=Vector3(2,0,1.6)
+	actor.airborne=false; action_cooldown=0
+	_update_ui()
+	assert(hud.walking.root.visible and not hud.build_hud.visible)
+	assert(hud.walking.interaction.text.contains("Regar") and not hud.walking.seed_panel.visible)
+	var target:=_nearby_context()
+	assert(target.index==2)
+	hud.walking.interaction.pressed.emit()
+	assert(state.items[2].watered)
+	action_cooldown=0; _update_ui()
+	assert(hud.walking.interaction.disabled and not hud.walking.interaction.text.begins_with("E"))
+	state.items[2].growth=1.0; _update_ui()
+	assert(hud.walking.interaction.text.contains("Colher"))
+	hud.walking.interaction.pressed.emit()
+	action_cooldown=0; _update_ui()
+	assert(hud.walking.seed_panel.visible)
+	hud.walking.seeds.wheat.pressed.emit()
+	assert(crop=="wheat")
+	_interact_nearest()
+	assert(state.items[2].crop=="wheat")
+	player.position=Vector3(8,0,-3.5); selected=-1
+	_update_ui()
+	assert(hud.walking.interaction.text=="E · Abrir celeiro")
+	yaw=0.4; pitch=0.45; _update_camera(1,true)
+	await _qa_ui_capture("walk-barn-v013")
+	hud.walking.interaction.pressed.emit()
+	assert(hud.modal_kind=="barn" and not hud.world_hud.visible)
+	_action("close")
+	_action("objectives")
+	assert(hud.modal_kind=="objectives")
+	var frozen:=state.serialize(); _process(5); assert(state.serialize()==frozen)
+	await _qa_ui_capture("walk-objective-v013")
+	_action("close")
+	state.items[1].flock.nest=12; _update_ui()
+	assert(hud.walking.attention.visible and hud.walking.attention.text.contains("Ninho"))
+	hud.walking.attention.pressed.emit()
+	assert(hud.modal_kind=="coop" and selected==1)
+	_action("close")
+	state.hire_field_staff(); state.field_staff.paused=true; state.field_staff.reason="budget"
+	_update_ui()
+	assert(hud.walking.attention.text.contains("Bento"))
+	await _qa_ui_capture("walk-alert-v013")
+	hud.walking.attention.pressed.emit()
+	assert(hud.modal_kind=="crew")
+	_action("close")
+	player.position=Vector3(18,0,7); selected=-1; _update_ui()
+	assert(not hud.walking.interaction.visible)
+	_action("mode"); assert(hud.build_hud.visible and not hud.walking.root.visible)
+	_action("mode"); assert(hud.walking.root.visible)
+	assert(state.restore(previous)); world.rebuild(state); build_mode=true
+	_update_ui()
+	print("V013_INTEGRATION_OK: compact HUD, nearby exact target, water/harvest/seed actions, growing disabled, objectives pause, alert destinations, camera modes")

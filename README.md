@@ -5,13 +5,13 @@
 Protótipo jogável de um tycoon de fazenda 3D estilizado para Windows, em português.
 Godot 4.7.2 + modelos originais feitos no Blender 5.2.1. Campanha solo e offline.
 
-**Versão atual: 0.12.0.** Veja [as prioridades](ROADMAP.md) e [as novidades](CHANGELOG.md).
+**Versão atual: 0.13.0.** Veja [as prioridades](ROADMAP.md) e [as novidades](CHANGELOG.md).
 
 Veja o [roteiro de teste manual](COMO_TESTAR.md), incluindo encomendas e vendas da 0.5.
 
 ## Jogar
 
-O executável local fica em `exports/windows-v0.12/DoMatoAoMilhao.exe` depois da exportação.
+O executável local fica em `exports/windows-v0.13/DoMatoAoMilhao.exe` depois da exportação.
 Ele abre diretamente, sem instalar Godot ou Blender. Os binários não são enviados ao Git.
 
 Para executar a partir do código:
@@ -19,7 +19,17 @@ Para executar a partir do código:
 2. Aguarde a importação dos modelos.
 3. Pressione **F5** para jogar. O cenário é montado pelos scripts durante a execução.
 
-## Novidades da 0.12
+## Novidades da 0.13
+
+- HUD de caminhada compacto: relógio, saldo, objetivo recolhido e atalhos pequenos.
+- Ação próxima destacada, com o mesmo alvo do E: celeiro, oficina, galinhas, placa,
+  comércio e cultivos. Plantas crescendo mostram progresso sem sugerir uma ação pronta.
+- Sementes aparecem somente perto de canteiros vazios; objetivos detalhados abrem ao clicar.
+- Aviso de ninho cheio ou ajudante pausado leva direto ao galinheiro/equipe.
+- Alertas não repetem a cada quadro; fim de cada trato e primeiros ovos não geram mais mensagens.
+- Construção conserva suas ferramentas. Save continua no formato 9.
+
+## Recursos da 0.12
 
 - Menus de celeiro, galinheiro, oficina, armazém, encomendas e equipe com ícones,
   ações curtas, cartões e números separados. O HUD do campo fica oculto nas janelas.
@@ -274,7 +284,7 @@ entre tarefas, vários funcionários ou automação da lavoura nesta primeira en
 
 ## Limites assumidos do protótipo
 
-Esta é a versão **0.12.0**, destinada a validar o ciclo de jogo e a direção visual.
+Esta é a versão **0.13.0**, destinada a validar o ciclo de jogo e a direção visual.
 O celeiro tem estoque e reserva; a oficina contém a melhoria de ferramenta. Não há interior explorável.
 Os traçados são retos, sem curvas ou desenho livre. Preços e tempos aguardam ajuste com partidas reais.
 Os cuidados das galinhas são por galinheiro; ainda não há reprodução, doenças,
@@ -371,7 +381,7 @@ New-Item -ItemType Directory -Force test-results
 godot --path . --resolution 1440x900 --script tests/render_characters.gd
 godot --path . --resolution 1440x900 --fixed-fps 60 --quit-after 4500 -- --qa
 godot --path . --resolution 960x640 --script tests/render_staff.gd
-New-Item -ItemType Directory -Force exports/windows-v0.12
+New-Item -ItemType Directory -Force exports/windows-v0.13
 godot --headless --path . --export-release 'Windows Desktop'
 ```
 

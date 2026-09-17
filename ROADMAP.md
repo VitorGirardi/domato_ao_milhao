@@ -156,7 +156,7 @@ Expressões animadas e personalização de roupas ficam para outra etapa.
 - [x] Plantio e colheita configuráveis com Bento.
 - [ ] Novas vagas e transporte.
 
-## Entrega atual — 0.12: clareza e automação
+## Entrega anterior — 0.12: clareza e automação
 
 - [x] Menus de interação com ícones, menos texto e ações evidentes.
 - [x] Colher e replantar com Bento; tarefas independentes e cultura por canteiro.
@@ -164,3 +164,10 @@ Expressões animadas e personalização de roupas ficam para outra etapa.
 - [x] Relatório de produção e gastos, persistência e migração.
 - [x] Revisão visual, integração e teste de ciclo completo sem venda automática.
 - [ ] Ajustar legibilidade e ritmo após o teste do jogador.
+
+## Entrega atual — 0.13: HUD de caminhada
+
+- [x] Remover painéis permanentes grandes durante exploração.
+- [x] Ação próxima destacada e objetivos sob demanda.
+- [x] Alertas acionáveis, sem repetir cada serviço.
+- [x] Verificação visual, interação e compatibilidade do save.

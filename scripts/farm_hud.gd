@@ -7,6 +7,8 @@ const CREAM := Color("fff7e4")
 const MUTED := Color("7b806b")
 var root := Control.new()
 var world_hud:=Control.new()
+var build_hud:=Control.new()
+var walking:=FarmWalkHUD.new()
 var coop_tab:="care"
 var cultivation_draft:Dictionary={}
 var cultivation_budget:SpinBox
@@ -73,7 +75,11 @@ func _ready() -> void:
 	root.add_child(world_hud)
 	world_hud.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	world_hud.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	world_hud.add_child(build_hud)
+	build_hud.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	build_hud.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_build()
+	walking.setup(self)
 
 func style(color: Color, radius: int = 14, border_color: Color = Color("e3d9b9")) -> StyleBoxFlat:
 	var s := StyleBoxFlat.new()
@@ -125,23 +131,23 @@ func button(parent: Control, text: String, rect: Rect2, value: String, primary: 
 	return b
 
 func _build() -> void:
-	var brand := panel(world_hud, Rect2(24, 22, 287, 98), Color("294b3c"))
+	var brand := panel(build_hud, Rect2(24, 22, 287, 98), Color("294b3c"))
 	label(brand, "DO MATO", Vector2(21,10), Vector2(260,31), 29, CREAM)
 	label(brand, "AO MILHÃO", Vector2(21,40), Vector2(260,34), 29, Color("edbd64"))
 	label(brand, "SEU PEQUENO GRANDE COMEÇO", Vector2(22,79), Vector2(256,15), 10, Color("d2dcc8"))
-	var time_panel := panel(world_hud, Rect2(328,22,244,60))
+	var time_panel := panel(build_hud, Rect2(328,22,244,60))
 	clock_label = label(time_panel, "DIA 01   •   08:00", Vector2(17,12), Vector2(211,34),20)
-	var mode_panel := panel(world_hud, Rect2(588,22,242,60),Color("e7eddb"))
+	var mode_panel := panel(build_hud, Rect2(588,22,242,60),Color("e7eddb"))
 	mode_label = label(mode_panel, "CONHEÇA O VALE", Vector2(16,14),Vector2(212,30),17)
-	var wallet := panel(world_hud, Rect2(1110,22,306,98))
+	var wallet := panel(build_hud, Rect2(1110,22,306,98))
 	label(wallet,"SEU PATRIMÔNIO COMEÇA AQUI",Vector2(18,12),Vector2(272,20),11,MUTED)
 	money_label=label(wallet,"$ 1.600",Vector2(18,32),Vector2(265,45),32)
 	stock_label=label(wallet,"Estoque vazio • novas possibilidades",Vector2(18,77),Vector2(273,16),11,MUTED)
-	button(world_hud,"Armazém  [F]",Rect2(854,22,234,46),"market",true)
-	button(world_hud,"Salvar  [F5]",Rect2(854,77,114,39),"save")
-	button(world_hud,"Menu",Rect2(980,77,108,39),"menu")
-	button(world_hud,"Ajudante [H]",Rect2(588,88,242,32),"staff")
-	var quest := panel(world_hud,Rect2(24,140,287,279))
+	button(build_hud,"Armazém  [F]",Rect2(854,22,234,46),"market",true)
+	button(build_hud,"Salvar  [F5]",Rect2(854,77,114,39),"save")
+	button(build_hud,"Menu",Rect2(980,77,108,39),"menu")
+	button(build_hud,"Ajudante [H]",Rect2(588,88,242,32),"staff")
+	var quest := panel(build_hud,Rect2(24,140,287,279))
 	quest_counter=label(quest,"SEU PRIMEIRO CAPÍTULO",Vector2(18,16),Vector2(250,25),12,MUTED)
 	quest_title=label(quest,"Um lugar para chamar de seu",Vector2(18,47),Vector2(250,48),18)
 	quest_title.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
@@ -164,7 +170,7 @@ func _build() -> void:
 	quest_progress.size=Vector2(250,7)
 	quest.add_child(quest_progress)
 	quest_progress.set_deferred("size",Vector2(250,7))
-	select_panel=panel(world_hud,Rect2(1110,140,306,466))
+	select_panel=panel(build_hud,Rect2(1110,140,306,466))
 	select_label=label(select_panel,"CADERNO DA FAZENDA",Vector2(18,15),Vector2(270,32),16)
 	details_label=label(select_panel,"Selecione algo no terreno\npara cuidar ou personalizar.",Vector2(18,54),Vector2(270,132),16)
 	details_label.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
@@ -186,7 +192,7 @@ func _build() -> void:
 	button(select_panel,"Remover",Rect2(158,354,130,39),"remove")
 	barn_button=button(select_panel,"Estoque do celeiro",Rect2(18,407,270,39),"barn",true)
 	coop_button=button(select_panel,"Cuidar das galinhas",Rect2(18,407,270,39),"coop",true)
-	tool_panel=panel(world_hud,Rect2(24,720,1392,157))
+	tool_panel=panel(build_hud,Rect2(24,720,1392,157))
 	tool_title=label(tool_panel,"CONSTRUA SEU COMEÇO",Vector2(18,12),Vector2(305,25),13,MUTED)
 	walk_tip=label(tool_panel,"A vida acontece no seu ritmo. Cuide dos canteiros e descubra o vale.",Vector2(18,49),Vector2(1340,26),15,MUTED)
 	walk_tip.visible=false
@@ -203,7 +209,7 @@ func _build() -> void:
 		var b:=button(tool_panel,"%d  %s\n%s"%[i+1,names[i],costs[i]],Rect2(18+i*151,51,143,83),"tool:"+tools[i])
 		b.add_theme_font_size_override("font_size",14)
 		buttons[tools[i]]=b
-	hint_panel=panel(world_hud,Rect2(330,654,767,46),Color("294b3c"))
+	hint_panel=panel(build_hud,Rect2(330,654,767,46),Color("294b3c"))
 	hint_label=label(hint_panel,"WASD mover  •  Mouse direito girar  •  Scroll zoom",Vector2(14,8),Vector2(738,32),15,CREAM)
 	hint_label.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
 	toast_panel=panel(root,Rect2(420,137,600,53),Color("fff0be"))
@@ -217,15 +223,18 @@ func _build() -> void:
 func _process(delta: float) -> void:
 	toast_time=maxf(0,toast_time-delta)
 	toast_panel.visible=toast_time>0
-	toast_panel.position=Vector2(320,6) if not modal_kind.is_empty() else Vector2(320,137)
-	toast_panel.size.x=800
-	toast_label.size=Vector2(772,36)
+	var width:=620.0 if toast_label.text.length()<75 else 800.0
+	toast_panel.position=Vector2((1440-width)/2,6 if not modal_kind.is_empty() else 145)
+	toast_panel.size.x=width
+	toast_label.size=Vector2(width-28,36)
 
 func toast(message: String) -> void:
 	toast_label.text=message
 	toast_time=4.0
 
 func update(state: FarmState, build_mode: bool, selected: int, tool: String, crop: String, hover_hint: String) -> void:
+	build_hud.visible=build_mode or not state.claimed
+	walking.root.visible=not build_mode and state.claimed
 	money_label.text="$ %s" % _money(state.money)
 	var total:=0
 	for value in state.inventory.values():
@@ -359,7 +368,7 @@ func welcome(state: FarmState, has_save: bool) -> void:
 	text_input.text=state.farm_name
 	p.add_child(text_input)
 	button(p,"Voltar para minha fazenda" if has_save else "Escolher meu pedaço de terra",Rect2(34,494,542,55),"start",true)
-	label(p,"VERSÃO 0.12.0   •   MENUS E ROTINA DA LAVOURA",Vector2(34,561),Vector2(542,17),11,MUTED)
+	label(p,"VERSÃO 0.13.0   •   MAIS FAZENDA NA TELA",Vector2(34,561),Vector2(542,17),11,MUTED)
 
 func coop(state:FarmState,index:int,selected_hen:int=-1) -> void:
 	FarmInteractionUI.coop(self,state,index,selected_hen)
