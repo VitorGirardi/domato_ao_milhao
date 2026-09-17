@@ -10,6 +10,7 @@ const CROPS = {
 const ITEMS = {
 	"plot": {"name": "Canteiro", "cost": 20, "size": Vector2(2, 2)},
 	"barn": {"name": "Celeiro", "cost": 240, "size": Vector2(6, 6)},
+	"workshop": {"name": "Oficina rural", "cost": 180, "size": Vector2(4,4)},
 	"coop": {"name": "Galinheiro", "cost": 180, "size": Vector2(4, 4)},
 	"fence": {"name": "Cerca", "cost": 12, "size": Vector2(2, 0.4)},
 	"sign": {"name": "Placa", "cost": 25, "size": Vector2(2, 1)},
@@ -45,6 +46,40 @@ var trade_notices:Array[String]=[]
 var staff:Dictionary=FarmStaff.fresh()
 var staff_accessible:=true # Runtime arrival gate, recalculated by the world; not saved.
 var staff_notice:=""
+var irrigation:Dictionary={"enabled":false,"plots":[],"watered":0,"spent":0}
+
+func configure_irrigation(plots:Array) -> String:
+	if not staff.hired: return "Contrate o Zeca primeiro em H."
+	if staff.coop<0 or staff.coop>=items.size() or items[staff.coop].kind!="coop": return "Atribua um galinheiro ao Zeca em H antes de ativar a irrigação."
+	if plots.is_empty(): return "Selecione pelo menos um canteiro."
+	var unique:Array=[]
+	for index in plots:
+		if not index is int or index<0 or index>=items.size() or items[index].kind!="plot": return "Canteiro inválido. Abra a seleção novamente."
+		if index not in unique: unique.append(index)
+	irrigation.plots=unique
+	irrigation.enabled=true
+	staff.paused=false
+	staff.reason=""
+	staff.timer=0.0
+	return ""
+
+func irrigate(index:int) -> String:
+	if not irrigation.enabled or not staff.hired or staff.paused: return "Rotina pausada."
+	if index not in irrigation.plots or index<0 or index>=items.size(): return "Canteiro não selecionado."
+	var item:Dictionary=items[index]
+	if item.kind!="plot" or not item.planted or item.watered or item.growth>=1: return "Sem necessidade de rega."
+	if money<2:
+		staff.paused=true
+		staff.reason="funds"
+		staff_notice="Zeca pausou: faltam $2 para regar. Retome em H quando tiver saldo."
+		return staff_notice
+	money-=2
+	staff.spent+=2
+	irrigation.spent+=2
+	irrigation.watered+=1
+	item.watered=true
+	refresh_journey()
+	return ""
 
 func hire_staff(index: int) -> String:
 	if staff.hired: return "Zeca já trabalha aqui."
@@ -62,6 +97,7 @@ func hire_staff(index: int) -> String:
 func assign_staff(index: int) -> String:
 	if not staff.hired: return "Contrate o Zeca primeiro."
 	if index<0 or index>=items.size() or items[index].kind!="coop": return "Escolha um galinheiro válido."
+	irrigation.enabled=false
 	if staff.coop==index: return ""
 	staff.coop=index
 	staff.timer=0.0
@@ -75,6 +111,7 @@ func pause_staff() -> String:
 	return ""
 
 func dismiss_staff() -> void:
+	irrigation.enabled=false
 	staff.hired=false
 	staff.paused=true
 	staff.coop=-1
@@ -202,7 +239,7 @@ func transfer_reserve(key: String, deposit: bool) -> int:
 	return amount
 
 func buy_watering_upgrade() -> String:
-	if count_items("barn")==0: return "Construa um celeiro para usar a bancada."
+	if count_items("workshop")==0: return "Construa uma oficina rural para usar a bancada."
 	if watering_upgrade: return "Seu regador já está melhorado."
 	if money<300: return "A melhoria custa $300."
 	money-=300
@@ -228,6 +265,14 @@ func remove_item(index: int) -> String:
 		return "Retire a reserva do celeiro antes de removê-lo."
 	money+=int(ITEMS[items[index].kind].cost)/2
 	items.remove_at(index)
+	var remaining_plots:Array=[]
+	for plot in irrigation.plots:
+		if plot!=index: remaining_plots.append(int(plot)-1 if plot>index else int(plot))
+	irrigation.plots=remaining_plots
+	if remaining_plots.is_empty() and irrigation.enabled:
+		irrigation.enabled=false
+		staff.paused=true
+		staff.reason="removed"
 	if staff.coop==index:
 		staff.coop=-1
 		staff.paused=true
@@ -267,10 +312,11 @@ func rename_hen(index: int, hen: int, value: String) -> String:
 	return ""
 
 func paint_item(index: int, part: String, color: int) -> String:
-	if index<0 or index>=items.size() or items[index].kind not in ["barn","coop","fence","sign"]:
+	if index<0 or index>=items.size() or items[index].kind not in ["barn","coop","workshop","fence","sign"]:
 		return "Selecione uma construção para pintar."
 	if part not in ["walls","roof","door"] or color<0 or color>=PALETTE.size(): return "Pintura inválida."
-	if part!="walls" and items[index].kind not in ["barn","coop"]: return "Esta peça só tem pintura principal."
+	if part=="door" and items[index].kind=="workshop": return "A oficina tem entrada aberta."
+	if part!="walls" and items[index].kind not in ["barn","coop","workshop"]: return "Esta peça só tem pintura principal."
 	if items[index].kind=="barn" and not items[index].has("door_paint"):
 		items[index].door_paint=int(items[index].paint)
 	var key:="paint" if part=="walls" else part+"_paint"
@@ -410,7 +456,7 @@ func tick(delta: float) -> bool:
 	var remaining:=maxf(0,delta)
 	# Split at service boundaries so large and small simulation steps agree.
 	while remaining>0.0000001:
-		var active:=FarmStaff.running(staff)
+		var active:bool=FarmStaff.running(staff) and not irrigation.enabled
 		var span:=minf(remaining,FarmStaff.INTERVAL-float(staff.timer)) if active else remaining
 		elapsed+=span
 		_expire_orders()
@@ -467,7 +513,7 @@ func expand() -> String:
 	return ""
 
 func serialize() -> Dictionary:
-	return {"version": 5, "money": money, "claimed": claimed,
+	return {"version": 6, "irrigation":irrigation.duplicate(true), "money": money, "claimed": claimed,
 		"center": [center.x, center.y], "land_size": land_size,
 		"items": items.duplicate(true), "inventory": inventory.duplicate(),
 		"elapsed": elapsed, "revenue": revenue, "harvests": harvests,
@@ -476,7 +522,7 @@ func serialize() -> Dictionary:
 
 func restore(data: Variant) -> bool:
 	# Validate before mutating live state. Invalid files never partially replace it.
-	if not data is Dictionary or not _number(data.get("version")) or data.version<1 or data.version>5 or float(data.version)!=floorf(float(data.version)):
+	if not data is Dictionary or not _number(data.get("version")) or data.version<1 or data.version>6 or float(data.version)!=floorf(float(data.version)):
 		return false
 	for key in ["money", "land_size", "elapsed", "revenue", "harvests"]:
 		if not _number(data.get(key)) or float(data[key]) < 0:
@@ -545,6 +591,16 @@ func restore(data: Variant) -> bool:
 				return false
 	if data.version>=5 and not data.has("staff"): return false
 	if data.has("staff") and not FarmStaff.valid(data.staff,data.items): return false
+	var saved_irrigation:Variant=data.get("irrigation",{"enabled":false,"plots":[],"watered":0,"spent":0})
+	if data.version>=6 and not data.has("irrigation"): return false
+	if not saved_irrigation is Dictionary or not saved_irrigation.get("enabled") is bool or not saved_irrigation.get("plots") is Array: return false
+	for key in ["watered","spent"]:
+		if not _number(saved_irrigation.get(key)) or saved_irrigation[key]<0 or float(saved_irrigation[key])!=floorf(saved_irrigation[key]): return false
+	var unique_plots:Array=[]
+	for index in saved_irrigation.plots:
+		if not _number(index) or index!=floorf(index) or index<0 or index>=data.items.size() or data.items[int(index)].kind!="plot" or index in unique_plots: return false
+		unique_plots.append(int(index))
+	if saved_irrigation.enabled and (unique_plots.is_empty() or not data.get("staff",{}).get("hired",false)): return false
 	money = int(data.money)
 	claimed = data.claimed
 	center = Vector2(data.center[0], data.center[1])
@@ -579,6 +635,9 @@ func restore(data: Variant) -> bool:
 	for key in ["coop","services","eggs","spent"]: staff[key]=int(staff[key])
 	staff.timer=float(staff.timer)
 	staff_notice=""
+	irrigation=saved_irrigation.duplicate(true)
+	irrigation.plots=unique_plots
+	for key in ["watered","spent"]: irrigation[key]=int(irrigation[key])
 	_expire_orders()
 	refresh_journey()
 	return true

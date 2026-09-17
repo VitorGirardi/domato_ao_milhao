@@ -50,7 +50,7 @@ var picked_trade_board:=false
 
 func _ready() -> void:
 	qa_mode = OS.is_debug_build() and "--qa" in OS.get_cmdline_user_args()
-	if qa_mode: save_path="user://qa_farm_v09.json"
+	if qa_mode: save_path="user://qa_farm_v010.json"
 	get_tree().auto_accept_quit = false
 	_inputs()
 	world = FarmWorld.new()
@@ -264,6 +264,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_6: _action("tool:sign")
 			KEY_7: _action("tool:path")
 			KEY_8: _action("tool:expand")
+			KEY_9: _action("tool:workshop")
 	if not hud.modal_kind.is_empty():
 		return
 	if event is InputEventMouseMotion and Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT):
@@ -483,6 +484,9 @@ func _find_item(at: Vector2) -> int:
 
 func _distance_to_item(i: int) -> float:
 	var item:Dictionary=state.items[i]
+	if item.kind in ["barn","workshop"]:
+		var door:=Vector3(item.x,0,item.z)+Vector3(0,0,3.0 if item.kind=="barn" else 1.9).rotated(Vector3.UP,item.turn*PI/2)
+		return Vector2(player.position.x-door.x,player.position.z-door.z).length()
 	var area:=state.item_rect(item.kind,Vector2(item.x,item.z),item.turn)
 	var position_2d:=Vector2(player.position.x,player.position.z)
 	var closest:=position_2d.clamp(area.position,area.end)
@@ -492,13 +496,13 @@ func _nearest() -> int:
 	nearby_hen=-1
 	var best:=-1
 	var distance:=2.6
-	if selected>=0 and selected<state.items.size() and state.items[selected].kind in ["plot","sign","barn","coop"]:
+	if selected>=0 and selected<state.items.size() and state.items[selected].kind in ["plot","sign","barn","coop","workshop"]:
 		var current_distance:=_distance_to_item(selected)
 		if current_distance<distance:
 			best=selected
 			distance=current_distance
 	for i in range(state.items.size()):
-		if state.items[i].kind not in ["plot","sign","barn","coop"]: continue
+		if state.items[i].kind not in ["plot","sign","barn","coop","workshop"]: continue
 		var d:=_distance_to_item(i)
 		if d<distance and (best<0 or d+0.05<distance):
 			best=i
@@ -513,7 +517,8 @@ func _nearest() -> int:
 
 func _interaction_text(item: Dictionary) -> String:
 	if item.kind=="sign": return "Editar placa"
-	if item.kind=="barn": return "Abrir reserva e bancada do celeiro"
+	if item.kind=="barn": return "Entrar no celeiro • Ver estoque"
+	if item.kind=="workshop": return "Oficina rural • Melhorar ferramentas"
 	if item.kind=="coop": return "Galinhas • %d ovos no ninho • Cuidar"%int(item.flock.nest)
 	if not item.planted: return "Plantar %s • $%d"%[FarmState.CROPS[crop].name,FarmState.CROPS[crop].seed]
 	if item.growth>=1: return "Colher "+FarmState.CROPS[item.crop].name
@@ -579,6 +584,7 @@ func _tend_selected() -> void:
 	elif item.kind=="sign":
 		hud.editor_dialog("sign",item.text)
 	elif item.kind=="barn": hud.barn(state)
+	elif item.kind=="workshop": hud.workshop(state)
 	elif item.kind=="coop": hud.coop(state,selected,selected_hen)
 
 func _action(value: String) -> void:
@@ -593,6 +599,18 @@ func _action(value: String) -> void:
 		if FarmTrade.NEIGHBORS.has(key):
 			hud.market_neighbor=key
 			hud.market(state,"orders")
+		return
+	if value=="irrigation":
+		hud.irrigation_draft=state.irrigation.plots.duplicate()
+		hud.irrigation_panel(state)
+		return
+	if value=="irrigation_apply":
+		var error:=state.configure_irrigation(hud.irrigation_draft)
+		if not error.is_empty(): hud.toast(error); return
+		world.staff_anchor=""
+		world.update_staff(state,0)
+		hud.staff_panel(state)
+		hud.toast("Irrigação ativada: $2 por canteiro concluído. Feche a janela para começar.")
 		return
 	if value.begins_with("staff"):
 		if not session_started: return
@@ -737,10 +755,11 @@ func _action(value: String) -> void:
 			_chime()
 		"route_cancel": hud.close_modal()
 		"barn":
-			if state.count_items("barn")>0: hud.barn(state)
+			if selected>=0 and selected<state.items.size() and state.items[selected].kind=="workshop": hud.workshop(state)
+			elif state.count_items("barn")>0: hud.barn(state)
 		"upgrade":
 			var error:=state.buy_watering_upgrade()
-			hud.barn(state)
+			hud.workshop(state)
 			hud.toast("Regador melhorado! Até 5 canteiros por rega." if error.is_empty() else error)
 		"move":
 			if selected<0 or selected>=state.items.size():
@@ -1072,6 +1091,7 @@ func _qa() -> void:
 	await _qa_v05()
 	await _qa_v06()
 	await _qa_v09()
+	await _qa_v010()
 	var restored:=FarmState.new()
 	assert(restored.restore(JSON.parse_string(JSON.stringify(state.serialize()))))
 	assert(restored.items.size()==state.items.size())
@@ -1209,9 +1229,13 @@ func _qa_v03() -> void:
 	assert(hud.modal_kind=="barn")
 	_action("close")
 	_action("barn")
+	assert(state.place("workshop",Vector2(-6,-2),0).is_empty())
 	var balance:=state.money
 	_action("upgrade")
 	assert(state.watering_upgrade and state.money==balance-300)
+	assert(hud.modal_kind=="workshop")
+	state.remove_item(state.items.size()-1)
+	_action("barn")
 	await get_tree().process_frame
 	if DisplayServer.get_name()!="headless":
 		await RenderingServer.frame_post_draw
@@ -1682,3 +1706,74 @@ func _qa_painted_surfaces(node: Node) -> Dictionary:
 			if source and replacement: found[source.resource_name]=replacement.albedo_color
 	for child in node.get_children(): found.merge(_qa_painted_surfaces(child))
 	return found
+
+func _qa_v010() -> void:
+	var previous:=state.serialize()
+	state=FarmState.new()
+	state.claim(Vector2(4,-2))
+	state.money=5000
+	for entry in [["coop",Vector2(-4,-4)],["plot",Vector2(2,0)],["plot",Vector2(4,0)],["barn",Vector2(8,-8)],["workshop",Vector2(-4,4)]]:
+		assert(state.place(entry[0],entry[1],0).is_empty())
+	state.inventory.carrot=12
+	state.hire_staff(0)
+	world.rebuild(state)
+	build_mode=true
+	selected=3
+	_action("barn")
+	assert(hud.modal_kind=="barn")
+	_action("deposit:carrot")
+	assert(state.reserve.carrot==12 and state.inventory.carrot==0)
+	await get_tree().process_frame
+	await RenderingServer.frame_post_draw
+	get_viewport().get_texture().get_image().save_png("res://test-results/barn-v010.png")
+	_action("withdraw:carrot")
+	assert(state.inventory.carrot==12)
+	selected=4
+	_action("barn")
+	assert(hud.modal_kind=="workshop")
+	var cash:=state.money
+	_action("upgrade")
+	assert(state.watering_upgrade and state.money==cash-300)
+	await get_tree().process_frame
+	await RenderingServer.frame_post_draw
+	get_viewport().get_texture().get_image().save_png("res://test-results/workshop-v010.png")
+	_action("irrigation")
+	var checks:=hud.modal.find_children("*","CheckBox",true,false)
+	assert(checks.size()==2)
+	for check in checks: check.button_pressed=true
+	assert(hud.irrigation_draft==[1,2])
+	await get_tree().process_frame
+	await RenderingServer.frame_post_draw
+	get_viewport().get_texture().get_image().save_png("res://test-results/irrigation-menu-v010.png")
+	cash=state.money
+	_action("irrigation_apply")
+	assert(state.irrigation.enabled and state.money==cash)
+	var frozen:=state.serialize()
+	_process(10)
+	assert(state.serialize()==frozen)
+	_action("close")
+	focus=Vector3(1,0,-1)
+	yaw=0.2; pitch=0.55; build_distance=16
+	_update_camera(1,true)
+	var captured:=false
+	for frame in range(1000):
+		world.update_staff(state,1.0/60)
+		if frame%20==0: await get_tree().process_frame
+		if world.staff_actor.can.visible and not captured:
+			await RenderingServer.frame_post_draw
+			get_viewport().get_texture().get_image().save_png("res://test-results/irrigation-v010.png")
+			captured=true
+		if state.irrigation.watered==2: break
+	assert(captured and state.irrigation.watered==2 and state.money==cash-4)
+	assert(state.items[1].watered and state.items[2].watered and state.staff.services==0)
+	var snapshot:=state.serialize()
+	for frame in range(120): world.update_staff(state,1.0/60)
+	assert(state.serialize()==snapshot)
+	_action("staff")
+	_action("staff_pause")
+	assert(state.staff.paused)
+	_action("close")
+	assert(state.restore(previous))
+	world.rebuild(state)
+	selected=1
+	print("V010_INTEGRATION_OK: barn stock, workshop upgrade, checkbox selection, paused menus, walking irrigation, exact charge, no duplicate watering, pause")

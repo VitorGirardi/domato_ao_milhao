@@ -129,3 +129,14 @@ Expressões animadas e personalização de roupas ficam para outra etapa.
 - Testar desempenho conforme aumentam construções e animais.
 - Humor deve variar e criar histórias, sem punições grandes ou tarefas constantes.
 - Recursos de multiplayer exigem projeto próprio de autoridade, propriedade e persistência.
+
+
+## Entrega 0.10 — funções das construções e irrigação
+
+- [x] Revisar cabelo dos três personagens em quatro ângulos.
+- [x] Celeiro com painel de estoque/reserva na entrada.
+- [x] Oficina rural independente para bancada de melhorias.
+- [x] Irrigação do Zeca com seleção, custo informado e animação.
+- [x] Compatibilidade com saves anteriores e testes de economia/rotas.
+- [ ] Interior explorável do celeiro.
+- [ ] Novas ferramentas e máquinas na oficina rural.

@@ -201,28 +201,18 @@ def build(name,zeca=False,vendor=False):
     objs.append(tube('Hat band',band,.024,'Band'))
     for x in [-.115,-.063]: objs.append(tube('Hat repair',[(x,-.311,2.22),(x-.008,-.296,2.34)],.0045,'Band'))
     for z in [2.26,2.303]: objs.append(tube('Hat repair', [(-.145,-.317+(z-2.22)*.17,z),(-.035,-.317+(z-2.22)*.17,z)],.0045,'Band'))
-    if vendor:
-        for obj in list(objs):
-            if obj.name.startswith(('Wavy hat','Rounded hat','Hat band','Hat repair')):
-                objs.remove(obj); bpy.data.objects.remove(obj,do_unlink=True)
-        objs.append(ellipsoid('Hair crown',(0,.10,2.03),(.43,.30,.18),'Hair'))
-        for sign in [-1,1]:
-            for i in range(5):
-                objs.append(ellipsoid('Braided hair',(sign*(.45+.025*math.sin(i*2)),.035,1.66-i*.10),(.092,.095,.083),'Hair'))
-            objs.append(ellipsoid('Braid ribbon',(sign*.45,.02,1.20),(.105,.075,.035),'Band'))
-            objs.append(ellipsoid('Gold earring',(sign*.535,-.015,1.50),(.038,.035,.047),'Gold'))
-            x=sign*.305; z=1.57
-            objs.append(ellipsoid('Soft cheek',(x,face(x,z,.006),z),(.053,.012,.032),'Cheek'))
-    else:
-        # Trim every hair vertex beneath the curved underside of the brim.
-        # Lowering only the fringe center left its tips above the hat.
+    # Replace every old scalp/tuft/sideburn with one fitted continuous shell.
+    if not vendor:
         for obj in objs:
-            if obj.data.materials[0]!=M['Hair']: continue
-            for vertex in obj.data.vertices:
-                x,y,z=vertex.co
-                r=math.sqrt((x/.72)**2+(y/.56)**2); a=math.atan2(y/.56,x/.72)
-                underside=2.105+.05*r*r*math.cos(2*a+.4)+.048*r*math.cos(a)
-                vertex.co.z=min(z,underside-.022)
+            if obj.name.startswith(('Wavy hat','Rounded hat','Hat band','Hat repair')):
+                for vertex in obj.data.vertices: vertex.co.z-=.07
+    for obj in list(objs):
+        remove=(obj.data.materials[0]==M['Hair'] and not obj.name.startswith('Sculpted moustache'))
+        remove=remove or (vendor and obj.name.startswith(('Wavy hat','Rounded hat','Hat band','Hat repair')))
+        if remove:
+            objs.remove(obj); bpy.data.objects.remove(obj,do_unlink=True)
+    hair_api={'mesh':mesh,'tube':tube,'ellipsoid':ellipsoid,'signed':signed}
+    objs.extend(runpy.run_path(str(ROOT/'tools/character_hair.py'))['build'](hair_api,hx,hy,hz,cz,power,vendor))
     for parts,label in [(eye_parts,'BlinkEyes'),(closed_parts,'BlinkCrease')]:
         for obj in parts:
             vg=obj.vertex_groups.new(name=label)

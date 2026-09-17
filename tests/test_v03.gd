@@ -52,6 +52,8 @@ func _initialize() -> void:
 	check(farm.transfer_reserve("carrot",false)==60 and farm.inventory.carrot==60,"Withdrawal returns full product quantity")
 	check(farm.deliver_contract() and farm.inventory.carrot==54,"Withdrawn products can satisfy contracts")
 	check(farm.transfer_reserve("unknown",true)==0,"Unknown product is rejected")
+	check(not farm.buy_watering_upgrade().is_empty(),"Barn storage has no upgrade bench")
+	check(farm.place("workshop",Vector2(-4,8),0).is_empty(),"Workshop provides upgrade bench")
 	var balance:=farm.money
 	check(farm.buy_watering_upgrade().is_empty() and farm.money==balance-300,"Upgrade has exact one-time cost")
 	balance=farm.money
@@ -113,7 +115,7 @@ func _initialize() -> void:
 	var broke:=FarmState.new()
 	check(not broke.buy_watering_upgrade().is_empty() and broke.money==1600,"Upgrade requires barn")
 	broke.claim(Vector2(4,0))
-	broke.place("barn",Vector2(4,0),0)
+	broke.place("workshop",Vector2(4,0),0)
 	broke.money=299
 	check(not broke.buy_watering_upgrade().is_empty() and broke.money==299,"Upgrade respects budget")
 	print("V03_SIMULATION: %d checks, %d failures"%[checks,failures])

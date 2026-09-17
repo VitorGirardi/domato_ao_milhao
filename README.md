@@ -5,13 +5,13 @@
 Protótipo jogável de um tycoon de fazenda 3D estilizado para Windows, em português.
 Godot 4.7.2 + modelos originais feitos no Blender 5.2.1. Campanha solo e offline.
 
-**Versão atual: 0.9.0.** Veja [as prioridades](ROADMAP.md) e [as novidades](CHANGELOG.md).
+**Versão atual: 0.10.0.** Veja [as prioridades](ROADMAP.md) e [as novidades](CHANGELOG.md).
 
 Veja o [roteiro de teste manual](COMO_TESTAR.md), incluindo encomendas e vendas da 0.5.
 
 ## Jogar
 
-O executável local fica em `exports/windows-v0.9/DoMatoAoMilhao.exe` depois da exportação.
+O executável local fica em `exports/windows-v0.10/DoMatoAoMilhao.exe` depois da exportação.
 Ele abre diretamente, sem instalar Godot ou Blender. Os binários não são enviados ao Git.
 
 Para executar a partir do código:
@@ -19,7 +19,17 @@ Para executar a partir do código:
 2. Aguarde a importação dos modelos.
 3. Pressione **F5** para jogar. O cenário é montado pelos scripts durante a execução.
 
-## Novidades da 0.9
+## Novidades da 0.10
+
+- Cabelo contínuo nos três personagens, revisado em quatro ângulos no Godot.
+- Celeiro: entrada com E abre estoque disponível, reserva e total por produto.
+- Oficina rural: construção de $180 na tecla 9; bancada de melhorias transferida para ela.
+- Zeca: em H, escolha Irrigação e marque canteiros. Custa $2 por canteiro efetivamente regado.
+  Essa rotina substitui o trato do galinheiro até você atribuí-lo novamente.
+  Sem saldo ou passagem, Zeca pausa; feche janelas e use caminhada para ele trabalhar.
+- Save formato 6, compatível com os formatos anteriores e melhorias já compradas.
+
+## Ações da 0.9
 
 - Cabelo aparado sob a superfície curva do chapéu, incluindo as pontas das mechas.
 - Regador orientado pela alça, com recipiente em pé, inclinação de despejo e gotas saindo do bico.
@@ -34,7 +44,7 @@ Não há abertura de portões ou transporte até um depósito nesta etapa.
 
 ## Personagens e galinhas — corpos conectados
 
-A revisão 0.9.0 deixa Zeca mais corpulento, com barriga e tronco largos.
+A revisão 0.10.0 deixa Zeca mais corpulento, com barriga e tronco largos.
 Os dois modelos têm olhos cerca de um terço menores, íris castanha e pupilas
 reduzidas. Um morph facial fecha os olhos em 0,22 segundo; cada personagem
 pisca de forma independente, com pausas entre 2,5 e 5,5 segundos.
@@ -58,7 +68,7 @@ As patas usam pivôs; a galinha ainda não tem esqueleto completo para asas/pesc
 O conceito aprovado está em `art/concepts/characters-approved.png`; é uma imagem
 ilustrativa. As capturas de `tests/render_characters.gd` mostram os GLBs reais no
 Godot. Os fontes editáveis ficam em `art/source/farmer.blend` e `helper.blend`.
-O formato de salvamento e as regras da fazenda permanecem os mesmos da 0.6.
+As regras existentes são preservadas; o save 6 acrescenta a rotina de irrigação.
 
 ## Primeiros passos
 
@@ -93,7 +103,7 @@ O formato de salvamento e as regras da fazenda permanecem os mesmos da 0.6.
 | Cancelar ferramenta / fechar janela / menu | Esc |
 | Ferramentas da barra | 1–8 |
 
-**Pintura:** em construção, use Cuidar para selecionar celeiro, galinheiro, cerca ou placa;
+**Pintura:** em construção, use Cuidar para selecionar celeiro, galinheiro, oficina, cerca ou placa;
 escolha a parte e depois uma das sete cores no painel da direita. Celeiro e galinheiro
 têm paredes, telhado e portas independentes; cerca e placa têm a cor principal.
 Os acabamentos claros permanecem fixos. Pintura é gratuita.
@@ -113,19 +123,20 @@ removido antes da confirmação. Textos, cores e plantações permanecem intacto
 **Guia:** cada objetivo tem um botão que abre a ferramenta ou tela apropriada;
 as conquistas permanecem concluídas mesmo depois de colher ou remover estruturas.
 
-## Celeiro e primeira melhoria
+## Celeiro e oficina rural
 
-Selecione um celeiro com Cuidar ou pressione E de perto para abrir **Reserva e bancada**.
+Selecione um celeiro com Cuidar ou pressione E junto à porta para abrir **Estoque do celeiro**.
+A entrada abre um painel; ainda não há interior 3D explorável.
 Cada celeiro oferece 60 espaços, compartilhados entre todos os celeiros da fazenda.
 Guardar transfere todo o produto escolhido que couber; Retirar devolve toda a reserva
 daquele produto ao estoque. O estoque comum permanece sem limite neste protótipo.
 **Vender estoque não vende a reserva.** Retire produtos antes de entregar pedidos.
 Mover ou pintar um celeiro preserva os produtos guardados.
 
-Na bancada, $300 compram o regador melhorado, uma única vez. Regar um canteiro seco
+Construa uma **Oficina rural** por $180 usando a tecla 9. Na bancada da oficina, $300 compram o regador melhorado, uma única vez. Regar um canteiro seco
 também rega os quatro vizinhos imediatos, em cruz, se estiverem plantados e precisando
 de água. Funciona nas duas câmeras, sem atingir diagonais, colher ou replantar por você.
-A melhoria é permanente, inclusive depois de remover o celeiro vazio.
+A melhoria é permanente, inclusive depois de remover a oficina. Uma melhoria comprada em versões antigas continua válida.
 
 ## Galinhas e cuidados
 
@@ -225,8 +236,8 @@ entre tarefas, vários funcionários ou automação da lavoura nesta primeira en
 
 ## Limites assumidos do protótipo
 
-Esta é a versão **0.9.0**, destinada a validar o ciclo de jogo e a direção visual.
-O celeiro tem reserva e uma melhoria de ferramenta; não tem interior explorável.
+Esta é a versão **0.10.0**, destinada a validar o ciclo de jogo e a direção visual.
+O celeiro tem estoque e reserva; a oficina contém a melhoria de ferramenta. Não há interior explorável.
 Os traçados são retos, sem curvas ou desenho livre. Preços e tempos aguardam ajuste com partidas reais.
 Os cuidados das galinhas são por galinheiro; ainda não há reprodução, doenças,
 venda de animais ou outras espécies.
@@ -252,7 +263,7 @@ Salvamentos das versões 0.1, 0.2, 0.3, 0.4, 0.5 e 0.6 são aceitos; os objetivo
 construções, plantações e conquistas que ficaram registradas. A posição antiga
 de uma construção permanece salva se uma mudança de lugar for cancelada.
 Reserva, melhoria do regador e cores por parte também são salvas. O nome do arquivo
-continua `farm_v1.json`, com formato interno atualizado para 5; a migração preserva
+continua `farm_v1.json`, com formato interno atualizado para 6; a migração preserva
 dinheiro, produtos e construções. Galinheiros antigos recebem ração e água cheias,
 nomes iniciais e ninho vazio, preservando o progresso de produção e os ovos já
 no estoque. Nomes, suprimentos e ovos nos ninhos passam a ser salvos.
@@ -279,6 +290,8 @@ tools/build_assets.py Gerador reproduzível do kit original no Blender
 tools/build_feedback_assets.py Personagem articulado, regador e plantas
 tools/build_staff_assets.py Entrada de geração do Zeca
 tools/build_cartoon_characters.py Rostos e exportação dos personagens
+tools/character_hair.py Cabelo contínuo dos três personagens
+tools/build_workshop.py Oficina rural e bancada
 tools/character_body.py Corpo contínuo, esqueleto e pesos de deformação
 tools/build_chicken.py Galinha cartoon e pivôs das patas
 tools/build_trade_assets.py Quadro de encomendas no Blender
@@ -311,24 +324,25 @@ godot --headless --path . --script tests/test_v04.gd
 godot --headless --path . --script tests/test_v05.gd
 godot --headless --path . --script tests/test_v06.gd
 godot --headless --path . --script tests/test_v09.gd
+godot --headless --path . --script tests/test_v010.gd
 New-Item -ItemType Directory -Force test-results
 godot --path . --resolution 1440x900 --script tests/render_characters.gd
-godot --path . --resolution 1440x900 --fixed-fps 60 --quit-after 2400 -- --qa
+godot --path . --resolution 1440x900 --fixed-fps 60 --quit-after 3000 -- --qa
 godot --path . --resolution 960x640 --script tests/render_staff.gd
-New-Item -ItemType Directory -Force exports/windows-v0.9
+New-Item -ItemType Directory -Force exports/windows-v0.10
 godot --headless --path . --export-release 'Windows Desktop'
 ```
 
-O teste de integração usa apenas `qa_farm_v09.json`, nunca o salvamento real.
+O teste de integração usa apenas `qa_farm_v010.json`, nunca o salvamento real.
 Valida compra, colocação via controles do jogo, colheita, venda, pintura, texto,
 movimento, câmeras, gravação real, leitura e recuperação de backup.
 Também verifica movimento/cancelamento de construções, poses do personagem,
 rega, colheita, etapas visuais, botões do guia e remoção dos efeitos temporários.
 Na 0.3, testa entrada de mouse, confirmação/cancelamento de traçados, soltura sobre a
 interface, materiais por parte, reserva, remoção protegida e rega em área. Os testes
-da simulação somam 336 verificações. Na 0.4 também são validados nomes, suprimentos,
+da simulação somam 360 verificações. Na 0.4 também são validados nomes, suprimentos,
 coleta, migração, limites de produção, cliques em galinhas, pausa, movimentos,
-modelos visuais e humor. Na 0.5, verifica vendas digitadas, pedidos, reputação, pausas, vencimento e acesso ao quadro. Na 0.6, também testa contratação, cancelamento, custos, pausa, falta de saldo, seleção, dispensa e persistência do ajudante. Na 0.8, confere os corpos com skin, os 20 ossos, orientação da pose de repouso, rega e pivôs das galinhas. O teste visual precisa terminar com `V09_CHARACTER_OK`, `V06_INTEGRATION_OK`, `V05_INTEGRATION_OK`, `V04_INTEGRATION_OK`,
+modelos visuais e humor. Na 0.5, verifica vendas digitadas, pedidos, reputação, pausas, vencimento e acesso ao quadro. Na 0.6, também testa contratação, cancelamento, custos, pausa, falta de saldo, seleção, dispensa e persistência do ajudante. Na 0.8, confere os corpos com skin, os 20 ossos, orientação da pose de repouso, rega e pivôs das galinhas. O teste visual precisa terminar com `V010_INTEGRATION_OK`, `V09_CHARACTER_OK`, `V06_INTEGRATION_OK`, `V05_INTEGRATION_OK`, `V04_INTEGRATION_OK`,
 `V03_INTEGRATION_OK`, `SAVE_OK` e sem `ERROR` no log (não basta o código de saída).
 As capturas são geradas em `test-results/` e não entram no Git.
 O modo QA só é aceito por compilações de depuração/editor.

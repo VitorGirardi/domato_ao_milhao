@@ -257,6 +257,7 @@ print('ALL_ASSETS_COMPLETE')
 
 # The articulated character and action props supersede the original static farmer.
 import runpy
+runpy.run_path(str(ROOT / 'tools' / 'build_workshop.py'), run_name='__main__')
 if '--only-buildings' not in sys.argv:
     runpy.run_path(str(ROOT / 'tools' / 'build_feedback_assets.py'), run_name='__main__')
     runpy.run_path(str(ROOT / 'tools' / 'build_animal_assets.py'), run_name='__main__')

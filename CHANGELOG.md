@@ -1,5 +1,15 @@
 # Alterações
 
+## 0.10.0 — Estoque, oficina rural e irrigação
+
+- Cabelo contínuo sobre a cabeça dos três personagens, chapéus ajustados e revisão em quatro ângulos.
+- Celeiro abre estoque/reserva por produto pela porta; sem interior 3D nesta etapa.
+- Oficina rural modelada no Blender, construção de $180 e bancada de regador transferida para ela.
+- Zeca caminha até canteiros selecionados, anima a rega e cobra $2 somente ao concluir.
+- Irrigação substitui o trato do galinheiro; pausa por saldo, acesso bloqueado e remoção da última seleção.
+- Save 6 com migração dos formatos anteriores, mantendo melhorias já adquiridas.
+- Testes de menu, seleção, cobrança única, persistência, remoção, rota bloqueada e troca de rotina sem teleporte.
+
 ## 0.9.0 — Trato animado e Dona Lúcia
 
 - Cabelo contido sob a aba dos chapéus; corrigidas as pontas que atravessavam a superfície.

@@ -22,8 +22,11 @@ var staff_root:Node3D
 var staff_actor:FarmAvatar
 var staff_label:Label3D
 var staff_anchor:=""
+var staff_site:=""
 var staff_services:=-1
 var staff_motion:=FarmStaffMotion.new()
+var irrigation_motion:=FarmIrrigationMotion.new()
+var irrigation_feedback:=FarmFeedback.new()
 
 func _ready() -> void:
 	rng.seed = 24517
@@ -32,6 +35,9 @@ func _ready() -> void:
 	models["trade_board"]=load("res://assets/models/trade_board.glb")
 	models["helper"]=load("res://assets/models/helper.glb")
 	models["vendor"]=load("res://assets/models/vendor.glb")
+	models["workshop"]=load("res://assets/models/workshop.glb")
+	add_child(irrigation_feedback)
+	irrigation_feedback.setup(self)
 	add_child(structures)
 	add_child(border)
 	_environment()
@@ -324,7 +330,14 @@ func rebuild(state: FarmState) -> void:
 		else:
 			var visual := model(item.kind, root)
 			paint(visual,item)
-			if item.kind in ["barn", "coop", "fence", "sign"]:
+			if item.kind in ["barn","workshop"]:
+				var entry:=Label3D.new()
+				entry.text="CELEIRO • ESTOQUE\n[E] Entrar" if item.kind=="barn" else "OFICINA RURAL\n[E] Melhorias"
+				entry.position=Vector3(0,2.1,2.75 if item.kind=="barn" else 1.8)
+				entry.font_size=26
+				entry.pixel_size=0.008
+				root.add_child(entry)
+			if item.kind in ["barn", "coop", "workshop", "fence", "sign"]:
 				var body := StaticBody3D.new()
 				body.set_meta("item_index",i)
 				var shape := CollisionShape3D.new()
@@ -377,10 +390,15 @@ func update_staff(state: FarmState, delta: float) -> void:
 		staff_root.add_child(staff_label)
 	staff_root.visible=true
 	var item:Dictionary=state.items[int(worker.coop)]
-	var anchor:="%d:%s:%s:%s"%[worker.coop,item.x,item.z,item.turn]
+	var site:="%d:%s:%s:%s"%[worker.coop,item.x,item.z,item.turn]
+	var anchor:=site+str(state.irrigation.enabled)
 	if anchor!=staff_anchor:
 		staff_anchor=anchor
 		staff_motion.reset(int(worker.eggs))
+		irrigation_motion.reset()
+		staff_actor.action_time=0
+	if staff_site!=site or not staff_motion.walkable(staff_root.position,state):
+		staff_site=site
 		var origin:=Vector3(item.x,0,item.z)
 		for attempt in range(160):
 			var angle:float=int(item.turn)*PI/2+attempt*TAU/16
@@ -396,9 +414,11 @@ func update_staff(state: FarmState, delta: float) -> void:
 			staff_motion.pending_eggs=worker.eggs>staff_motion.last_eggs
 		staff_motion.last_eggs=int(worker.eggs)
 		staff_services=int(worker.services)
-	if delta>0: staff_motion.update(self,state,delta)
+	if delta>0:
+		if state.irrigation.enabled: irrigation_motion.update(self,state,delta)
+		else: staff_motion.update(self,state,delta)
 	var nest_access:=Vector3(item.x,0,item.z)+Vector3(1.25,0,2.6).rotated(Vector3.UP,item.turn*PI/2)
-	state.staff_accessible=staff_root.position.distance_to(nest_access)<0.2 and staff_motion.walkable(nest_access,state)
+	state.staff_accessible=not state.irrigation.enabled and staff_root.position.distance_to(nest_access)<0.2 and staff_motion.walkable(nest_access,state)
 
 func _build_coop(index: int, item: Dictionary, root: Node3D, state: FarmState) -> void:
 	var feeder:=model("feeder",root,Vector3(-1.4,0,1.55))

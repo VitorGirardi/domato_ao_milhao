@@ -1,12 +1,32 @@
-# Como testar a versão 0.9.0
+# Como testar a versão 0.10.0
 
 Este roteiro cobre os **corpos conectados**, as **galinhas novas**, o Zeca e as encomendas.
-Abra o executável da pasta `windows-v0.9` e escolha **Voltar para minha fazenda**.
+Abra o executável da pasta `windows-v0.10` e escolha **Voltar para minha fazenda**.
 A versão nova aceita a fazenda anterior; não precisa começar outra.
 
 **Regra principal:** o tempo só avança caminhando, com as janelas fechadas.
 Use **TAB** até aparecer o modo de caminhada. Construção e qualquer janela
 pausam plantas, galinhas, ajudante e prazos de encomendas.
+
+## Novidades da 0.10 — teste primeiro
+
+1. Veja o protagonista, Zeca e Dona Lúcia de frente, perfil e costas. Confira a linha do cabelo,
+   as laterais junto às orelhas e o encaixe sob o chapéu; observe também as piscadas.
+2. Caminhe até a porta do celeiro e pressione **E**. O painel mostra disponível, reserva e total
+   de cada produto. Guarde e retire um produto; vender não deve consumir a reserva.
+   A entrada abre esse menu de estoque; ainda não existe interior 3D explorável.
+3. Em construção (TAB), pressione **9** e coloque a **Oficina rural ($180)**.
+   Aproxime-se da entrada em caminhada e pressione E para abrir a bancada.
+   O regador melhorado custa $300; se já foi comprado, permanece instalado, sem nova cobrança.
+4. Com Zeca contratado, abra **H → Irrigação**. Marque apenas os canteiros desejados e ative.
+   Ativar não cobra: cada canteiro seco e plantado custa **$2 quando a rega termina**.
+   Essa rotina substitui o trato das galinhas. Para voltar, atribua um galinheiro pelo painel H.
+5. Feche as janelas, use TAB para caminhar e observe Zeca ir até cada canteiro e usar o regador.
+   Canteiros molhados, vazios ou maduros não cobram. A melhoria em área é da rega manual.
+6. Abra H e pause/retome. Janelas e construção também pausam. Sem $2 ou caminho livre,
+   ele pausa sem cobrar; resolva o motivo e retome em H. Remover todos os canteiros escolhidos pausa o ajudante.
+7. Salve com F5 e reabra: confira seleção e gastos. Saves antigos são aceitos, com irrigação desligada.
+   Não há irrigação nem cobrança com o jogo fechado. Não abra duas versões simultaneamente.
 
 ## 0. Correções e rotina da 0.9
 
@@ -22,7 +42,7 @@ pausam plantas, galinhas, ajudante e prazos de encomendas.
 
 ## Conferir os personagens novos
 
-1. Abra a **0.9.0** e retome sua fazenda. O protagonista já usa o modelo novo.
+1. Abra a **0.10.0** e retome sua fazenda. O protagonista já usa o modelo novo.
 2. Use TAB para caminhar. Segure o botão direito e gire a câmera para ver o rosto;
    aproxime com a roda do mouse. Confira ombros ligados ao tronco, cintura e pernas.
    Os braços não devem parecer peças soltas.
@@ -71,7 +91,7 @@ depois de aproximadamente 4–5 minutos de caminhada. Ele atende **um galinheiro
 3. Se tiver dois galinheiros, escolha o outro na lista e clique em
    **Atender este galinheiro**. A troca é grátis e reinicia a checagem de 15 segundos.
 4. Para testar salvamento com calma, pause o Zeca, feche a janela, pressione **F5**
-   e saia pelo menu. Abra novamente a **0.9.0**: ele continua contratado e pausado,
+   e saia pelo menu. Abra novamente a **0.10.0**: ele continua contratado e pausado,
    com os mesmos totais e galinheiro. Jogo fechado não gera serviço nem cobrança.
 5. **Dispensar…** abre uma confirmação. **Voltar sem alterar** cancela a dispensa.
    Confirmar é grátis, preserva os produtos e encerra o trabalho. Contratação

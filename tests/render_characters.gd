@@ -83,6 +83,19 @@ func render_preview() -> void:
 	await process_frame
 	await RenderingServer.frame_post_draw
 	root.get_texture().get_image().save_png("res://test-results/characters-v09-angle.png")
+	for i in range(3):
+		for actor in actors: actor.root.visible=false
+		actors[i].root.visible=true
+		var center:=actors[i].root.position+Vector3(0,2.1,0)
+		for angle in range(4):
+			camera.position=center+Vector3(sin(angle*PI/2)*2.8,.12,cos(angle*PI/2)*2.8)
+			camera.look_at(center)
+			await process_frame
+			await RenderingServer.frame_post_draw
+			root.get_texture().get_image().save_png("res://test-results/hair-%d-%d.png"%[i,angle])
+	for actor in actors: actor.root.visible=true
+	camera.position=Vector3(3.1,2.0,9.1)
+	camera.look_at(Vector3(0,1.3,0))
 	# Deliberately bend elbow and knee, and raise the opposite arm to inspect seams.
 	for animator in actors:
 		animator.pose_bone("UpperArm.R",Vector3(-0.65,0,-0.28))
@@ -126,7 +139,7 @@ func render_preview() -> void:
 	await process_frame
 	await RenderingServer.frame_post_draw
 	root.get_texture().get_image().save_png("res://test-results/chickens-v09.png")
-	for orphan in [world.structures,world.border,world.build_grid,world.selection]: orphan.free()
+	for orphan in [world.structures,world.border,world.build_grid,world.selection,world.irrigation_feedback]: orphan.free()
 	world.free()
 	print("CHARACTER_RENDER_OK: three skinned GLBs, 20 bones each, front/angle/bent joints, upright watering can, collection pose and Blink")
 	quit()
