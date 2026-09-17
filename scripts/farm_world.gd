@@ -4,6 +4,7 @@ extends Node3D
 const TRADE_BOARD_AT:=Vector3(-22.1,0,15.4)
 
 var models: Dictionary = {}
+var cows:Array[Dictionary]=[]
 var structures := Node3D.new()
 var border := Node3D.new()
 var item_nodes: Array[Node3D] = []
@@ -40,6 +41,8 @@ func _ready() -> void:
 	models["trade_board"]=load("res://assets/models/trade_board.glb")
 	models["helper"]=load("res://assets/models/helper.glb")
 	models["vendor"]=load("res://assets/models/vendor.glb")
+	models["corral"]=load("res://assets/models/corral.glb")
+	models["cow"]=load("res://assets/models/cow.glb")
 	models["workshop"]=load("res://assets/models/workshop.glb")
 	for kind in ["barn","coop","workshop"]: models[kind+"_level2"]=load("res://assets/models/%s_level2.glb"%kind)
 	add_child(irrigation_feedback)
@@ -299,6 +302,7 @@ func rebuild(state: FarmState) -> void:
 		node.free()
 	item_nodes.clear()
 	chickens.clear()
+	cows.clear()
 	coop_views.clear()
 	for i in range(state.items.size()):
 		var item: Dictionary = state.items[i]
@@ -348,17 +352,22 @@ func rebuild(state: FarmState) -> void:
 				entry.font_size=26
 				entry.pixel_size=0.008
 				root.add_child(entry)
-			if item.kind in ["barn", "coop", "workshop", "fence", "sign"]:
+			if item.kind in ["barn", "coop", "workshop", "corral", "fence", "sign"]:
 				var body := StaticBody3D.new()
 				body.set_meta("item_index",i)
 				var shape := CollisionShape3D.new()
 				var box_shape := BoxShape3D.new()
 				var size: Vector2 = FarmState.ITEMS[item.kind].size
-				var height: float = 1.05 if item.kind=="fence" else (1.8 if item.kind=="sign" else (2.9 if item.kind=="barn" else (2.07 if item.kind=="coop" else 2.4)))
+				var height: float = 1.05 if item.kind in ["fence","corral"] else (1.8 if item.kind=="sign" else (2.9 if item.kind=="barn" else (2.07 if item.kind=="coop" else 2.4)))
 				box_shape.size = Vector3(size.x * 0.85, height, size.y * 0.82)
 				shape.shape = box_shape
 				shape.position.y = height / 2
 				body.add_child(shape)
+				if item.kind=="corral":
+					box_shape.size=Vector3(7.5,1.1,.18); shape.position=Vector3(0,.55,2.7)
+					for wall in [[Vector3(0,.55,-2.7),Vector3(7.5,1.1,.18)],[Vector3(-3.7,.55,0),Vector3(.18,1.1,5.5)],[Vector3(3.7,.55,0),Vector3(.18,1.1,5.5)],[Vector3(-2,2.53,-1.55),Vector3(3,.15,2.2)],[Vector3(2.3,.3,-1.9),Vector3(1.7,.6,.65)],[Vector3(2.4,.32,1.45),Vector3(1.35,.64,.73)],[Vector3(-2,.42,-1.7),Vector3(1.1,.84,.83)]]:
+						var part:=CollisionShape3D.new(); var volume:=BoxShape3D.new()
+						volume.size=wall[1]; part.shape=volume; part.position=wall[0]; body.add_child(part)
 				if item.kind in ["barn","coop"]:
 					var barn_roof:bool=item.kind=="barn"
 					var half_width:=2.825 if barn_roof else 1.575
@@ -393,6 +402,23 @@ func rebuild(state: FarmState) -> void:
 				label.modulate = Color("fff2d3")
 				label.outline_size = 0
 				root.add_child(label)
+			if item.kind=="corral":
+				var cow:=model("cow",root)
+				cow.visible=item.dairy.owned
+				cows.append({"node":cow,"index":i,"head":cow.find_child("CowHead",true,false),"tail":cow.find_child("CowTail",true,false),"feed":visual.find_child("Feed",true,false),"water":visual.find_child("Water",true,false)})
+				var bones:Dictionary={}
+				for key in ["CowHead","CowTail","LegFL","LegFR","LegBL","LegBR"]:
+					var joint:=cow.find_child(key,true,false) as Node3D
+					if joint: bones[key]={"node":joint,"rest":joint.basis}
+				cows[-1].bones=bones
+				var cow_body:=StaticBody3D.new(); cow_body.name="CowCollision"
+				cow_body.collision_layer=1 if item.dairy.owned else 0
+				cow_body.set_meta("item_index",i)
+				var cow_shape:=CollisionShape3D.new();var cow_volume:=BoxShape3D.new()
+				cow_volume.size=Vector3(1.1,1.65,2.25);cow_shape.shape=cow_volume;cow_shape.position=Vector3(0,1,.12)
+				cow_body.add_child(cow_shape);cow.add_child(cow_body)
+				cows[-1].body=cow_body
+
 			if item.kind == "coop":
 				_build_coop(i,item,root,state)
 	update_crops(state)
@@ -647,6 +673,23 @@ func _tint_model(node: Node, color: Material) -> void:
 
 func animate(delta: float, player_pos: Vector3, state: FarmState, event: String = "") -> void:
 	clock += delta
+	for cow in cows:
+		var data:Dictionary=state.items[cow.index].dairy
+		cow.node.visible=data.owned
+		cow.body.collision_layer=1 if data.owned else 0
+		if not data.owned: continue
+		cow.node.position=Vector3(sin(clock*.22)*.45,0,cos(clock*.22)*.35)
+		cow.node.rotation.y=sin(clock*.22)*.3
+		for key in cow.bones:
+			var bone:Dictionary=cow.bones[key]
+			var axis:=Vector3.RIGHT
+			var angle:=sin(clock*1.3+(0 if key in ["LegFL","LegBR"] else PI))*.08
+			if key=="CowHead": angle=sin(clock*.65)*.10
+			if key=="CowTail": axis=Vector3.UP; angle=sin(clock*2)*.18
+			bone.node.basis=bone.rest*Basis(axis,angle)
+		if cow.feed: cow.feed.visible=data.food>0
+		if cow.water: cow.water.visible=data.water>0
+
 	for chicken in chickens:
 		var hen: Node3D = chicken.node
 		var phase: float = chicken.phase

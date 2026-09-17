@@ -8,6 +8,7 @@ const CROPS = {
 	"corn": {"name": "Milho", "seconds": 62.0, "seed": 8, "price": 24, "yield": 3}
 }
 const ITEMS = {
+	"corral": {"name":"Curral","cost":650,"size":Vector2(8,6)},
 	"plot": {"name": "Canteiro", "cost": 20, "size": Vector2(2, 2)},
 	"barn": {"name": "Celeiro", "cost": 240, "size": Vector2(6, 6)},
 	"workshop": {"name": "Oficina rural", "cost": 180, "size": Vector2(4,4)},
@@ -33,6 +34,7 @@ var center: Vector2 = Vector2(4, -2)
 var land_size: float = 24.0
 var items: Array = []
 var inventory: Dictionary = {"carrot": 0, "wheat": 0, "corn": 0, "egg": 0}
+var milk_stock:int=0
 var elapsed: float = 0.0
 var revenue: int = 0
 var harvests: int = 0
@@ -338,6 +340,8 @@ func water_targets(index: int) -> Array:
 
 func remove_item(index: int) -> String:
 	if index<0 or index>=items.size(): return "Selecione uma construção."
+	if items[index].kind=="corral" and (items[index].dairy.owned or items[index].dairy.milk>0):
+		return "Curral ocupado: use Mover para preservar a vaca e o leite."
 	if items[index].kind=="coop" and items[index].flock.nest>0:
 		return "Colete os ovos antes de remover o galinheiro."
 	if items[index].kind=="barn" and reserve_count()>reserve_capacity()-FarmProgression.reserve_slots(items[index]):
@@ -493,6 +497,7 @@ func place(kind: String, at: Vector2, turn: int, crop: String = "carrot") -> Str
 		"level":1, "paint": 0, "text": "Aqui o fiado só amanhã", "crop": crop,
 		"growth": 0.0, "watered": false, "planted": kind == "plot", "egg_time": 0.0})
 	if kind=="coop": items[-1].flock=FarmAnimals.fresh()
+	if kind=="corral": items[-1].dairy=FarmDairy.fresh()
 	refresh_journey()
 	return ""
 
@@ -544,6 +549,7 @@ func tick(delta: float) -> bool:
 		for item in items:
 			if item.kind=="plot" and item.planted and item.watered:
 				item.growth=minf(1.0,float(item.growth)+span/float(CROPS[item.crop].seconds))
+			if item.kind=="corral": FarmDairy.tick(item.dairy,span)
 			if item.kind=="coop":
 				if FarmAnimals.tick(item,span): eggs=true
 		if active:
@@ -556,13 +562,14 @@ func tick(delta: float) -> bool:
 	return eggs
 
 func sale_value() -> int:
-	var total: int = int(inventory.egg) * 10
+	var total: int = int(inventory.egg) * 10 + milk_stock*FarmDairy.MILK_PRICE
 	for key in CROPS:
 		total += int(inventory[key]) * int(CROPS[key].price)
 	return total
 
 func sell_all() -> int:
 	var total := sale_value()
+	milk_stock=0
 	money += total
 	revenue += total
 	for key in inventory:
@@ -594,7 +601,7 @@ func expand() -> String:
 	return ""
 
 func serialize() -> Dictionary:
-	return {"version": 9, "cultivation":cultivation.duplicate(true), "field_staff":field_staff.duplicate(true), "professional_watering":professional_watering, "irrigation":irrigation.duplicate(true), "money": money, "claimed": claimed,
+	return {"version": 10, "milk_stock":milk_stock, "cultivation":cultivation.duplicate(true), "field_staff":field_staff.duplicate(true), "professional_watering":professional_watering, "irrigation":irrigation.duplicate(true), "money": money, "claimed": claimed,
 		"center": [center.x, center.y], "land_size": land_size,
 		"items": items.duplicate(true), "inventory": inventory.duplicate(),
 		"elapsed": elapsed, "revenue": revenue, "harvests": harvests,
@@ -603,8 +610,10 @@ func serialize() -> Dictionary:
 
 func restore(data: Variant) -> bool:
 	# Validate before mutating live state. Invalid files never partially replace it.
-	if not data is Dictionary or not _number(data.get("version")) or data.version<1 or data.version>9 or float(data.version)!=floorf(float(data.version)):
+	if not data is Dictionary or not _number(data.get("version")) or data.version<1 or data.version>10 or float(data.version)!=floorf(float(data.version)):
 		return false
+	if data.version>=10 and not data.has("milk_stock"): return false
+	if not FarmCultivation.integer(data.get("milk_stock",0)): return false
 	for key in ["money", "land_size", "elapsed", "revenue", "harvests"]:
 		if not _number(data.get(key)) or float(data[key]) < 0:
 			return false
@@ -661,6 +670,7 @@ func restore(data: Variant) -> bool:
 		if not _number(level) or level<1 or level>2 or float(level)!=floorf(float(level)): return false
 		if data.version>=7 and not item.has("level"): return false
 		if level==2 and not FarmProgression.UPGRADES.has(item.kind): return false
+		if item.kind=="corral" and (data.version<10 or not FarmDairy.valid(item.get("dairy"))): return false
 		if item.kind=="barn": barn_count+=FarmProgression.reserve_slots(item)
 		if item.kind=="coop":
 			if data.version>=3 and not item.has("flock"): return false
@@ -710,6 +720,7 @@ func restore(data: Variant) -> bool:
 		if item.kind=="coop":
 			if not item.has("flock"): item.flock=FarmAnimals.fresh()
 			item.flock.nest=int(item.flock.nest)
+	milk_stock=int(data.get("milk_stock",0))
 	inventory = data.inventory.duplicate()
 	for key in inventory:
 		inventory[key] = int(inventory[key])

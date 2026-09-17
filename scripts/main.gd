@@ -51,7 +51,7 @@ var picked_trade_board:=false
 
 func _ready() -> void:
 	qa_mode = OS.is_debug_build() and "--qa" in OS.get_cmdline_user_args()
-	if qa_mode: save_path="user://qa_farm_v013.json"
+	if qa_mode: save_path="user://qa_farm_v014.json"
 	get_tree().auto_accept_quit = false
 	_inputs()
 	world = FarmWorld.new()
@@ -273,6 +273,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_7: _action("tool:path")
 			KEY_8: _action("tool:expand")
 			KEY_9: _action("tool:workshop")
+			KEY_0: _action("tool:corral")
 	if not hud.modal_kind.is_empty():
 		return
 	if event is InputEventMouseMotion and Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT):
@@ -486,8 +487,8 @@ func _find_item(at: Vector2) -> int:
 
 func _distance_to_item(i: int) -> float:
 	var item:Dictionary=state.items[i]
-	if item.kind in ["barn","workshop"]:
-		var door:=Vector3(item.x,0,item.z)+Vector3(0,0,3.0 if item.kind=="barn" else 1.9).rotated(Vector3.UP,item.turn*PI/2)
+	if item.kind in ["barn","workshop","corral"]:
+		var door:=Vector3(item.x,0,item.z)+Vector3(0,0,3.0 if item.kind in ["barn","corral"] else 1.9).rotated(Vector3.UP,item.turn*PI/2)
 		return Vector2(player.position.x-door.x,player.position.z-door.z).length()
 	var area:=state.item_rect(item.kind,Vector2(item.x,item.z),item.turn)
 	var position_2d:=Vector2(player.position.x,player.position.z)
@@ -498,13 +499,13 @@ func _nearest() -> int:
 	nearby_hen=-1
 	var best:=-1
 	var distance:=2.6
-	if selected>=0 and selected<state.items.size() and state.items[selected].kind in ["plot","sign","barn","coop","workshop"]:
+	if selected>=0 and selected<state.items.size() and state.items[selected].kind in ["plot","sign","barn","coop","workshop","corral"]:
 		var current_distance:=_distance_to_item(selected)
 		if current_distance<distance:
 			best=selected
 			distance=current_distance
 	for i in range(state.items.size()):
-		if state.items[i].kind not in ["plot","sign","barn","coop","workshop"]: continue
+		if state.items[i].kind not in ["plot","sign","barn","coop","workshop","corral"]: continue
 		var d:=_distance_to_item(i)
 		if d<distance and (best<0 or d+0.05<distance):
 			best=i
@@ -528,6 +529,7 @@ func _nearby_context() -> Dictionary:
 	match item.kind:
 		"barn": context.text="Abrir celeiro"
 		"coop": context.text="Cuidar das galinhas"
+		"corral": context.text="Cuidar da vaca"
 		"workshop": context.text="Abrir oficina"
 		"sign": context.text="Editar placa"
 		"plot":
@@ -601,8 +603,25 @@ func _tend_selected() -> void:
 	elif item.kind=="barn": hud.barn(state,selected)
 	elif item.kind=="workshop": hud.workshop(state,selected)
 	elif item.kind=="coop": hud.coop(state,selected,selected_hen)
+	elif item.kind=="corral": FarmDairyHUD.show(hud,state,selected)
 
 func _action(value: String) -> void:
+	if value=="milk_market":
+		FarmDairyHUD.stock(hud,state)
+		return
+	if value=="sell_milk":
+		var earned:=FarmDairy.sell(state,int(hud.milk_quantity.value))
+		FarmDairyHUD.stock(hud,state); hud.toast("Leite vendido · +$%d"%earned); _update_ui()
+		return
+	if value.begins_with("dairy:"):
+		var act:=value.get_slice(":",1)
+		if act=="review": FarmDairyHUD.confirm(hud,state,selected); return
+		if act=="back": FarmDairyHUD.show(hud,state,selected); return
+		var error:=FarmDairy.care(state,selected,act)
+		FarmDairyHUD.show(hud,state,selected)
+		hud.toast(error if not error.is_empty() else {"buy":"Mimosa chegou ao curral!","milk":"Leite guardado no estoque","food":"Ração reposta","water":"Água fresquinha"}.get(act,"Pronto"))
+		world.animate(0,player.position,state); _update_ui()
+		return
 	if value=="nearby_interact":
 		_interact_nearest()
 		return
@@ -1205,6 +1224,7 @@ func _qa() -> void:
 	await _qa_crew()
 	await _qa_v012()
 	await _qa_v013()
+	await _qa_v014()
 	var restored:=FarmState.new()
 	assert(restored.restore(JSON.parse_string(JSON.stringify(state.serialize()))))
 	assert(restored.items.size()==state.items.size())
@@ -2184,3 +2204,45 @@ func _qa_v013() -> void:
 	assert(state.restore(previous)); world.rebuild(state); build_mode=true
 	_update_ui()
 	print("V013_INTEGRATION_OK: compact HUD, nearby exact target, water/harvest/seed actions, growing disabled, objectives pause, alert destinations, camera modes")
+
+func _qa_v014() -> void:
+	var previous:=state.serialize()
+	state=FarmState.new(); state.claim(Vector2(4,-2)); state.money=10000
+	assert(state.place("corral",Vector2(4,0),0).is_empty())
+	world.rebuild(state); build_mode=true; selected=0
+	FarmDairyHUD.show(hud,state,0)
+	var money:=state.money
+	_action("dairy:review"); _action("dairy:back")
+	assert(state.money==money and not state.items[0].dairy.owned)
+	await _qa_ui_capture("corral-buy-v014")
+	_action("dairy:review"); _action("dairy:buy")
+	assert(state.items[0].dairy.owned and state.money==money-480 and world.cows.size()==1)
+	var frozen:=state.serialize();_process(60);assert(state.serialize()==frozen)
+	state.tick(60)
+	_action("dairy:milk");assert(state.milk_stock==2)
+	_action("milk_market")
+	hud.milk_quantity.value=1;money=state.money
+	_action("sell_milk");assert(state.milk_stock==1 and state.money==money+18)
+	await _qa_ui_capture("milk-stock-v014")
+	_action("close");state.tick(240)
+	FarmDairyHUD.show(hud,state,0)
+	await _qa_ui_capture("corral-menu-v014")
+	_action("close");build_mode=true
+	focus=Vector3(4,0,0);yaw=.5;pitch=.62;build_distance=14;_update_camera(1,true)
+	hud.world_hud.visible=false
+	feedback.visible=false; world.irrigation_feedback.visible=false
+	for i in range(90):world.animate(1.0/60,player.position,state)
+	await _qa_ui_capture("corral-world-v014")
+	feedback.visible=true; world.irrigation_feedback.visible=true
+	assert(world.cows[0].head and world.cows[0].tail)
+	await get_tree().physics_frame
+	var ray:=PhysicsRayQueryParameters3D.create(Vector3(1,4,1),Vector3(1,-1,1),1)
+	var hit:=get_world_3d().direct_space_state.intersect_ray(ray)
+	assert(not hit.is_empty() and hit.position.y<.2,"Corral interior has no invisible raised floor")
+	build_mode=false;player.position=Vector3(4,0,4.0);_update_ui()
+	assert(_nearby_context().text=="Cuidar da vaca")
+	_interact_nearest();assert(hud.modal_kind=="dairy")
+	var saved:=state.serialize();assert(state.restore(JSON.parse_string(JSON.stringify(saved))))
+	assert(state.milk_stock==1 and state.items[0].dairy.milk==8)
+	_action("close");assert(state.restore(previous));world.rebuild(state);build_mode=true;_update_ui()
+	print("V014_INTEGRATION_OK: cow purchase/cancel, menu pause, milk collection/sale, real assets, nearby E, persistence")

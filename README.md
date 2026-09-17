@@ -5,13 +5,13 @@
 Protótipo jogável de um tycoon de fazenda 3D estilizado para Windows, em português.
 Godot 4.7.2 + modelos originais feitos no Blender 5.2.1. Campanha solo e offline.
 
-**Versão atual: 0.13.0.** Veja [as prioridades](ROADMAP.md) e [as novidades](CHANGELOG.md).
+**Versão atual: 0.14.0.** Veja [as prioridades](ROADMAP.md) e [as novidades](CHANGELOG.md).
 
 Veja o [roteiro de teste manual](COMO_TESTAR.md), incluindo encomendas e vendas da 0.5.
 
 ## Jogar
 
-O executável local fica em `exports/windows-v0.13/DoMatoAoMilhao.exe` depois da exportação.
+O executável local fica em `exports/windows-v0.14/DoMatoAoMilhao.exe` depois da exportação.
 Ele abre diretamente, sem instalar Godot ou Blender. Os binários não são enviados ao Git.
 
 Para executar a partir do código:
@@ -19,7 +19,22 @@ Para executar a partir do código:
 2. Aguarde a importação dos modelos.
 3. Pressione **F5** para jogar. O cenário é montado pelos scripts durante a execução.
 
-## Novidades da 0.13
+## Novidades da 0.14
+
+- **Curral ($650)**, na tecla **0** em construção. Ocupa 8 × 6 metros e tem uma vaga.
+- Compre **Mimosa ($480)** pelo menu do curral; começa com ração e água.
+- Modelos originais Blender, movimentos de cabeça, cauda e patas; cerca, abrigo e cochos.
+- Produção de **2 L a cada 60 s**, com água e ração. Capacidade de 8 L; ao encher,
+  colete para retomar. Sem suprimentos, a produção para, sem morte da vaca.
+- Repor ração custa até $12; água grátis. Tempo só avança em caminhada, menus fechados.
+- Leite coletado vai a um estoque próprio, acessível no curral, celeiro e armazém.
+  Venda por quantidade a **$18/L**, ou junto com **Vender tudo**. Nesta etapa leite não tem reserva.
+- Mover preserva a vaca e o leite. Remover curral ocupado é bloqueado para evitar perda.
+- Save **10** migra fazendas antigas, mantendo os demais sistemas.
+- Na fila: **roda de emotes, dancinhas engraçadas e emojis do personagem**.
+  Depois: queijaria, encomendas de queijo e automação das vacas.
+
+## Recursos da 0.13
 
 - HUD de caminhada compacto: relógio, saldo, objetivo recolhido e atalhos pequenos.
 - Ação próxima destacada, com o mesmo alvo do E: celeiro, oficina, galinhas, placa,
@@ -284,11 +299,11 @@ entre tarefas, vários funcionários ou automação da lavoura nesta primeira en
 
 ## Limites assumidos do protótipo
 
-Esta é a versão **0.13.0**, destinada a validar o ciclo de jogo e a direção visual.
+Esta é a versão **0.14.0**, destinada a validar o ciclo de jogo e a direção visual.
 O celeiro tem estoque e reserva; a oficina contém a melhoria de ferramenta. Não há interior explorável.
 Os traçados são retos, sem curvas ou desenho livre. Preços e tempos aguardam ajuste com partidas reais.
 Os cuidados das galinhas são por galinheiro; ainda não há reprodução, doenças,
-venda de animais ou outras espécies.
+venda de animais. A 0.14 acrescenta uma vaca por curral.
 O comércio tem preços fixos e fica acessível pela interface, além do armazém no mapa.
 Os três vizinhos aparecem como perfis e encomendas; ainda não têm ranchos exploráveis nem simulação econômica independente.
 O personagem tem animações procedurais de caminhada e ações. As galinhas tentam
@@ -311,7 +326,7 @@ Salvamentos das versões 0.1, 0.2, 0.3, 0.4, 0.5 e 0.6 são aceitos; os objetivo
 construções, plantações e conquistas que ficaram registradas. A posição antiga
 de uma construção permanece salva se uma mudança de lugar for cancelada.
 Reserva, melhoria do regador e cores por parte também são salvas. O nome do arquivo
-continua `farm_v1.json`, com formato interno atualizado para 9; a migração preserva
+continua `farm_v1.json`, com formato interno atualizado para 10; a migração preserva
 dinheiro, produtos e construções. Galinheiros antigos recebem ração e água cheias,
 nomes iniciais e ninho vazio, preservando o progresso de produção e os ovos já
 no estoque. Nomes, suprimentos e ovos nos ninhos passam a ser salvos.
@@ -381,7 +396,7 @@ New-Item -ItemType Directory -Force test-results
 godot --path . --resolution 1440x900 --script tests/render_characters.gd
 godot --path . --resolution 1440x900 --fixed-fps 60 --quit-after 4500 -- --qa
 godot --path . --resolution 960x640 --script tests/render_staff.gd
-New-Item -ItemType Directory -Force exports/windows-v0.13
+New-Item -ItemType Directory -Force exports/windows-v0.14
 godot --headless --path . --export-release 'Windows Desktop'
 ```
 
@@ -410,3 +425,5 @@ Godot: licença MIT, incluída em `GODOT_LICENSE.txt`; [licenças de terceiros d
 Blender é a ferramenta de autoria dos modelos; não precisa estar instalado para jogar.
 
 Teste da lavoura: `godot --headless --path . --script tests/test_v012.gd` (35 verificações).
+
+Teste do curral: `godot --headless --path . --script tests/test_v014.gd` (26 verificações).

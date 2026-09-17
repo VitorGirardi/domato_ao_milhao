@@ -1,9 +1,28 @@
-# Como testar a versão 0.13.0
+# Como testar a versão 0.14.0
 
 Extraia o ZIP e abra `DoMatoAoMilhao.exe`. Escolha **Voltar para minha fazenda**.
 A versão aceita a partida anterior. Não precisa começar outra.
 
-## HUD da caminhada — teste primeiro
+## Curral — teste primeiro
+
+1. Em **TAB → construção**, aperte **0** ou clique em Curral. Custa **$650** e ocupa 8 × 6 m.
+2. Volte à caminhada. Perto do portão, pressione **E · Cuidar da vaca**.
+3. Clique **Comprar vaca · $480**. Confira os custos; voltar não cobra. Confirme para receber Mimosa.
+4. Feche o menu e fique em caminhada por **60 segundos**. Observe a vaca mexer cabeça, patas e cauda.
+5. Abra o curral: devem existir **2 L** prontos. **Coletar** transfere tudo para o estoque de leite.
+6. Abra **Estoque de leite** ou **F → Leite**. Venda 1 L por **$18** e confira o restante.
+   O celeiro também tem acesso ao leite. **Vender tudo** inclui o leite coletado, mas não o que ficou no curral.
+7. Deixe acumular **8 L**: produção pausa até coletar. Reponha água e ração pelos cartões.
+   Água é grátis; ração custa até $12 conforme o que faltar. Sem água ou comida, não produz.
+8. Mova o curral na câmera de construção. A vaca, os suprimentos e o leite devem permanecer.
+   Curral ocupado não pode ser removido nesta versão; use Mover.
+9. Salve com F5 e reabra. Compra, cuidados, leite pronto e estoque permanecem.
+   Save novo: **formato 10**. Depois de salvar na 0.14, use esta versão ou posterior.
+
+A coleta é pelo menu nesta etapa; ordenha manual animada, queijaria e ajudante das vacas vêm depois.
+Dancinhas e emojis estão na fila, ainda não há botão de emotes nesta versão.
+
+## HUD da caminhada
 
 1. Use TAB para caminhar: grandes painéis somem; permanecem horário, saldo, objetivo e atalhos.
 2. Aproxime-se do celeiro: aparece **E · Abrir celeiro**. Aperte E ou clique nessa ação.
@@ -53,7 +72,7 @@ A versão aceita a partida anterior. Não precisa começar outra.
 9. F5 salva. Feche e reabra para conferir culturas, tarefas, orçamento, relatório e treinamento.
    Sem saldo, só o trabalhador impedido pausa; sem acesso, libere a passagem e retome.
 
-Save formato **9**. Depois de salvar na 0.12, continue nela ou em versão posterior.
+Save formato **10**. Depois de salvar na 0.14, continue nela ou em versão posterior.
 Testes automáticos usam partida isolada e não alteram a fazenda real.
 Não há trabalho ou cobrança com menus abertos, em construção ou com o jogo fechado.
 

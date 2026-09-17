@@ -1,5 +1,14 @@
 # Alterações
 
+## 0.14.0 — Curral e leite
+
+- Curral com uma vaga, compra da Mimosa, ração, água e leite.
+- Modelos Blender originais e movimentos procedurais da vaca; colisões nas cercas/cochos.
+- Coleta, estoque próprio, venda parcial e venda geral de leite por $18/L.
+- Proteção contra compra/coleta duplicada, venda excessiva e remoção do curral ocupado.
+- Save 10, migração, preservação ao mover e testes de economia e interação.
+- Dancinhas e emojis registrados na fila, antes da queijaria.
+
 ## 0.13.0 — Mais fazenda na tela
 
 - HUD compacto na caminhada, objetivo sob demanda e controles discretos.

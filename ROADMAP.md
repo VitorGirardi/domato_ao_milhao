@@ -165,9 +165,27 @@ Expressões animadas e personalização de roupas ficam para outra etapa.
 - [x] Revisão visual, integração e teste de ciclo completo sem venda automática.
 - [ ] Ajustar legibilidade e ritmo após o teste do jogador.
 
-## Entrega atual — 0.13: HUD de caminhada
+## Entrega anterior — 0.13: HUD de caminhada
 
 - [x] Remover painéis permanentes grandes durante exploração.
 - [x] Ação próxima destacada e objetivos sob demanda.
 - [x] Alertas acionáveis, sem repetir cada serviço.
 - [x] Verificação visual, interação e compatibilidade do save.
+
+## Entrega atual — 0.14: curral e leite
+
+- [x] Curral com uma vaga, compra da vaca, água, ração e leite.
+- [x] Modelos originais Blender, movimentos da vaca e menu de cuidados.
+- [x] Coleta, estoque, venda e salvamento; queijaria vem depois do ciclo manual.
+
+## Próximo bloco de humor — emotes do personagem
+
+- [ ] Botão/atalho para abrir uma roda de emotes.
+- [ ] Dancinhas bem engraçadas com o corpo articulado; movimento cancela a dança.
+- [ ] Emojis acima do personagem, com duração curta.
+- [ ] Testar interrupção por caminhada, pulo e interação, sem travar controles.
+- [ ] Definir repertório com o autor antes das animações finais.
+
+## Depois
+
+- Queijaria, encomendas de queijo e automação das vacas após testar o ciclo manual.

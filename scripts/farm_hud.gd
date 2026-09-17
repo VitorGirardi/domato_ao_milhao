@@ -12,6 +12,7 @@ var walking:=FarmWalkHUD.new()
 var coop_tab:="care"
 var cultivation_draft:Dictionary={}
 var cultivation_budget:SpinBox
+var milk_quantity:SpinBox
 var money_label: Label
 var clock_label: Label
 var mode_label: Label
@@ -202,11 +203,11 @@ func _build() -> void:
 		var key:String=crops[i]
 		crop_buttons[key]=button(tool_panel,FarmState.CROPS[key].name,Rect2(653+i*117,8,109,33),"crop:"+key)
 	mode_button=button(tool_panel,"Caminhar  [TAB]",Rect2(1150,8,221,34),"mode",true)
-	var tools=["inspect","plot","barn","coop","fence","sign","path","expand","workshop"]
-	var names=["Cuidar","Canteiro","Celeiro","Galinheiro","Cerca","Placa","Caminho","Expandir","Oficina rural"]
-	var costs=["Selecionar / regar","$20 • sementes","$240","$180 • 3 galinhas","$12","$25 • seu texto","$5","$900 • +8 m","$180 • melhorias"]
+	var tools=["inspect","plot","barn","coop","fence","sign","path","expand","workshop","corral"]
+	var names=["Cuidar","Canteiro","Celeiro","Galinheiro","Cerca","Placa","Caminho","Expandir","Oficina rural","Curral"]
+	var costs=["Selecionar / regar","$20 • sementes","$240","$180 • 3 galinhas","$12","$25 • seu texto","$5","$900 • +8 m","$180 • melhorias","$650 • 1 vaga"]
 	for i in range(tools.size()):
-		var b:=button(tool_panel,"%d  %s\n%s"%[i+1,names[i],costs[i]],Rect2(18+i*151,51,143,83),"tool:"+tools[i])
+		var b:=button(tool_panel,"%d  %s\n%s"%[(i+1)%10,names[i],costs[i]],Rect2(18+i*136,51,129,83),"tool:"+tools[i])
 		b.add_theme_font_size_override("font_size",14)
 		buttons[tools[i]]=b
 	hint_panel=panel(build_hud,Rect2(330,654,767,46),Color("294b3c"))
@@ -236,7 +237,7 @@ func update(state: FarmState, build_mode: bool, selected: int, tool: String, cro
 	build_hud.visible=build_mode or not state.claimed
 	walking.root.visible=not build_mode and state.claimed
 	money_label.text="$ %s" % _money(state.money)
-	var total:=0
+	var total:=state.milk_stock
 	for value in state.inventory.values():
 		total+=int(value)
 	stock_label.text="%d produtos no estoque   •   Venda: $%d"%[total,state.sale_value()]
@@ -299,6 +300,8 @@ func update(state: FarmState, build_mode: bool, selected: int, tool: String, cro
 			if item.planted:
 				status="Pronto para colher!" if item.growth>=1 else ("Crescendo: %d%%"%int(item.growth*100) if item.watered else "Precisa de água")
 			details_label.text="%s\n%s\n\nClique com Cuidar ou use E\nperto do canteiro."%[FarmState.CROPS[item.crop].name,status]
+		elif item.kind=="corral":
+			details_label.text="Uma vaga para vaca\n[E] Comprar, cuidar e coletar leite.\nLeite no curral: %d / 8 L"%item.dairy.milk
 		elif item.kind=="coop":
 			details_label.text="%s\nRação: %d%% • Água: %d%%\nNinho: %d / %d ovos\n\nUse Cuidar das galinhas."%[FarmAnimals.status(item.flock),roundi(item.flock.food),roundi(item.flock.water),int(item.flock.nest),FarmAnimals.capacity(item.flock)]
 		elif item.kind=="sign":
@@ -368,7 +371,7 @@ func welcome(state: FarmState, has_save: bool) -> void:
 	text_input.text=state.farm_name
 	p.add_child(text_input)
 	button(p,"Voltar para minha fazenda" if has_save else "Escolher meu pedaço de terra",Rect2(34,494,542,55),"start",true)
-	label(p,"VERSÃO 0.13.0   •   MAIS FAZENDA NA TELA",Vector2(34,561),Vector2(542,17),11,MUTED)
+	label(p,"VERSÃO 0.14.0   •   CURRAL E LEITE",Vector2(34,561),Vector2(542,17),11,MUTED)
 
 func coop(state:FarmState,index:int,selected_hen:int=-1) -> void:
 	FarmInteractionUI.coop(self,state,index,selected_hen)
