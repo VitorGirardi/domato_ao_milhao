@@ -17,12 +17,18 @@ var selection_edges: Array[MeshInstance3D]=[]
 var highlighted_index: int = -1
 var paint_materials: Dictionary = {}
 var coop_views: Dictionary = {}
+var staff_root:Node3D
+var staff_actor:FarmAvatar
+var staff_label:Label3D
+var staff_anchor:=""
+var staff_services:=-1
 
 func _ready() -> void:
 	rng.seed = 24517
 	for key in ["barn", "coop", "fence", "sign", "tree", "rock", "chicken", "farmer", "market", "carrot", "wheat", "corn", "flower", "sprout", "watering_can", "harvest_carrot", "harvest_wheat", "harvest_corn", "feeder", "waterer", "nest", "egg"]:
 		models[key] = load("res://assets/models/%s.glb" % key)
 	models["trade_board"]=load("res://assets/models/trade_board.glb")
+	models["helper"]=load("res://assets/models/helper.glb")
 	add_child(structures)
 	add_child(border)
 	_environment()
@@ -340,6 +346,47 @@ func rebuild(state: FarmState) -> void:
 	update_crops(state)
 	update_border(state)
 	update_animals(state)
+	staff_anchor=""
+	update_staff(state,0)
+
+func update_staff(state: FarmState, delta: float) -> void:
+	var worker:Dictionary=state.staff
+	var visible_worker:bool=worker.hired and worker.coop>=0
+	if not visible_worker:
+		if is_instance_valid(staff_root): staff_root.visible=false
+		staff_services=int(worker.services)
+		return
+	if not is_instance_valid(staff_root):
+		staff_root=Node3D.new()
+		add_child(staff_root)
+		var mesh:=model("helper",staff_root)
+		staff_actor=FarmAvatar.new()
+		staff_actor.setup(mesh,self)
+		staff_label=Label3D.new()
+		staff_label.position=Vector3(0,2.65,0)
+		staff_label.font_size=30
+		staff_label.pixel_size=0.008
+		staff_label.billboard=BaseMaterial3D.BILLBOARD_ENABLED
+		staff_label.modulate=Color("fff1cb")
+		staff_root.add_child(staff_label)
+	staff_root.visible=true
+	var item:Dictionary=state.items[int(worker.coop)]
+	var anchor:="%d:%s:%s:%s"%[worker.coop,item.x,item.z,item.turn]
+	if anchor!=staff_anchor:
+		staff_anchor=anchor
+		var origin:=Vector3(item.x,0,item.z)
+		for attempt in range(160):
+			var angle:float=int(item.turn)*PI/2+attempt*TAU/16
+			var candidate:=origin+Vector3(sin(angle),0,cos(angle))*(3.0+int(attempt/16)*0.8)
+			if _hen_walkable(candidate,state):
+				staff_root.position=candidate
+				staff_root.rotation.y=angle+PI
+				break
+	staff_label.text="ZECA • PAUSADO" if worker.paused else "ZECA DO TRATO"
+	if worker.services!=staff_services:
+		if staff_services>=0 and delta>0: staff_actor.play("harvest")
+		staff_services=int(worker.services)
+	if delta>0 and not worker.paused: staff_actor.animate(delta,false,false)
 
 func _build_coop(index: int, item: Dictionary, root: Node3D, state: FarmState) -> void:
 	var feeder:=model("feeder",root,Vector3(-1.4,0,1.55))

@@ -42,6 +42,43 @@ var reserve: Dictionary = {"carrot":0, "wheat":0, "corn":0, "egg":0}
 var watering_upgrade := false
 var trade:Dictionary=FarmTrade.fresh()
 var trade_notices:Array[String]=[]
+var staff:Dictionary=FarmStaff.fresh()
+var staff_notice:=""
+
+func hire_staff(index: int) -> String:
+	if staff.hired: return "Zeca já trabalha aqui."
+	if not claimed or index<0 or index>=items.size() or items[index].kind!="coop": return "Construa e escolha um galinheiro primeiro."
+	if money<FarmStaff.HIRE_COST: return "Faltam moedas para contratar o Zeca."
+	money-=FarmStaff.HIRE_COST
+	staff.spent+=FarmStaff.HIRE_COST
+	staff.hired=true
+	staff.paused=false
+	staff.coop=index
+	staff.timer=0.0
+	staff.reason=""
+	return ""
+
+func assign_staff(index: int) -> String:
+	if not staff.hired: return "Contrate o Zeca primeiro."
+	if index<0 or index>=items.size() or items[index].kind!="coop": return "Escolha um galinheiro válido."
+	if staff.coop==index: return ""
+	staff.coop=index
+	staff.timer=0.0
+	return ""
+
+func pause_staff() -> String:
+	if not staff.hired: return "Contrate o Zeca primeiro."
+	if staff.paused and staff.coop<0: return "Escolha um galinheiro antes de retomar."
+	staff.paused=not staff.paused
+	staff.reason="manual" if staff.paused else ""
+	return ""
+
+func dismiss_staff() -> void:
+	staff.hired=false
+	staff.paused=true
+	staff.coop=-1
+	staff.timer=0.0
+	staff.reason=""
 
 func accept_order(key: String) -> String:
 	if not claimed: return "Escolha seu terreno antes de aceitar encomendas."
@@ -190,6 +227,12 @@ func remove_item(index: int) -> String:
 		return "Retire a reserva do celeiro antes de removê-lo."
 	money+=int(ITEMS[items[index].kind].cost)/2
 	items.remove_at(index)
+	if staff.coop==index:
+		staff.coop=-1
+		staff.paused=true
+		staff.timer=0.0
+		staff.reason="removed"
+	elif staff.coop>index: staff.coop-=1
 	return ""
 
 func care_coop(index: int, action: String) -> String:
@@ -362,14 +405,26 @@ func tend(index: int, crop: String = "carrot") -> String:
 func tick(delta: float) -> bool:
 	if not claimed:
 		return false
-	elapsed += delta
-	_expire_orders()
 	var eggs := false
-	for item in items:
-		if item.kind == "plot" and item.planted and item.watered:
-			item.growth = minf(1.0, float(item.growth) + delta / float(CROPS[item.crop].seconds))
-		if item.kind == "coop":
-			if FarmAnimals.tick(item,delta): eggs=true
+	var remaining:=maxf(0,delta)
+	# Split at service boundaries so large and small simulation steps agree.
+	while remaining>0.0000001:
+		var active:=FarmStaff.running(staff)
+		var span:=minf(remaining,FarmStaff.INTERVAL-float(staff.timer)) if active else remaining
+		elapsed+=span
+		_expire_orders()
+		for item in items:
+			if item.kind=="plot" and item.planted and item.watered:
+				item.growth=minf(1.0,float(item.growth)+span/float(CROPS[item.crop].seconds))
+			if item.kind=="coop":
+				if FarmAnimals.tick(item,span): eggs=true
+		if active:
+			staff.timer+=span
+			if staff.timer>=FarmStaff.INTERVAL-0.0000001:
+				staff.timer=0.0
+				FarmStaff.service(self)
+		remaining-=span
+	_expire_orders()
 	return eggs
 
 func sale_value() -> int:
@@ -411,16 +466,16 @@ func expand() -> String:
 	return ""
 
 func serialize() -> Dictionary:
-	return {"version": 4, "money": money, "claimed": claimed,
+	return {"version": 5, "money": money, "claimed": claimed,
 		"center": [center.x, center.y], "land_size": land_size,
 		"items": items.duplicate(true), "inventory": inventory.duplicate(),
 		"elapsed": elapsed, "revenue": revenue, "harvests": harvests,
 		"farm_name": farm_name, "contract_done": contract_done, "milestones": milestones.duplicate(),
-		"reserve":reserve.duplicate(), "watering_upgrade":watering_upgrade,"trade":trade.duplicate(true)}
+		"reserve":reserve.duplicate(), "watering_upgrade":watering_upgrade,"trade":trade.duplicate(true),"staff":staff.duplicate(true)}
 
 func restore(data: Variant) -> bool:
 	# Validate before mutating live state. Invalid files never partially replace it.
-	if not data is Dictionary or (data.get("version")!=1 and data.get("version")!=2 and data.get("version")!=3 and data.get("version")!=4):
+	if not data is Dictionary or not _number(data.get("version")) or data.version<1 or data.version>5 or float(data.version)!=floorf(float(data.version)):
 		return false
 	for key in ["money", "land_size", "elapsed", "revenue", "harvests"]:
 		if not _number(data.get(key)) or float(data[key]) < 0:
@@ -435,7 +490,7 @@ func restore(data: Variant) -> bool:
 		return false
 	if not data.get("claimed") is bool or not data.get("contract_done") is bool:
 		return false
-	if data.version==4 and not data.has("trade"): return false
+	if data.version>=4 and not data.has("trade"): return false
 	if data.has("trade") and not FarmTrade.valid(data.trade,float(data.elapsed)): return false
 	if not data.get("farm_name") is String or data.farm_name.length() > 32:
 		return false
@@ -487,6 +542,8 @@ func restore(data: Variant) -> bool:
 			var other: Dictionary = data.items[j]
 			if area.intersects(item_rect(other.kind,Vector2(other.x,other.z),int(other.turn))):
 				return false
+	if data.version>=5 and not data.has("staff"): return false
+	if data.has("staff") and not FarmStaff.valid(data.staff,data.items): return false
 	money = int(data.money)
 	claimed = data.claimed
 	center = Vector2(data.center[0], data.center[1])
@@ -517,6 +574,10 @@ func restore(data: Variant) -> bool:
 			record.active.accepted_at=float(record.active.accepted_at)
 			record.active.deadline=float(record.active.deadline)
 	trade_notices.clear()
+	staff=data.get("staff",FarmStaff.fresh()).duplicate(true)
+	for key in ["coop","services","eggs","spent"]: staff[key]=int(staff[key])
+	staff.timer=float(staff.timer)
+	staff_notice=""
 	_expire_orders()
 	refresh_journey()
 	return true

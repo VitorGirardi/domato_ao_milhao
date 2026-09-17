@@ -50,7 +50,7 @@ var picked_trade_board:=false
 
 func _ready() -> void:
 	qa_mode = OS.is_debug_build() and "--qa" in OS.get_cmdline_user_args()
-	if qa_mode: save_path="user://qa_farm_v05.json"
+	if qa_mode: save_path="user://qa_farm_v06.json"
 	get_tree().auto_accept_quit = false
 	_inputs()
 	world = FarmWorld.new()
@@ -143,11 +143,19 @@ func _process(delta: float) -> void:
 		return
 	action_cooldown=maxf(0,action_cooldown-delta)
 	if session_started and not build_mode and hud.modal_kind.is_empty():
+		var staff_spent:=int(state.staff.spent)
+		var staff_eggs:=int(state.staff.eggs)
 		if state.tick(delta):
 			hud.toast("Tem novidade no ninho! Visite o galinheiro para coletar os ovos.")
+		if state.staff.spent>staff_spent:
+			hud.toast("Zeca concluiu o trato • +%d ovos no estoque • -$%d"%[state.staff.eggs-staff_eggs,state.staff.spent-staff_spent])
 		if not state.trade_notices.is_empty():
 			hud.toast("Prazo de %s encerrado. Sem multa. Veja novos pedidos em J."%state.trade_notices[0] if state.trade_notices.size()==1 else "%d prazos encerrados. Sem multa; consulte o quadro com J."%state.trade_notices.size())
 			state.trade_notices.clear()
+		if not state.staff_notice.is_empty():
+			hud.toast(state.staff_notice)
+			state.staff_notice=""
+		world.update_staff(state,delta)
 		world.update_crops(state)
 		silly_timer = maxf(0,silly_timer-delta)
 		if state.elapsed > next_silly and not world.chickens.is_empty():
@@ -243,6 +251,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_E: _interact_nearest()
 			KEY_F: _action("market")
 			KEY_J: _action("market_orders")
+			KEY_H: _action("staff")
 			KEY_F5: _action("save")
 			KEY_M: _action("move")
 			KEY_R: turn=posmod(turn+1,4)
@@ -584,6 +593,27 @@ func _action(value: String) -> void:
 		if FarmTrade.NEIGHBORS.has(key):
 			hud.market_neighbor=key
 			hud.market(state,"orders")
+		return
+	if value.begins_with("staff"):
+		if not session_started: return
+		var error:=""
+		match value:
+			"staff_hire_review":
+				hud.staff_confirmation(false)
+				return
+			"staff_dismiss_review":
+				hud.staff_confirmation(true)
+				return
+			"staff_hire": error=state.hire_staff(hud.staff_target)
+			"staff_assign": error=state.assign_staff(hud.staff_target)
+			"staff_pause": error=state.pause_staff()
+			"staff_dismiss": state.dismiss_staff()
+			"staff_coop": hud.staff_target=selected
+			"staff": hud.staff_target=int(state.staff.coop)
+		hud.staff_panel(state)
+		world.update_staff(state,0)
+		if not error.is_empty(): hud.toast(error)
+		_update_ui()
 		return
 	if value.begins_with("sell_product:"):
 		var key:=value.get_slice(":",1)
@@ -1040,6 +1070,7 @@ func _qa() -> void:
 	await _qa_v03()
 	await _qa_v04()
 	await _qa_v05()
+	await _qa_v06()
 	var restored:=FarmState.new()
 	assert(restored.restore(JSON.parse_string(JSON.stringify(state.serialize()))))
 	assert(restored.items.size()==state.items.size())
@@ -1049,11 +1080,13 @@ func _qa() -> void:
 	var saved_reserve:=state.reserve.duplicate()
 	var saved_flock:Dictionary=state.items[1].flock.duplicate(true)
 	var saved_trade:Dictionary=state.trade.duplicate(true)
+	var saved_staff:Dictionary=state.staff.duplicate(true)
 	state=FarmState.new()
 	assert(_load_game() and state.money==saved_money)
 	assert(state.reserve==saved_reserve and state.watering_upgrade and state.items[0].door_paint==2)
 	_qa_saved_flock(state.items[1].flock,saved_flock)
 	assert(state.trade==saved_trade and state.active_orders()>0)
+	assert(state.staff==saved_staff and state.staff.hired)
 	var damaged:=FileAccess.open(save_path,FileAccess.WRITE)
 	damaged.store_string("{damaged")
 	damaged.close()
@@ -1062,6 +1095,7 @@ func _qa() -> void:
 	assert(state.reserve==saved_reserve and state.watering_upgrade and state.items[0].roof_paint==5)
 	_qa_saved_flock(state.items[1].flock,saved_flock)
 	assert(state.trade==saved_trade and state.active_orders()>0)
+	assert(state.staff==saved_staff and state.staff.hired)
 	DirAccess.remove_absolute(save_path)
 	DirAccess.remove_absolute(save_path+".bak")
 	print("INTEGRATION_OK: terrain, construction, crops, sale, paint, signs, camera, movement, persistence")
@@ -1468,8 +1502,127 @@ func _qa_v05() -> void:
 	_action("close")
 	print("V05_INTEGRATION_OK: selective sale, typed quantity, offer UI, acceptance, delivery, reputation tier, paused deadline, expiry, physical board and keyboard shortcut")
 
+func _qa_v06() -> void:
+	selected=1
+	var shortcut:=InputEventKey.new()
+	shortcut.physical_keycode=KEY_H
+	shortcut.pressed=true
+	_unhandled_input(shortcut)
+	assert(hud.modal_kind=="staff" and hud.staff_target==1 and not hud.staff_primary.disabled)
+	var snapshot:=state.serialize()
+	hud.staff_primary.pressed.emit()
+	assert(hud.modal_kind=="staff_confirm" and state.serialize()==snapshot)
+	await get_tree().process_frame
+	if DisplayServer.get_name()!="headless":
+		await RenderingServer.frame_post_draw
+		get_viewport().get_texture().get_image().save_png("res://test-results/staff-hire-v06.png")
+	_action("staff")
+	assert(state.serialize()==snapshot)
+	_action("staff_hire_review")
+	_action("staff_hire")
+	assert(state.staff.hired and state.staff.coop==1 and state.money==snapshot.money-120)
+	assert(world.staff_root.visible and world.staff_actor.parts.Head!=null)
+	snapshot=state.serialize()
+	build_mode=false
+	_process(30)
+	assert(state.serialize()==snapshot)
+	build_mode=true
+	_action("close")
+	_process(30)
+	assert(state.serialize()==snapshot)
+	var flock:Dictionary=state.items[1].flock
+	flock.food=10.0
+	flock.water=20.0
+	flock.nest=6
+	state.items[1].egg_time=0.0
+	var eggs:=int(state.inventory.egg)
+	var balance:=state.money
+	build_mode=false
+	_process(15)
+	build_mode=true
+	assert(flock.food==100 and flock.water==100 and flock.nest==0)
+	assert(state.inventory.egg==eggs+6 and state.money==balance-10)
+	assert(state.staff.services==1 and state.staff.eggs==6 and world.staff_actor.action_kind=="harvest")
+	_action("staff")
+	hud.staff_primary.pressed.emit()
+	assert(state.staff.paused and world.staff_label.text.contains("PAUSADO"))
+	_action("close")
+	var ledger:=state.staff.duplicate(true)
+	build_mode=false
+	_process(30)
+	build_mode=true
+	assert(state.staff==ledger and state.money==balance-10)
+	_action("staff")
+	hud.staff_primary.pressed.emit()
+	assert(not state.staff.paused)
+	_action("close")
+	flock.nest=4
+	flock.food=0.0
+	state.money=9
+	build_mode=false
+	_process(15)
+	build_mode=true
+	assert(state.staff.paused and state.staff.reason=="funds" and state.money==9)
+	assert(flock.nest>=4 and hud.toast_label.text.contains("Zeca pausou"))
+	state.money=balance-10
+	_action("staff")
+	hud.staff_primary.pressed.emit()
+	_action("close")
+	build_mode=false
+	_process(15)
+	build_mode=true
+	assert(not state.staff.paused and flock.nest==0)
+	# Drive the workplace selector and preserve the employee through reassignment.
+	assert(state.place("coop",Vector2(12,-4),0).is_empty())
+	world.rebuild(state)
+	_action("staff")
+	hud.staff_choice.select(1)
+	hud.staff_choice.item_selected.emit(1)
+	assert(hud.staff_target==state.items.size()-1)
+	_action("staff_assign")
+	assert(state.staff.coop==state.items.size()-1)
+	hud.staff_choice.select(0)
+	hud.staff_choice.item_selected.emit(0)
+	_action("staff_assign")
+	assert(state.staff.coop==1)
+	assert(state.remove_item(state.items.size()-1).is_empty())
+	world.rebuild(state)
+	_action("staff_dismiss_review")
+	snapshot=state.serialize()
+	_action("staff")
+	assert(state.serialize()==snapshot)
+	_action("staff_dismiss_review")
+	_action("staff_dismiss")
+	assert(not state.staff.hired and not world.staff_root.visible and state.money==snapshot.money)
+	_action("staff_hire_review")
+	_action("staff_hire")
+	assert(state.staff.hired and state.money==snapshot.money-120)
+	_action("close")
+	focus=Vector3(12,0,-6.5)
+	player.position=Vector3(9,0.2,-4.5)
+	yaw=0.40
+	pitch=0.57
+	build_distance=20
+	_update_camera(1,true)
+	_update_pointer()
+	_update_ui()
+	hud.toast_time=0
+	world.update_staff(state,0)
+	await get_tree().process_frame
+	if DisplayServer.get_name()!="headless":
+		Input.warp_mouse(Vector2(600,770))
+		await RenderingServer.frame_post_draw
+		get_viewport().get_texture().get_image().save_png("res://test-results/helper-v06.png")
+	_action("staff")
+	await get_tree().process_frame
+	if DisplayServer.get_name()!="headless":
+		await RenderingServer.frame_post_draw
+		get_viewport().get_texture().get_image().save_png("res://test-results/staff-v06.png")
+	_action("close")
+	print("V06_INTEGRATION_OK: shortcut, hiring confirmation/cancel, care, costs, menu/build pause, low funds, assignment selector, dismiss/cancel, rehire and Blender character")
+
 func _qa_mouse(at: Vector2, pressed: bool) -> void:
-	Input.warp_mouse(at)
+	get_viewport().warp_mouse(at)
 	await get_tree().process_frame
 	await get_tree().process_frame
 	var event:=InputEventMouseButton.new()

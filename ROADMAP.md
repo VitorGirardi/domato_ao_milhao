@@ -11,7 +11,7 @@ Não são promessas de prazo nem uma lista de tarefas já concluídas.
 | 3 | Progressão e construções úteis | Celeiro com função, ferramentas melhores e desbloqueios com propósito | Reserva e primeira melhoria entregues na 0.3; ampliar depois |
 | 4 | Animais com personalidade | Nomes, aparência, água, alimentação, ninhos e comportamentos | Primeira entrega na 0.4, com galinhas |
 | 5 | Vizinhos e economia regional | Pedidos variados, especialidades, reputação e preços legíveis | Primeira entrega na 0.5; ranchos físicos e economia dinâmica depois |
-| 6 | Gestão e automação | Funcionários, rotinas e máquinas para evitar tarefas repetitivas | A fazer |
+| 6 | Gestão e automação | Funcionários, rotinas e máquinas para evitar tarefas repetitivas | Primeiro ajudante entregue na 0.6; outras rotinas e máquinas depois |
 | 7 | Cadeias produtivas e expansão | Queijo, farinha, novos terrenos e regiões | A fazer |
 | 8 | Mundo vivo | Clima, estações, feiras, concursos e acontecimentos engraçados | A fazer |
 | 9 | Cooperativo | Amigos em ranchos próprios, visitas e comércio sincronizado | A fazer após estabilizar a campanha solo |
@@ -59,7 +59,7 @@ por acidente, melhorar o regador e retomar tudo a partir de uma partida salva.
 **Critério de conclusão:** cuidar, nomear e reconhecer as galinhas; coletar e vender
 ovos; salvar e retomar sem perder produção ou suprimentos.
 
-## Entrega atual — 0.5
+## Entrega anterior — 0.5
 
 - [x] Três vizinhos com especialidades e nove receitas de encomendas.
 - [x] Quadro feito no Blender, acessível no mapa, pela interface ou por J.
@@ -74,12 +74,26 @@ ovos; salvar e retomar sem perder produção ou suprimentos.
 subir de reputação e retomar uma encomenda salva sem reiniciar o prazo.
 Preços e tempos ainda precisam do teste do autor para balanceamento.
 
-## Próximo bloco — gestão e automação
+## Entrega atual — 0.6
 
-- Primeiro ajudante com uma rotina simples de cuidado da fazenda.
-- Contratação, custo e benefício visíveis antes de confirmar.
-- Pausar ou dispensar o ajudante sem perder produtos ou construções.
-- Evoluir para outras rotinas e máquinas depois de validar a primeira.
+- [x] Zeca do Trato, com aparência própria no Blender e posto junto ao galinheiro.
+- [x] Contratação confirmada, custos visíveis e histórico de serviços.
+- [x] Coleta de ovos e reposição de suprimentos em um galinheiro escolhido.
+- [x] Pausa, retomada, mudança de atribuição e dispensa sem perda de produtos.
+- [x] Interrupção sem cobranças parciais quando falta dinheiro.
+- [x] Pausa global nos menus, construção e jogo fechado; atribuição persistente.
+- [x] Testes de simulação, telas, economia, migração e recuperação de backup.
+- [x] Roteiro manual cobrindo também os vizinhos e as vendas da 0.5.
+
+**Critério de conclusão:** contratar, observar a coleta, pausar sem pagar,
+trocar de galinheiro e retomar a partida com ajudante e histórico preservados.
+
+## Próximo bloco — ampliar a automação
+
+- Ajustar os custos do Zeca com o teste do autor.
+- Acrescentar uma rotina de lavoura, começando pela irrigação.
+- Evoluir deslocamento, postos e capacidade de trabalho antes de vários funcionários.
+- Depois, avançar para cadeias produtivas e expansão regional.
 
 ## Cuidados em todas as etapas
 

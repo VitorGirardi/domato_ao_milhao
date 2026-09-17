@@ -1,5 +1,19 @@
 # Alterações
 
+## 0.6.0 — Uma mãozinha no trato
+
+- Zeca do Trato: primeiro ajudante, com modelo Blender próprio baseado no fazendeiro original.
+- Painel H e acesso pelo galinheiro; seleção de um galinheiro por vez e confirmação da contratação.
+- Contratação por $120; checagens a cada 15 segundos de simulação, cobrando $2 apenas quando há serviço, mais a ração usada.
+- Coleta de ovos e reposição de água/ração em 25% ou menos; água grátis e ração até $8.
+- Pausa, retomada, troca de galinheiro grátis e dispensa confirmada; recontratação custa $120.
+- Saldo insuficiente interrompe o trabalho sem transação parcial; retomada exige ação do jogador.
+- Remover o galinheiro atendido pausa o ajudante; mover a construção preserva a atribuição.
+- Histórico de rodadas, ovos e gastos, incluindo contratação, e aviso de serviços no jogo.
+- Salvamento no formato 5, lendo formatos 1–4 sem contratar ninguém ou cobrar automaticamente.
+- 336 verificações da simulação, testes de interface e persistência; roteiro de teste manual em COMO_TESTAR.md.
+- Entrada de mouse dos testes usa coordenadas do viewport para respeitar o redimensionamento da janela.
+
 ## 0.5.0 — Negócios com a vizinhança
 
 - Dona Nena, Seu Bento e Dona Lola com especialidades, frases e nove receitas de pedidos.

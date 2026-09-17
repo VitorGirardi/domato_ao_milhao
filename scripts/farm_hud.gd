@@ -23,6 +23,9 @@ var market_neighbor:="nena"
 var sale_quantities:Dictionary={}
 var sale_buttons:Dictionary={}
 var order_action:Button
+var staff_target:=-1
+var staff_choice:OptionButton
+var staff_primary:Button
 var stock_label: Label
 var hint_label: Label
 var toast_label: Label
@@ -128,6 +131,7 @@ func _build() -> void:
 	button(root,"Armazém  [F]",Rect2(854,22,234,46),"market",true)
 	button(root,"Salvar  [F5]",Rect2(854,77,114,39),"save")
 	button(root,"Menu",Rect2(980,77,108,39),"menu")
+	button(root,"Ajudante [H]",Rect2(588,88,242,32),"staff")
 	var quest := panel(root,Rect2(24,140,287,279))
 	quest_counter=label(quest,"SEU PRIMEIRO CAPÍTULO",Vector2(18,16),Vector2(250,25),12,MUTED)
 	quest_title=label(quest,"Um lugar para chamar de seu",Vector2(18,47),Vector2(250,48),18)
@@ -333,7 +337,7 @@ func welcome(state: FarmState, has_save: bool) -> void:
 	text_input.text=state.farm_name
 	p.add_child(text_input)
 	button(p,"Voltar para minha fazenda" if has_save else "Escolher meu pedaço de terra",Rect2(34,494,542,55),"start",true)
-	label(p,"VERSÃO 0.5   •   BONS VIZINHOS, BONS NEGÓCIOS",Vector2(34,561),Vector2(542,17),11,MUTED)
+	label(p,"VERSÃO 0.6   •   UMA MÃOZINHA NO TRATO",Vector2(34,561),Vector2(542,17),11,MUTED)
 
 func coop(state: FarmState, index: int, selected_hen: int = -1) -> void:
 	var flock:Dictionary=state.items[index].flock
@@ -376,7 +380,68 @@ func coop(state: FarmState, index: int, selected_hen: int = -1) -> void:
 		label(p,FarmAnimals.TRAITS[i],Vector2(62,464+i*56),Vector2(340,20),12,MUTED)
 		button(p,"Renomear",Rect2(425,440+i*56,155,43),"rename_hen:%d"%i)
 	label(p,"Cuidados compartilhados pelas três galinhas deste galinheiro.",Vector2(30,613),Vector2(550,23),13,MUTED)
-	button(p,"Voltar ao terreiro",Rect2(30,652,550,44),"close")
+	button(p,"Ajudante [H]",Rect2(30,652,265,44),"staff_coop")
+	button(p,"Voltar ao terreiro",Rect2(310,652,270,44),"close")
+
+func staff_panel(state: FarmState) -> void:
+	var p:=_modal("staff",744)
+	var worker:Dictionary=state.staff
+	label(p,"GESTÃO • PRIMEIRO AJUDANTE",Vector2(30,21),Vector2(550,26),13,MUTED)
+	label(p,"Zeca do Trato",Vector2(30,57),Vector2(550,43),31)
+	label(p,"“A Maricota manda. Eu só organizo o sindicato.”",Vector2(30,105),Vector2(550,29),17,MUTED)
+	label(p,"Cuida de um galinheiro por vez, a cada 15 segundos:\ncoleta ovos e repõe água e ração quando chegam a 25%.\nSem serviço, não cobra. Seus outros produtos ficam com você.",Vector2(30,151),Vector2(550,76),16)
+	label(p,"GALINHEIRO ESCOLHIDO",Vector2(30,244),Vector2(550,24),12,MUTED)
+	staff_choice=OptionButton.new()
+	staff_choice.position=Vector2(30,275)
+	staff_choice.size=Vector2(550,42)
+	staff_choice.add_theme_font_size_override("font_size",17)
+	for key in ["normal","hover","pressed","disabled"]:
+		staff_choice.add_theme_stylebox_override(key,style(Color("ede7d8") if key=="disabled" else Color("f4edd9"),9))
+	p.add_child(staff_choice)
+	var coops:Array[int]=[]
+	for i in range(state.items.size()):
+		if state.items[i].kind=="coop":
+			coops.append(i)
+			staff_choice.add_item("Galinheiro %d • posição (%d, %d)"%[coops.size(),state.items[i].x,state.items[i].z],i)
+	if staff_target not in coops: staff_target=int(worker.coop) if worker.coop in coops else (coops[0] if not coops.is_empty() else -1)
+	if coops.is_empty():
+		staff_choice.add_item("Construa um galinheiro para começar",-1)
+		staff_choice.disabled=true
+	else: staff_choice.select(coops.find(staff_target))
+	staff_choice.item_selected.connect(func(index: int): staff_target=staff_choice.get_item_id(index); staff_panel(state))
+	label(p,FarmStaff.status(worker),Vector2(30,333),Vector2(550,32),21)
+	var info:="Contratação: $120 • Cada rodada com serviço: $2 + ração.\nRação custa até $8 por reposição. Água é grátis. Saldo: $%d"%state.money
+	if worker.hired:
+		info="%d rodadas • %d ovos coletados • Total gasto: $%d\nCusto por rodada com serviço: $2 + ração (até $8). Saldo: $%d"%[worker.services,worker.eggs,worker.spent,state.money]
+	label(p,info,Vector2(30,377),Vector2(550,58),16)
+	var detail:="A contratação é paga uma vez; recontratar custa outros $120."
+	if worker.hired and worker.coop>=0:
+		var index:=int(worker.coop)
+		var at:Dictionary=state.items[index]
+		var quote:=FarmStaff.quote(at.flock)
+		detail="Atende (%d, %d) • próxima checagem em %ds\nServiço necessário agora: $%d • Ao faltar saldo, pausa sozinho."%[at.x,at.z,ceili(FarmStaff.INTERVAL-worker.timer),quote]
+	elif worker.hired: detail="Galinheiro removido. Atribua outro e clique em Retomar."
+	label(p,detail,Vector2(30,443),Vector2(550,52),15,MUTED)
+	if not worker.hired:
+		staff_primary=button(p,"Contratar • conferir custos",Rect2(30,511,550,46),"staff_hire_review",true)
+		staff_primary.disabled=staff_target<0 or state.money<FarmStaff.HIRE_COST
+	else:
+		var assign:=button(p,"Atender este galinheiro",Rect2(30,511,270,44),"staff_assign")
+		assign.disabled=staff_target<0 or staff_target==worker.coop
+		staff_primary=button(p,"Retomar" if worker.paused else "Pausar",Rect2(310,511,270,44),"staff_pause",true)
+		staff_primary.disabled=worker.coop<0
+		button(p,"Dispensar…",Rect2(30,565,550,36),"staff_dismiss_review")
+	label(p,"Construção, janelas e jogo fechado pausam o trabalho e os custos.",Vector2(30,632),Vector2(550,24),13,MUTED)
+	button(p,"Voltar ao campo",Rect2(30,674,550,46),"close")
+
+func staff_confirmation(dismiss: bool) -> void:
+	var p:=_modal("staff_confirm",370)
+	label(p,"Dispensar o Zeca?" if dismiss else "Uma mãozinha no galinheiro",Vector2(30,28),Vector2(550,43),27)
+	var body:="Pagar $120 pela contratação.\nDepois: $2 por rodada com serviço, mais a ração usada.\nZeca confere o galinheiro escolhido a cada 15 segundos.\nSem serviço, sem cobrança. Pause quando quiser."
+	if dismiss: body="Dispensar é grátis e encerra as cobranças.\nSeus ovos, animais e construções permanecem.\nA contratação anterior não é reembolsada.\nRecontratar custa $120."
+	label(p,body,Vector2(30,94),Vector2(550,135),17)
+	button(p,"Confirmar dispensa" if dismiss else "Contratar por $120",Rect2(30,248,550,46),"staff_dismiss" if dismiss else "staff_hire",true)
+	button(p,"Voltar sem alterar",Rect2(30,308,550,38),"staff")
 
 func hen_editor(initial: String) -> void:
 	var p:=_modal("hen_name",285)
