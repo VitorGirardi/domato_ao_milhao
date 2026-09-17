@@ -1,5 +1,11 @@
 # Alterações
 
+## 0.18.1 — Six Seven
+
+- Quarta dança na roda B, com ícone próprio e botão central.
+- Movimento alternado das mãos com palmas para cima, usando o rig existente.
+- Testes de acionamento, alternância, cancelamento e duração; mantém save 13.
+
 ## 0.18.0 — Raul do Curral
 
 - Funcionário para água, ração e ordenha, com atribuição a um curral e orçamento próprio.

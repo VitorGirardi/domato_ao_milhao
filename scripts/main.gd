@@ -51,7 +51,7 @@ var picked_trade_board:=false
 
 func _ready() -> void:
 	qa_mode = OS.is_debug_build() and "--qa" in OS.get_cmdline_user_args()
-	if qa_mode: save_path="user://qa_farm_v018.json"
+	if qa_mode: save_path="user://qa_farm_v018_1.json"
 	get_tree().auto_accept_quit = false
 	_inputs()
 	world = FarmWorld.new()
@@ -2380,43 +2380,47 @@ func _qa_v015() -> void:
 	assert(hud.modal_kind=="emotes")
 	var frozen:=state.serialize();_process(5);assert(frozen==state.serialize())
 	await _qa_ui_capture("emotes-wheel-v015")
-	_action("emote:chicken")
-	assert(actor.emote_kind=="chicken" and actor.action_time==0 and hud.modal_kind.is_empty())
+	_action("emote:six_seven")
+	assert(actor.emote_kind=="six_seven" and actor.action_time==0 and hud.modal_kind.is_empty())
 	var stationary:=player.position
 	DirAccess.make_dir_recursive_absolute("res://test-results/dances-v015")
 	for dance in FarmEmotes.DANCES:
 		assert(actor.emote(dance))
+		var hand_low:=0.0;var hand_high:=0.0
 		for frame in range(32):
 			actor.animate(.05,false,false)
+			var height:float=actor.skeleton.get_bone_global_pose(actor.bones["Hand.L"]).origin.y-actor.skeleton.get_bone_global_pose(actor.bones["Hand.R"]).origin.y
+			hand_low=minf(hand_low,height);hand_high=maxf(hand_high,height)
 			await get_tree().process_frame
 			if DisplayServer.get_name()!="headless":
 				await RenderingServer.frame_post_draw
 				get_viewport().get_texture().get_image().save_png("res://test-results/dances-v015/%s-%02d.png"%[dance,frame])
+		if dance=="six_seven":assert(hand_low< -.08 and hand_high>.08,"Six Seven alternates hand heights")
 		assert(player.position.distance_to(stationary)<.05 and not actor.can.visible)
-	actor.emote("chicken")
+	actor.emote("six_seven")
 	Input.action_press("forward");await get_tree().physics_frame;await get_tree().physics_frame
 	Input.action_release("forward")
 	assert(actor.emote_time==0 and player.velocity.length()>0)
 	for i in range(5): await get_tree().physics_frame
-	actor.emote("shuffle")
+	actor.emote("six_seven")
 	assert(_try_jump() and actor.emote_time==0)
 	assert(not actor.emote("victory"))
 	for i in range(70): await get_tree().physics_frame
 	actor.emote("victory");_action("market")
 	assert(actor.emote_time==0 and hud.modal_kind=="market")
 	_action("close")
-	actor.play("water");assert(not actor.emote("chicken"));actor.action_time=0
-	actor.emote("shuffle");actor.animate(6.1,false,false);assert(actor.emote_time==0 and actor.root.position.y==0)
+	actor.play("water");assert(not actor.emote("six_seven"));actor.action_time=0
+	actor.emote("six_seven");actor.animate(6.1,false,false);assert(actor.emote_time==0 and actor.root.position.y==0)
 	var count:=actor.root.get_child_count()
 	for reaction_key in FarmEmotes.REACTIONS: assert(actor.emote(reaction_key))
 	assert(actor.root.get_child_count()==count and actor.reaction.visible)
 	actor.emote("laugh");await _qa_ui_capture("emote-reaction-v015")
 	actor.animate(3,false,false);assert(not actor.reaction.visible)
-	actor.emote("chicken");_interact_nearest();assert(actor.emote_time==0)
+	actor.emote("six_seven");_interact_nearest();assert(actor.emote_time==0)
 	build_mode=true;_action("emotes");assert(hud.modal_kind.is_empty())
 	await _qa_cow_v015()
 	assert(state.restore(previous));world.rebuild(state);_update_ui()
-	print("V015_INTEGRATION_OK: B wheel, paused selection, three grounded dances, movement/jump/menu/interact cancellation, work and airborne gates, expiry, bounded reactions, no economy/save changes")
+	print("V015_INTEGRATION_OK: B wheel, paused selection, four grounded dances including Six Seven, alternating hands, movement/jump/menu/interact cancellation, work and airborne gates, expiry, bounded reactions, no economy/save changes")
 
 func _qa_cow_v015() -> void:
 	state=FarmState.new();state.claim(Vector2(4,-2));state.money=5000

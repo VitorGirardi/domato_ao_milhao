@@ -1,7 +1,14 @@
-# Como testar a versão 0.18.0
+# Como testar a versão 0.18.1
 
 Extraia o ZIP e abra `DoMatoAoMilhao.exe`. Escolha **Voltar para minha fazenda**.
 A versão aceita a partida anterior. Não precisa começar outra.
+
+## Six Seven
+
+1. Em caminhada, fique parado no chão, aperte **B** e escolha **Six Seven** no centro.
+2. As mãos alternam a altura com as palmas para cima. A dança dura seis segundos.
+3. Interrompa com WASD, Espaço ou abrindo uma interação. O personagem responde imediatamente.
+4. As outras três danças e os três emojis continuam disponíveis. Não foi adicionada música.
 
 ## Raul do Curral — teste rápido
 
