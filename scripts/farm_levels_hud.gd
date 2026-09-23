@@ -38,7 +38,7 @@ static func show(hud:FarmHUD,state:FarmState) -> void:
 		var unlocked:=level>=i+1
 		var card:=FarmGameUI.card(hud,p,Rect2(28+(i%3)*272,193+(i/3)*150,260,138))
 		FarmGameUI.icon(card,FarmLevels.ICONS[i],Rect2(12,18,57,57))
-		hud.label(card,FarmState.ITEMS[kind].name,Vector2(78,16),Vector2(172,30),20)
+		hud.label(card,"Curral + estrebaria" if kind=="corral" else FarmState.ITEMS[kind].name,Vector2(78,16),Vector2(172,30),16 if kind=="corral" else 20)
 		hud.label(card,"Nível %d · %d XP"%[i+1,FarmLevels.THRESHOLDS[i]],Vector2(78,52),Vector2(172,25),14)
 		var b:=FarmGameUI.action(hud,card,"Liberado" if unlocked else "Bloqueado",Rect2(12,91,236,35),"close",unlocked)
 		b.disabled=true

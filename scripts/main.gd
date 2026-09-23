@@ -57,7 +57,7 @@ var windowed_mode:=Window.MODE_WINDOWED
 
 func _ready() -> void:
 	qa_mode = OS.is_debug_build() and "--qa" in OS.get_cmdline_user_args()
-	if qa_mode: save_path="user://qa_farm_v023.json"
+	if qa_mode: save_path="user://qa_farm_v025.json"
 	get_tree().auto_accept_quit = false
 	_inputs()
 	world = FarmWorld.new()
@@ -140,7 +140,7 @@ func _physics_process(delta: float) -> void:
 	if horse.mounted:
 		horse.drive(player,avatar,actor,direction,delta,session_started and hud.modal_kind.is_empty())
 		horse.store(state);_update_camera(delta);return
-	if horse.is_inside_tree():horse.animate(delta if session_started and hud.modal_kind.is_empty() and not build_mode else 0,0,false)
+	if horse.is_inside_tree():horse.life.update(horse,delta,session_started and hud.modal_kind.is_empty() and not build_mode,state,world.landscape,player)
 	if actor.action_time>0 and not build_mode: direction=Vector3.ZERO
 	if build_mode:
 		focus += direction * delta * build_distance * 0.45
@@ -330,6 +330,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_9: _action("tool:workshop")
 			KEY_0: _action("tool:corral")
 			KEY_G: _action("tool:cheesery")
+			KEY_K: _action("tool:stable")
 	if not hud.modal_kind.is_empty():
 		return
 	if event is InputEventMouseMotion and Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT):
@@ -547,8 +548,8 @@ func _find_item(at: Vector2) -> int:
 
 func _distance_to_item(i: int) -> float:
 	var item:Dictionary=state.items[i]
-	if item.kind in ["barn","workshop","corral","cheesery"]:
-		var door:=Vector3(item.x,0,item.z)+Vector3(0,0,3.0 if item.kind in ["barn","corral","cheesery"] else 1.9).rotated(Vector3.UP,item.turn*PI/2)
+	if item.kind in ["barn","workshop","corral","cheesery","stable"]:
+		var door:=Vector3(item.x,0,item.z)+Vector3(0,0,3.0 if item.kind in ["barn","corral","cheesery","stable"] else 1.9).rotated(Vector3.UP,item.turn*PI/2)
 		return Vector2(player.position.x-door.x,player.position.z-door.z).length()
 	var area:=state.item_rect(item.kind,Vector2(item.x,item.z),item.turn)
 	var position_2d:=Vector2(player.position.x,player.position.z)
@@ -559,13 +560,13 @@ func _nearest() -> int:
 	nearby_hen=-1
 	var best:=-1
 	var distance:=2.6
-	if selected>=0 and selected<state.items.size() and state.items[selected].kind in ["plot","sign","barn","coop","workshop","corral","cheesery"]:
+	if selected>=0 and selected<state.items.size() and state.items[selected].kind in ["plot","sign","barn","coop","workshop","corral","cheesery","stable"]:
 		var current_distance:=_distance_to_item(selected)
 		if current_distance<distance:
 			best=selected
 			distance=current_distance
 	for i in range(state.items.size()):
-		if state.items[i].kind not in ["plot","sign","barn","coop","workshop","corral","cheesery"]: continue
+		if state.items[i].kind not in ["plot","sign","barn","coop","workshop","corral","cheesery","stable"]: continue
 		var d:=_distance_to_item(i)
 		if d<distance and (best<0 or d+0.05<distance):
 			best=i
@@ -582,7 +583,9 @@ func _nearby_context() -> Dictionary:
 	if build_mode or not state.claimed: return {}
 	if horse.mounted:return {"text":"Desmontar · Pé de Pano","action":"horse"}
 	if weapons.shop_has_priority():return {"text":"Conversar com Damião","action":"armory"}
-	if horse.can_mount(player):return {"text":"Montar · Pé de Pano","action":"horse"}
+	if horse.can_mount(player):
+		var nearby:=_nearest()
+		if nearby<0 or state.items[nearby].kind!="stable" or player.position.distance_to(horse.position)<=_distance_to_item(nearby):return {"text":"Montar · Pé de Pano","action":"horse"}
 	if player.position.distance_to(FarmWorld.TRADE_BOARD_AT)<2.8: return {"text":"Ver encomendas","action":"orders"}
 	if player.position.distance_to(Vector3(-24,0,14))<4: return {"text":"Conversar com Lúcia","action":"market"}
 	var index:=_nearest()
@@ -595,6 +598,7 @@ func _nearby_context() -> Dictionary:
 		"cheesery": context.text="Queijo pronto · Recolher" if item.cheese.ready>0 else ("Queijo · faltam %ds"%ceili(item.cheese.remaining) if item.cheese.batch>0 else "Fazer queijo")
 		"corral": context.text="Cuidar da vaca"
 		"workshop": context.text="Abrir oficina"
+		"stable": context.text="Ver estrebaria"
 		"sign": context.text="Editar placa"
 		"plot":
 			if not item.planted:
@@ -674,6 +678,7 @@ func _tend_selected() -> void:
 	elif item.kind=="coop": hud.coop(state,selected,selected_hen)
 	elif item.kind=="cheesery": FarmCheeseHUD.show(hud,state,selected)
 	elif item.kind=="corral": FarmDairyHUD.show(hud,state,selected)
+	elif item.kind=="stable": FarmStable.show(hud,state,horse,selected)
 
 func _action(value: String) -> void:
 	if value=="map" or value.begins_with("map:"):
@@ -1054,6 +1059,7 @@ func _action(value: String) -> void:
 		"route_cancel": hud.close_modal()
 		"barn":
 			if selected>=0 and selected<state.items.size() and state.items[selected].kind=="workshop": hud.workshop(state,selected)
+			elif selected>=0 and selected<state.items.size() and state.items[selected].kind=="stable":FarmStable.show(hud,state,horse,selected)
 			elif state.count_items("barn")>0: hud.barn(state,selected)
 		"upgrade":
 			var error:=state.buy_watering_upgrade()
@@ -1252,6 +1258,8 @@ func _chime(kind: String = "build") -> void:
 	sound.play()
 
 func _qa() -> void:
+	if "--qa-v025" in OS.get_cmdline_user_args():
+		_action("start");await _qa_v025();get_tree().quit();return
 	if "--qa-v024" in OS.get_cmdline_user_args():
 		_action("start");await _qa_v024();get_tree().quit();return
 	if "--qa-horse-preview" in OS.get_cmdline_user_args():
@@ -3048,3 +3056,48 @@ func _qa_v024() -> void:
 		camera.position=horse.position+Vector3(sin(angle)*6,2.7,cos(angle)*6);camera.look_at(horse.position+Vector3(0,1.4,0))
 		await _qa_ui_capture("horse-v024-angle-%d"%int(angle*100))
 	print("V024_INTEGRATION_OK: destinations, map pause while mounted, no state mutation, horse tracking, continuous skin, riding and dismount")
+
+func _qa_v025() -> void:
+	state=FarmState.new();state.claim(Vector2(4,-2));state.unlimited_money=true;state.farm_xp=950
+	assert(state.place("stable",Vector2(2,-4),0).is_empty());world.rebuild(state)
+	hud.close_modal();build_mode=false;set_physics_process(false)
+	horse.restore({"x":2.0,"z":2.0,"angle":0.0});horse.life.reset(horse);player.position=Vector3(10,.1,9)
+	for i in range(5):await get_tree().physics_frame
+	horse.stamina=30
+	horse.life.mode="graze";horse.life.remaining=30
+	for i in range(24):horse.life.update(horse,.07,true,state,world.landscape,player)
+	assert(horse.life.graze>.9 and horse.stamina>50)
+	camera.position=Vector3(11,6,13);camera.look_at(Vector3(2,1.3,-1));_update_ui()
+	await _qa_ui_capture("stable-v025-graze")
+	var pose:Transform3D=horse.parts.HorseNeck.transform;var snapshot:=state.serialize();var stamina:=horse.stamina
+	horse.life.update(horse,5,false,state,world.landscape,player)
+	assert(horse.parts.HorseNeck.transform==pose and horse.stamina==stamina and state.serialize()==snapshot)
+	selected=0;_tend_selected();assert(hud.modal_kind=="stable");await _qa_ui_capture("stable-v025-menu");hud.close_modal()
+	_action("map");_action("map:go:stable:0");assert(navigator.waypoint.distance_to(FarmStable.entrance(state.items[0]))<.001)
+	await _qa_ui_capture("stable-v025-map");hud.close_modal()
+	# Bounded walking on a clear public lane, no manual teleport during the simulation.
+	horse.restore({"x":20.0,"z":30.0,"angle":PI/2});player.position=Vector3(10,.1,40)
+	horse.life.mode="walk";horse.life.remaining=30;horse.life.goal=Vector2(23,30)
+	var origin:=horse.position
+	for i in range(24):
+		horse.life.update(horse,.1,true,state,world.landscape,player)
+		assert(Vector2(horse.position.x,horse.position.z).distance_to(horse.life.anchor)<=4.51)
+		camera.position=horse.position+Vector3(6,3.1,5);camera.look_at(horse.position+Vector3(0,1.5,0));_update_ui()
+		await _qa_ui_capture("stable-v025-walk-%02d"%i)
+	assert(horse.position.distance_to(origin)>1)
+	# A real obstacle blocks the full swept body, not only its feet.
+	var blocker:=StaticBody3D.new();var collision:=CollisionShape3D.new();var box:=BoxShape3D.new();box.size=Vector3(.25,3,7);collision.shape=box;blocker.add_child(collision);add_child(blocker);blocker.position=horse.position+Vector3(2,1.5,0)
+	for i in range(3):await get_tree().physics_frame
+	assert(not horse.life.safe_step(horse,Vector2(horse.position.x+3,horse.position.z),PI/2,state,world.landscape))
+	blocker.queue_free()
+	horse.stamina=30;horse.life.mode="look";horse.life.remaining=30
+	horse.life.update(horse,1,true,state,world.landscape,player);assert(is_equal_approx(horse.stamina,37))
+	# Approaching stops walking, then mounting clears the grazing pose.
+	player.position=horse.position+Vector3(1.7,.1,0)
+	horse.life.mode="walk";horse.life.remaining=10;horse.life.update(horse,.1,true,state,world.landscape,player)
+	assert(horse.life.mode=="look")
+	horse.mount(player,avatar,actor);assert(horse.mounted and horse.parts.HorseNeck.position==horse.part_home.HorseNeck)
+	horse.drive(player,avatar,actor,Vector3.ZERO,.1,true)
+	assert(horse.dismount(player,avatar,actor,state,world.landscape))
+	assert(state.items[0].kind=="stable")
+	print("V025_INTEGRATION_OK: stable render/menu/map, graze, bounded walking, obstacle sweep, pause, recovery, approach/mount/dismount")

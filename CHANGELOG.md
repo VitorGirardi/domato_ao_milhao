@@ -1,3 +1,11 @@
+# Versão 0.25.0 — estrebaria e cavalo solto
+
+- Estrebaria original no Blender, construída por $550 a partir do nível 5; entrada aberta, colisões, rotação, mudança de lugar e destino no mapa.
+- Cavalo alterna entre observar, pastar e caminhar perto de onde ficou, com limite de 4,5 m, checagem de obstáculos e pausa quando o jogador se aproxima.
+- Descanso desmontado recupera 7 pontos de fôlego/s, ou 14 perto da entrada da estrebaria. Sem sistema obrigatório de fome.
+- Rédeas acompanham a cabeça ao pastar. Montaria restaura a pose; menus pausam o comportamento.
+- Save 17 aceita versões anteriores; dinheiro infinito mantido. Cuidados manuais e evolução ficam para a próxima etapa.
+
 # Versão 0.24.0 — mapa do vale e Pé de Pano
 
 - Minimapa orientado ao norte, jogador, cavalo, bosques, rio, estradas, terrenos e construções.

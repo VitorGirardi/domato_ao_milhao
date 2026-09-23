@@ -38,7 +38,7 @@ func run() -> void:
 	assert(game.weapons.start_reload());await create_timer(1.4).timeout
 	assert(game.state.armory.magazine==8 and game.state.armory.reserve==23)
 	var modern:Dictionary=game.state.serialize()
-	assert(modern.version==16 and modern.has("horse") and modern.has("armory"))
+	assert(modern.version==17 and modern.has("horse") and modern.has("armory"))
 	var old:=modern.duplicate(true);old.version=15;old.erase("horse")
 	assert(disk.restore(old) and disk.armory==game.state.armory and disk.horse==FarmHorse.defaults())
 	old=modern.duplicate(true);old.erase("armory")

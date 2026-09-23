@@ -256,3 +256,7 @@ A feira fica para depois. Prioridade definida pelo autor: um mapa menos artifici
 ## Bloco 0.24 — orientação no vale
 
 Entregue: minimapa, mapa completo, destinos e revisão do cavalo. Estrebaria, cuidados e evolução do cavalo ficam para um próximo bloco conforme prioridade do autor.
+
+## Bloco 0.25 — estrebaria e vida do cavalo
+
+Entregue: construção, descanso reforçado, pastar/observar/passear, colisões e destino no mapa. Próxima etapa sugerida: alimentação, escovação e evolução permanente do fôlego.

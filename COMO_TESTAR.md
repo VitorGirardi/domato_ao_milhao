@@ -1,4 +1,16 @@
-# Como testar a versão 0.24.0
+# Como testar a versão 0.25.0
+
+Extraia o ZIP e abra **DoMatoAoMilhao.exe**. Continue sua fazenda.
+
+1. **Construir:** com fazenda no nível 5 ou 6, use **TAB**, selecione **Estrebaria** no fim da barra (atalho **K**) e coloque em terreno seu. Custa $550; seu dinheiro infinito continua ativo. R/Q giram, M move a seleção.
+2. **Descanso:** leve Pé de Pano até a frente da estrebaria, desmonte com **E** e feche os menus. O fôlego recupera 14 pontos/s ali, contra 7 fora dela. Aproxime-se da porta para **E · Ver estrebaria**. Mais perto do cavalo, E monta.
+3. **Vida própria:** afaste-se um pouco e observe por uns 20 segundos. Ele alterna entre olhar, pastar e passear até 4,5 m de onde ficou. Aproximar-se interrompe o passeio para você montar.
+4. **Mapa:** **M** mostra o cavalo em movimento e a estrebaria como destino. A lista agora rola quando existem muitos lugares.
+5. **Regressão:** monte e use Shift para galopar; abra o mapa e confira a pausa. Mova/gire/remova a estrebaria e verifique que o cavalo continua utilizável. F5 salva a construção e a posição atual dele.
+
+A estrebaria e os comportamentos estão neste bloco. Alimentação manual, escovação e melhorias permanentes ficam para a próxima etapa. Saves antigos são aceitos; a nova gravação usa versão 17.
+
+## Histórico — versão 0.24.0
 
 Extraia o ZIP e abra **DoMatoAoMilhao.exe**. Continue sua fazenda; não precisa reiniciar.
 

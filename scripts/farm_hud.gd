@@ -231,13 +231,13 @@ func _build() -> void:
 		var key:String=crops[i]
 		crop_buttons[key]=button(tool_panel,FarmState.CROPS[key].name,Rect2(653+i*117,8,109,33),"crop:"+key)
 	mode_button=button(tool_panel,"Caminhar  [TAB]",Rect2(1150,8,221,34),"mode",true)
-	var tools=["inspect","plot","barn","coop","fence","sign","path","expand","workshop","corral","cheesery"]
-	var names=["Cuidar","Canteiro","Celeiro","Galinheiro","Cerca","Placa","Caminho","Expandir","Oficina","Curral","Queijaria"]
-	var costs=["Selecionar","$20 • semente","$240","$180 • 3 aves","$12","$25 • seu texto","$5","$900 • +8 m","$180","$650 • 1 vaga","$900 • queijos"]
+	var tools=["inspect","plot","barn","coop","fence","sign","path","expand","workshop","corral","cheesery","stable"]
+	var names=["Cuidar","Canteiro","Celeiro","Galinheiro","Cerca","Placa","Caminho","Expandir","Oficina","Curral","Queijaria","Estrebaria"]
+	var costs=["Selecionar","$20","$240","$180","$12","$25","$5","$900 • +8 m","$180","$650","$900","$550"]
 	for i in range(tools.size()):
-		var b:=button(tool_panel,"%s  %s\n%s"%[str((i+1)%10) if i<10 else "G",names[i],costs[i]],Rect2(18+i*124,51,118,83),"tool:"+tools[i])
+		var b:=button(tool_panel,"%s  %s\n%s"%[str((i+1)%10) if i<10 else ("G" if i==10 else "K"),names[i],costs[i]],Rect2(18+i*113,51,107,83),"tool:"+tools[i])
 		b.set_meta("unlocked_text",b.text)
-		b.add_theme_font_size_override("font_size",14)
+		b.add_theme_font_size_override("font_size",13)
 		buttons[tools[i]]=b
 	hint_panel=panel(build_hud,Rect2(330,654,767,46),Color("294b3c"))
 	hint_label=label(hint_panel,"WASD mover  •  Mouse direito girar  •  Scroll zoom",Vector2(14,8),Vector2(738,32),15,CREAM)
@@ -319,8 +319,9 @@ func update(state: FarmState, build_mode: bool, selected: int, tool: String, cro
 		quest_title.text="Seu primeiro império"
 		quest_label.text="Você plantou, cuidou e prosperou.\nContinue criando sua fazenda!\n\nFaturamento: $%d"%state.revenue
 	move_button.disabled=selected<0 or tool=="move"
-	barn_button.visible=selected>=0 and selected<state.items.size() and state.items[selected].kind in ["barn","workshop"]
+	barn_button.visible=selected>=0 and selected<state.items.size() and state.items[selected].kind in ["barn","workshop","stable"]
 	barn_button.text="Estoque do celeiro" if selected<0 or selected>=state.items.size() or state.items[selected].kind!="workshop" else "Bancada de melhorias"
+	if selected>=0 and selected<state.items.size() and state.items[selected].kind=="stable":barn_button.text="Ver estrebaria"
 	coop_button.visible=selected>=0 and selected<state.items.size() and state.items[selected].kind=="coop"
 	var multipart:bool=selected>=0 and selected<state.items.size() and state.items[selected].kind in ["barn","coop","workshop"]
 	paint_selector.set_item_disabled(1,not multipart)
@@ -348,6 +349,8 @@ func update(state: FarmState, build_mode: bool, selected: int, tool: String, cro
 			details_label.text='“%s”\n\nPinte ou escreva sua mensagem.'%item.text
 		elif item.kind=="barn":
 			details_label.text="Estoque e reserva de produtos\nReserva: %d / %d unidades\n\n[E] Conferir estoque pela porta."%[state.reserve_count(),state.reserve_capacity()]
+		elif item.kind=="stable":
+			details_label.text="Descanso para o Pé de Pano\nFôlego recupera 2× mais rápido\nperto da entrada.\n\n[E] Ver estrebaria."
 		elif item.kind=="workshop":
 			details_label.text="Bancada de ferramentas\nRegador em área: $300\n\n[E] Acessar pela entrada."
 		else:
