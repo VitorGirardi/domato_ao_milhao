@@ -56,8 +56,9 @@ func update(horse:FarmHorse,delta:float,active:bool,state:FarmState,landscape:Fa
 			horse.heading=next_heading;horse.rotation.y=next_heading
 			horse.position=Vector3(point.x,FarmLandscape.height_at(point),point.y);speed=.8
 	horse.animate(delta,speed,false)
-	horse.parts.HorseNeck.rotation.x+=graze*1.22
+	horse.parts.HorseNeck.rotation.x+=graze*1.48
 	horse.parts.HorseNeck.rotation.y=look
-	horse.parts.HorseNeck.position=horse.part_home.HorseNeck-Vector3.UP*graze*.34
+	# Rotate at the anatomical shoulder hinge; translating the whole neck pinched the chest.
+	horse.parts.HorseNeck.position=horse.part_home.HorseNeck
 	horse.sync_skin()
 	horse.store(state)
