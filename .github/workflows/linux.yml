@@ -1,7 +1,5 @@
 name: Linux compatibility
 on:
-  push:
-    branches: [codex/trabalhador01-linux]
   pull_request:
     paths: ['scripts/**', 'assets/**', 'project.godot', 'export_presets.cfg', 'tests/**', 'tools/linux/**', '.github/workflows/linux.yml']
   workflow_dispatch:
@@ -59,7 +57,10 @@ jobs:
             if grep -E 'SCRIPT ERROR|ERROR:' "test-results/linux/$test.log"; then exit 1; fi
           done
       - name: Linux multiplayer with two isolated processes
-        run: python3 tools/linux/network_qa.py
+        run: |
+          python3 tests/run_network.py --godot godot
+          mkdir -p test-results/linux/network
+          cp test-results/network-*/*.log test-results/linux/network/
       - name: X11 graphical gameplay and fullscreen
         run: |
           xvfb-run -a -s '-screen 0 1920x1080x24' bash -c 'openbox >test-results/linux/openbox.log 2>&1 & timeout 180 godot --display-driver x11 --audio-driver Dummy --path . --script tests/test_linux.gd >test-results/linux/x11.log 2>&1'
