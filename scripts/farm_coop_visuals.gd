@@ -3,6 +3,7 @@ extends RefCounted
 ## Replicate the host's actual animation. Never run worker economics on a client.
 static func roots(world:FarmWorld) -> Dictionary:
 	var result:Dictionary={}
+	if is_instance_valid(world.cat):result["cat"]=world.cat
 	for key in ["staff_root","field_root"]:
 		var n:Variant=world.get(key)
 		if is_instance_valid(n):result[key]=n
@@ -10,6 +11,8 @@ static func roots(world:FarmWorld) -> Dictionary:
 		var n:Variant=world.get(key).node
 		if is_instance_valid(n):result[key]=n
 	for h in world.chickens:result["hen_%d_%d"%[h.coop,h.hen]]=h.node
+	for pen in world.pigsties:
+		for pig in pen.pigs:result["pig_%d_%d"%[pen.index,pig.slot]]=pig.node
 	for c in world.cows:
 		result["cow_%d"%c.index]=c.node
 		if is_instance_valid(c.get("gate")):result["gate_%d"%c.index]=c.gate

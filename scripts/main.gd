@@ -57,6 +57,7 @@ var navigator:=FarmNavigation.new()
 var preferences:=FarmSettings.new()
 var front_end:=FarmFrontEnd.new()
 var network:=FarmNetwork.new()
+var companions:=FarmCompanions.new()
 var windowed_rect:=Rect2i()
 var windowed_mode:=Window.MODE_WINDOWED
 
@@ -99,6 +100,7 @@ func _ready() -> void:
 	add_child(audio);audio.setup(self);weapons.sound.bus=FarmAudio.EFFECTS_BUS
 	front_end.setup(self,loaded)
 	add_child(network);network.setup(self)
+	add_child(companions);companions.setup(self)
 	preferences.load_preferences();preferences.apply(self)
 	front_end.show_title()
 	_update_camera(1.0, true)
@@ -352,6 +354,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_SPACE: _try_jump()
 			KEY_TAB: _action("mode")
 			KEY_E: _interact_nearest()
+			KEY_C: companions.request("whistle")
+			KEY_V: companions.request("follow")
 			KEY_F: _action("market")
 			KEY_J: _action("market_orders")
 			KEY_H: _action("staff")
@@ -591,8 +595,8 @@ func _find_item(at: Vector2) -> int:
 
 func _distance_to_item(i: int) -> float:
 	var item:Dictionary=state.items[i]
-	if item.kind in ["barn","workshop","corral","cheesery","stable"]:
-		var door:=Vector3(item.x,0,item.z)+Vector3(0,0,3.0 if item.kind in ["barn","corral","cheesery","stable"] else 1.9).rotated(Vector3.UP,item.turn*PI/2)
+	if item.kind in ["barn","workshop","corral","cheesery","stable","pigsty"]:
+		var door:=Vector3(item.x,0,item.z)+Vector3(0,0,3.0 if item.kind in ["barn","corral","cheesery","stable","pigsty"] else 1.9).rotated(Vector3.UP,item.turn*PI/2)
 		return Vector2(player.position.x-door.x,player.position.z-door.z).length()
 	var area:=state.item_rect(item.kind,Vector2(item.x,item.z),item.turn)
 	var position_2d:=Vector2(player.position.x,player.position.z)
@@ -603,13 +607,13 @@ func _nearest() -> int:
 	nearby_hen=-1
 	var best:=-1
 	var distance:=2.6
-	if selected>=0 and selected<state.items.size() and state.items[selected].kind in ["plot","sign","barn","coop","workshop","corral","cheesery","stable"]:
+	if selected>=0 and selected<state.items.size() and state.items[selected].kind in ["plot","sign","barn","coop","workshop","corral","cheesery","stable","pigsty"]:
 		var current_distance:=_distance_to_item(selected)
 		if current_distance<distance:
 			best=selected
 			distance=current_distance
 	for i in range(state.items.size()):
-		if state.items[i].kind not in ["plot","sign","barn","coop","workshop","corral","cheesery","stable"]: continue
+		if state.items[i].kind not in ["plot","sign","barn","coop","workshop","corral","cheesery","stable","pigsty"]: continue
 		var d:=_distance_to_item(i)
 		if d<distance and (best<0 or d+0.05<distance):
 			best=i
@@ -632,7 +636,9 @@ func _nearby_context() -> Dictionary:
 	if player.position.distance_to(FarmWorld.TRADE_BOARD_AT)<2.8: return {"text":"Ver encomendas","action":"orders"}
 	if player.position.distance_to(Vector3(-24,0,14))<4: return {"text":"Conversar com Lúcia","action":"market"}
 	var index:=_nearest()
-	if index<0: return {}
+	if world.cat.can_pet(player.position) and player.position.distance_to(world.cat.position)<1.25 and (index<0 or player.position.distance_to(world.cat.position)<_distance_to_item(index)):
+		return {"text":"Fazer carinho no gato","action":"cat"}
+	if index<0:return {}
 	var item:Dictionary=state.items[index]
 	var context:Dictionary={"text":"","action":"item","index":index,"hen":nearby_hen,"ready":true,"seeds":false}
 	match item.kind:
@@ -640,6 +646,7 @@ func _nearby_context() -> Dictionary:
 		"coop": context.text="Cuidar das galinhas"
 		"cheesery": context.text="Queijo pronto · Recolher" if item.cheese.ready>0 else ("Queijo · faltam %ds"%ceili(item.cheese.remaining) if item.cheese.batch>0 else "Fazer queijo")
 		"corral": context.text="Cuidar da vaca"
+		"pigsty": context.text="Cuidar dos porcos"
 		"workshop": context.text="Abrir oficina"
 		"stable": context.text="Ver estrebaria"
 		"sign": context.text="Editar placa"
@@ -663,6 +670,9 @@ func _interact_nearest() -> void:
 	match context.action:
 		"armory": weapons.holster();weapons.show_shop()
 		"horse": _horse_interact()
+		"cat":
+			weapons.holster()
+			companions.request("pet")
 		"orders": hud.market(state,"orders")
 		"market": hud.market(state)
 		"item":
@@ -723,6 +733,7 @@ func _tend_selected() -> void:
 	elif item.kind=="coop": hud.coop(state,selected,selected_hen)
 	elif item.kind=="cheesery": FarmCheeseHUD.show(hud,state,selected)
 	elif item.kind=="corral": FarmDairyHUD.show(hud,state,selected)
+	elif item.kind=="pigsty": FarmPigHUD.show(hud,state,selected)
 	elif item.kind=="stable": FarmStable.show(hud,state,horse,selected)
 
 func _action(value: String) -> void:
@@ -832,6 +843,17 @@ func _action(value: String) -> void:
 		var earned:=FarmDairy.sell(state,int(hud.milk_quantity.value))
 		FarmDairyHUD.stock(hud,state); hud.toast("Leite vendido · +$%d"%earned); _update_ui()
 		return
+	if value=="coop" and selected>=0 and selected<state.items.size() and state.items[selected].kind=="pigsty":
+		FarmPigHUD.show(hud,state,selected);return
+	if value=="pigsty":
+		FarmPigHUD.show(hud,state,selected);return
+	if value.begins_with("pigs:"):
+		var act:=value.get_slice(":",1)
+		if act=="review":FarmPigHUD.confirm(hud,state,selected);return
+		if act=="back":FarmPigHUD.show(hud,state,selected);return
+		var error:=FarmPigs.care(state,selected,act)
+		world.update_animals(state);FarmPigHUD.show(hud,state,selected)
+		hud.toast(error if not error.is_empty() else "Porcos cuidados!");_update_ui();return
 	if value.begins_with("dairy:"):
 		var act:=value.get_slice(":",1)
 		if act=="review": FarmDairyHUD.confirm(hud,state,selected); return
