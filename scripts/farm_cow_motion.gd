@@ -5,6 +5,7 @@ extends RefCounted
 const SPOTS:=[Vector3(-1.10,0,.35),Vector3(.40,0,.35),Vector3(-.40,0,.35)]
 
 static func setup(cow:Dictionary,pen:Node3D) -> void:
+	FarmLivestockPose.prepare_cow(cow.node)
 	cow.node.position=Vector3(0,0,.35)
 	cow.motion={"phase":"walk","target":0,"wait":0.0,"gait":0.0,"graze":0.0,"time":0.0}
 	var material:=StandardMaterial3D.new()
@@ -65,12 +66,14 @@ static func animate(cow:Dictionary,delta:float,player_pos:Vector3) -> void:
 		var angle:=0.0
 		var axis:=Vector3.RIGHT
 		if key.begins_with("Leg"):
-			angle=sin(motion.gait+(0 if key in ["LegFL","LegBR"] else PI))*.24 if walking else 0.0
+			var phase:float={"LegBL":0.0,"LegFL":PI*.5,"LegBR":PI,"LegFR":PI*1.5}[key]
+			angle=sin(motion.gait+phase)*.20 if walking else 0.0
 		elif key=="CowNeck":
 			angle=motion.graze*1.12
 		elif key=="CowHead":
-			angle=motion.graze*(.12+sin(motion.time*7)*.025)
+			angle=motion.graze*.12
 		elif key=="CowTail":
 			axis=Vector3.UP;angle=sin(motion.time*2)*.18
 		var target:Basis=bone.rest*Basis(axis,angle)
 		bone.node.basis=bone.node.basis.slerp(target,1-exp(-delta*10))
+	FarmLivestockPose.cow(node,motion.time,motion.graze,walking)
