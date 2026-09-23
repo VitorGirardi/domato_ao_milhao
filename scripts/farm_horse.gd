@@ -1,5 +1,6 @@
 class_name FarmHorse
 extends Node3D
+signal encouraged
 const HOME:=Vector2(-30,5)
 var reins:=ImmediateMesh.new()
 var rein_ends:Array=[]
@@ -103,6 +104,7 @@ func dismount(player:CharacterBody3D,avatar:Node3D,actor:FarmAvatar,state:FarmSt
 func encourage() -> bool:
 	if not mounted or pat_time>0 or stamina<25:return false
 	stamina-=25;burst=3.5;pat_time=.55
+	encouraged.emit()
 	return true
 
 func drive(player:CharacterBody3D,avatar:Node3D,actor:FarmAvatar,direction:Vector3,delta:float,active:bool) -> void:
