@@ -56,6 +56,7 @@ var horse:=FarmHorse.new()
 var navigator:=FarmNavigation.new()
 var preferences:=FarmSettings.new()
 var front_end:=FarmFrontEnd.new()
+var network:=FarmNetwork.new()
 var windowed_rect:=Rect2i()
 var windowed_mode:=Window.MODE_WINDOWED
 
@@ -97,6 +98,7 @@ func _ready() -> void:
 	weapons.setup(self)
 	add_child(audio);audio.setup(self);weapons.sound.bus=FarmAudio.EFFECTS_BUS
 	front_end.setup(self,loaded)
+	add_child(network);network.setup(self)
 	preferences.load_preferences();preferences.apply(self)
 	front_end.show_title()
 	_update_camera(1.0, true)
@@ -146,7 +148,7 @@ func _physics_process(delta: float) -> void:
 	if horse.mounted:
 		horse.drive(player,avatar,actor,direction,delta,session_started and hud.modal_kind.is_empty())
 		horse.store(state);_update_camera(delta);return
-	if horse.is_inside_tree():horse.life.update(horse,delta,session_started and hud.modal_kind.is_empty() and not build_mode,state,world.landscape,player)
+	if not network.active and horse.is_inside_tree():horse.life.update(horse,delta,session_started and hud.modal_kind.is_empty() and not build_mode,state,world.landscape,player)
 	if actor.action_time>0 and not build_mode: direction=Vector3.ZERO
 	if build_mode:
 		focus += direction * delta * build_distance * 0.45
@@ -179,7 +181,7 @@ func _process(delta: float) -> void:
 	if session_started and not qa_mode and DisplayServer.get_name()!="headless" and hud.modal_kind.is_empty() and not focus_check_pending:
 		if get_window().mode==Window.MODE_MINIMIZED or not get_window().has_focus():_check_focus_pause()
 	action_cooldown=maxf(0,action_cooldown-delta)
-	if session_started and not build_mode and hud.modal_kind.is_empty():
+	if session_started and not network.active and not build_mode and hud.modal_kind.is_empty():
 		var discovery:=trail_journey.discover(Vector2(player.position.x,player.position.z))
 		if not discovery.is_empty():hud.toast(discovery)
 		state.tick(delta)
@@ -304,6 +306,15 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 func _unhandled_input(event: InputEvent) -> void:
+	if network.active:
+		if event is InputEventKey and event.pressed and not event.echo:
+			if event.keycode==KEY_ESCAPE:
+				if not network.ready_session:network.leave("Conexão cancelada.")
+				elif hud.modal_kind.is_empty():network.session_menu()
+				else:hud.close_modal()
+				get_viewport().set_input_as_handled();return
+			if event.physical_keycode not in [KEY_SPACE,KEY_B,KEY_M]:return
+		if event is InputEventMouseButton and event.button_index==MOUSE_BUTTON_LEFT:return
 	if weapons.game!=null and weapons.handle_input(event):
 		get_viewport().set_input_as_handled()
 		return
@@ -410,6 +421,8 @@ func _cancel_route() -> void:
 
 func _update_pointer() -> void:
 	ghost.visible = false
+	if network.active:
+		world.build_grid.visible=false;world.selection.visible=false;pointer_valid=false;return
 	for land in state.owned_areas():
 		if land.has_point(pointer):
 			world.build_grid.position=Vector3(land.get_center().x,.045,land.get_center().y)
@@ -483,6 +496,7 @@ func _ghost_material(node: Node) -> void:
 	for child in node.get_children(): _ghost_material(child)
 
 func _click_world() -> void:
+	if network.active:return
 	if not pointer_valid:
 		return
 	if move_index>=0:
@@ -637,6 +651,7 @@ func _nearby_context() -> Dictionary:
 	return context
 
 func _interact_nearest() -> void:
+	if network.active:return
 	actor.stop_emote()
 	if not hud.modal_kind.is_empty(): return
 	var context:=_nearby_context()
@@ -705,6 +720,7 @@ func _tend_selected() -> void:
 	elif item.kind=="stable": FarmStable.show(hud,state,horse,selected)
 
 func _action(value: String) -> void:
+	if network.handle(value):return
 	if quitting:return
 	if value=="close" and front_end.escape():return
 	if value.begins_with("front:"):
@@ -731,6 +747,7 @@ func _action(value: String) -> void:
 		if hud.modal_kind!="emotes" or build_mode or not session_started: return
 		var key:=value.get_slice(":",1)
 		hud.close_modal(); actor.emote(key)
+		network.send_emote(key)
 		return
 	actor.stop_emote()
 	if value=="raul": FarmDairyWorkerHUD.show(hud,state);return
@@ -1173,8 +1190,10 @@ func _update_ui() -> void:
 	hud.update(state,build_mode,selected,tool,crop,hover_hint)
 	hud.walking.update(hud,state,_nearby_context(),crop)
 	hud.walking.mount_status(horse.mounted,horse.stamina,horse.burst)
+	hud.walking.visit_mode(network.active)
+	if network.active:hud.build_hud.visible=false
 	navigator.refresh()
-	if horse.is_inside_tree():horse.ensure_parking(state,world.landscape)
+	if not network.active and horse.is_inside_tree():horse.ensure_parking(state,world.landscape)
 	var step:=state.journey_step()
 	if session_started and journey_seen>=0 and step>journey_seen:
 		hud.toast("Etapa concluída: "+FarmState.JOURNEY[journey_seen].title+"!")
@@ -1212,6 +1231,7 @@ func _journey_action() -> void:
 		elif key=="expand": hud.toast("Use Expandir na barra quando tiver $900.")
 
 func _save_game(notify: bool, force: bool = false) -> bool:
+	if network.active:return true
 	if not session_started and not force: return true
 	var temporary:=save_path+".tmp"
 	var file:=FileAccess.open(temporary,FileAccess.WRITE)
@@ -1248,6 +1268,7 @@ func _load_game() -> bool:
 func _request_quit() -> void:
 	if quitting or not _save_game(false):return
 	quitting=true;session_started=false;audio.stop_all()
+	if network.active and network.peer:network.peer.close()
 	# Let the audio mixer release loop playbacks before destroying the engine.
 	await get_tree().create_timer(.15).timeout
 	get_tree().quit()
@@ -1273,8 +1294,10 @@ func _pause_for_focus_loss() -> void:
 	player.velocity=Vector3.ZERO
 	for action_name in ["forward","back","left","right","run"]:Input.action_release(action_name)
 	weapons.holster()
-	hud.menu(state)
-	hud.toast("Jogo pausado enquanto você estava fora da janela.")
+	if network.active:network.session_menu()
+	else:
+		hud.menu(state)
+		hud.toast("Jogo pausado enquanto você estava fora da janela.")
 
 func _chime(kind: String = "build") -> void:
 	audio.play_effect(kind if kind in ["build","harvest","plant","water"] else "build")

@@ -33,6 +33,7 @@ func show_title() -> void:
 		var caption:=hud.label(p,"%s · Nível %d"%[game.state.farm_name,FarmLevels.level(game.state.farm_xp)],Vector2(96,373),Vector2(510,26),16,Color("dbdec9"))
 		caption.text_overrun_behavior=TextServer.OVERRUN_TRIM_ELLIPSIS
 	var entries:Array=[["Novo jogo","front:new"],["Configurações","front:settings"],["Controles","front:controls"],["Sair","front:quit"]] if has_save else [["Configurações","front:settings"],["Controles","front:controls"],["Sair","front:quit"]]
+	entries.push_front(["Jogar junto", "net:menu"])
 	for i in range(entries.size()):
 		var button:=FarmGameUI.action(hud,p,entries[i][0],Rect2(92,484+i*63,390,52),entries[i][1])
 		button.add_theme_font_size_override("font_size",22);button.focus_mode=Control.FOCUS_ALL
@@ -148,6 +149,7 @@ func show_controls() -> void:
 func escape() -> bool:
 	match game.hud.modal_kind:
 		"title":return true
+		"network":show_title();return true
 		"settings","controls","new_farm":back();return true
 		"new_confirm":new_game();return true
 	return false

@@ -1,6 +1,7 @@
 class_name FarmWalkHUD
 extends RefCounted
 
+var shortcuts:Array[Button]=[]
 var farm_levels:=FarmLevelsHUD.new()
 var root:Control
 var clock:Label
@@ -48,7 +49,8 @@ func setup(hud:FarmHUD) -> void:
 	for entry in [["background",Color("d8cfb6")],["fill",Color("6d9650")]]:
 		var style:=StyleBoxFlat.new();style.bg_color=entry[1];style.set_corner_radius_all(4);horse_stamina.add_theme_stylebox_override(entry[0],style)
 	for i in range(7):
-		FarmGameUI.action(hud,root,["F · Armazém","H · Ajudante","TAB · Construir","F5 · Salvar","Esc · Menu","B · Emotes","T · Terrenos"][i],Rect2(139+i*166,854,156,32),["market","staff","mode","save","menu","emotes","parcels"][i]).add_theme_font_size_override("font_size",14)
+		var shortcut:=FarmGameUI.action(hud,root,["F · Armazém","H · Ajudante","TAB · Construir","F5 · Salvar","Esc · Menu","B · Emotes","T · Terrenos"][i],Rect2(139+i*166,854,156,32),["market","staff","mode","save","menu","emotes","parcels"][i])
+		shortcut.add_theme_font_size_override("font_size",14);shortcuts.append(shortcut)
 
 func update(hud:FarmHUD,state:FarmState,context:Dictionary,crop:String) -> void:
 	farm_levels.update(state)
@@ -92,3 +94,10 @@ func mount_status(mounted:bool,stamina:float,burst:float) -> void:
 	horse_stamina.value=stamina
 	horse_title.text="Pé de Pano · %s · %d%%"%["Galope" if burst>0 else "Fôlego",int(stamina)]
 	controls.text="WASD cavalgar   •   Shift tapinha / galope   •   E desmontar" if mounted else "WASD andar   •   Shift correr   •   Espaço pular   •   Mouse direito girar"
+
+func visit_mode(active:bool) -> void:
+	for i in range(shortcuts.size()):shortcuts[i].visible=not active or i in [4,5]
+	objective.visible=not active
+	if active:
+		root.visible=true;interaction.visible=false;seed_panel.visible=false;attention.visible=false;horse_panel.visible=false
+		controls.text="VISITA · WASD andar · Shift correr · Espaço pular · B emotes · M mapa"
