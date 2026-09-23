@@ -239,6 +239,9 @@ func _build() -> void:
 		b.set_meta("unlocked_text",b.text)
 		b.add_theme_font_size_override("font_size",13)
 		buttons[tools[i]]=b
+	var pig_button:=button(tool_panel,"Chiqueiro · $500",Rect2(340,8,195,34),"tool:pigsty")
+	pig_button.set_meta("unlocked_text",pig_button.text)
+	buttons["pigsty"]=pig_button
 	hint_panel=panel(build_hud,Rect2(330,654,767,46),Color("294b3c"))
 	hint_label=label(hint_panel,"WASD mover  •  Mouse direito girar  •  Scroll zoom",Vector2(14,8),Vector2(738,32),15,CREAM)
 	hint_label.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
@@ -322,7 +325,8 @@ func update(state: FarmState, build_mode: bool, selected: int, tool: String, cro
 	barn_button.visible=selected>=0 and selected<state.items.size() and state.items[selected].kind in ["barn","workshop","stable"]
 	barn_button.text="Estoque do celeiro" if selected<0 or selected>=state.items.size() or state.items[selected].kind!="workshop" else "Bancada de melhorias"
 	if selected>=0 and selected<state.items.size() and state.items[selected].kind=="stable":barn_button.text="Ver estrebaria"
-	coop_button.visible=selected>=0 and selected<state.items.size() and state.items[selected].kind=="coop"
+	coop_button.visible=selected>=0 and selected<state.items.size() and state.items[selected].kind in ["coop","pigsty"]
+	coop_button.text="Cuidar dos porcos" if coop_button.visible and state.items[selected].kind=="pigsty" else "Cuidar das galinhas"
 	var multipart:bool=selected>=0 and selected<state.items.size() and state.items[selected].kind in ["barn","coop","workshop"]
 	paint_selector.set_item_disabled(1,not multipart)
 	var has_door:bool=multipart and state.items[selected].kind!="workshop"
@@ -341,6 +345,8 @@ func update(state: FarmState, build_mode: bool, selected: int, tool: String, cro
 			details_label.text="%s\n%s\n\nClique com Cuidar ou use E\nperto do canteiro."%[FarmState.CROPS[item.crop].name,status]
 		elif item.kind=="cheesery":
 			details_label.text="[E] Abrir queijaria\n2 L → 1 queijo · lotes de até 4\nProntos: %d"%item.cheese.ready
+		elif item.kind=="pigsty":
+			details_label.text="%d / 3 porcos · %s\n[E] Comprar e cuidar\nRação: %d%% • Água: %d%%"%[item.pigs.count,FarmPigs.status(item.pigs),roundi(item.pigs.food),roundi(item.pigs.water)]
 		elif item.kind=="corral":
 			details_label.text="Uma vaga para vaca\n[E] Comprar, cuidar e coletar leite.\nLeite no curral: %d / 8 L"%item.dairy.milk
 		elif item.kind=="coop":

@@ -17,7 +17,7 @@ static func level(xp:int) -> int:
 	return mini(result-1,THRESHOLDS.size())
 
 static func required(kind:String) -> int:
-	return 5 if kind=="stable" else maxi(1,BUILDINGS.find(kind)+1)
+	return 3 if kind=="pigsty" else 5 if kind=="stable" else maxi(1,BUILDINGS.find(kind)+1)
 
 static func unlocked(state:FarmState,kind:String) -> bool:
 	return level(state.farm_xp)>=required(kind)
