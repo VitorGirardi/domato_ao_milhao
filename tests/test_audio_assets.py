@@ -1,4 +1,4 @@
-"""Validate original WAV sources; Python standard library only."""
+"""Validate WAV sources; Python standard library only."""
 from array import array
 from pathlib import Path
 import json
@@ -23,4 +23,4 @@ for name, metadata in manifest.items():
     if name == 'manha_no_vale':
         assert len(samples) == 96 * 32000 * 2
         assert samples[:2] == samples[-2:], 'Musical loop must meet continuously'
-print('AUDIO_SIGNAL_OK: 26 original files, bounded peaks/RMS, faded effects and seamless musical loop')
+print('AUDIO_SIGNAL_OK: 26 source files, bounded peaks/RMS, faded effects and seamless musical loop')

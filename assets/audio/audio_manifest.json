@@ -147,11 +147,12 @@
     "boundary_jump": 0.0
   },
   "horse_snort": {
-    "seconds": 0.65,
-    "peak": 0.55,
-    "rms": 0.0798,
+    "seconds": 0.687,
+    "peak": 0.4,
+    "rms": 0.0838,
     "loop": false,
-    "boundary_jump": 0.0
+    "boundary_jump": 0.0,
+    "source": "BigSoundBank #1543, Joseph SARDIN, CC0"
   },
   "wind": {
     "seconds": 24.0,
@@ -168,17 +169,19 @@
     "boundary_jump": 0.0432
   },
   "horse_neigh": {
-    "seconds": 2.05,
-    "peak": 0.64,
-    "rms": 0.1614,
+    "seconds": 1.105,
+    "peak": 0.55,
+    "rms": 0.1181,
     "loop": false,
-    "boundary_jump": 0.0
+    "boundary_jump": 0.0,
+    "source": "BigSoundBank #1541, Joseph SARDIN, CC0"
   },
   "horse_sprint": {
-    "seconds": 0.78,
-    "peak": 0.65,
-    "rms": 0.1771,
+    "seconds": 0.687,
+    "peak": 0.46,
+    "rms": 0.0964,
     "loop": false,
-    "boundary_jump": 0.0
+    "boundary_jump": 0.0,
+    "source": "BigSoundBank #1543, Joseph SARDIN, CC0"
   }
 }

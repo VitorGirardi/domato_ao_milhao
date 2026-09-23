@@ -1,8 +1,8 @@
-# Som do vale — 0.28.0
+# Som do vale — 0.28.1
 
 A trilha **Manhã no Vale** é uma composição instrumental original de 32 compassos, em Dó maior, 80 BPM e 96 segundos. Combina cordas dedilhadas, baixo suave, sopro sintetizado e percussão discreta. Não usa músicas comerciais, samples baixados ou vozes. O tema tem frases e pausas; a cauda de reverberação atravessa o ponto de repetição sem corte.
 
-`tools/build_audio.py` gera todos os 26 arquivos com Python e NumPy, usando semente fixa. Os WAVs e o manifesto com duração, pico e RMS ficam em `assets/audio`. Os timbres e chamados dos animais são estilizados e sintetizados, não gravações de animais reais.
+`tools/build_audio.py` produz os 26 arquivos com Python e NumPy, usando semente fixa. Os WAVs e o manifesto com duração, pico e RMS ficam em `assets/audio`. O cavalo usa gravações reais CC0 de Joseph SARDIN / BigSoundBank, preservadas em art/audio (veja AUDIO_CREDITS.md). Os demais chamados continuam sintetizados. O relincho mantém a altura original; o sprint usa respiração curta, sem timbre tonal.
 
 ## No jogo
 

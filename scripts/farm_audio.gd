@@ -131,8 +131,8 @@ func _process(delta:float) -> void:
 
 func _horse_call(key:String) -> void:
 	if shutting_down:return
-	horse_voice.stop();horse_voice.stream=clips[key];horse_voice.volume_db=-7
-	horse_voice.pitch_scale=rng.randf_range(.97,1.03);horse_voice.play()
+	horse_voice.stop();horse_voice.stream=clips[key];horse_voice.volume_db=-10
+	horse_voice.pitch_scale=1.0;horse_voice.play()
 	call_timers.horse=rng.randf_range(16,24);emitted_events+=1;animal_called.emit(key)
 
 func _horse_sprint() -> void:
