@@ -1,8 +1,8 @@
 class_name FarmNetwork
 extends Node
-## First milestone: two-player visits. Farm snapshot is read-only on both peers.
+## Host-authoritative cooperative farm.
 const PORT:=28729
-const PROTOCOL:=2
+const PROTOCOL:=3
 var game:Node3D
 var active:=false
 var ready_session:=false
@@ -48,10 +48,18 @@ var coop_path:=""
 var harvest_actions:=0
 var stock_labels:Dictionary={}
 var stock_button:Button
+var structure_version:=0
+var command_busy:=false
+var remote_character:="farmer"
+var mounts:=FarmCoopMount.new()
+var plot_states:Dictionary={}
+var visual_timer:=0.0
+var visual_state:Dictionary={}
 
 func setup(owner_game:Node3D) -> void:
 	game=owner_game
 	coop_path=FarmCoop.path_for(game.save_path)
+	mounts.setup(self);add_child(mounts)
 	name="NetworkSession"
 	multiplayer.peer_connected.connect(_connected)
 	multiplayer.peer_disconnected.connect(_disconnected)
@@ -59,14 +67,14 @@ func setup(owner_game:Node3D) -> void:
 	multiplayer.connection_failed.connect(func():leave("Não foi possível conectar. Confira o endereço e a rede."))
 	multiplayer.server_disconnected.connect(func():leave("O anfitrião encerrou a sessão. Sua fazenda solo está preservada."))
 	badge=game.hud.label(game.hud.root,"",Vector2(440,122),Vector2(610,35),18,FarmHUD.CREAM)
-	stock_button=FarmGameUI.action(game.hud,game.hud.walking.root,"I · Estoque compartilhado",Rect2(139,854,260,32),"net:stock");stock_button.visible=false;stock_button.add_theme_font_size_override("font_size",14)
+	stock_button=FarmGameUI.action(game.hud,game.hud.walking.root,"I · Estoque",Rect2(1223,854,156,32),"net:stock");stock_button.visible=false;stock_button.add_theme_font_size_override("font_size",14)
 	badge.mouse_filter=Control.MOUSE_FILTER_IGNORE;badge.visible=false
 	badge.add_theme_color_override("font_shadow_color",Color("20392a"));badge.add_theme_constant_override("shadow_offset_y",2)
 
 func show_menu(message:String="") -> void:
 	var p:=FarmGameUI.open(game.hud,"network","Jogar junto · 2 jogadores","worker",850,650)
-	game.hud.label(p,"COOPERATIVO · PLANTAÇÃO",Vector2(32,112),Vector2(780,30),20)
-	game.hud.label(p,"Plantem, reguem e colham juntos. Estoque compartilhado.\nCooperativo salvo à parte; sua fazenda solo fica preservada.",Vector2(32,153),Vector2(780,62),19)
+	game.hud.label(p,"COOPERATIVO · FAZENDA",Vector2(32,112),Vector2(780,30),20)
+	game.hud.label(p,"Construam, produzam e cuidem da fazenda juntos.\nCooperativo salvo à parte; sua fazenda solo fica preservada.",Vector2(32,153),Vector2(780,62),19)
 	game.hud.label(p,"Seu nome",Vector2(32,225),Vector2(180,32),18)
 	name_input=LineEdit.new();name_input.position=Vector2(230,223);name_input.size=Vector2(580,43);name_input.max_length=20;name_input.text=local_name;p.add_child(name_input)
 	FarmGameUI.action(game.hud,p,"Continuar cooperativo" if FarmCoop.load_farm(coop_path)!=null else "Criar cooperativo da minha fazenda",Rect2(32,288,786,52),"net:host",true)
@@ -77,13 +85,13 @@ func show_menu(message:String="") -> void:
 	FarmGameUI.action(game.hud,p,"Voltar",Rect2(32,568,786,46),"net:back")
 
 func session_menu() -> void:
-	var p:=FarmGameUI.open(game.hud,"network_session","Plantação cooperativa","worker",850,480)
+	var p:=FarmGameUI.open(game.hud,"network_session","Fazenda cooperativa","worker",850,480)
 	var addresses:=PackedStringArray()
 	for ip in IP.get_local_addresses():
 		if ip.contains(".") and not ip.begins_with("127.") and not ip.begins_with("169.254."):addresses.append(ip)
 	var text:String="Seu endereço: "+", ".join(addresses)+"\nPorta UDP: %d"%PORT if hosting else "Você está visitando a fazenda de "+remote_name
 	game.hud.label(p,text,Vector2(32,122),Vector2(786,92),19).autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
-	game.hud.label(p,"E · plantar / regar / colher    I · estoque    F5 · salvar\nSó o anfitrião salva o cooperativo, separado da fazenda solo.",Vector2(32,227),Vector2(786,72),20)
+	game.hud.label(p,"E · interagir    Tab · construir    I · estoque    F5 · salvar\nSó o anfitrião salva o cooperativo, separado da fazenda solo.",Vector2(32,227),Vector2(786,72),20)
 	FarmGameUI.action(game.hud,p,"Voltar à fazenda",Rect2(32,330,380,50),"close",true)
 	FarmGameUI.action(game.hud,p,"Salvar e encerrar" if hosting else "Sair do cooperativo",Rect2(430,330,388,50),"net:leave")
 
@@ -100,8 +108,9 @@ func handle(value:String) -> bool:
 		return true
 	if not active:return false
 	if value=="menu":session_menu();return true
+	if value=="mode" and mounts.local_rider():game.hud.toast("Desmonte com E antes de construir.");return true
 	if value=="net:stock":show_stock();return true
-	if value=="nearby_interact":interact();return true
+	if value=="nearby_interact":return false
 	if value=="save":
 		if hosting:game.hud.toast("Cooperativo salvo." if save_coop() else "Falha ao salvar o cooperativo. Tente novamente.")
 		else:game.hud.toast("O anfitrião salva o cooperativo automaticamente.")
@@ -110,12 +119,16 @@ func handle(value:String) -> bool:
 	if value=="close" and not ready_session:leave("Conexão cancelada.");return true
 	if value=="quit":game._request_quit();return true
 	if value=="close" or value=="emotes" or value.begins_with("emote:") or value=="map" or value.begins_with("map:"):return false
-	game.hud.toast("Nesta etapa: E cuida dos canteiros; I abre o estoque. Construções e animais vêm depois.");return true
+	if FarmCoopCommands.mutates(value):
+		request_command(FarmCoopCommands.capture(game,value));return true
+	if value in ["reset_ask","reset_confirm","start"] or value.begins_with("front:"):
+		game.hud.toast("Saia do cooperativo antes de trocar ou reiniciar a fazenda.");return true
+	return false
 
 func _preserve(who:String) -> void:
 	local_name=who.strip_edges().left(20).replace("\n", " ")
 	if local_name.is_empty():local_name="Fazendeiro"
-	sequence=0;revision=0;received_revision=-1;plot_versions.clear();last_sequence.clear();last_action.clear();crop_visuals.clear()
+	structure_version=0;command_busy=false;sequence=0;revision=0;received_revision=-1;plot_versions.clear();last_sequence.clear();last_action.clear();crop_visuals.clear();plot_states.clear();visual_state.clear()
 	saved_state=game.state;saved_position=game.player.position;saved_build=game.build_mode;saved_pitch=game.pitch;saved_yaw=game.yaw
 	var copy:=FarmState.new();copy.restore(saved_state.serialize());game.state=copy
 	active=true;game.weapons.holster();game.actor.stop_emote();game._cancel_route()
@@ -161,17 +174,17 @@ func _connected(id:int) -> void:
 	if hosting:pending_peers[id]=Time.get_ticks_msec()
 
 func _on_connected() -> void:
-	_hello.rpc_id(1,PROTOCOL,local_name)
+	_hello.rpc_id(1,PROTOCOL,local_name,str(game.avatar.get_meta("character_id","farmer")))
 
 @rpc("any_peer","call_remote","reliable",0)
-func _hello(version:int,who:String) -> void:
+func _hello(version:int,who:String,character:String) -> void:
 	var id:=multiplayer.get_remote_sender_id()
 	if not hosting or not active or accepted!=0 or not pending_peers.has(id):return
 	if version!=PROTOCOL:
 		_reject.rpc_id(id,"Versões incompatíveis. Usem a mesma versão do jogo.");return
-	accepted=id;pending_peers.erase(id);remote_name=who.strip_edges().left(20)
+	accepted=id;pending_peers.erase(id);remote_name=who.strip_edges().left(20);remote_character=character if FarmCharacters.valid(character) else "farmer"
 	var pos:Vector3=game.player.position+Vector3(2,0,0)
-	_welcome.rpc_id(id,JSON.stringify(game.state.serialize()),local_name,pos,plot_versions)
+	_welcome.rpc_id(id,JSON.stringify(game.state.serialize()),local_name,pos,plot_versions,structure_version,str(game.avatar.get_meta("character_id","farmer")))
 	_spawn_remote(remote_name,pos);game.hud.toast(remote_name+" chegou à fazenda!")
 
 @rpc("authority","call_remote","reliable",0)
@@ -179,20 +192,21 @@ func _reject(reason:String) -> void:
 	leave(reason)
 
 @rpc("authority","call_remote","reliable",0)
-func _welcome(snapshot:String,who:String,pos:Vector3,versions:Dictionary) -> void:
+func _welcome(snapshot:String,who:String,pos:Vector3,versions:Dictionary,topology:int,character:String) -> void:
 	if hosting or not active or ready_session:return
 	if snapshot.length()>2000000 or not pos.is_finite():leave("A fazenda recebida não é válida.");return
 	var data:Variant=JSON.parse_string(snapshot)
 	var restored:=FarmState.new()
 	if not restored.restore(data):leave("Não foi possível carregar a fazenda compartilhada.");return
 	game.state=restored;game.state.unlimited_money=true;game.world.rebuild(game.state);game.horse.restore(game.state.horse)
-	remote_name=who.left(20);accepted=1;ready_session=true;plot_versions=versions;received_revision=-1
-	_start_visit(pos);_spawn_remote(remote_name,pos-Vector3(2,0,0))
+	remote_character=character if FarmCharacters.valid(character) else "farmer";structure_version=topology;remote_name=who.left(20);accepted=1;ready_session=true;plot_versions=versions;received_revision=-1
+	_start_visit(pos);_spawn_remote(remote_name,pos-Vector3(2,0,0));_client_ready.rpc_id(1)
 
 func _spawn_remote(who:String,pos:Vector3) -> void:
 	_remove_remote();motion_received_at=0;remote_airborne=false;remote_moving=false
-	remote=Node3D.new();game.add_child(remote);remote.position=pos;target=pos
-	remote_model=game.world.model("farmer",remote);remote_actor=FarmAvatar.new();remote_actor.setup(remote_model,game.world)
+	remote=CharacterBody3D.new();game.add_child(remote);remote.position=pos;target=pos
+	var collider:=CollisionShape3D.new();var capsule:=CapsuleShape3D.new();capsule.radius=.37;capsule.height=2.58;collider.shape=capsule;collider.position.y=1.29;remote.add_child(collider);remote.collision_layer=0;remote.collision_mask=1
+	remote_model=FarmCharacters.instantiate_model(remote_character);remote.add_child(remote_model);remote_actor=FarmAvatar.new();remote_actor.setup(remote_model,game.world)
 	var title:=Label3D.new();title.text=who;title.position.y=3.5;title.billboard=BaseMaterial3D.BILLBOARD_ENABLED;title.font_size=42;title.pixel_size=.008;title.modulate=Color("ffe6a0");remote.add_child(title)
 
 func _remove_remote() -> void:
@@ -202,6 +216,7 @@ func _remove_remote() -> void:
 @rpc("any_peer","call_remote","unreliable_ordered",1)
 func _motion(pos:Vector3,angle:float,moving:bool,running:bool,airborne:bool,dance:String,elapsed:float) -> void:
 	if not ready_session or multiplayer.get_remote_sender_id()!=accepted or not is_instance_valid(remote):return
+	if mounts.rider==accepted:return
 	if not pos.is_finite() or not is_finite(angle) or absf(pos.x)>250 or absf(pos.z)>250 or pos.y< -4 or pos.y>30:return
 	if not is_finite(elapsed):return
 	if dance.is_empty():remote_actor.stop_emote()
@@ -228,20 +243,26 @@ func _process(delta:float) -> void:
 	for id in pending_peers.keys():
 		if Time.get_ticks_msec()-int(pending_peers[id])>12000:peer.disconnect_peer(id);pending_peers.erase(id)
 	if hosting:
-		FarmCoop.tick(game.state,delta);game.world.update_crops(game.state)
+		game.state.tick(delta);game.world.update_staff(game.state,delta);track_plots();game.world.animate(delta,game.player.position,game.state);game.world.update_crops(game.state)
 		sync_timer-=delta
 		if sync_timer<=0:
 			sync_timer=.5;broadcast_state()
+	if hosting and accepted!=0:
+		visual_timer-=delta
+		if visual_timer<=0:
+			visual_timer=.1;_visuals.rpc_id(accepted,structure_version,var_to_bytes(FarmCoopVisuals.capture(game.world)).compress(FileAccess.COMPRESSION_GZIP))
+	elif not hosting and not visual_state.is_empty():FarmCoopVisuals.apply(game.world,visual_state,minf(1,delta*15))
 	badge.text="COOP · %s · %s"%[local_name,"2/2 jogadores · Esc opções" if accepted!=0 else "Aguardando amigo · Esc endereço"]
 	send_timer-=delta
 	if accepted!=0 and send_timer<=0:
 		send_timer=.05
 		_motion.rpc_id(accepted,game.player.position,game.avatar.rotation.y,Vector2(game.player.velocity.x,game.player.velocity.z).length()>.2,Input.is_action_pressed("run"),game.actor.airborne,game.actor.emote_kind,game.actor.emote_elapsed)
-	if is_instance_valid(remote):
+	if is_instance_valid(remote) and mounts.rider!=accepted:
 		remote.position=remote.position.lerp(target,minf(delta*15,1));remote_model.rotation.y=lerp_angle(remote_model.rotation.y,target_yaw,minf(delta*15,1))
 		remote_actor.airborne=remote_airborne;remote_actor.animate(delta,remote_moving,remote_running)
 
 func _disconnected(id:int) -> void:
+	mounts.release(id)
 	pending_peers.erase(id);last_sequence.erase(id);last_action.erase(id)
 	if hosting and id==accepted:
 		accepted=0;_remove_remote();game.hud.toast("O visitante saiu. Você pode receber outro amigo.")
@@ -250,6 +271,7 @@ func leave(message:String="") -> void:
 	if not active:return
 	if hosting and ready_session and not save_coop():
 		game.hud.toast("Falha ao salvar. A sessão continua aberta para tentar novamente.");return
+	mounts.reset()
 	active=false;ready_session=false;accepted=0;pending_peers.clear()
 	if peer:peer.close()
 	multiplayer.multiplayer_peer=OfflineMultiplayerPeer.new();peer=null
@@ -294,23 +316,25 @@ func request_tend(index:int,op:String,crop:String) -> void:
 	sequence+=1
 	game.action_cooldown=.35
 	var expected:=int(plot_versions.get(index,0))
-	if hosting:apply_tend(1,sequence,index,op,crop,expected)
-	else:_tend_request.rpc_id(1,sequence,index,op,crop,expected)
+	if hosting:apply_tend(1,sequence,index,op,crop,expected,structure_version)
+	else:_tend_request.rpc_id(1,sequence,index,op,crop,expected,structure_version)
 
 @rpc("any_peer","call_remote","reliable",0)
-func _tend_request(seq:int,index:int,op:String,crop:String,expected:int) -> void:
+func _tend_request(seq:int,index:int,op:String,crop:String,expected:int,topology:int) -> void:
 	var sender:=multiplayer.get_remote_sender_id()
 	if not hosting or not ready_session or sender!=accepted:return
-	apply_tend(sender,seq,index,op,crop,expected)
+	if topology<0:return
+	apply_tend(sender,seq,index,op,crop,expected,topology)
 
-func apply_tend(sender:int,seq:int,index:int,op:String,crop:String,expected:int) -> void:
+func apply_tend(sender:int,seq:int,index:int,op:String,crop:String,expected:int,topology:int=-1) -> void:
 	if not hosting or not active:return
 	if sender!=1 and sender!=accepted:return
 	if seq<=int(last_sequence.get(sender,0)):return
 	last_sequence[sender]=seq
 	var error:=""
 	var now:=Time.get_ticks_msec()
-	if index<0 or index>=game.state.items.size() or game.state.items[index].kind!="plot":error="Canteiro inválido."
+	if topology>=0 and topology!=structure_version:error="A fazenda mudou. Selecione o canteiro novamente."
+	elif index<0 or index>=game.state.items.size() or game.state.items[index].kind!="plot":error="Canteiro inválido."
 	elif not FarmState.CROPS.has(crop):error="Semente inválida."
 	elif int(plot_versions.get(index,0))!=expected or FarmCoop.operation(game.state.items[index])!=op or op.is_empty():error="Esse canteiro já mudou. Confira a nova ação."
 	elif now<int(last_action.get(sender,0)):error="Espere terminar a ação."
@@ -331,7 +355,8 @@ func apply_tend(sender:int,seq:int,index:int,op:String,crop:String,expected:int)
 	if game.state.serialize()==before:send_outcome(sender,index,"",crop,message);return
 	if not save_coop():
 		game.state.restore(before);send_outcome(sender,index,"",crop,"Falha ao salvar. A ação foi desfeita; tente novamente.");return
-	for changed in affected:plot_versions[changed]=int(plot_versions.get(changed,0))+1
+	for changed in affected:
+		plot_versions[changed]=int(plot_versions.get(changed,0))+1;plot_states[changed]=plot_stamp(game.state.items[changed])
 	last_action[sender]=now+(1200 if op=="water" else 800)
 	if op=="harvest":harvest_actions+=1
 	refresh_crops();broadcast_state();send_outcome(sender,index,op,visual_crop,message)
@@ -365,14 +390,17 @@ func apply_outcome(sender:int,index:int,op:String,crop:String,message:String) ->
 func broadcast_state() -> void:
 	if not hosting or not ready_session:return
 	revision+=1;update_stock()
-	if accepted!=0:_farm_update.rpc_id(accepted,revision,JSON.stringify(game.state.serialize()),plot_versions)
+	if accepted!=0:_farm_update.rpc_id(accepted,revision,JSON.stringify(game.state.serialize()),plot_versions,structure_version)
 
 @rpc("authority","call_remote","reliable",2)
-func _farm_update(number:int,data:String,versions:Dictionary) -> void:
+func _farm_update(number:int,data:String,versions:Dictionary,topology:int) -> void:
 	if not active or not ready_session or hosting or number<=received_revision or data.length()>2000000:return
 	var restored:=FarmState.new()
 	if not restored.restore(JSON.parse_string(data)):return
-	received_revision=number;game.state=restored;plot_versions=versions;refresh_crops()
+	received_revision=number;game.state=restored;plot_versions=versions
+	if topology!=structure_version:
+		structure_version=topology;rebuild_shared()
+	refresh_crops();game.world.update_animals(game.state);game.world.update_staff(game.state,0)
 	update_stock()
 
 func refresh_crops() -> void:
@@ -384,16 +412,133 @@ func refresh_crops() -> void:
 	game.world.update_crops(game.state)
 
 func show_stock() -> void:
-	var p:=FarmGameUI.open(game.hud,"coop_stock","Estoque compartilhado","barn",760,460)
-	for i in range(3):
-		var key:String=["carrot","wheat","corn"][i]
-		FarmGameUI.icon(p,key,Rect2(38,123+i*70,48,48))
-		game.hud.label(p,FarmState.CROPS[key].name,Vector2(107,130+i*70),Vector2(380,40),24)
-		stock_labels[key]=game.hud.label(p,str(game.state.inventory[key])+" un.",Vector2(532,130+i*70),Vector2(180,40),26)
-	game.hud.label(p,"A colheita dos dois vai para este estoque.",Vector2(32,341),Vector2(700,30),18)
-	FarmGameUI.action(game.hud,p,"Voltar ao campo",Rect2(32,392,696,46),"close",true)
+	var p:=FarmGameUI.open(game.hud,"coop_stock","Estoque compartilhado","barn",900,480)
+	stock_labels.clear()
+	var products:=["carrot","wheat","corn","egg","milk","cheese"]
+	var names:=["Cenoura","Trigo","Milho","Ovos","Leite","Queijo"]
+	for i in range(products.size()):
+		var key:String=products[i]
+		var x:=32+(i/3)*430
+		var y:=120+(i%3)*76
+		FarmGameUI.icon(p,key,Rect2(x,y,44,44))
+		game.hud.label(p,names[i],Vector2(x+58,y+4),Vector2(210,35),23)
+		stock_labels[key]=game.hud.label(p,str(stock_count(key))+" un.",Vector2(x+275,y+4),Vector2(120,35),24)
+	game.hud.label(p,"Produção e vendas dos dois usam este estoque.",Vector2(32,355),Vector2(836,30),18)
+	FarmGameUI.action(game.hud,p,"Voltar ao campo",Rect2(32,410,836,44),"close",true)
+
+func stock_count(key:String) -> int:
+	if key=="milk":return game.state.milk_stock
+	if key=="cheese":return game.state.cheese_stock
+	return int(game.state.inventory.get(key,0))
 
 func update_stock() -> void:
 	if game.hud.modal_kind!="coop_stock":return
 	for key in stock_labels:
-		if is_instance_valid(stock_labels[key]):stock_labels[key].text=str(game.state.inventory[key])+" un."
+		if is_instance_valid(stock_labels[key]):stock_labels[key].text=str(stock_count(key))+" un."
+
+func click_world() -> bool:
+	if not game.pointer_valid:return true
+	if game.move_index>=0:
+		request_command({"action":"move_item","index":game.move_index,"at":game.pointer,"turn":game.turn});return true
+	if not game.state.claimed:
+		request_command({"action":"claim","at":game.pointer});return true
+	if game.build_mode and FarmState.ITEMS.has(game.tool):
+		request_command({"action":"place","kind":game.tool,"at":game.pointer,"turn":game.turn,"crop":game.crop});return true
+	return false
+
+func request_command(command:Dictionary) -> void:
+	if not ready_session or command_busy:return
+	sequence+=1;command_busy=true
+	if hosting:apply_command(1,sequence,structure_version,command)
+	else:_command.rpc_id(1,sequence,structure_version,command)
+
+@rpc("any_peer","call_remote","reliable",0)
+func _command(seq:int,topology:int,command:Dictionary) -> void:
+	if hosting and ready_session and multiplayer.get_remote_sender_id()==accepted:
+		apply_command(accepted,seq,topology,command)
+
+func apply_command(sender:int,seq:int,topology:int,command:Dictionary) -> void:
+	if not hosting or not ready_session or sender not in [1,accepted] or seq<=int(last_sequence.get(sender,0)):return
+	last_sequence[sender]=seq
+	if var_to_bytes(command).size()>32000:command_result(sender,false,"Pedido muito grande.",command);return
+	if topology!=structure_version:command_result(sender,false,"A fazenda mudou. Confira a seleção e tente novamente.",command);return
+	var before:Dictionary=game.state.serialize()
+	var message:=FarmCoopCommands.run(game.state,command)
+	var changed:bool=game.state.serialize()!=before
+	if changed:
+		# Every domain routine must leave a loadable farm; rollback before any replication.
+		var check:=FarmState.new()
+		if not check.restore(game.state.serialize()) or not save_coop():
+			game.state.restore(before);command_result(sender,false,"Não foi possível salvar. A ação foi desfeita.",command);return
+		if FarmCoopCommands.structural(command.action):
+			structure_version+=1;plot_versions.clear();plot_states.clear();rebuild_shared()
+		else:game.world.update_animals(game.state);game.world.update_staff(game.state,0)
+		broadcast_state()
+	command_result(sender,changed,message if not message.is_empty() else ("Feito! Fazenda compartilhada atualizada." if changed else "Nada mudou. Confira os requisitos."),command)
+
+func command_result(sender:int,success:bool,message:String,command:Dictionary) -> void:
+	if sender==1:_command_done(success,message,command)
+	else:_command_done.rpc_id(sender,success,message,command)
+
+@rpc("authority","call_remote","reliable",2)
+func _command_done(success:bool,message:String,command:Dictionary) -> void:
+	if not active:return
+	command_busy=false
+	if success:
+		var action:String=command.get("action","")
+		if action in ["place","move_item","remove","claim","route_confirm","apply_text","apply_hen_name"]:
+			game.move_index=-1;game._cancel_route();game.hud.close_modal()
+			if action=="claim":game.build_mode=true;game.tool="plot";game.focus=Vector3(game.state.center.x,0,game.state.center.y)
+		else:refresh_panel()
+		game._chime()
+	game.hud.toast(message);game._update_ui()
+
+func rebuild_shared() -> void:
+	visual_state.clear()
+	game.selected=-1;game.selected_hen=-1;game.move_index=-1;game._cancel_route()
+	game.world.rebuild(game.state);crop_visuals.clear()
+	if not game.horse.mounted:game._ensure_player_space()
+	# An index-based editor must never silently retarget another building after removal.
+	if game.hud.modal_kind not in ["","network_session","market","parcels","coop_stock"]:
+		game.hud.close_modal();game.hud.toast("Construções atualizadas. Selecione novamente para editar.")
+
+func refresh_panel() -> void:
+	var h:FarmHUD=game.hud
+	var s:FarmState=game.state
+	var i:int=game.selected
+	match h.modal_kind:
+		"market":h.market(s,h.market_tab)
+		"parcels":FarmParcels.show(h,s)
+		"staff","staff_confirm":h.staff_panel(s)
+		"crew","crew_confirm":FarmCrewHUD.show(h,s)
+		"raul","raul_confirm":FarmDairyWorkerHUD.show(h,s)
+		"chico","chico_confirm":FarmCheeseWorkerHUD.show(h,s)
+		"cultivation","cultivation_confirm","cultivation_report":FarmCultivationHUD.report(h,s)
+		"milk_stock":FarmDairyHUD.stock(h,s)
+		"cheese_stock":FarmCheeseHUD.stock(h,s)
+		"cheese_orders":FarmCheeseHUD.orders(h,s)
+		"coop_stock":show_stock()
+		_:
+			if i>=0 and i<s.items.size():game._tend_selected()
+
+@rpc("authority","call_remote","reliable",3)
+func _visuals(topology:int,packet:PackedByteArray) -> void:
+	if not active or not ready_session or hosting or topology!=structure_version:return
+	var decoded:Variant=bytes_to_var(packet.decompress_dynamic(4194304,FileAccess.COMPRESSION_GZIP))
+	if decoded is Dictionary:visual_state=decoded
+
+@rpc("any_peer","call_remote","reliable",0)
+func _client_ready() -> void:
+	if hosting and multiplayer.get_remote_sender_id()==accepted:mounts.send_initial()
+
+
+func plot_stamp(item:Dictionary) -> Array:
+	return [item.planted,item.watered,item.crop,item.growth>=1]
+
+func track_plots() -> void:
+	for i in range(game.state.items.size()):
+		var item:Dictionary=game.state.items[i]
+		if item.kind!="plot":continue
+		var current:=plot_stamp(item)
+		if plot_states.has(i) and plot_states[i]!=current:plot_versions[i]=int(plot_versions.get(i,0))+1
+		plot_states[i]=current

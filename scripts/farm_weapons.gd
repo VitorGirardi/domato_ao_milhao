@@ -92,7 +92,7 @@ func _build_hud() -> void:
 	reticle=Label.new();reticle.set_anchors_and_offsets_preset(Control.PRESET_CENTER);reticle.position=Vector2(-24,-24);reticle.size=Vector2(48,48);reticle.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;reticle.vertical_alignment=VERTICAL_ALIGNMENT_CENTER;reticle.add_theme_font_size_override("font_size",30);reticle.mouse_filter=Control.MOUSE_FILTER_IGNORE;ui.add_child(reticle)
 
 func active() -> bool:
-	if game==null or not game.session_started or game.build_mode or not game.hud.modal_kind.is_empty():return false
+	if game==null or game.network.active or not game.session_started or game.build_mode or not game.hud.modal_kind.is_empty():return false
 	# Horse is optional so the armory also works before the mount feature lands.
 	var mount:Variant=game.get("horse")
 	return mount==null or not mount.mounted
@@ -255,6 +255,7 @@ func show_shop() -> void:
 	FarmGameUI.action(hud,p,"Voltar ao vale",Rect2(240,565,340,40),"close")
 
 func _shop_action(value:String) -> void:
+	if game.network.active:return
 	if not value.begins_with("armory:"):return
 	if game.hud.modal_kind!="armory" or not near_shop() or not game.session_started:return
 	var error:String

@@ -66,7 +66,7 @@ func run() -> void:
 		await create_timer(1.3).timeout
 		n.request_tend(0,"harvest","carrot")
 		# Deliberately replay exactly the same request.
-		n._tend_request.rpc_id(1,n.sequence,0,"harvest","carrot",2);flag("race_sent")
+		n._tend_request.rpc_id(1,n.sequence,0,"harvest","carrot",int(n.plot_versions.get(0,0)),n.structure_version);flag("race_sent")
 		await until(func():return game.state.inventory.carrot==3)
 		await create_timer(1).timeout
 		n.request_tend(1,"harvest","corn")
