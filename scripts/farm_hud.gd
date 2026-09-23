@@ -270,10 +270,7 @@ func update(state: FarmState, build_mode: bool, selected: int, tool: String, cro
 	for value in state.inventory.values():
 		total+=int(value)
 	stock_label.text="%d produtos no estoque   •   Venda: $%d"%[total,state.sale_value()]
-	var day:=1+int(state.elapsed/240)
-	var hour:=8+int(fmod(state.elapsed,240)/20)
-	var minute:=int(fmod(state.elapsed,20)*3)
-	clock_label.text="DIA %02d   •   %02d:%02d"%[day,hour,minute]
+	clock_label.text=FarmDayNight.clock_text(state.elapsed)
 	mode_label.text="CONSTRUÇÃO • PAUSADO" if build_mode else "VIDA NO CAMPO"
 	if not state.claimed:
 		mode_label.text="ESCOLHA SEU TERRENO"

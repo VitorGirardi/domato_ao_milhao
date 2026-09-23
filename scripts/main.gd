@@ -210,6 +210,7 @@ func _process(delta: float) -> void:
 			_save_game(false)
 	_update_pointer()
 	world.update_animals(state)
+	world.day_night.update_cycle(state.elapsed,player.position)
 	ui_timer += delta
 	if ui_timer >= 0.15:
 		ui_timer = 0

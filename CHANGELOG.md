@@ -1,3 +1,7 @@
+# 0.32.0 — Noites no vale
+
+Relógio completo de 24 horas, entardecer e amanhecer graduais, luar e 37 postes nas ruas e trilhas. Luzes locais limitadas a seis; horário compartilhado no cooperativo. Saves e economia permanecem preservados. Veja DIA_NOITE.md para horários e mudança do contador antigo de dias.
+
 # 0.31.0 — Fazenda cooperativa
 
 Construção, comércio, animais, equipe e cavalo compartilhados. Comandos validados e persistidos no anfitrião, animação replicada e proteção de seleção após edições concorrentes. Fazendeira selecionável e sincronizada; galinha cisca e vaca mastiga. Save cooperativo da 0.30 continua válido.
