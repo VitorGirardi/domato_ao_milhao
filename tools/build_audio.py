@@ -1,6 +1,6 @@
 """Original deterministic farm score and sound design. Requires Python + NumPy.
 
-No samples, downloaded music, voices, or third-party compositions. PCM WAVs
+Music and synthesized effects are original. Horse calls use bundled CC0 recordings. PCM WAVs
 are deliberately kept as source assets so the Godot importer handles platforms.
 """
 from pathlib import Path
@@ -159,31 +159,34 @@ def effects():
     save('river',river,.48,True)
 
 
+def recording(number):
+    """Decode the bundled CC0, mono 24-bit field recording without network access."""
+    with wave.open(str(ROOT / 'art/audio' / f'{number}.wav'), 'rb') as stream:
+        assert stream.getsampwidth() == 3 and stream.getnchannels() == 1
+        rate = stream.getframerate()
+        raw = np.frombuffer(stream.readframes(stream.getnframes()), dtype=np.uint8).reshape(-1, 3).astype(np.int32)
+    pcm = raw[:, 0] | raw[:, 1] << 8 | raw[:, 2] << 16
+    pcm = np.where(pcm & 0x800000, pcm - 0x1000000, pcm) / 8388608.0
+    pcm -= np.mean(pcm)
+    # Windowed sinc low-pass before resampling prevents aliasing at 32 kHz.
+    taps = np.arange(-64, 65)
+    cutoff = 14000 / rate
+    kernel = 2 * cutoff * np.sinc(2 * cutoff * taps) * np.hamming(len(taps))
+    pcm = np.convolve(pcm, kernel / kernel.sum(), mode='same')
+    return np.interp(np.arange(int(len(pcm) * SR / rate)) * rate / SR, np.arange(len(pcm)), pcm)
+
+
 def horse_calls():
-    # Equine whinny: a rising onset, nasal harmonics and the broken falling tail.
-    t=np.arange(int(2.05*SR))/SR
-    f=np.interp(t,[0,.13,.42,.95,1.4,2.05],[380,720,660,490,360,230])
-    f+=np.sin(2*np.pi*8.5*t)*(12+30*np.clip((t-.6)/1.4,0,1))
-    phase=2*np.pi*np.cumsum(f)/SR
-    y=np.zeros_like(t)
-    for h in range(1,16):
-        formant=.22+1.1*np.exp(-((f*h-1400)/600)**2)+.65*np.exp(-((f*h-2700)/850)**2)
-        y+=np.sin(phase*h)*formant/h**1.15
-    broken=.4+.6*(.5+.5*np.sin(2*np.pi*8*t))
-    modulation=np.where(t<.68,1,broken)
-    y*=modulation*np.sin(np.pi*t/2.05)**.7
-    y+=noise(2.05,3000)*.055*np.sin(np.pi*t/2.05)**2
-    save('horse_neigh',y,.64)
-    # Short voiced exhale for the accepted sprint, distinct from the idle whinny.
-    t=np.arange(int(.78*SR))/SR
-    f=200+105*np.exp(-t*4)+18*np.sin(t*45)
-    phase=2*np.pi*np.cumsum(f)/SR
-    y=sum(np.sin(phase*h)/h**1.4 for h in range(1,10))
-    y=(y*.65+noise(.78,2100)*.24)*np.sin(np.pi*t/.78)**1.1
-    save('horse_sprint',y,.65)
+    # Natural pitch and breath: no oscillator/formant approximation of the voice.
+    save('horse_neigh', recording(1541), .55)
+    breath = recording(1543)
+    save('horse_sprint', breath, .46)
+    save('horse_snort', breath, .40)
+    for name, number in [('horse_neigh', 1541), ('horse_sprint', 1543), ('horse_snort', 1543)]:
+        REPORT[name]['source'] = f'BigSoundBank #{number}, Joseph SARDIN, CC0'
 
 
 if __name__=='__main__':
     score();effects();horse_calls()
     (OUT/'audio_manifest.json').write_text(json.dumps(REPORT,indent=2),encoding='utf-8')
-    print('AUDIO_ASSETS_OK:',len(REPORT),'original assets;',round(sum(v['seconds'] for v in REPORT.values()),1),'seconds')
+    print('AUDIO_ASSETS_OK:',len(REPORT),'assets;',round(sum(v['seconds'] for v in REPORT.values()),1),'seconds')

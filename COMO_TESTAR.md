@@ -1,3 +1,7 @@
+# Teste 0.28.1 — Áudio do cavalo
+
+Extraia em pasta nova, abra DoMatoAoMilhao.exe e use Continuar. E monta e toca um relincho gravado; Shift, com fôlego, toca uma bufada curta. Sem fôlego/cooldown não repete. Ajuste em Configurações > Som > Ambiente e animais. Não precisa iniciar outra fazenda.
+
 # Como testar a versão 0.25.0
 
 ## Montaria e animais — 0.28.0

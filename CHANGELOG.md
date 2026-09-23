@@ -1,3 +1,9 @@
+# 0.28.1 — Voz natural do cavalo
+
+- Substitui relincho e bufadas sintéticos por gravações reais CC0, com créditos e fontes preservadas.
+- Sprint usa expiração curta; pitch original e volume moderado.
+- Mantém gatilhos de montaria, cooldown, áudio espacial e saves da 0.28.
+
 # Versão 0.25.0 — estrebaria e cavalo solto
 
 ## 0.28.0 — Montaria e vozes dos animais

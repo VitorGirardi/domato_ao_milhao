@@ -5,19 +5,23 @@
 Protótipo jogável de um tycoon de fazenda 3D estilizado para Windows, em português.
 Godot 4.7.2 + modelos originais feitos no Blender 5.2.1. Campanha solo e offline.
 
-**Versão atual: 0.28.0.** Veja [as prioridades](ROADMAP.md) e [as novidades](CHANGELOG.md).
+**Versão atual: 0.28.1.** Veja [as prioridades](ROADMAP.md) e [as novidades](CHANGELOG.md).
 
 Veja o [roteiro de teste manual](COMO_TESTAR.md), incluindo encomendas e vendas da 0.5.
 
 ## Jogar
 
-O executável local fica em `exports/windows-v0.28.0/DoMatoAoMilhao.exe` depois da exportação.
+O executável local fica em `exports/windows-v0.28.1/DoMatoAoMilhao.exe` depois da exportação.
 Ele abre diretamente, sem instalar Godot ou Blender. Os binários não são enviados ao Git.
 
 Para executar a partir do código:
 1. Abra o Godot 4.7.2, escolha **Importar** e selecione `project.godot`.
 2. Aguarde a importação dos modelos.
 3. Pressione **F5** para jogar. O cenário é montado pelos scripts durante a execução.
+
+## Correção 0.28.1
+
+Cavalo com relincho e respiração gravados, pitch natural e volume moderado. [Créditos CC0](AUDIO_CREDITS.md). [Proposta de cooperativo gratuito](MULTIPLAYER.md), ainda não implementado.
 
 ## Novidades da 0.28.0
 
