@@ -1,3 +1,10 @@
+# Versão 0.24.0 — mapa do vale e Pé de Pano
+
+- Minimapa orientado ao norte, jogador, cavalo, bosques, rio, estradas, terrenos e construções.
+- Mapa completo com destinos, marcação por clique, distância em metros e limpeza do destino. M andando/montado; mover preservado na construção.
+- Cavalo original remodelado no Blender com superfície anatômica contínua e esqueleto de dez ossos; revisão de olhos, focinho e junções.
+- Tela cheia/F11 e HUD centralizado da 0.23.2 integrados. Saves16 e dinheiro infinito preservados.
+
 # Alterações
 
 ## 0.23.2 — Tela cheia

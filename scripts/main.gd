@@ -3002,9 +3002,10 @@ func _qa_horse_preview() -> void:
 	horse.restore(FarmHorse.defaults());hud.close_modal();build_mode=false;player.position=horse.position+Vector3(1.8,.1,0)
 	for i in range(60):await get_tree().physics_frame
 	_horse_interact();assert(horse.mounted);set_physics_process(false)
+	player.position=Vector3(0,FarmLandscape.height_at(Vector2(0,30))+.05,30);horse.position=player.position;horse.heading=PI/2
 	for i in range(24):
 		if i==4:assert(horse.encourage())
-		horse.drive(player,avatar,actor,Vector3(0,0,1),.07,true)
+		horse.drive(player,avatar,actor,Vector3(1,0,0),.07,true)
 		camera.position=horse.position+Vector3(5,2.8,6);camera.look_at(horse.position+Vector3(0,1.8,0))
 		hud.world_hud.visible=i==0;_update_ui()
 		await _qa_ui_capture("horse-v023-ride-%02d"%i)
@@ -3032,14 +3033,16 @@ func _qa_v024() -> void:
 	assert(Vector2(player.position.x,player.position.z).distance_to(Vector2(mounted_at.x,mounted_at.z))<.01)
 	_action("close");navigator.select(FarmTrails.STOPS.mill.at,"Mirante dos Ventos")
 	set_physics_process(false)
+	player.position=Vector3(0,FarmLandscape.height_at(Vector2(0,30))+.05,30);horse.position=player.position;horse.heading=PI/2
 	for i in range(24):
 		if i==4:assert(horse.encourage())
-		horse.drive(player,avatar,actor,Vector3(0,0,1),.07,true)
+		horse.drive(player,avatar,actor,Vector3(1,0,0),.07,true)
 		camera.position=horse.position+Vector3(5,2.8,6);camera.look_at(horse.position+Vector3(0,1.8,0))
 		_update_ui()
 		await _qa_ui_capture("map-v024-ride-%02d"%i)
 	assert(horse.skin!=null and horse.skin_bones.size()==10)
 	assert(horse.dismount(player,avatar,actor,state,world.landscape))
+	_update_ui()
 	for angle in [0.0,1.57,3.14]:
 		horse.animate(.1,0,false)
 		camera.position=horse.position+Vector3(sin(angle)*6,2.7,cos(angle)*6);camera.look_at(horse.position+Vector3(0,1.4,0))

@@ -101,6 +101,15 @@ func run() -> void:
 		game.hud.walking.attention.visible=true;game.hud.walking.attention.text="Ninho cheio · Coletar ovos"
 		check(not rect(game.weapons.status).intersects(rect(game.hud.walking.attention)),tag+" weapon overlaps attention")
 		await screenshot(tag+"-walk")
+		fits(game.navigator.mini,tag+" minimap")
+		game._action("map");await settle();modal_bounds(tag+" valley map")
+		var point:=Vector2(100,-80)
+		await click_at(game.navigator.large.get_global_transform_with_canvas()*game.navigator.large.project(point))
+		check(game.navigator.waypoint.distance_to(point)<1,tag+" map click transform incorrect")
+		await screenshot(tag+"-map")
+		var map_key:=InputEventKey.new();map_key.physical_keycode=KEY_M;map_key.keycode=KEY_M;map_key.pressed=true
+		root.push_input(map_key,true);await settle()
+		check(game.hud.modal_kind.is_empty(),tag+" M did not close map")
 		game.hud.menu(game.state);await settle();modal_bounds(tag+" menu")
 		actions.clear()
 		await click_at(game.hud.modal.get_global_transform_with_canvas()*Vector2(305,165))

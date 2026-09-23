@@ -18,7 +18,12 @@ func setup(owner_game:Node3D) -> void:
 		if event is InputEventMouseButton and event.pressed and event.button_index==MOUSE_BUTTON_LEFT:show())
 	status=game.hud.label(p,"Explore o vale",Vector2(10,202),Vector2(232,20),14)
 	status.text_overrun_behavior=TextServer.OVERRUN_TRIM_ELLIPSIS
-	FarmGameUI.action(game.hud,p,"M · Mapa do vale",Rect2(7,224,238,26),"map").add_theme_font_size_override("font_size",14)
+	var button:=FarmGameUI.action(game.hud,p,"M · Mapa do vale",Rect2(7,224,238,26),"map")
+	button.add_theme_font_size_override("font_size",14)
+	for style_key in ["normal","hover","pressed","disabled"]:
+		var box:=button.get_theme_stylebox(style_key) as StyleBoxFlat
+		box.content_margin_top=2;box.content_margin_bottom=2
+	button.size.y=26
 
 func destinations() -> Array:
 	var values:Array=[]
