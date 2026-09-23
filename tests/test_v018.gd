@@ -3,7 +3,7 @@ var checks:=0
 func check(ok:bool,why:String) -> void:
 	checks+=1;assert(ok,why)
 func _initialize() -> void:
-	var f:=FarmState.new();f.claim(Vector2(4,-2));f.money=5000
+	var f:=FarmState.new();f.farm_xp=950;f.claim(Vector2(4,-2));f.money=5000
 	check(f.place("corral",Vector2(4,0),0).is_empty(),"Place corral")
 	var before:=f.money
 	check(FarmDairyWorker.hire(f).is_empty() and f.money==before-140,"Hire exact cost")
@@ -47,7 +47,7 @@ func _initialize() -> void:
 	check(not f.dairy_worker.hired and d.milk==4,"Dismiss keeps milk")
 	f.money=300;FarmDairyWorker.hire(f)
 	check(f.dairy_worker.total_spent==14,"Rehire preserves ledger")
-	var remap:=FarmState.new();remap.claim(Vector2(4,-2));remap.money=5000
+	var remap:=FarmState.new();remap.farm_xp=950;remap.claim(Vector2(4,-2));remap.money=5000
 	remap.place("plot",Vector2(-4,0),0);remap.place("corral",Vector2(4,0),0)
 	FarmDairyWorker.hire(remap);FarmDairyWorker.configure(remap,1,60)
 	remap.remove_item(0);check(remap.dairy_worker.site==0,"Remap earlier item")

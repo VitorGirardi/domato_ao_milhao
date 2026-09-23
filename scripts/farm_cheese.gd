@@ -32,6 +32,7 @@ static func collect(state:FarmState,index:int) -> int:
 	var data:Dictionary=state.items[index].cheese
 	var amount:=int(data.ready)
 	state.cheese_stock+=amount;data.ready=0
+	state.earn_xp(amount*FarmLevels.CHEESE)
 	return amount
 static func sell(state:FarmState,amount:int) -> int:
 	if amount<1 or amount>state.cheese_stock: return 0
@@ -45,5 +46,6 @@ static func deliver(state:FarmState) -> bool:
 	if not state.cheese_order.active or state.cheese_stock<amount: return false
 	state.cheese_stock-=amount;state.money+=amount*64;state.revenue+=amount*64
 	state.cheese_order.active=false;state.cheese_order.cycle+=1
+	state.earn_xp(FarmLevels.ORDER)
 	state.trade.nena.reputation+=1;state.refresh_journey()
 	return true

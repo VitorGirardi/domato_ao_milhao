@@ -1,5 +1,13 @@
 # Alterações
 
+## 0.19.0 — A fazenda sobe de nível
+
+- Seis níveis com XP de colheitas, coletas manuais/automáticas e encomendas.
+- Galinheiro, celeiro, oficina, curral e queijaria liberados progressivamente; custos mantidos.
+- Barra compacta, painel com ícones, cadeados no catálogo e aviso de evolução.
+- Save 14: migração reconhece o progresso antigo, sem cobrar nem remover construções.
+- Testes de limites, duplicação, ajudantes, bloqueios sem cobrança e persistência.
+
 ## 0.18.2 — Correção das mãos
 
 - Substitui a dobra lateral excessiva do punho na Six Seven por rotação axial do antebraço.

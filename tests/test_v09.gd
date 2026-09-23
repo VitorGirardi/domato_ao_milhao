@@ -1,7 +1,7 @@
 extends SceneTree
 
 func _initialize() -> void:
-	var farm:=FarmState.new()
+	var farm:=FarmState.new();farm.farm_xp=950
 	farm.claim(Vector2.ZERO)
 	farm.place("coop",Vector2.ZERO,0)
 	var before:=farm.serialize()

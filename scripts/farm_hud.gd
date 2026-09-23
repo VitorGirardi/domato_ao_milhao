@@ -66,6 +66,8 @@ var modal_kind := ""
 var current_tool := "inspect"
 var current_crop := "carrot"
 
+var farm_levels:=FarmLevelsHUD.new()
+
 func _ready() -> void:
 	add_child(root)
 	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -141,6 +143,7 @@ func button(parent: Control, text: String, rect: Rect2, value: String, primary: 
 	return b
 
 func _build() -> void:
+	farm_levels.setup(self,build_hud,Rect2(328,88,244,54),true)
 	var brand := panel(build_hud, Rect2(24, 22, 287, 98), Color("294b3c"))
 	label(brand, "DO MATO", Vector2(21,10), Vector2(260,31), 29, CREAM)
 	label(brand, "AO MILHÃO", Vector2(21,40), Vector2(260,34), 29, Color("edbd64"))
@@ -217,6 +220,7 @@ func _build() -> void:
 	var costs=["Selecionar","$20 • semente","$240","$180 • 3 aves","$12","$25 • seu texto","$5","$900 • +8 m","$180","$650 • 1 vaga","$900 • queijos"]
 	for i in range(tools.size()):
 		var b:=button(tool_panel,"%s  %s\n%s"%[str((i+1)%10) if i<10 else "G",names[i],costs[i]],Rect2(18+i*124,51,118,83),"tool:"+tools[i])
+		b.set_meta("unlocked_text",b.text)
 		b.add_theme_font_size_override("font_size",14)
 		buttons[tools[i]]=b
 	hint_panel=panel(build_hud,Rect2(330,654,767,46),Color("294b3c"))
@@ -263,7 +267,16 @@ func update(state: FarmState, build_mode: bool, selected: int, tool: String, cro
 	hint_panel.position.y=654 if build_mode else 730
 	tool_title.text="CONSTRUA SEU COMEÇO" if build_mode else "VIVA SUA FAZENDA"
 	walk_tip.visible=not build_mode
-	for b in buttons.values(): b.visible=build_mode
+	farm_levels.update(state)
+	for key in buttons:
+		var b:Button=buttons[key]
+		b.visible=build_mode
+		var locked:=not FarmLevels.unlocked(state,key)
+		b.text="%s\nNível %d"%[FarmState.ITEMS[key].name,FarmLevels.required(key)] if locked else str(b.get_meta("unlocked_text"))
+		b.icon=load("res://assets/ui/lock.svg") if locked else null
+		b.expand_icon=true;b.add_theme_constant_override("icon_max_width",18)
+		b.modulate=Color("c8c5b7") if locked else Color.WHITE
+		b.tooltip_text="Clique para ver como desbloquear" if locked else ""
 	select_panel.visible=state.claimed and build_mode
 	if current_tool!=tool or current_crop!=crop:
 		current_tool=tool

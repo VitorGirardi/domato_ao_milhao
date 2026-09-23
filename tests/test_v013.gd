@@ -1,6 +1,6 @@
 extends SceneTree
 func _initialize() -> void:
-	var farm:=FarmState.new()
+	var farm:=FarmState.new();farm.farm_xp=950
 	farm.claim(Vector2.ZERO); farm.money=2000; farm.place("coop",Vector2.ZERO,0)
 	var alerts:=FarmFieldAlerts.new()
 	assert(alerts.poll(farm).is_empty())

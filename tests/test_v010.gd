@@ -4,7 +4,7 @@ func check(ok:bool,why:String) -> void:
 	checks+=1
 	assert(ok,why)
 func _initialize() -> void:
-	var farm:=FarmState.new()
+	var farm:=FarmState.new();farm.farm_xp=950
 	farm.claim(Vector2.ZERO)
 	farm.place("coop",Vector2(-6,0),0)
 	farm.place("plot",Vector2(0,0),0)
@@ -40,7 +40,7 @@ func _initialize() -> void:
 	legacy.version=5; legacy.erase("irrigation"); legacy.watering_upgrade=true
 	check(loaded.restore(legacy) and not loaded.irrigation.enabled and loaded.watering_upgrade,"Old save keeps purchased upgrade and starts with irrigation off")
 	check(farm.remove_item(1).is_empty() and farm.irrigation.plots==[1],"Removing plot remaps selection")
-	var removal:=FarmState.new()
+	var removal:=FarmState.new();removal.farm_xp=950
 	assert(removal.restore(farm.serialize()))
 	check(removal.remove_item(1).is_empty() and not removal.irrigation.enabled and removal.staff.paused,"Removing last selected plot pauses worker instead of silently charging coop care")
 	assert(removal.restore(farm.serialize()))

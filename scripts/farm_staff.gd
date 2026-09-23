@@ -58,6 +58,7 @@ static func service(farm) -> void:
 	worker.services+=1
 	worker.eggs+=int(flock.nest)
 	farm.inventory.egg+=int(flock.nest)
+	farm.earn_xp(int(flock.nest)*FarmLevels.EGG)
 	flock.nest=0
 	if flock.food<=REFILL_AT+0.0000001: flock.food=100.0
 	if flock.water<=REFILL_AT+0.0000001: flock.water=100.0

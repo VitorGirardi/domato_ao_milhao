@@ -5,7 +5,7 @@ func _initialize() -> void:
 
 func preview() -> void:
 	root.size=Vector2i(960,640)
-	var state:=FarmState.new()
+	var state:=FarmState.new();state.farm_xp=950
 	state.claim(Vector2.ZERO)
 	state.place("coop",Vector2.ZERO,0)
 	state.items[0].flock.nest=6

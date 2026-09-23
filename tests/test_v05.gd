@@ -14,7 +14,7 @@ func supplies(farm: FarmState, key: String) -> void:
 	for product in offer.needs: farm.inventory[product]=int(offer.needs[product])
 
 func _initialize() -> void:
-	var farm:=FarmState.new()
+	var farm:=FarmState.new();farm.farm_xp=950
 	check(farm.trade.size()==3 and farm.active_orders()==0,"Three neighbors start without active commitments")
 	check(not farm.accept_order("nena").is_empty(),"Orders require owned land")
 	farm.claim(Vector2(4,0))
@@ -82,7 +82,7 @@ func _initialize() -> void:
 	balance=legacy_contract.money
 	check(not legacy_contract.deliver_contract() and legacy_contract.money==balance,"Introductory contract remains one-time")
 	check(legacy_contract.deliver_order("nena").is_empty() and legacy_contract.money==balance+accepted.reward,"Frozen active reward survives tier unlock")
-	var timer:=FarmState.new()
+	var timer:=FarmState.new();timer.farm_xp=950
 	timer.claim(Vector2(4,0))
 	for key in FarmTrade.KEYS: timer.accept_order(key)
 	check(timer.active_orders()==3,"Three neighbors can have independent active orders")

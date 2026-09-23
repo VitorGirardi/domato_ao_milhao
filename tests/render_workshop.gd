@@ -5,7 +5,7 @@ func _initialize() -> void:
 
 func review() -> void:
 	root.size=Vector2i(1200,800)
-	var state:=FarmState.new()
+	var state:=FarmState.new();state.farm_xp=950
 	state.claim(Vector2.ZERO)
 	state.money=5000
 	assert(state.place("workshop",Vector2.ZERO,0).is_empty())

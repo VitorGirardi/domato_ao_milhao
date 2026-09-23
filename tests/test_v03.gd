@@ -10,7 +10,7 @@ func check(condition: bool, message: String) -> void:
 		push_error("FAILED: "+message)
 
 func _initialize() -> void:
-	var farm:=FarmState.new()
+	var farm:=FarmState.new();farm.farm_xp=950
 	farm.claim(Vector2(4,0))
 	var line:=farm.line_plan("fence",Vector2(-4,-8),Vector2(4,-6))
 	check(line.size()==5 and line[4].x==4 and line[4].z==-8,"Drag locks to dominant axis with two-meter spacing")
@@ -95,7 +95,7 @@ func _initialize() -> void:
 	farm.transfer_reserve("carrot",false)
 	check(farm.remove_item(barn_index).is_empty() and farm.watering_upgrade,"Empty barn removable without losing permanent upgrade")
 	check(farm.transfer_reserve("carrot",true)==0,"No reserve access without barn")
-	var garden:=FarmState.new()
+	var garden:=FarmState.new();garden.farm_xp=950
 	garden.claim(Vector2(4,0))
 	for at in [Vector2(4,0),Vector2(2,0),Vector2(6,0),Vector2(4,-2),Vector2(4,2),Vector2(6,2),Vector2(8,0)]: garden.place("plot",at,0)
 	check(garden.water_targets(0)==[0],"Basic watering affects one plot")
@@ -112,7 +112,7 @@ func _initialize() -> void:
 	check(garden.inventory.carrot==3 and garden.harvests==1,"Upgrade does not mass-harvest or duplicate yields")
 	garden.tend(0)
 	check(garden.items[0].planted and not garden.items[0].watered,"Replant still requires explicit watering")
-	var broke:=FarmState.new()
+	var broke:=FarmState.new();broke.farm_xp=950
 	check(not broke.buy_watering_upgrade().is_empty() and broke.money==1600,"Upgrade requires barn")
 	broke.claim(Vector2(4,0))
 	broke.place("workshop",Vector2(4,0),0)

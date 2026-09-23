@@ -3,7 +3,7 @@ var checks:=0
 func check(ok:bool,why:String) -> void:
 	checks+=1;assert(ok,why)
 func _initialize() -> void:
-	var f:=FarmState.new();f.claim(Vector2(4,-2));f.money=5000;f.milk_stock=16
+	var f:=FarmState.new();f.farm_xp=950;f.claim(Vector2(4,-2));f.money=5000;f.milk_stock=16
 	f.place("cheesery",Vector2(4,0),0)
 	var before:=f.money
 	check(FarmCheeseWorker.hire(f).is_empty() and f.money==before-160,"Hiring price")
@@ -48,7 +48,7 @@ func _initialize() -> void:
 	check(restored.restore(old) and not restored.cheese_worker.hired and restored.items[0].cheese.batch==2,"Migration keeps batch without auto-hiring")
 	var missing:=snapshot.duplicate(true);missing.erase("cheese_worker")
 	check(not restored.restore(missing),"v12 requires worker")
-	var remap:=FarmState.new();remap.claim(Vector2(4,-2));remap.money=5000
+	var remap:=FarmState.new();remap.farm_xp=950;remap.claim(Vector2(4,-2));remap.money=5000
 	remap.place("plot",Vector2(-4,0),0);remap.place("cheesery",Vector2(4,0),0);FarmCheeseWorker.hire(remap);FarmCheeseWorker.configure(remap,1,1,4)
 	remap.remove_item(0)
 	check(remap.cheese_worker.site==0,"Removing earlier item remaps assignment")

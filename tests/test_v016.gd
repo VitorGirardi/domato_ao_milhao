@@ -4,7 +4,7 @@ func check(value:bool,why:String) -> void:
 	checks+=1
 	if not value: push_error(why);quit(1);assert(value,why)
 func _initialize() -> void:
-	var farm:=FarmState.new();farm.claim(Vector2(4,-2));farm.money=5000;farm.milk_stock=8
+	var farm:=FarmState.new();farm.farm_xp=950;farm.claim(Vector2(4,-2));farm.money=5000;farm.milk_stock=8
 	check(farm.place("cheesery",Vector2(4,0),0).is_empty() and farm.money==4100,"Building price")
 	check(not FarmCheese.start(farm,0,0).is_empty() and not FarmCheese.start(farm,0,5).is_empty(),"Batch bounds")
 	check(not FarmCheese.start(farm,-1,1).is_empty(),"Invalid target")

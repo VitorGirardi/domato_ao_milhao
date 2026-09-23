@@ -10,7 +10,7 @@ func check(condition: bool, message: String) -> void:
 		push_error("FAILED: "+message)
 
 func setup_farm() -> FarmState:
-	var farm:=FarmState.new()
+	var farm:=FarmState.new();farm.farm_xp=950
 	farm.claim(Vector2(4,0))
 	farm.place("coop",Vector2(0,0),0)
 	farm.place("coop",Vector2(8,0),0)
@@ -19,7 +19,7 @@ func setup_farm() -> FarmState:
 	return farm
 
 func _initialize() -> void:
-	var farm:=FarmState.new()
+	var farm:=FarmState.new();farm.farm_xp=950
 	check(not farm.staff.hired and farm.staff.paused,"No employee or costs in a new farm")
 	check(not farm.hire_staff(0).is_empty(),"Hiring requires a coop on owned land")
 	farm=setup_farm()
@@ -133,7 +133,7 @@ func _initialize() -> void:
 	large.hire_staff(0)
 	large.items[0].flock.food=12
 	large.items[0].flock.water=17
-	var small:=FarmState.new()
+	var small:=FarmState.new();small.farm_xp=950
 	small.restore(large.serialize())
 	large.tick(600)
 	for i in range(2400): small.tick(0.25)

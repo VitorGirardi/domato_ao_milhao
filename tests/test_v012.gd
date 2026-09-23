@@ -7,7 +7,7 @@ func check(ok:bool,why:String) -> void:
 		failures+=1
 		push_error(why)
 func fixture() -> FarmState:
-	var farm:=FarmState.new()
+	var farm:=FarmState.new();farm.farm_xp=950
 	farm.claim(Vector2.ZERO); farm.money=10000
 	farm.place("plot",Vector2.ZERO,0)
 	farm.place("plot",Vector2(2,0),0)
@@ -31,6 +31,7 @@ func _initialize() -> void:
 	check(FarmCultivation.job(farm,0)=="harvest" and FarmCultivation.job(farm,1)=="","Only selected plots")
 	var money:=farm.money
 	check(FarmCultivation.complete(farm,0,"harvest").is_empty() and farm.inventory.carrot==3 and farm.money==money-2,"Harvest goes to inventory, no autosale")
+	check(farm.farm_xp==960,"Bento awards crop XP once")
 	check(FarmCultivation.job(farm,0)=="plant","Next task is replant")
 	check(FarmCultivation.complete(farm,0,"plant").is_empty() and farm.items[0].crop=="wheat" and farm.money==money-10,"Replant charges service and wheat seeds")
 	check(FarmCultivation.complete(farm,0,"water").is_empty() and farm.money==money-12,"Water completes exact budget")
@@ -38,6 +39,7 @@ func _initialize() -> void:
 	check(farm.cultivation.produced.carrot==3 and farm.cultivation.sown.wheat==1,"Per crop report")
 	money=farm.money
 	check(not FarmCultivation.complete(farm,0,"water").is_empty() and farm.money==money,"No duplicate or stale charge")
+	check(farm.farm_xp==960,"Water, planting and rejected work do not award XP")
 	farm.items[0].growth=1.0
 	check(not FarmCultivation.complete(farm,0,"harvest").is_empty() and farm.field_staff.reason=="budget" and farm.money==money and farm.items[0].growth==1,"Budget pause is atomic")
 	check(FarmCultivation.configure(farm,plans,tasks,12).is_empty() and farm.cultivation.spent==12,"Configuration never renews budget")

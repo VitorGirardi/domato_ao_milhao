@@ -101,6 +101,7 @@ static func complete(farm,index:int,action:String) -> String:
 			farm.inventory[item.crop]+=amount
 			ledger.produced[item.crop]+=amount
 			farm.harvests+=1
+			farm.earn_xp(FarmLevels.HARVEST)
 			item.planted=false; item.watered=false; item.growth=0.0
 		"plant":
 			item.crop=plan_for(farm,index).crop

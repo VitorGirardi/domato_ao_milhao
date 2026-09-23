@@ -29,6 +29,8 @@ const JOURNEY = [
 	{"key":"coop", "title":"Companhia no quintal", "body":"Construa seu primeiro\ngalinheiro por $180.\nA Maricota vem de brinde!", "button":"Construir galinheiro", "action":"coop"},
 	{"key":"expand", "title":"Um sonho maior", "body":"Junte $900 para expandir.\nMais espaço para construir\na fazenda do seu jeito.", "button":"Planejar expansão", "action":"expand"}
 ]
+var farm_xp:int=0
+var level_notice:="" # Runtime-only; loaded games do not replay celebrations.
 var money: int = 1600
 var claimed: bool = false
 var center: Vector2 = Vector2(4, -2)
@@ -57,6 +59,16 @@ var staff_accessible:=true # Runtime arrival gate, recalculated by the world; no
 var staff_notice:=""
 var cultivation:Dictionary=FarmCultivation.fresh()
 var irrigation:Dictionary={"enabled":false,"plots":[],"watered":0,"spent":0}
+
+func earn_xp(amount:int) -> void:
+	if amount<=0: return
+	var before:=FarmLevels.level(farm_xp)
+	farm_xp=mini(1000000000,farm_xp+amount)
+	var after:=FarmLevels.level(farm_xp)
+	if after>before:
+		var names:Array[String]=[]
+		for i in range(before,after): names.append(ITEMS[FarmLevels.BUILDINGS[i]].name)
+		level_notice="Fazenda nível %d! Liberado: %s"%[after,", ".join(names)]
 
 func irrigation_worker() -> Dictionary:
 	return field_staff if field_staff.hired else staff
@@ -203,6 +215,7 @@ func deliver_order(key: String) -> String:
 	record.cycle+=1
 	record.active={}
 	record.last_result="delivered"
+	earn_xp(FarmLevels.ORDER)
 	refresh_journey()
 	return ""
 
@@ -394,6 +407,7 @@ func care_coop(index: int, action: String) -> String:
 			var amount:=int(flock.nest)
 			if amount==0: return "O ninho ainda está vazio."
 			inventory.egg+=amount
+			earn_xp(amount*FarmLevels.EGG)
 			flock.nest=0
 			return "+%d ovos no estoque!"%amount
 	return "Cuidado desconhecido."
@@ -444,6 +458,8 @@ func can_place(kind: String, at: Vector2, turn: int, ignore_index: int = -1) -> 
 		return "Escolha seu terreno primeiro."
 	if not ITEMS.has(kind):
 		return "Construção desconhecida."
+	if ignore_index<0 and not FarmLevels.unlocked(self,kind):
+		return "%s libera no nível %d da fazenda."%[ITEMS[kind].name,FarmLevels.required(kind)]
 	var area := item_rect(kind, at, turn)
 	if not bounds().encloses(area):
 		return "Fora da sua propriedade."
@@ -533,6 +549,7 @@ func tend(index: int, crop: String = "carrot") -> String:
 	if float(item.growth) >= 1.0:
 		inventory[item.crop] += int(CROPS[item.crop]["yield"])
 		harvests += 1
+		earn_xp(FarmLevels.HARVEST)
 		item.planted = false
 		item.watered = false
 		item.growth = 0.0
@@ -595,6 +612,7 @@ func deliver_contract() -> bool:
 	money += 110
 	revenue += 110
 	contract_done = true
+	earn_xp(FarmLevels.ORDER)
 	trade.nena.reputation+=1
 	refresh_journey()
 	return true
@@ -612,7 +630,7 @@ func expand() -> String:
 	return ""
 
 func serialize() -> Dictionary:
-	return {"version": 13, "dairy_worker":dairy_worker.duplicate(), "cheese_worker":cheese_worker.duplicate(), "cheese_stock":cheese_stock, "cheese_order":cheese_order.duplicate(), "milk_stock":milk_stock, "cultivation":cultivation.duplicate(true), "field_staff":field_staff.duplicate(true), "professional_watering":professional_watering, "irrigation":irrigation.duplicate(true), "money": money, "claimed": claimed,
+	return {"version": 14, "farm_xp":farm_xp, "dairy_worker":dairy_worker.duplicate(), "cheese_worker":cheese_worker.duplicate(), "cheese_stock":cheese_stock, "cheese_order":cheese_order.duplicate(), "milk_stock":milk_stock, "cultivation":cultivation.duplicate(true), "field_staff":field_staff.duplicate(true), "professional_watering":professional_watering, "irrigation":irrigation.duplicate(true), "money": money, "claimed": claimed,
 		"center": [center.x, center.y], "land_size": land_size,
 		"items": items.duplicate(true), "inventory": inventory.duplicate(),
 		"elapsed": elapsed, "revenue": revenue, "harvests": harvests,
@@ -621,8 +639,9 @@ func serialize() -> Dictionary:
 
 func restore(data: Variant) -> bool:
 	# Validate before mutating live state. Invalid files never partially replace it.
-	if not data is Dictionary or not _number(data.get("version")) or data.version<1 or data.version>13 or float(data.version)!=floorf(float(data.version)):
+	if not data is Dictionary or not _number(data.get("version")) or data.version<1 or data.version>14 or float(data.version)!=floorf(float(data.version)):
 		return false
+	if data.version>=14 and (not FarmCultivation.integer(data.get("farm_xp")) or data.farm_xp>1000000000): return false
 	if data.version>=11 and (not data.has("cheese_stock") or not data.has("cheese_order")): return false
 	if not FarmCultivation.integer(data.get("cheese_stock",0)) or not FarmCheese.valid_order(data.get("cheese_order",{"active":false,"cycle":0})): return false
 	if data.version>=10 and not data.has("milk_stock"): return false
@@ -783,6 +802,8 @@ func restore(data: Variant) -> bool:
 	irrigation=saved_irrigation.duplicate(true)
 	irrigation.plots=unique_plots
 	for key in ["watered","spent"]: irrigation[key]=int(irrigation[key])
+	farm_xp=int(data.farm_xp) if data.version>=14 else FarmLevels.legacy_xp(self)
+	level_notice=""
 	_expire_orders()
 	refresh_journey()
 	return true

@@ -3,7 +3,7 @@ var checks:=0
 func check(ok:bool,why:String) -> void:
 	checks+=1; assert(ok,why)
 func _initialize() -> void:
-	var farm:=FarmState.new(); farm.claim(Vector2(4,-2)); farm.money=5000
+	var farm:=FarmState.new();farm.farm_xp=950; farm.claim(Vector2(4,-2)); farm.money=5000
 	check(farm.place("corral",Vector2(4,0),0).is_empty(),"Build corral")
 	var data:Dictionary=farm.items[0].dairy
 	var money:=farm.money

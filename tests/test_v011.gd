@@ -6,7 +6,7 @@ func check(ok:bool,message:String) -> void:
 	assert(ok,message)
 
 func _initialize() -> void:
-	var farm:=FarmState.new()
+	var farm:=FarmState.new();farm.farm_xp=950
 	farm.claim(Vector2.ZERO)
 	farm.money=5000
 	assert(farm.place("barn",Vector2(-6,-6),0).is_empty())
@@ -66,7 +66,7 @@ func _initialize() -> void:
 	check(not restored.restore(bad),"Invalid upgraded flock rejected")
 	bad=farm.serialize(); bad.professional_watering=true; bad.watering_upgrade=false
 	check(not restored.restore(bad),"Tool dependency validated on load")
-	var legacy:=FarmState.new()
+	var legacy:=FarmState.new();legacy.farm_xp=950
 	legacy.claim(Vector2.ZERO); legacy.place("barn",Vector2.ZERO,0)
 	var old:=legacy.serialize()
 	old.version=6; old.erase("professional_watering"); old.items[0].erase("level")

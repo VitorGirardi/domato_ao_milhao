@@ -8,7 +8,7 @@ Não são promessas de prazo nem uma lista de tarefas já concluídas.
 |---|---|---|---|
 | 1 | Interações e primeiros minutos | Entender o jogo sem explicação externa; plantar, regar e colher com resposta visual | Entregue na 0.2; seguirá recebendo ajustes |
 | 2 | Construção confortável | Selecionar, mover, girar, traçar cercas/caminhos e personalizar cores | Entregue na 0.3, com traçados retos e pintura por partes |
-| 3 | Progressão e construções úteis | Celeiro com função, ferramentas melhores e desbloqueios com propósito | Reserva e primeira melhoria entregues na 0.3; ampliar depois |
+| 3 | Progressão e construções úteis | Celeiro com função, ferramentas melhores e desbloqueios com propósito | Seis níveis da fazenda e desbloqueios entregues na 0.19; reserva e melhorias preservadas |
 | 4 | Animais com personalidade | Nomes, aparência, água, alimentação, ninhos e comportamentos | Primeira entrega na 0.4, com galinhas |
 | 5 | Vizinhos e economia regional | Pedidos variados, especialidades, reputação e preços legíveis | Primeira entrega na 0.5; ranchos físicos e economia dinâmica depois |
 | 6 | Gestão e automação | Funcionários, rotinas e máquinas para evitar tarefas repetitivas | Primeiro ajudante entregue na 0.6; outras rotinas e máquinas depois |
@@ -220,3 +220,10 @@ Expressões animadas e personalização de roupas ficam para outra etapa.
 - [x] Validar interrupção, bloqueio, rotação e cadeia completa sem alterar o save real.
 
 Próxima decisão: testar o ritmo dessa cadeia antes de ampliar máquinas, preços e novas produções.
+
+## Entrega — 0.19
+
+- [x] XP por produção e encomendas, incluindo ajudantes.
+- [x] Seis níveis, catálogo bloqueado e próximos desbloqueios claros.
+- [x] Migração e preservação da fazenda existente.
+- [ ] Próximo bloco sugerido: balancear duração dos níveis com partidas reais e preparar a feira do vale.

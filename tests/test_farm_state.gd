@@ -10,7 +10,7 @@ func check(condition: bool, message: String) -> void:
 		push_error("FAILED: "+message)
 
 func _initialize() -> void:
-	var farm:=FarmState.new()
+	var farm:=FarmState.new();farm.farm_xp=950
 	check(not farm.claim(Vector2(-30,0)).is_empty(),"Reject river/road claims")
 	check(farm.money==1600 and not farm.claimed,"Invalid claim is atomic")
 	check(farm.claim(Vector2(4,0)).is_empty(),"Claim valid terrain")

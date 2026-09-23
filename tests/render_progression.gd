@@ -3,7 +3,7 @@ func _initialize() -> void:
 	call_deferred("review")
 func review() -> void:
 	root.size=Vector2i(1200,800)
-	var state:=FarmState.new()
+	var state:=FarmState.new();state.farm_xp=950
 	state.claim(Vector2.ZERO)
 	state.money=10000
 	for data in [["barn",Vector2(-7,-5)],["coop",Vector2(5,-5)],["workshop",Vector2(0,5)]]:

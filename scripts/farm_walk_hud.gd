@@ -1,6 +1,7 @@
 class_name FarmWalkHUD
 extends RefCounted
 
+var farm_levels:=FarmLevelsHUD.new()
 var root:Control
 var clock:Label
 var wallet:Label
@@ -16,6 +17,7 @@ func setup(hud:FarmHUD) -> void:
 	root=Control.new(); root.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	hud.world_hud.add_child(root)
 	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	farm_levels.setup(hud,root,Rect2(470,22,500,70))
 	var time_panel:=FarmGameUI.card(hud,root,Rect2(24,22,242,50))
 	clock=hud.label(time_panel,"",Vector2(15,10),Vector2(220,32),20)
 	var cash:=FarmGameUI.card(hud,root,Rect2(1154,22,262,50))
@@ -41,6 +43,7 @@ func setup(hud:FarmHUD) -> void:
 		FarmGameUI.action(hud,root,["F · Armazém","H · Ajudante","TAB · Construir","F5 · Salvar","Esc · Menu","B · Emotes"][i],Rect2(225+i*166,854,156,32),["market","staff","mode","save","menu","emotes"][i]).add_theme_font_size_override("font_size",14)
 
 func update(hud:FarmHUD,state:FarmState,context:Dictionary,crop:String) -> void:
+	farm_levels.update(state)
 	target=context
 	clock.text=hud.clock_label.text
 	wallet.text="$ "+hud._money(state.money)

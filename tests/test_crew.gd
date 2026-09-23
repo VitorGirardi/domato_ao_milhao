@@ -4,7 +4,7 @@ func check(ok:bool,why:String) -> void:
 	checks+=1
 	assert(ok,why)
 func _initialize() -> void:
-	var farm:=FarmState.new()
+	var farm:=FarmState.new();farm.farm_xp=950
 	farm.claim(Vector2.ZERO)
 	farm.money=5000
 	farm.place("coop",Vector2(-6,0),0)
@@ -54,7 +54,7 @@ func _initialize() -> void:
 	check(farm.irrigate(1).is_empty(),"Bento does not require an employed Zeca")
 	farm.dismiss_field_staff()
 	check(not farm.irrigation.enabled and farm.field_staff.level==2,"Dismissal stops irrigation and preserves training")
-	var solo:=FarmState.new()
+	var solo:=FarmState.new();solo.farm_xp=950
 	solo.claim(Vector2.ZERO); solo.place("plot",Vector2.ZERO,0)
 	check(solo.hire_field_staff().is_empty() and solo.configure_irrigation([0]).is_empty() and solo.irrigate(0).is_empty(),"Bento can be hired without a coop")
 	var legacy:=solo.serialize()

@@ -1,7 +1,30 @@
-# Como testar a versão 0.18.2
+# Como testar a versão 0.19.0
 
 Extraia o ZIP e abra `DoMatoAoMilhao.exe`. Escolha **Voltar para minha fazenda**.
 A versão aceita a partida anterior. Não precisa começar outra.
+
+## Níveis da fazenda — novidade
+
+1. Continue sua partida. Clique em **FAZENDA · NÍVEL** no alto da tela para ver os seis desbloqueios.
+2. Colha um canteiro: **+10 XP**. Colete ovos: **+2 por ovo**; leite: **+3 por litro**; queijo: **+8 por unidade**.
+3. Entregue uma encomenda: **+30 XP**, incluindo o primeiro pedido da Dona Nena.
+4. Os ajudantes dão a mesma experiência ao concluir a coleta. Regar, replantar, vender, construir e mover não dão XP.
+5. Em **TAB**, construções bloqueadas mostram cadeado e nível. Clique ou use o atalho: abre o painel de níveis sem gastar moedas.
+6. Ao alcançar um nível, surge o aviso e a construção fica disponível pelo preço normal. **F5**, feche e reabra para conferir o progresso.
+
+| Nível | XP acumulado | Desbloqueio |
+|---|---:|---|
+| 1 | 0 | Canteiros, cercas, placas e caminhos |
+| 2 | 30 | Galinheiro |
+| 3 | 120 | Celeiro |
+| 4 | 280 | Oficina rural |
+| 5 | 550 | Curral |
+| 6 | 950 | Queijaria |
+
+O limite deste bloco é nível 6; XP continua registrado. Melhorias dos prédios e treinamento dos funcionários são independentes.
+Partidas antigas recebem XP de reconhecimento por colheitas/encomendas registradas e um nível mínimo pelas construções, funcionários e equipamentos existentes. Dinheiro, estoque e construções permanecem. Não resete sua fazenda para testar.
+
+**Teste automático do começo, sem tocar na partida real:** execute o projeto no Godot com `-- --qa --qa-v019` (somente versão de desenvolvimento). Usa `qa_farm_v019.json`. Três canteiros colhidos liberam o galinheiro; o teste também confere bloqueios, tela e recarga do XP. A versão exportada ignora esse modo.
 
 ## Conferir as mãos corrigidas
 

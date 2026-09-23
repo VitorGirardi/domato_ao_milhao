@@ -41,6 +41,7 @@ static func care(state:FarmState,index:int,action:String) -> String:
 		"water": data.water=100.0
 		"milk":
 			if data.milk==0: return "Ainda não há leite para coletar."
+			state.earn_xp(int(data.milk)*FarmLevels.MILK)
 			state.milk_stock+=int(data.milk); data.milk=0
 		_: return "Ação desconhecida."
 	return ""

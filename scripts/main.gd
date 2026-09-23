@@ -51,7 +51,7 @@ var picked_trade_board:=false
 
 func _ready() -> void:
 	qa_mode = OS.is_debug_build() and "--qa" in OS.get_cmdline_user_args()
-	if qa_mode: save_path="user://qa_farm_v018_2.json"
+	if qa_mode: save_path="user://qa_farm_v019.json"
 	get_tree().auto_accept_quit = false
 	_inputs()
 	world = FarmWorld.new()
@@ -614,6 +614,8 @@ func _tend_selected() -> void:
 	elif item.kind=="corral": FarmDairyHUD.show(hud,state,selected)
 
 func _action(value: String) -> void:
+	if value=="farm_levels":
+		actor.stop_emote();FarmLevelsHUD.show(hud,state);return
 	if value=="emotes":
 		if not session_started or build_mode or actor.airborne or actor.action_time>0 or not hud.modal_kind.is_empty(): return
 		actor.stop_emote(); FarmEmotes.show(hud)
@@ -915,6 +917,9 @@ func _action(value: String) -> void:
 	if value.begins_with("tool:"):
 		if not session_started: return
 		var key:=value.get_slice(":",1)
+		if not FarmLevels.unlocked(state,key):
+			FarmLevelsHUD.show(hud,state)
+			return
 		if key=="expand":
 			var error:=state.expand()
 			if error.is_empty():
@@ -1075,6 +1080,8 @@ func _update_ui() -> void:
 	if session_started and journey_seen>=0 and step>journey_seen:
 		hud.toast("Etapa concluída: "+FarmState.JOURNEY[journey_seen].title+"!")
 	journey_seen=step
+	if session_started and not state.level_notice.is_empty() and hud.toast_time<=0:
+		hud.toast(state.level_notice);state.level_notice="";_chime()
 
 func _journey_action() -> void:
 	var step:=state.journey_step()
@@ -1162,23 +1169,25 @@ func _chime(kind: String = "build") -> void:
 	sound.play()
 
 func _qa() -> void:
+	if "--qa-v019" in OS.get_cmdline_user_args():
+		_action("start");await _qa_v019();get_tree().quit();return
 	if "--qa-v018" in OS.get_cmdline_user_args():
-		_action("start")
+		_action("start");state.farm_xp=950
 		await _qa_v018()
 		get_tree().quit()
 		return
 	if "--qa-v017" in OS.get_cmdline_user_args():
-		_action("start")
+		_action("start");state.farm_xp=950
 		await _qa_v017()
 		get_tree().quit()
 		return
 	if "--qa-v016" in OS.get_cmdline_user_args():
-		_action("start")
+		_action("start");state.farm_xp=950
 		await _qa_v016()
 		get_tree().quit()
 		return
 	if "--qa-v015" in OS.get_cmdline_user_args():
-		_action("start")
+		_action("start");state.farm_xp=950
 		await _qa_v015()
 		get_tree().quit()
 		return
@@ -1188,7 +1197,7 @@ func _qa() -> void:
 	if DisplayServer.get_name()!="headless":
 		await RenderingServer.frame_post_draw
 		get_viewport().get_texture().get_image().save_png("res://test-results/welcome.png")
-	_action("start")
+	_action("start");state.farm_xp=950
 	pointer=Vector2(4,-2)
 	pointer_valid=true
 	_click_world()
@@ -1342,6 +1351,7 @@ func _qa() -> void:
 	await _qa_v016()
 	await _qa_v017()
 	await _qa_v018()
+	await _qa_v019()
 	var restored:=FarmState.new()
 	assert(restored.restore(JSON.parse_string(JSON.stringify(state.serialize()))))
 	assert(restored.items.size()==state.items.size())
@@ -1352,7 +1362,7 @@ func _qa() -> void:
 	var saved_flock:Dictionary=state.items[1].flock.duplicate(true)
 	var saved_trade:Dictionary=state.trade.duplicate(true)
 	var saved_staff:Dictionary=state.staff.duplicate(true)
-	state=FarmState.new()
+	state=FarmState.new();state.farm_xp=950
 	assert(_load_game() and state.money==saved_money)
 	assert(state.reserve==saved_reserve and state.watering_upgrade and state.items[0].door_paint==2)
 	_qa_saved_flock(state.items[1].flock,saved_flock)
@@ -1361,7 +1371,7 @@ func _qa() -> void:
 	var damaged:=FileAccess.open(save_path,FileAccess.WRITE)
 	damaged.store_string("{damaged")
 	damaged.close()
-	state=FarmState.new()
+	state=FarmState.new();state.farm_xp=950
 	assert(_load_game() and state.money==saved_money)
 	assert(state.reserve==saved_reserve and state.watering_upgrade and state.items[0].roof_paint==5)
 	_qa_saved_flock(state.items[1].flock,saved_flock)
@@ -1959,7 +1969,7 @@ func _qa_painted_surfaces(node: Node) -> Dictionary:
 
 func _qa_v010() -> void:
 	var previous:=state.serialize()
-	state=FarmState.new()
+	state=FarmState.new();state.farm_xp=950
 	state.claim(Vector2(4,-2))
 	state.money=5000
 	for entry in [["coop",Vector2(-4,-4)],["plot",Vector2(2,0)],["plot",Vector2(4,0)],["barn",Vector2(8,-8)],["workshop",Vector2(-4,4)]]:
@@ -2030,7 +2040,7 @@ func _qa_v010() -> void:
 
 func _qa_v011() -> void:
 	var previous:=state.serialize()
-	state=FarmState.new()
+	state=FarmState.new();state.farm_xp=950
 	state.claim(Vector2(4,-2))
 	state.money=10000
 	for entry in [["barn",Vector2(8,-8)],["coop",Vector2(-4,-4)],["workshop",Vector2(-4,4)]]:
@@ -2106,7 +2116,7 @@ func _qa_v011() -> void:
 
 func _qa_crew() -> void:
 	var previous:=state.serialize()
-	state=FarmState.new()
+	state=FarmState.new();state.farm_xp=950
 	state.claim(Vector2(4,-2))
 	state.money=10000
 	state.place("coop",Vector2(-4,-4),0)
@@ -2181,7 +2191,7 @@ func _qa_crew() -> void:
 
 func _qa_v012() -> void:
 	var previous:=state.serialize()
-	state=FarmState.new()
+	state=FarmState.new();state.farm_xp=950
 	state.claim(Vector2(4,-2)); state.money=10000
 	state.place("coop",Vector2(-4,-4),0)
 	state.place("plot",Vector2(2,0),0)
@@ -2264,7 +2274,7 @@ func _qa_ui_capture(filename:String) -> void:
 
 func _qa_v013() -> void:
 	var previous:=state.serialize()
-	state=FarmState.new(); state.claim(Vector2(4,-2)); state.money=10000
+	state=FarmState.new();state.farm_xp=950; state.claim(Vector2(4,-2)); state.money=10000
 	assert(state.place("barn",Vector2(8,-8),0).is_empty())
 	assert(state.place("coop",Vector2(-4,-4),0).is_empty())
 	assert(state.place("plot",Vector2(2,0),0).is_empty())
@@ -2325,7 +2335,7 @@ func _qa_v013() -> void:
 
 func _qa_v014() -> void:
 	var previous:=state.serialize()
-	state=FarmState.new(); state.claim(Vector2(4,-2)); state.money=10000
+	state=FarmState.new();state.farm_xp=950; state.claim(Vector2(4,-2)); state.money=10000
 	assert(state.place("corral",Vector2(4,0),0).is_empty())
 	world.rebuild(state); build_mode=true; selected=0
 	FarmDairyHUD.show(hud,state,0)
@@ -2367,7 +2377,7 @@ func _qa_v014() -> void:
 
 func _qa_v015() -> void:
 	var previous:=state.serialize()
-	state=FarmState.new();state.claim(Vector2(4,-2));world.rebuild(state)
+	state=FarmState.new();state.farm_xp=950;state.claim(Vector2(4,-2));world.rebuild(state)
 	build_mode=false;_action("close");player.position=Vector3(4,0.3,-2)
 	player.velocity=Vector3.ZERO;actor.action_time=0;actor.airborne=false;actor.landing=0
 	focus=Vector3(4,0,-2);yaw=0.0;pitch=.36;walk_distance=5.5;avatar.rotation.y=0
@@ -2423,7 +2433,7 @@ func _qa_v015() -> void:
 	print("V015_INTEGRATION_OK: B wheel, paused selection, four grounded dances including Six Seven, alternating hands, movement/jump/menu/interact cancellation, work and airborne gates, expiry, bounded reactions, no economy/save changes")
 
 func _qa_cow_v015() -> void:
-	state=FarmState.new();state.claim(Vector2(4,-2));state.money=5000
+	state=FarmState.new();state.farm_xp=950;state.claim(Vector2(4,-2));state.money=5000
 	assert(state.place("corral",Vector2(4,0),0).is_empty())
 	assert(FarmDairy.care(state,0,"buy").is_empty())
 	world.rebuild(state);build_mode=true;hud.close_modal()
@@ -2469,7 +2479,7 @@ func _qa_cow_v015() -> void:
 
 func _qa_v016() -> void:
 	var previous:=state.serialize()
-	state=FarmState.new();state.claim(Vector2(4,-2));state.money=5000;state.milk_stock=8
+	state=FarmState.new();state.farm_xp=950;state.claim(Vector2(4,-2));state.money=5000;state.milk_stock=8
 	world.rebuild(state);build_mode=true;_action("close")
 	var key:=InputEventKey.new();key.keycode=KEY_G;key.physical_keycode=KEY_G;key.pressed=true
 	Input.parse_input_event(key);await get_tree().process_frame;await get_tree().process_frame
@@ -2520,7 +2530,7 @@ func _qa_v016() -> void:
 
 func _qa_v017() -> void:
 	var previous:=state.serialize()
-	state=FarmState.new();state.claim(Vector2(4,-2));state.money=5000;state.milk_stock=16
+	state=FarmState.new();state.farm_xp=950;state.claim(Vector2(4,-2));state.money=5000;state.milk_stock=16
 	assert(state.place("cheesery",Vector2(4,0),0).is_empty())
 	world.rebuild(state);build_mode=true;_action("close");selected=0;tool="inspect";move_index=-1;ghost.visible=false
 	_action("chico");_action("chico:review_hire")
@@ -2576,7 +2586,7 @@ func _qa_v017() -> void:
 
 func _qa_v018() -> void:
 	var previous:=state.serialize()
-	state=FarmState.new();state.claim(Vector2(4,-2));state.money=10000
+	state=FarmState.new();state.farm_xp=950;state.claim(Vector2(4,-2));state.money=10000
 	assert(state.place("corral",Vector2(4,0),0).is_empty())
 	assert(state.place("cheesery",Vector2(-4,0),0).is_empty())
 	assert(FarmDairy.care(state,0,"buy").is_empty())
@@ -2629,7 +2639,7 @@ func _qa_v018() -> void:
 	_action("raul");_action("raul:review_dismiss");_action("raul:confirm");assert(not state.dairy_worker.hired)
 	# Rotated pens, interrupted milking and obstruction must preserve the ledger.
 	for turn in range(4):
-		state=FarmState.new();state.claim(Vector2(4,-2));state.money=5000
+		state=FarmState.new();state.farm_xp=950;state.claim(Vector2(4,-2));state.money=5000
 		assert(state.place("corral",Vector2(4,0),turn).is_empty())
 		FarmDairy.care(state,0,"buy");state.items[0].dairy.milk=4
 		FarmDairyWorker.hire(state);FarmDairyWorker.configure(state,0,20)
@@ -2646,7 +2656,7 @@ func _qa_v018() -> void:
 		assert(interrupted and state.dairy_worker.spent==2 and state.milk_stock==4)
 		assert(not world.raul_motion.inside(state.items[0]) and not world.cows[0].gate_collision.disabled)
 	# A fence across the entrance prevents billing and emits an actionable pause.
-	state=FarmState.new();state.claim(Vector2(4,-2));state.money=5000
+	state=FarmState.new();state.farm_xp=950;state.claim(Vector2(4,-2));state.money=5000
 	state.place("corral",Vector2(4,0),0);FarmDairy.care(state,0,"buy");state.items[0].dairy.milk=4
 	FarmDairyWorker.hire(state);FarmDairyWorker.configure(state,0,20)
 	assert(state.place("fence",Vector2(4,4),0).is_empty());world.rebuild(state)
@@ -2657,3 +2667,38 @@ func _qa_v018() -> void:
 	assert(state.dairy_worker.spent==2 and state.milk_stock==4)
 	assert(state.restore(previous));world.rebuild(state);build_mode=true;_update_ui()
 	print("V018_INTEGRATION_OK: UI hire/cancel, budget, gate, cow docking, paths, milking/water/feed, milk-to-cheese, pause, renewal and persistence; walked=",walked)
+
+func _qa_v019() -> void:
+	var previous:=state.serialize()
+	state=FarmState.new();state.claim(Vector2(4,-2));world.rebuild(state)
+	hud.close_modal();build_mode=true;selected=-1;tool="inspect";_update_ui()
+	assert(state.farm_xp==0 and "Nível 2" in hud.buttons.coop.text)
+	var funds:=state.money
+	_action("tool:corral")
+	assert(hud.modal_kind=="farm_levels" and tool=="inspect" and state.money==funds)
+	await _qa_ui_capture("levels-v019-locked")
+	_action("close")
+	for pos in [Vector2(2,0),Vector2(4,0),Vector2(6,0)]:
+		assert(state.place("plot",pos,0).is_empty())
+	for i in range(3):state.tend(i)
+	state.tick(32)
+	for i in range(3):state.tend(i)
+	assert(state.farm_xp==30 and FarmLevels.level(state.farm_xp)==2)
+	world.rebuild(state);_update_ui()
+	_action("tool:coop")
+	assert(hud.modal_kind.is_empty() and tool=="coop" and "Nível 2" not in hud.buttons.coop.text)
+	assert(state.place("coop",Vector2(10,-6),0).is_empty())
+	world.rebuild(state);_update_ui()
+	await _qa_ui_capture("levels-v019-build")
+	build_mode=false;player.position=Vector3(4,0,5);focus=player.position;_update_camera(0,true);_update_ui()
+	assert(hud.walking.farm_levels.root.visible)
+	await _qa_ui_capture("levels-v019-walk")
+	_action("farm_levels");assert(hud.modal_kind=="farm_levels")
+	await _qa_ui_capture("levels-v019-unlocked")
+	_action("close")
+	assert(_save_game(false))
+	state.farm_xp=0
+	assert(_load_game() and state.farm_xp==30)
+	assert(state.level_notice.is_empty())
+	assert(state.restore(previous));world.rebuild(state);build_mode=true;_update_ui()
+	print("V019_INTEGRATION_OK: new farm, locked action, first unlock, HUD, progression screen and disk XP persistence")

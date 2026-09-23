@@ -10,7 +10,7 @@ func check(condition: bool, message: String) -> void:
 		push_error("FAILED: "+message)
 
 func make_farm() -> FarmState:
-	var farm:=FarmState.new()
+	var farm:=FarmState.new();farm.farm_xp=950
 	farm.claim(Vector2(4,0))
 	farm.place("coop",Vector2(4,0),0)
 	return farm
