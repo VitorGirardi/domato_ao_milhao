@@ -5,3 +5,4 @@
 *.svg text eol=lf
 *.blend binary
 *.glb binary
+*.sh text eol=lf
