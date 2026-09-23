@@ -5,7 +5,7 @@ uniform vec4 meadow_light:source_color=vec4(0.57,0.65,0.34,1.0);
 uniform vec4 earth:source_color=vec4(0.64,0.49,0.31,1.0);
 uniform vec4 bank:source_color=vec4(0.56,0.55,0.38,1.0);
 uniform int trail_count=0;
-uniform vec4 trails[32];
+uniform vec4 trails[64];
 varying vec3 world_pos;
 float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
 float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),f.x),f.y);}
@@ -26,7 +26,7 @@ void fragment(){
   d=min(d,length(p-a-ab*t));
  }
  float edge=noise(p*1.8)*.23+noise(p*.4)*.35;
- float road=(1.0-smoothstep(1.5+edge,2.35+edge,d))*(1.0-smoothstep(72.0,88.0,max(abs(p.x),abs(p.y))));
+ float road=(1.0-smoothstep(1.5+edge,2.35+edge,d));
  float tracks=exp(-pow((d-.88)*5.0,2.0));
  float verge=noise(p*2.7)*.16;
  vec3 dirt=earth.rgb*(.91+noise(p*6.0)*.12-tracks*.12);

@@ -1,5 +1,14 @@
 # Alterações
 
+## 0.23.0 — Pé de Pano e o circuito do vale
+
+- Cavalo original Blender com sela, rédeas e animação de pernas, cabeça, cauda e cavaleiro.
+- E monta/desmonta; WASD cavalga a 8 m/s; toque em Shift anima um tapinha e ativa galope a 14 m/s por 3,5 s, custando 25 de fôlego.
+- Fôlego recupera fora do galope; menus pausam movimento e duração do impulso. Desmontagem procura um lugar livre.
+- Mapa explorável de 214 × 290 m, mais de duas vezes a área anterior; circuito montado de aproximadamente 490 m.
+- Pomar do Sossego, Pedras do Eco e Campina das Flores ampliam o passeio, com placas e descobertas.
+- Save 16 migra saves antigos e guarda a posição do cavalo, com validação atômica. Dinheiro infinito mantido.
+
 ## 0.22.0 — Caminhos do vale
 
 - Trilhas de terra conectam os terrenos e três paradas, com passagem livre e nove placas de orientação.

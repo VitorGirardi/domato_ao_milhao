@@ -250,5 +250,5 @@ A feira fica para depois. Prioridade definida pelo autor: um mapa menos artifici
 
 - [x] Trilhas, placas e três paradas fora das áreas de construção.
 - [x] Moinho animado e adereços originais Blender; caminhos desobstruídos.
-- [ ] Próximo bloco: cavalo, montar/desmontar, câmera e deslocamento pelas trilhas.
+- [x] 0.23: cavalo, montar/desmontar, câmera, tapinha/galope com fôlego e circuito ampliado.
 - [ ] Depois: aquisição, cuidados e progressão da montaria; veículos em etapa posterior.

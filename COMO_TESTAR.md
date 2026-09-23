@@ -393,3 +393,16 @@ Ao sul, siga CAMPINA / ABÓBORAS para a Campina do Sol e a carroça na Curva da 
 Ao leste, a estrada leva ao Recanto da Prosa; a trilha que segue ao norte chega à Clareira do Bosque.
 Observe o moinho girando e as mensagens ao chegar às três paradas. Elas aparecem uma vez por sessão.
 T continua abrindo os terrenos; F5 salva. O cavalo ainda não foi implementado.
+
+
+## 0.23 — Cavalo e mapa ampliado
+
+1. Continue sua fazenda e use TAB para caminhar. Pé de Pano começa na estrada junto ao rio, um pouco ao norte do armazém de Lúcia (x=-30, z=5). Ele já está disponível, sem compra nesta versão.
+2. Chegue perto e aperte E para montar. WASD cavalga; mouse direito gira a câmera.
+3. Dê um toque em Shift: o personagem dá um tapinha na lateral e o cavalo galopa por 3,5 segundos. Cada impulso custa 25 de fôlego; veja a barra. O fôlego recupera andando ou parado fora do galope.
+4. Siga ao norte, passe o moinho e procure CIRCUITO DO VALE. O trajeto passa pelo pomar, pedras e flores, voltando perto da carroça. Uma ligação ao leste também acessa o circuito.
+5. E desmonta ao lado, procurando espaço livre. Se estiver apertado, afaste-se dos obstáculos. TAB desmonta antes de entrar na construção. Emotes e salto do personagem ficam disponíveis a pé.
+6. F5 salva a posição do cavalo. Ao reabrir, você começa a pé e ele permanece onde foi deixado. Se uma construção ocupar o lugar, ele é reposicionado para perto, em espaço livre.
+7. Abra um menu durante a montaria: o deslocamento e o impulso devem pausar. Feche para continuar.
+
+O cavalo ainda não tem compra, alimentação ou evolução; este bloco entrega montaria e exploração. Seu dinheiro infinito continua ativo.
