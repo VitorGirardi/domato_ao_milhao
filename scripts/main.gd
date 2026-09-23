@@ -553,6 +553,7 @@ func _nearest() -> int:
 func _nearby_context() -> Dictionary:
 	if build_mode or not state.claimed: return {}
 	if horse.mounted:return {"text":"Desmontar · Pé de Pano","action":"horse"}
+	if weapons.shop_has_priority():return {"text":"Conversar com Damião","action":"armory"}
 	if horse.can_mount(player):return {"text":"Montar · Pé de Pano","action":"horse"}
 	if player.position.distance_to(FarmWorld.TRADE_BOARD_AT)<2.8: return {"text":"Ver encomendas","action":"orders"}
 	if player.position.distance_to(Vector3(-24,0,14))<4: return {"text":"Conversar com Lúcia","action":"market"}
@@ -585,6 +586,7 @@ func _interact_nearest() -> void:
 	var context:=_nearby_context()
 	if context.is_empty(): return
 	match context.action:
+		"armory": weapons.holster();weapons.show_shop()
 		"horse": _horse_interact()
 		"orders": hud.market(state,"orders")
 		"market": hud.market(state)

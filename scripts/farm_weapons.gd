@@ -23,7 +23,6 @@ var flashes:Array[Dictionary]=[]
 var sound:=AudioStreamPlayer.new()
 var layer:=CanvasLayer.new()
 var status:Label
-var prompt:Label
 var reticle:Label
 var last_state:FarmState
 var walk_pitch:=0.78
@@ -90,7 +89,6 @@ func _build_hud() -> void:
 	status.position=Vector2(-368,102);status.size=Vector2(344,96);status.horizontal_alignment=HORIZONTAL_ALIGNMENT_RIGHT
 	status.add_theme_font_size_override("font_size",19);status.add_theme_color_override("font_color",Color("fff7df"));status.add_theme_color_override("font_shadow_color",Color("183024"));status.add_theme_constant_override("shadow_offset_x",2);status.add_theme_constant_override("shadow_offset_y",2)
 	status.mouse_filter=Control.MOUSE_FILTER_IGNORE;ui.add_child(status)
-	prompt=Label.new();prompt.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP);prompt.position=Vector2(-300,110);prompt.size=Vector2(600,60);prompt.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;prompt.add_theme_font_size_override("font_size",23);prompt.add_theme_color_override("font_color",Color("fff0c7"));prompt.add_theme_color_override("font_shadow_color",Color("183024"));prompt.add_theme_constant_override("shadow_offset_y",2);prompt.mouse_filter=Control.MOUSE_FILTER_IGNORE;ui.add_child(prompt)
 	reticle=Label.new();reticle.set_anchors_and_offsets_preset(Control.PRESET_CENTER);reticle.position=Vector2(-24,-24);reticle.size=Vector2(48,48);reticle.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;reticle.vertical_alignment=VERTICAL_ALIGNMENT_CENTER;reticle.add_theme_font_size_override("font_size",30);reticle.mouse_filter=Control.MOUSE_FILTER_IGNORE;ui.add_child(reticle)
 
 func active() -> bool:
@@ -102,6 +100,14 @@ func active() -> bool:
 func near_shop() -> bool:
 	var p:Vector3=game.player.position;var door:=SHOP_AT+Vector3(2.8,0,0)
 	return Vector2(p.x-door.x,p.z-door.z).length()<3.2 and absf(p.y-npc.position.y)<3
+
+func shop_has_priority() -> bool:
+	if not active() or not near_shop():return false
+	var mount:Variant=game.get("horse")
+	if mount!=null and mount.can_mount(game.player):
+		var counter:=SHOP_AT+Vector3(1,0,0)
+		if game.player.position.distance_to(mount.position)<game.player.position.distance_to(counter):return false
+	return true
 
 func holster() -> void:
 	if armed and game!=null:game.pitch=walk_pitch
@@ -123,11 +129,7 @@ func handle_input(event:InputEvent) -> bool:
 				else:game.hud.toast("Damião vende a P-8 na margem oeste da estrada, perto do armazém.")
 				return true
 			KEY_E:
-				if near_shop():
-					var mount:Variant=game.get("horse")
-					if mount!=null and mount.can_mount(game.player):
-						var counter:=SHOP_AT+Vector3(1,0,0)
-						if game.player.position.distance_to(mount.position)<game.player.position.distance_to(counter):return false
+				if shop_has_priority():
 					holster();show_shop();return true
 				holster()
 			KEY_R:
@@ -166,7 +168,6 @@ func _physics_process(delta:float) -> void:
 		if flashes[i].time<=0:flashes[i].node.queue_free();flashes.remove_at(i)
 	status.visible=active() and game.state.armory.pistol
 	status.text=("P-8  ·  %d / %d\n"%[game.state.armory.magazine,game.state.armory.reserve])+(("RECARREGANDO…" if reload_left>0 else "Clique: disparar · R: recarregar\nSegure direito: mirar · P: guardar") if armed else "P: sacar pistola")
-	prompt.visible=active() and near_shop();prompt.text="E · Conversar com Damião"
 	reticle.visible=active() and armed and reload_left<=0;reticle.text="×" if hit_time>0 else "+";reticle.modulate=Color("f4bf64") if hit_time>0 else Color("fff4da")
 	muzzle.visible=armed and recoil>SHOT_INTERVAL-.055
 

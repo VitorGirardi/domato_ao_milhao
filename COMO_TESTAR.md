@@ -1,4 +1,16 @@
-# Como testar a versão 0.21.0
+# Como testar a versão 0.23.1 integrada
+
+Extraia todo o ZIP para uma pasta e abra **DoMatoAoMilhao.exe**. Retome sua fazenda existente.
+
+1. **Damião:** siga a estrada oeste até a bancada próxima ao armazém. Use **E**, compre a P-8 e feche a loja.
+2. **Treino:** **P** saca/guarda, botão direito e mouse miram, clique esquerdo dispara e **R** recarrega. Os três alvos ao lado da loja reagem aos acertos.
+3. **Pé de Pano:** chegue perto do cavalo e use **E** para montar. A pistola será guardada. **WASD** cavalga, toque em **Shift** dá o tapinha para galopar e **E** desmonta em local livre.
+4. **Passeio:** confira o pomar, as pedras e a campina no circuito ampliado do vale.
+5. **Persistência:** use **F5**, feche e reabra. Fazenda, cavalo, arma e munição continuam salvos. Dinheiro infinito permanece ativo.
+
+A versão reúne as duas entregas no save 16. Ao montar ou abrir menus, uma recarga em andamento é cancelada sem consumir munição. Armas funcionam a pé e os disparos atingem os alvos de treino; personagens e animais não recebem dano.
+
+## Histórico de testes — terrenos 0.21
 
 Extraia o ZIP e abra `DoMatoAoMilhao.exe`. Escolha **Voltar para minha fazenda**.
 A versão aceita a partida anterior. Não precisa começar outra.
