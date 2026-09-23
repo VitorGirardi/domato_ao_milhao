@@ -126,8 +126,8 @@ func run() -> void:
 		fits(game.hud.walking.horse_panel,tag+" horse stamina")
 		fits(game.weapons.status,tag+" weapon status")
 		check(rect(game.weapons.reticle).get_center().distance_to(root.get_visible_rect().get_center())<1,tag+" reticle off center")
-		game.weapons.status.visible=true;game.weapons.status.text="P-8 Â· 8 / 24\nR recarregar Â· P guardar"
-		game.hud.walking.attention.visible=true;game.hud.walking.attention.text="Ninho cheio Â· Coletar ovos"
+		game.weapons.status.visible=true;game.weapons.status.text="P-8 · 8 / 24\nR recarregar · P guardar"
+		game.hud.walking.attention.visible=true;game.hud.walking.attention.text="Ninho cheio · Coletar ovos"
 		check(not rect(game.weapons.status).intersects(rect(game.hud.walking.attention)),tag+" weapon overlaps attention")
 		await screenshot(tag+"-walk")
 		fits(game.navigator.mini,tag+" minimap")
