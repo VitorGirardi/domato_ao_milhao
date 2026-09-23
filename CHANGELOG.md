@@ -1,3 +1,17 @@
+# 0.33.0 — Construção sem bagunça
+
+- Catálogo em cinco categorias: Lavoura, Animais, Estruturas, Decoração e Terrenos.
+- Miniaturas das próprias construções, nome e preço; bloqueios mostram o nível necessário.
+- Missão e caderno saem da câmera de construção. Ajuda fica no botão `?`.
+- Selecionar uma peça revela Mover, Pintar, Abrir/Cuidar e Remover conforme o tipo. Pintura e sementes aparecem no contexto certo.
+- Clique em uma construção seleciona para edição; Abrir/Cuidar entra no painel da construção. TAB volta ao personagem.
+- Corrigido bloqueio antigo da prévia/posicionamento pelo mouse no cooperativo; Escape cancela a peça antes de abrir o menu da sessão.
+- Mantidos noite, postes, dinheiro infinito e formato de saves/protocolo.
+
+# 0.32.0 — Noites no vale
+
+Relógio completo de 24 horas, entardecer e amanhecer graduais, luar e 37 postes nas ruas e trilhas. Luzes locais limitadas a seis; horário compartilhado no cooperativo. Saves e economia permanecem preservados. Veja DIA_NOITE.md para horários e mudança do contador antigo de dias.
+
 # 0.31.0 — Fazenda cooperativa
 
 Construção, comércio, animais, equipe e cavalo compartilhados. Comandos validados e persistidos no anfitrião, animação replicada e proteção de seleção após edições concorrentes. Fazendeira selecionável e sincronizada; galinha cisca e vaca mastiga. Save cooperativo da 0.30 continua válido.

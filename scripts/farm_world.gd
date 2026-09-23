@@ -4,6 +4,7 @@ extends Node3D
 const TRADE_BOARD_AT:=Vector3(-22.1,0,15.4)
 
 var landscape:=FarmLandscape.new()
+var day_night:=FarmDayNight.new()
 var models: Dictionary = {}
 var cows:Array[Dictionary]=[]
 var raul_motion:=FarmDairyWorkerMotion.new()
@@ -58,6 +59,7 @@ func _ready() -> void:
 	add_child(border)
 	_environment()
 	_landscape()
+	day_night.setup(self,day_night.environment,day_night.sky,day_night.sun)
 	_build_guides()
 
 func _build_guides() -> void:
@@ -157,6 +159,9 @@ func _environment() -> void:
 	sun.directional_shadow_max_distance = 110
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS
 	add_child(sun)
+	add_child(day_night)
+	# Post placement waits for landscape geometry and collision bounds.
+	day_night.environment=env;day_night.sky=sky_mat;day_night.sun=sun
 
 func _landscape() -> void:
 	add_child(landscape)
@@ -237,6 +242,7 @@ func update_border(state: FarmState) -> void:
 				box(border,Vector3(center.x+side*half,.065,center.y+t),Vector3(.09,.055,1.25),edge)
 
 func rebuild(state: FarmState) -> void:
+	day_night.update_cycle(state.elapsed,day_night.last_position)
 	for node in structures.get_children():
 		node.free()
 	item_nodes.clear()

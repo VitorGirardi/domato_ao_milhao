@@ -210,6 +210,7 @@ func _process(delta: float) -> void:
 			_save_game(false)
 	_update_pointer()
 	world.update_animals(state)
+	world.day_night.update_cycle(state.elapsed,player.position)
 	ui_timer += delta
 	if ui_timer >= 0.15:
 		ui_timer = 0
@@ -315,6 +316,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		if event is InputEventKey and event.pressed and not event.echo:
 			if event.keycode==KEY_ESCAPE:
 				if not network.ready_session:network.leave("Conexão cancelada.")
+				elif hud.modal_kind.is_empty() and build_mode and (tool!="inspect" or move_index>=0 or dragging or not route.is_empty()):_action("build:clear")
 				elif hud.modal_kind.is_empty():network.session_menu()
 				else:hud.close_modal()
 				get_viewport().set_input_as_handled();return
@@ -332,9 +334,8 @@ func _unhandled_input(event: InputEvent) -> void:
 				return
 			if not hud.modal_kind.is_empty():
 				if hud.modal_kind != "welcome": hud.close_modal()
-			elif tool != "inspect":
-				tool="inspect"
-				move_index=-1
+			elif tool != "inspect" or move_index>=0:
+				_action("build:clear")
 			else:
 				hud.menu(state)
 			get_viewport().set_input_as_handled()
@@ -427,8 +428,6 @@ func _cancel_route() -> void:
 
 func _update_pointer() -> void:
 	ghost.visible = false
-	if network.active:
-		world.build_grid.visible=false;world.selection.visible=false;pointer_valid=false;return
 	for land in state.owned_areas():
 		if land.has_point(pointer):
 			world.build_grid.position=Vector3(land.get_center().x,.045,land.get_center().y)
@@ -565,7 +564,7 @@ func _click_world() -> void:
 					if hen.coop==selected and hen.hen==selected_hen: distance=minf(distance,player.position.distance_to(hen.node.position))
 			if not build_mode and distance>3:
 				hud.toast("Chegue mais perto ou use a câmera de construção.")
-			else:
+			elif not build_mode:
 				_tend_selected()
 	_update_ui()
 
@@ -1044,6 +1043,11 @@ func _action(value: String) -> void:
 		selected_hen=int(value.get_slice(":",1))
 		if selected_hen<0 or selected_hen>=state.items[selected].flock.names.size(): return
 		hud.hen_editor(state.items[selected].flock.names[selected_hen])
+		return
+	if value=="build:clear":
+		selected=-1;move_index=-1;tool="inspect";_cancel_route();_update_ui();return
+	if value=="build:open":
+		if build_mode and selected>=0 and selected<state.items.size():_tend_selected()
 		return
 	if value.begins_with("tool:"):
 		if not session_started: return
