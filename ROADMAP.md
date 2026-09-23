@@ -1,5 +1,11 @@
 # Prioridades — Do Mato ao Milhão
 
+## Entregue — 0.26.0
+
+- [x] Menu inicial com foto real do jogo.
+- [x] Continuar, novo jogo protegido, configurações persistentes e controles.
+
+
 Este é o plano de evolução do jogo. A ordem pode mudar depois de jogar e ouvir o autor.
 Cada etapa termina com uma versão jogável, testes e uma atualização no GitHub.
 Não são promessas de prazo nem uma lista de tarefas já concluídas.

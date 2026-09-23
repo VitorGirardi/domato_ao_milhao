@@ -1,5 +1,13 @@
 # Versão 0.25.0 — estrebaria e cavalo solto
 
+## 0.26.0 — Um novo começo
+
+- Menu inicial com captura real do vale e acesso a Continuar, Novo jogo, Configurações, Controles e Sair.
+- Novo jogo com nome, confirmação e arquivo da fazenda anterior; cancelamento preserva a partida.
+- Volume, sensibilidade, tela cheia, qualidade gráfica e limite de FPS persistidos em settings.cfg.
+- Menu de pausa permite configurar, consultar controles e salvar/voltar à tela inicial.
+
+
 - Estrebaria original no Blender, construída por $550 a partir do nível 5; entrada aberta, colisões, rotação, mudança de lugar e destino no mapa.
 - Cavalo alterna entre observar, pastar e caminhar perto de onde ficou, com limite de 4,5 m, checagem de obstáculos e pausa quando o jogador se aproxima.
 - Descanso desmontado recupera 7 pontos de fôlego/s, ou 14 perto da entrada da estrebaria. Sem sistema obrigatório de fome.

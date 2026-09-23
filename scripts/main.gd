@@ -52,6 +52,8 @@ var trail_journey:=FarmTrails.new()
 var weapons:=FarmWeapons.new()
 var horse:=FarmHorse.new()
 var navigator:=FarmNavigation.new()
+var preferences:=FarmSettings.new()
+var front_end:=FarmFrontEnd.new()
 var windowed_rect:=Rect2i()
 var windowed_mode:=Window.MODE_WINDOWED
 
@@ -92,7 +94,9 @@ func _ready() -> void:
 	navigator.setup(self)
 	add_child(weapons)
 	weapons.setup(self)
-	hud.welcome(state,loaded)
+	front_end.setup(self,loaded)
+	preferences.load_preferences();preferences.apply(self)
+	front_end.show_title()
 	_update_camera(1.0, true)
 	_update_ui()
 	if qa_mode:
@@ -248,7 +252,7 @@ func _ensure_player_space() -> void:
 				player.position=Vector3(candidate.x,FarmLandscape.height_at(candidate)+.2,candidate.y)
 				return
 
-func _toggle_fullscreen() -> void:
+func _toggle_fullscreen(persist:bool=true) -> void:
 	var window:=get_window()
 	if window.mode in [Window.MODE_FULLSCREEN,Window.MODE_EXCLUSIVE_FULLSCREEN]:
 		var usable:=DisplayServer.screen_get_usable_rect(window.current_screen)
@@ -264,6 +268,12 @@ func _toggle_fullscreen() -> void:
 		windowed_rect=Rect2i(window.position,window.size)
 		windowed_mode=window.mode
 		window.mode=Window.MODE_EXCLUSIVE_FULLSCREEN
+
+	if persist:
+		preferences.data.fullscreen=window.mode in [Window.MODE_FULLSCREEN,Window.MODE_EXCLUSIVE_FULLSCREEN]
+		preferences.save_preferences()
+		if is_instance_valid(hud) and hud.modal_kind=="settings" and front_end.controls.has("fullscreen"):
+			front_end.controls.fullscreen.button_pressed=preferences.data.fullscreen
 
 func _input(event: InputEvent) -> void:
 	# Works even while a menu or text field owns keyboard focus.
@@ -286,6 +296,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_ESCAPE:
+			if front_end.escape():get_viewport().set_input_as_handled();return
 			if dragging or not route.is_empty():
 				_cancel_route()
 				if hud.modal_kind=="route": hud.close_modal()
@@ -334,8 +345,8 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not hud.modal_kind.is_empty():
 		return
 	if event is InputEventMouseMotion and Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT):
-		yaw -= event.relative.x*0.005
-		pitch=clampf(pitch+event.relative.y*0.003,0.2,1.3)
+		yaw -= event.relative.x*0.005*float(preferences.data.sensitivity)
+		pitch=clampf(pitch+event.relative.y*0.003*float(preferences.data.sensitivity),0.2,1.3)
 	if event is InputEventMouseButton and event.pressed:
 		if event.button_index==MOUSE_BUTTON_WHEEL_UP:
 			if build_mode: build_distance=clampf(build_distance-3,20,78)
@@ -681,6 +692,9 @@ func _tend_selected() -> void:
 	elif item.kind=="stable": FarmStable.show(hud,state,horse,selected)
 
 func _action(value: String) -> void:
+	if value=="close" and front_end.escape():return
+	if value.begins_with("front:"):
+		front_end.handle(value);return
 	if value=="map" or value.begins_with("map:"):
 		navigator.handle(value);return
 	if horse.mounted and (value=="emotes" or value.begins_with("emote:") or value.begins_with("tool:") or value=="move"):
@@ -1079,7 +1093,7 @@ func _action(value: String) -> void:
 			hud.toast("Escolha o novo lugar. R gira • Esc cancela • Sem custo.")
 		"journey": _journey_action()
 		"start":
-			var farm_name:=hud.text_input.text.strip_edges()
+			var farm_name:String=hud.text_input.text.strip_edges() if hud.modal_kind=="welcome" and is_instance_valid(hud.text_input) else state.farm_name
 			state.farm_name=farm_name if not farm_name.is_empty() else "Meu pedacinho de mundo"
 			session_started=true
 			hud.close_modal()
@@ -1135,22 +1149,7 @@ func _action(value: String) -> void:
 				hud.toast("Espaço livre. Metade do custo voltou para você.")
 		"reset_ask": hud.confirm_reset()
 		"reset_confirm":
-			field_alerts=FarmFieldAlerts.new()
-			if horse.mounted:horse.reset_rider(player,avatar,actor)
-			state=FarmState.new();state.unlimited_money=not qa_mode
-			horse.restore(state.horse)
-			world.rebuild(state)
-			selected=-1
-			journey_seen=-1
-			build_mode=true
-			tool="inspect"
-			focus=Vector3(4,0,-2)
-			player.position=Vector3(4,0.2,10)
-			next_silly=75
-			silly_timer=0
-			silly_event_index=0
-			selected_hen=-1
-			session_started=false
+			_reset_farm()
 			hud.welcome(state,false)
 			_save_game(false,true)
 		"quit":
@@ -1258,6 +1257,10 @@ func _chime(kind: String = "build") -> void:
 	sound.play()
 
 func _qa() -> void:
+	if "--qa-v026" in OS.get_cmdline_user_args():
+		await _qa_v026();get_tree().quit();return
+	if "--qa-title-photo" in OS.get_cmdline_user_args():
+		await _qa_title_photo();get_tree().quit();return
 	if "--qa-v025" in OS.get_cmdline_user_args():
 		_action("start");await _qa_v025();get_tree().quit();return
 	if "--qa-v024" in OS.get_cmdline_user_args():
@@ -3101,3 +3104,100 @@ func _qa_v025() -> void:
 	assert(horse.dismount(player,avatar,actor,state,world.landscape))
 	assert(state.items[0].kind=="stable")
 	print("V025_INTEGRATION_OK: stable render/menu/map, graze, bounded walking, obstacle sweep, pause, recovery, approach/mount/dismount")
+
+func _reset_farm() -> void:
+	actor.stop_emote();weapons.holster();player.velocity=Vector3.ZERO
+	navigator.waypoint_name="";navigator.target_key="";navigator.stable_target={}
+	field_alerts=FarmFieldAlerts.new()
+	if horse.mounted:horse.reset_rider(player,avatar,actor)
+	state=FarmState.new();state.unlimited_money=not qa_mode
+	horse.restore(state.horse)
+	world.rebuild(state)
+	selected=-1
+	journey_seen=-1
+	build_mode=true
+	tool="inspect"
+	focus=Vector3(4,0,-2)
+	player.position=Vector3(4,0.2,10)
+	next_silly=75
+	silly_timer=0
+	silly_event_index=0
+	selected_hen=-1
+	session_started=false
+
+func _qa_title_photo() -> void:
+	state=FarmState.new();state.claim(Vector2(4,-2));state.farm_xp=950;state.unlimited_money=true;state.land_size=40
+	for entry in [["barn",Vector2(8,-10)],["coop",Vector2(18,-6)],["stable",Vector2(-6,-8)],["corral",Vector2(18,8)]]:
+		assert(state.place(entry[0],entry[1],0).is_empty())
+	state.items[-1].dairy.owned=true
+	for i in range(9):
+		assert(state.place("plot",Vector2(4+(i%3)*2,2+(i/3)*2),0,["carrot","wheat","corn"][i%3]).is_empty())
+		state.items[-1].growth=1;state.items[-1].watered=true
+	world.rebuild(state);set_physics_process(false);set_process(false);hud.visible=false
+	world.border.visible=false;world.build_grid.visible=false;world.selection.visible=false;ghost.visible=false
+	player.position=Vector3(9,.15,9);avatar.rotation.y=-.8;actor.animate(.1,false,false)
+	horse.restore({"x":12.0,"z":7.0,"angle":-.8});horse.animate(.1,0,false)
+	for node in world.find_children("*","Label3D",true,false):node.visible=false
+	horse.label.visible=false
+	camera.position=Vector3(-10,8,22);camera.look_at(Vector3(6,1,-2));camera.fov=46
+	await _qa_ui_capture("title-v026-photo")
+	print("TITLE_PHOTO_OK")
+
+func _qa_v026() -> void:
+	assert(OS.get_user_data_dir().contains("test-results"))
+	assert(hud.modal_kind=="title" and not session_started and not front_end.has_save)
+	var before:=state.serialize()
+	for i in range(6):await get_tree().process_frame
+	assert(state.serialize()==before)
+	await _qa_ui_capture("menu-v026-new")
+	_action("front:settings");assert(hud.modal_kind=="settings")
+	var previous:=preferences.data.duplicate()
+	front_end.controls.volume.value=.25;_action("front:back")
+	assert(hud.modal_kind=="title" and preferences.data==previous)
+	_action("front:settings");front_end.controls.volume.value=.45;front_end.controls.sensitivity.value=1.5
+	front_end.controls.quality.select(0);front_end.controls.quality.item_selected.emit(0)
+	front_end.controls.fps.select(2);front_end.controls.fps.item_selected.emit(2)
+	await _qa_ui_capture("menu-v026-settings")
+	_action("front:apply");assert(preferences.data.volume==.45 and preferences.data.sensitivity==1.5)
+	assert(get_viewport().msaa_3d==Viewport.MSAA_DISABLED and Engine.max_fps==120)
+	var loaded:=FarmSettings.new();loaded.path=preferences.path;loaded.load_preferences();assert(loaded.data==preferences.data)
+	_action("front:settings");_action("front:defaults");_action("front:apply")
+	_action("front:controls");assert(hud.modal_kind=="controls");await _qa_ui_capture("menu-v026-controls");_action("close");assert(hud.modal_kind=="title")
+	_action("front:new");hud.text_input.text="Fazenda Horizonte";await _qa_ui_capture("menu-v026-name")
+	_action("front:new_review");assert(session_started and state.farm_name=="Fazenda Horizonte" and not state.claimed)
+	assert(FileAccess.file_exists(save_path))
+	state.claim(Vector2(4,-2));state.unlimited_money=true;state.farm_xp=550;world.rebuild(state)
+	state.armory.pistol=true;state.armory.magazine=7
+	assert(_save_game(false))
+	_action("front:title");assert(not session_started and front_end.has_save and hud.modal_kind=="title")
+	await _qa_ui_capture("menu-v026-continue")
+	var saved:=FileAccess.get_file_as_string(save_path)
+	_action("front:new");hud.text_input.text="Fazenda Outra";_action("front:new_review")
+	assert(hud.modal_kind=="new_confirm" and FileAccess.get_file_as_string(save_path)==saved)
+	await _qa_ui_capture("menu-v026-confirm")
+	# Force a write failure using an isolated directory where the temporary file should be.
+	var original_path:=save_path
+	var failed_path:="res://test-results/qa_new_failure.json"
+	DirAccess.make_dir_recursive_absolute(failed_path+".tmp")
+	save_path=failed_path
+	var retained:=state
+	_action("front:new_commit")
+	assert(state==retained and hud.modal_kind=="new_confirm" and FileAccess.get_file_as_string(original_path)==saved)
+	DirAccess.remove_absolute(failed_path+".tmp");save_path=original_path
+	_action("front:cancel_new");assert(hud.modal_kind=="title" and FileAccess.get_file_as_string(save_path)==saved)
+	# Simulate startup loading from disk rather than continuing only the in-memory state.
+	state=FarmState.new();assert(_load_game())
+	front_end.setup(self,true);front_end.resume_session=false;front_end.show_title()
+	_action("front:continue");assert(session_started and state.armory.magazine==7 and state.farm_name=="Fazenda Horizonte")
+	_action("menu");_action("front:settings");_action("front:back");assert(hud.modal_kind=="menu" and session_started)
+	_action("front:title");_action("front:new");hud.text_input.text="Fazenda Renovada";_action("front:new_review");_action("front:new_commit")
+	assert(session_started and state.farm_name=="Fazenda Renovada" and not state.claimed and not state.armory.pistol)
+	var archive:=save_path.get_base_dir().path_join("farms_archive")
+	var found:=false
+	for name in DirAccess.get_files_at(archive):
+		var data:Variant=JSON.parse_string(FileAccess.get_file_as_string(archive.path_join(name)))
+		if data is Dictionary and data.get("farm_name")=="Fazenda Horizonte" and data.armory.magazine==7:found=true
+	assert(found,"Previous farm archived before replacement")
+	assert(JSON.parse_string(FileAccess.get_file_as_string(save_path)).farm_name=="Fazenda Renovada")
+	session_started=false
+	print("V026_INTEGRATION_OK: startup pause, title, continue, cancel new, archived old farm, new save, settings apply/cancel/persist, controls and pause menu")
