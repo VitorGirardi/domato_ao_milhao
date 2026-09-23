@@ -1,8 +1,8 @@
 class_name FarmLandscape
 extends Node3D
 ## Scenery never changes farm coordinates or saved item footprints.
-const WALK_MIN:=Vector2(-34,-94)
-const WALK_MAX:=Vector2(108,96)
+const WALK_MIN:=Vector2(-34,-145)
+const WALK_MAX:=Vector2(180,145)
 const CLEAR:=Rect2(-33,-42,79,86) # Every legal plot plus worker clearance.
 var rng:=RandomNumberGenerator.new()
 var meshes:Dictionary={}
@@ -29,7 +29,7 @@ static func base_height(p:Vector2) -> float:
 	p.x=lerpf(center,p.x,smoothstep(6,12,absf(p.x-center)))
 	var edge:=maxf(p.x-46,maxf(p.y-44,-42-p.y))
 	var near_height:=smoothstep(0,22,edge)*(1.4+sin(p.x*.075)*cos(p.y*.065)*1.2)
-	var distant:=smoothstep(0,44,maxf(absf(p.x)-78,absf(p.y)-78))
+	var distant:=smoothstep(0,44,maxf(absf(p.x)-182,absf(p.y)-148))
 	var river_x:=-42+sin(p.y*.065)*2.6
 	var result:=near_height+distant*smoothstep(7,25,absf(p.x-river_x))*(13+6*sin(p.x*.039+p.y*.032)+4*cos(p.y*.083-p.x*.017))
 	for key in FarmParcels.LOTS:
@@ -64,8 +64,8 @@ func setup(world:FarmWorld) -> void:
 	_horizon(world)
 	_landmarks(world)
 	add_child(meadow)
-	for i in range(39000):
-		var p:=Vector2(rng.randf_range(-34,112),rng.randf_range(-98,100))
+	for i in range(65000):
+		var p:=Vector2(rng.randf_range(-34,184),rng.randf_range(-149,149))
 		if road_distance(p)<3.15 or FarmTrails.reserved(p) or Rect2(-27,10,7,9).has_point(p): continue
 		# Islands of vegetation rather than evenly scattered dots.
 		if rng.randf()<.15:continue
@@ -84,29 +84,35 @@ func _terrain() -> void:
 	# Resolve the narrow banks without coarse triangles cutting across the channel.
 	# Shared rows keep the fine river strip connected to the surrounding terrain.
 	var columns:Array[float]=[]
-	var column:float=-140
-	while column<140:
+	var column:float=-280
+	while column<280:
 		columns.append(column)
-		column+=.5 if column>=-50 and column<-34 else 2.0
-	columns.append(140)
-	for z in range(-140,140):
+		column+=.5 if column>=-50 and column<-34 else (4.0 if column<-52 or column>=184 else 2.0)
+	columns.append(280)
+	var rows:Array[float]=[]
+	var row:float=-280
+	while row<280:
+		rows.append(row);row+=4 if absf(row)>150 else 1
+	rows.append(280)
+	for j in range(rows.size()-1):
+		var z:float=rows[j];var nz:float=rows[j+1]
 		for i in range(columns.size()-1):
 			var x:float=columns[i];var nx:float=columns[i+1]
-			for p in [Vector2(x,z),Vector2(nx,z),Vector2(x,z+1),Vector2(nx,z),Vector2(nx,z+1),Vector2(x,z+1)]:
+			for p in [Vector2(x,z),Vector2(nx,z),Vector2(x,nz),Vector2(nx,z),Vector2(nx,nz),Vector2(x,nz)]:
 				surface.add_vertex(Vector3(p.x,height_at(p),p.y))
 	surface.generate_normals();surface.index()
 	ground=MeshInstance3D.new();ground.name="ContinuousMeadow";ground.mesh=surface.commit()
 	var mat:=ShaderMaterial.new();mat.shader=load("res://assets/shaders/valley_ground.gdshader")
 	var segments:=FarmTrails.shader_segments()
 	mat.set_shader_parameter("trail_count",segments.size())
-	segments.resize(32);mat.set_shader_parameter("trails",segments)
+	segments.resize(64);mat.set_shader_parameter("trails",segments)
 	ground.material_override=mat;add_child(ground)
 	ground.create_trimesh_collision()
 
 func _river() -> void:
 	var surface:=SurfaceTool.new();surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-	for i in range(280):
-		var z:float=-140+i;var nz:=z+1
+	for i in range(560):
+		var z:float=-280+i;var nz:=z+1
 		var x:=-42+sin(z*.065)*2.6;var nx:=-42+sin(nz*.065)*2.6
 		for p in [Vector2(x-5,z),Vector2(x+5,z),Vector2(nx-5,nz),Vector2(x+5,z),Vector2(nx+5,nz),Vector2(nx-5,nz)]:
 			# Bury mesh edges under both banks; terrain defines the visible shoreline.
@@ -132,7 +138,7 @@ func _transform(p:Vector2,s:float,angle:float) -> Transform3D:
 
 func _bosques() -> void:
 	var occupied:Array[Vector2]=[]
-	var centers:=[Vector2(54,-36),Vector2(63,8),Vector2(39,-54),Vector2(-9,-55),Vector2(20,56),Vector2(60,56),Vector2(-12,59),Vector2(-53,-30),Vector2(-54,40),Vector2(-12,-22),Vector2(22,-18),Vector2(26,16),Vector2(-12,10),Vector2(6,3),Vector2(90,-40),Vector2(88,62),Vector2(30,86),Vector2(16,-80)]
+	var centers:=[Vector2(54,-36),Vector2(63,8),Vector2(39,-54),Vector2(-9,-55),Vector2(20,56),Vector2(60,56),Vector2(-12,59),Vector2(-53,-30),Vector2(-54,40),Vector2(-12,-22),Vector2(22,-18),Vector2(26,16),Vector2(-12,10),Vector2(6,3),Vector2(90,-40),Vector2(88,62),Vector2(30,86),Vector2(16,-80),Vector2(75,-92),Vector2(119,-116),Vector2(154,-66),Vector2(170,20),Vector2(129,90),Vector2(58,132),Vector2(1,122)]
 	for center in centers:
 		for i in range(22):
 			var p:Vector2=center+Vector2(rng.randfn(0,7),rng.randfn(0,6))
@@ -256,7 +262,7 @@ func _horizon(world:FarmWorld) -> void:
 	for ring in range(2):
 		var surface:=SurfaceTool.new();surface.begin(Mesh.PRIMITIVE_TRIANGLES)
 		for i in range(96):
-			var a:=i*TAU/96;var b:=(i+1)*TAU/96;var radius:float=167+ring*48
+			var a:=i*TAU/96;var b:=(i+1)*TAU/96;var radius:float=265+ring*48
 			var h1:=20+ring*8+sin(a*5+ring)*6+cos(a*9)*3
 			var h2:=20+ring*8+sin(b*5+ring)*6+cos(b*9)*3
 			var p1:=Vector3(sin(a)*radius,h1,cos(a)*radius)
@@ -285,6 +291,7 @@ func _landmarks(world:FarmWorld) -> void:
 	var body:=StaticBody3D.new();var collider:=CollisionShape3D.new();var shape:=BoxShape3D.new();shape.size=Vector3(2.8,1.25,.8)
 	collider.shape=shape;collider.position.y=.625;body.add_child(collider);root.add_child(body)
 	_trail_places(world)
+	_riding_regions(world)
 	# Road signs make the expanded playable outskirts understandable.
 	for entry in [[Vector2(-30,46),"ARMAZÉM ↑",0.0],[Vector2(49,26),"BOSQUE →",0.0],[Vector2(-30,-46),"VALE DO IPÊ",0.0]]:
 		var p:Vector2=entry[0];var sign_root:=Node3D.new();sign_root.position=Vector3(p.x,height_at(p),p.y);add_child(sign_root)
@@ -328,3 +335,34 @@ func _trail_places(world:FarmWorld) -> void:
 		[Vector2(76,-16),"CLAREIRA: A OESTE", "487768"],
 		[Vector2(61,30),"RECANTO: SIGA A TRILHA", "487768"]
 	]:_trail_sign(world,entry[0],entry[1],entry[2])
+
+func _riding_regions(world:FarmWorld) -> void:
+	# Small orchard rows beside the long circuit; center of the track stays free.
+	var fruit_mat:=world.material("dca14a")
+	for i in range(9):
+		var p:=Vector2(95+(i%3)*5,-83+(i/3)*5)
+		var tree:=MeshInstance3D.new();tree.mesh=meshes.oak;tree.transform=_transform(p,.65,0);add_child(tree)
+		var area:=Rect2(p-Vector2.ONE*.5,Vector2.ONE);solid_bounds.append(area)
+		var body:=StaticBody3D.new();var collision:=CollisionShape3D.new();var trunk:=CylinderShape3D.new();trunk.radius=.25;trunk.height=2.5
+		collision.shape=trunk;collision.position=Vector3(p.x,height_at(p)+1.25,p.y);body.add_child(collision);add_child(body)
+		for j in range(7):
+			var a:=j*TAU/7;var fruit:=MeshInstance3D.new();var sphere:=SphereMesh.new();sphere.radius=.16;sphere.height=.32;fruit.mesh=sphere;fruit.material_override=fruit_mat
+			fruit.position=Vector3(p.x+cos(a)*1.1,height_at(p)+2.3+sin(a*3)*.2,p.y+sin(a)*1.1);add_child(fruit)
+	for i in range(8):
+		var p:=Vector2(152+cos(i*.9)*5,74+sin(i*.9)*5)
+		if road_distance(p)<4:continue
+		var rock:=MeshInstance3D.new();rock.mesh=meshes.stone;rock.transform=_transform(p,1.3+(i%3)*.45,i*.73);add_child(rock)
+		solid_bounds.append(Rect2(p-Vector2.ONE*1.5,Vector2.ONE*3))
+		var body:=StaticBody3D.new();var collision:=CollisionShape3D.new();var shape:=SphereShape3D.new();shape.radius=1.4;collision.shape=shape;collision.position=Vector3(p.x,height_at(p)+.7,p.y);body.add_child(collision);add_child(body)
+	var flowers:Array[Transform3D]=[]
+	var flower_rng:=RandomNumberGenerator.new();flower_rng.seed=230023
+	for i in range(520):
+		var center:Vector2=[Vector2(68,114),Vector2(84,123),Vector2(68,130),Vector2(84,110)][i%4]
+		var p:=center+Vector2(flower_rng.randfn(0,3.4),flower_rng.randfn(0,3.4))
+		if road_distance(p)>3.2:flowers.append(_transform(p,flower_rng.randf_range(.75,1.1),flower_rng.randf()*TAU))
+	_instance_batch("daisy",flowers,self,100)
+	_trail_sign(world,Vector2(101,-91),"POMAR DO SOSSEGO","94733e")
+	_trail_sign(world,Vector2(146,70),"PEDRAS DO ECO","626749")
+	_trail_sign(world,Vector2(70,114),"CAMPINA DAS FLORES","487768")
+	_trail_sign(world,Vector2(4,-97),"CIRCUITO DO VALE: LESTE","94733e")
+	_trail_sign(world,Vector2(31,107),"CIRCUITO DO VALE: LESTE","94733e")

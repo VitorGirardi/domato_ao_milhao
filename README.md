@@ -5,13 +5,13 @@
 Protótipo jogável de um tycoon de fazenda 3D estilizado para Windows, em português.
 Godot 4.7.2 + modelos originais feitos no Blender 5.2.1. Campanha solo e offline.
 
-**Versão atual: 0.22.0.** Veja [as prioridades](ROADMAP.md) e [as novidades](CHANGELOG.md).
+**Versão atual: 0.23.0.** Veja [as prioridades](ROADMAP.md) e [as novidades](CHANGELOG.md).
 
 Veja o [roteiro de teste manual](COMO_TESTAR.md), incluindo encomendas e vendas da 0.5.
 
 ## Jogar
 
-O executável local fica em `exports/windows-v0.22.0/DoMatoAoMilhao.exe` depois da exportação.
+O executável local fica em `exports/windows-v0.23.0/DoMatoAoMilhao.exe` depois da exportação.
 Ele abre diretamente, sem instalar Godot ou Blender. Os binários não são enviados ao Git.
 
 Para executar a partir do código:
@@ -19,9 +19,9 @@ Para executar a partir do código:
 2. Aguarde a importação dos modelos.
 3. Pressione **F5** para jogar. O cenário é montado pelos scripts durante a execução.
 
-## Novidades da 0.22.0
+## Novidades da 0.23.0
 
-Seis trechos de trilha ligam os terrenos e três paradas: Mirante dos Ventos, Recanto da Prosa e Curva da Abóbora. Nove placas, moinho animado e adereços originais Blender. Terrenos em **T**, dinheiro infinito e saves preservados. [Como testar](COMO_TESTAR.md). Cavalo e veículos são etapas futuras.
+Pé de Pano é uma montaria jogável: **E** monta/desmonta, **WASD** cavalga e um toque em **Shift** dá um tapinha para galopar, consumindo fôlego. Mapa de 214 × 290 m com circuito longo, pomar, pedras e campina florida. Save 16 preserva a posição do cavalo; dinheiro infinito mantido. [Como testar](COMO_TESTAR.md). Cuidados e progressão da montaria, depois veículos, ficam para próximas etapas.
 
 ## Novidades da 0.20.0
 

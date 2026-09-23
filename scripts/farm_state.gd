@@ -33,6 +33,7 @@ var scenery_obstacles:Array[Rect2]=[] # Runtime scenery, reconstructed from prop
 var farm_xp:int=0
 var level_notice:="" # Runtime-only; loaded games do not replay celebrations.
 var owned_parcels:Array=[]
+var horse:Dictionary=FarmHorse.defaults()
 var unlimited_money:=false
 var _money:int=1600
 var money:int:
@@ -648,7 +649,7 @@ func expand() -> String:
 	return ""
 
 func serialize() -> Dictionary:
-	return {"version": 15, "owned_parcels":owned_parcels.duplicate(), "unlimited_money":unlimited_money, "farm_xp":farm_xp, "dairy_worker":dairy_worker.duplicate(), "cheese_worker":cheese_worker.duplicate(), "cheese_stock":cheese_stock, "cheese_order":cheese_order.duplicate(), "milk_stock":milk_stock, "cultivation":cultivation.duplicate(true), "field_staff":field_staff.duplicate(true), "professional_watering":professional_watering, "irrigation":irrigation.duplicate(true), "money": _money, "claimed": claimed,
+	return {"version": 16, "horse":horse.duplicate(), "owned_parcels":owned_parcels.duplicate(), "unlimited_money":unlimited_money, "farm_xp":farm_xp, "dairy_worker":dairy_worker.duplicate(), "cheese_worker":cheese_worker.duplicate(), "cheese_stock":cheese_stock, "cheese_order":cheese_order.duplicate(), "milk_stock":milk_stock, "cultivation":cultivation.duplicate(true), "field_staff":field_staff.duplicate(true), "professional_watering":professional_watering, "irrigation":irrigation.duplicate(true), "money": _money, "claimed": claimed,
 		"center": [center.x, center.y], "land_size": land_size,
 		"items": items.duplicate(true), "inventory": inventory.duplicate(),
 		"elapsed": elapsed, "revenue": revenue, "harvests": harvests,
@@ -657,8 +658,10 @@ func serialize() -> Dictionary:
 
 func restore(data: Variant) -> bool:
 	# Validate before mutating live state. Invalid files never partially replace it.
-	if not data is Dictionary or not _number(data.get("version")) or data.version<1 or data.version>15 or float(data.version)!=floorf(float(data.version)):
+	if not data is Dictionary or not _number(data.get("version")) or data.version<1 or data.version>16 or float(data.version)!=floorf(float(data.version)):
 		return false
+	if data.version>=16 and not FarmHorse.valid(data.get("horse")):return false
+	if data.has("horse") and not FarmHorse.valid(data.horse):return false
 	if data.version>=15 and (not data.get("unlimited_money") is bool or not FarmParcels.valid(data.get("owned_parcels"))):return false
 	if data.has("unlimited_money") and not data.unlimited_money is bool:return false
 	if data.has("owned_parcels") and not FarmParcels.valid(data.owned_parcels):return false
@@ -775,6 +778,7 @@ func restore(data: Variant) -> bool:
 		if selected_plans!=unique_plots: return false
 	_money = int(data.money)
 	unlimited_money=data.get("unlimited_money",false)
+	horse=data.get("horse",FarmHorse.defaults()).duplicate()
 	owned_parcels=data.get("owned_parcels",[]).duplicate()
 	claimed = data.claimed
 	center = Vector2(data.center[0], data.center[1])

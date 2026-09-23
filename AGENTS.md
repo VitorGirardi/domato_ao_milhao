@@ -8,7 +8,7 @@ Os testes de economia usam FarmState com dinheiro limitado por padrão, em arqui
 
 ## Direção do mapa
 
-O cenário natural ocupa terrenos ainda não comprados. Comprar ou expandir limpa apenas elementos naturais que interferem na área adquirida, preservando construções do jogador e marcos públicos. Cavalo como transporte e, depois, veículos são planos futuros; manter caminhos largos.
+O cenário natural ocupa terrenos ainda não comprados. Comprar ou expandir limpa apenas elementos naturais que interferem na área adquirida, preservando construções do jogador e marcos públicos. Cavalo como transporte foi implementado na 0.23; preservar montaria, desmontagem segura, tapinha para galopar e fôlego. Cuidados/progressão e veículos são planos futuros; manter caminhos largos.
 
 ## Coordenação entre sessões
 
