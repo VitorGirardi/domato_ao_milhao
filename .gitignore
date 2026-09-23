@@ -6,3 +6,5 @@ art/source/.godot/
 test-results/
 *.tmp
 .DS_Store
+
+launcher/ui/bin/

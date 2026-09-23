@@ -1,0 +1,72 @@
+name: Launcher
+on:
+  pull_request:
+    paths: ['launcher/**', '.github/workflows/launcher.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  launcher:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      GODOT_VERSION: 4.7.2
+      LIBGL_ALWAYS_SOFTWARE: '1'
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.26.5'
+          cache: false
+      - name: Test updater and build helpers
+        run: |
+          go -C launcher/core test -v ./...
+          mkdir -p launcher/ui/bin exports/launcher test-results/launcher
+          GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go -C launcher/core build -buildvcs=false -trimpath -ldflags '-s -w' -o ../ui/bin/updater-linux .
+          GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go -C launcher/core build -buildvcs=false -trimpath -ldflags '-s -w' -o ../ui/bin/updater-windows.exe .
+      - name: Fetch Godot and native template
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y xvfb openbox wmctrl libgl1-mesa-dri libpulse0 libasound2t64
+          mkdir -p "$RUNNER_TEMP/godot"
+          cd "$RUNNER_TEMP/godot"
+          base="https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-stable"
+          curl -fL --retry 3 "$base/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip" -o engine.zip
+          curl -fL --retry 3 "$base/Godot_v${GODOT_VERSION}-stable_export_templates.tpz" -o templates.zip
+          unzip -q engine.zip
+          unzip -q templates.zip 'templates/linux_release.x86_64'
+          chmod +x Godot_v*-stable_linux.x86_64
+          ln -s "$RUNNER_TEMP/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64" "$RUNNER_TEMP/godot/godot"
+          echo "$RUNNER_TEMP/godot" >> "$GITHUB_PATH"
+          mkdir -p "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
+          cp templates/* "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable/"
+      - name: Native UI and exported launcher
+        run: |
+          godot --headless --editor --path launcher/ui --import --quit > test-results/launcher/import.log 2>&1
+          ! grep -E 'ERROR|Parse Error' test-results/launcher/import.log
+          LAUNCHER_SCREENSHOT="$PWD/test-results/launcher/launcher.png" xvfb-run -a godot --path launcher/ui --script ../test_ui.gd > test-results/launcher/ui.log 2>&1
+          cat test-results/launcher/ui.log
+          grep -q LAUNCHER_UI_OK test-results/launcher/ui.log
+          ! grep -E 'ERROR|Parse Error' test-results/launcher/ui.log
+          godot --headless --path launcher/ui --export-release Linux > test-results/launcher/export.log 2>&1
+          ! grep -E 'ERROR|Parse Error' test-results/launcher/export.log
+          chmod +x exports/launcher/DoMato-Launcher.x86_64
+          xvfb-run -a bash -c 'openbox >test-results/launcher/openbox.log 2>&1 & python3 launcher/smoke_linux.py'
+      - name: Package
+        run: |
+          cp LAUNCHER.md exports/launcher/LEIA-ME.md
+          cp GODOT_LICENSE.txt exports/launcher/
+          cp "$(go env GOROOT)/LICENSE" exports/launcher/GO_LICENSE.txt
+          tar -czf exports/DoMato-Launcher-Linux-v1.0.0.tar.gz -C exports/launcher .
+          sha256sum exports/DoMato-Launcher-Linux-v1.0.0.tar.gz > exports/LAUNCHER-SHA256SUMS.txt
+      - uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: launcher-validation
+          path: test-results/launcher/
+      - uses: actions/upload-artifact@v5
+        with:
+          name: launcher-linux
+          path: |
+            exports/DoMato-Launcher-Linux-v1.0.0.tar.gz
+            exports/LAUNCHER-SHA256SUMS.txt
