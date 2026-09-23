@@ -9,19 +9,23 @@ Construam, negociem, cuidem dos animais, contratem a equipe e usem o cavalo junt
 Protótipo jogável de um tycoon de fazenda 3D estilizado para Windows e Linux, em português.
 Godot 4.7.2 + modelos originais feitos no Blender 5.2.1. Campanha solo offline e fazenda cooperativa para dois PCs.
 
-**Versão atual: 0.32.0.** Veja [as prioridades](ROADMAP.md) e [as novidades](CHANGELOG.md).
+**Versão atual: 0.33.0.** Veja [as prioridades](ROADMAP.md) e [as novidades](CHANGELOG.md).
 
 Veja o [roteiro de teste manual](COMO_TESTAR.md), incluindo encomendas e vendas da 0.5.
 
 ## Jogar
 
-O executável local fica em `exports/windows-v0.32.0/DoMatoAoMilhao.exe` depois da exportação.
+O executável local fica em `exports/windows-v0.33.0/DoMatoAoMilhao.exe` depois da exportação.
 Ele abre diretamente, sem instalar Godot ou Blender. Os binários não são enviados ao Git.
 
 Para executar a partir do código:
 1. Abra o Godot 4.7.2, escolha **Importar** e selecione `project.godot`.
 2. Aguarde a importação dos modelos.
 3. Pressione **F5** para jogar. O cenário é montado pelos scripts durante a execução.
+
+## Construção organizada — 0.33.0
+
+TAB abre o catálogo por categorias, com miniaturas e ações contextuais. [Como construir e testar](CONSTRUCAO.md).
 
 ## Noites no vale — 0.32.0
 
