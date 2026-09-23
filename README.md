@@ -9,13 +9,13 @@ Construam, negociem, cuidem dos animais, contratem a equipe e usem o cavalo junt
 Protótipo jogável de um tycoon de fazenda 3D estilizado para Windows e Linux, em português.
 Godot 4.7.2 + modelos originais feitos no Blender 5.2.1. Campanha solo offline e fazenda cooperativa para dois PCs.
 
-**Versão atual: 0.34.0.** Veja [as prioridades](ROADMAP.md) e [as novidades](CHANGELOG.md).
+**Versão atual: 0.35.0.** Veja [as prioridades](ROADMAP.md) e [as novidades](CHANGELOG.md).
 
 Veja o [roteiro de teste manual](COMO_TESTAR.md), incluindo encomendas e vendas da 0.5.
 
 ## Jogar
 
-O executável local fica em `exports/windows-v0.34.0/DoMatoAoMilhao.exe` depois da exportação.
+O executável local fica em `exports/windows-v0.35.0/DoMatoAoMilhao.exe` depois da exportação.
 Ele abre diretamente, sem instalar Godot ou Blender. Os binários não são enviados ao Git.
 
 Para executar a partir do código:
@@ -545,3 +545,5 @@ Teste isolado de humor e Mimosa: `godot --headless --path . --fixed-fps 60 --qui
 Teste isolado da queijaria: `godot --headless --path . --fixed-fps 60 --quit-after 12000 -- --qa --qa-v016`. Exija `V016_INTEGRATION_OK`, sem `ERROR`. Simulação: `godot --headless --path . --script tests/test_v016.gd --quit-after 120`, com `V016_STATE_OK`.
 
 Teste isolado de Chico: `godot --headless --path . --fixed-fps 60 --quit-after 12000 -- --qa --qa-v017`. Exija `V017_INTEGRATION_OK`, sem `ERROR`. Simulação: `godot --headless --path . --script tests/test_v017.gd --quit-after 120`, com `V017_STATE_OK`. Sem `--headless`, gera capturas da rotina.
+
+Mapa: [ícones, destinos e avisos](MAPA.md).
