@@ -6,6 +6,7 @@ const TRADE_BOARD_AT:=Vector3(-22.1,0,15.4)
 var landscape:=FarmLandscape.new()
 var models: Dictionary = {}
 var cows:Array[Dictionary]=[]
+var pigsties:Array[Dictionary]=[]
 var raul_motion:=FarmDairyWorkerMotion.new()
 var chico_motion:=FarmCheeseWorkerMotion.new()
 var structures := Node3D.new()
@@ -50,6 +51,7 @@ func _ready() -> void:
 	models["dairyman"]=load("res://assets/models/dairyman.glb")
 	models["corral"]=load("res://assets/models/corral.glb")
 	models["cow"]=load("res://assets/models/cow.glb")
+	models["pigsty"]=load("res://assets/models/pigsty.glb")
 	models["workshop"]=load("res://assets/models/workshop.glb")
 	for kind in ["barn","coop","workshop"]: models[kind+"_level2"]=load("res://assets/models/%s_level2.glb"%kind)
 	add_child(irrigation_feedback)
@@ -242,6 +244,7 @@ func rebuild(state: FarmState) -> void:
 	item_nodes.clear()
 	chickens.clear()
 	cows.clear()
+	pigsties.clear()
 	coop_views.clear()
 	for i in range(state.items.size()):
 		var item: Dictionary = state.items[i]
@@ -350,6 +353,7 @@ func rebuild(state: FarmState) -> void:
 				label.modulate = Color("fff2d3")
 				label.outline_size = 0
 				root.add_child(label)
+			if item.kind=="pigsty":pigsties.append(FarmPigPen.setup(root,visual,i))
 			if item.kind=="corral":
 				var cow:=model("cow",root)
 				cow.visible=item.dairy.owned
@@ -551,6 +555,7 @@ func _color_hen(node: Node, color_index: int) -> void:
 	for child in node.get_children(): _color_hen(child,color_index)
 
 func update_animals(state: FarmState) -> void:
+	for pen in pigsties:FarmPigPen.update(pen,state.items[pen.index].pigs)
 	for index in coop_views:
 		var flock:Dictionary=state.items[index].flock
 		var view:Dictionary=coop_views[index]
@@ -632,6 +637,9 @@ func _tint_model(node: Node, color: Material) -> void:
 
 func animate(delta: float, player_pos: Vector3, state: FarmState, event: String = "") -> void:
 	clock += delta
+	for pen in pigsties:
+		FarmPigPen.update(pen,state.items[pen.index].pigs)
+		FarmPigPen.animate(pen,delta,player_pos)
 	for cow in cows:
 		var data:Dictionary=state.items[cow.index].dairy
 		cow.node.visible=data.owned

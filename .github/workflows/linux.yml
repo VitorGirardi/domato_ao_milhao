@@ -49,7 +49,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for entry in 'test_horse HORSE_STATE_OK' 'test_settings SETTINGS_STATE_OK' 'test_fullscreen FULLSCREEN_QA_OK' 'test_linux LINUX_QA_OK' 'test_coop_save COOP_SAVE_OK' 'test_coop_commands COOP_COMMANDS_OK' 'test_coop_automation COOP_AUTOMATION_OK' 'test_character_choice CHARACTER_CHOICE_OK' 'test_livestock_pose LIVESTOCK_POSE_OK' 'test_pigsty_assets PIGSTY_ASSETS_OK'; do
+          for entry in 'test_horse HORSE_STATE_OK' 'test_settings SETTINGS_STATE_OK' 'test_fullscreen FULLSCREEN_QA_OK' 'test_linux LINUX_QA_OK' 'test_coop_save COOP_SAVE_OK' 'test_coop_commands COOP_COMMANDS_OK' 'test_coop_automation COOP_AUTOMATION_OK' 'test_character_choice CHARACTER_CHOICE_OK' 'test_livestock_pose LIVESTOCK_POSE_OK' 'test_pigsty_assets PIGSTY_ASSETS_OK' 'test_pigs PIGS_GAME_OK'; do
             read -r test marker <<< "$entry"
             timeout 180 godot --headless --audio-driver Dummy --path . --script "tests/$test.gd" > "test-results/linux/$test.log" 2>&1
             cat "test-results/linux/$test.log"
@@ -61,6 +61,7 @@ jobs:
           python3 tests/run_network.py --godot godot
           python3 tests/run_network.py --godot godot --test test_coop
           python3 tests/run_network.py --godot godot --test test_coop_full
+          python3 tests/run_network.py --godot godot --test test_coop_pigs
           mkdir -p test-results/linux/network
           for directory in test-results/network-*; do cp -r "$directory" test-results/linux/network/; done
       - name: X11 graphical gameplay and fullscreen

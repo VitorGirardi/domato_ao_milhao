@@ -2,7 +2,7 @@ class_name FarmNetwork
 extends Node
 ## Host-authoritative cooperative farm.
 const PORT:=28729
-const PROTOCOL:=3
+const PROTOCOL:=4
 var game:Node3D
 var active:=false
 var ready_session:=false
@@ -532,7 +532,7 @@ func refresh_panel() -> void:
 		"barn":h.barn(s,h.building_index)
 		"workshop":
 			if i>=0 and i<s.items.size():h.workshop(s,i)
-		"coop","dairy","dairy_confirm","cheesery","cheese_confirm":
+		"coop","dairy","dairy_confirm","cheesery","cheese_confirm","pigsty","pig_confirm":
 			if i>=0 and i<s.items.size():game._tend_selected()
 
 @rpc("authority","call_remote","reliable",3)

@@ -2,7 +2,7 @@ class_name FarmCoopCommands
 extends RefCounted
 ## Only this allowlist may mutate the authoritative cooperative farm.
 const SIMPLE:=["tool:expand","remove","route_confirm","apply_text","apply_hen_name","upgrade","professional_watering","sell","contract","sell_milk","staff_hire","staff_assign","staff_pause","staff_dismiss","crew_hire","crew_pause","crew_dismiss","irrigation_apply","cultivation_apply","cultivation_renew","raul:confirm","raul:pause","chico:confirm","chico:pause","cheese:start","cheese:collect","cheese:sell","cheese:accept","cheese:cancel","cheese:deliver"]
-const PREFIXES:=["parcel_buy:","evolution_buy:","paint:","deposit:","withdraw:","sell_product:","accept_order:","deliver_order:","cancel_order:","care:","dairy:buy","dairy:milk","dairy:food","dairy:water","crew_train:"]
+const PREFIXES:=["pigs:buy","pigs:food","pigs:water","parcel_buy:","evolution_buy:","paint:","deposit:","withdraw:","sell_product:","accept_order:","deliver_order:","cancel_order:","care:","dairy:buy","dairy:milk","dairy:food","dairy:water","crew_train:"]
 
 static func mutates(value:String) -> bool:
 	if value in SIMPLE:return true
@@ -47,7 +47,7 @@ static func run(s:FarmState,c:Dictionary) -> String:
 	var item:Dictionary=s.items[i] if i>=0 and i<s.items.size() else {}
 	var key:=action.get_slice(":",1)
 	var q:int=c.get("quantity",0)
-	var needs_item:=action in ["move_item","remove","apply_text","apply_hen_name","cheese:start","cheese:collect"] or action.begins_with("evolution_buy:") or action.begins_with("paint:") or action.begins_with("care:") or action.begins_with("dairy:")
+	var needs_item:=action in ["move_item","remove","apply_text","apply_hen_name","cheese:start","cheese:collect"] or action.begins_with("evolution_buy:") or action.begins_with("paint:") or action.begins_with("care:") or action.begins_with("dairy:") or action.begins_with("pigs:")
 	if needs_item and item.is_empty():return "Essa construção não existe mais."
 	if action in ["claim","place","move_item"]:
 		if not c.get("at") is Vector2 or not c.at.is_finite() or c.at.length()>500:return "Posição inválida."
@@ -70,6 +70,9 @@ static func run(s:FarmState,c:Dictionary) -> String:
 	if action.begins_with("care:"):
 		if item.kind!="coop" or key not in ["food","water","collect"]:return "Cuidado inválido."
 		return s.care_coop(i,key)
+	if action.begins_with("pigs:"):
+		if item.kind!="pigsty" or key not in ["buy","food","water"]:return "Cuidado inválido."
+		return FarmPigs.care(s,i,key)
 	if action.begins_with("dairy:"):
 		if item.kind!="corral" or key not in ["buy","milk","food","water"]:return "Cuidado inválido."
 		return FarmDairy.care(s,i,key)
