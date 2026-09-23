@@ -5,6 +5,7 @@ signal action(value: String)
 const INK := Color("294739")
 const CREAM := Color("fff7e4")
 const MUTED := Color("7b806b")
+const DESIGN_SIZE:=Vector2(1440,900)
 var root := Control.new()
 var world_hud:=Control.new()
 var build_hud:=Control.new()
@@ -60,6 +61,7 @@ var walk_tip: Label
 var buttons: Dictionary = {}
 var crop_buttons: Dictionary = {}
 var overlay: ColorRect
+var modal_shade:ColorRect
 var modal: Panel
 var text_input: LineEdit
 var modal_kind := ""
@@ -70,7 +72,7 @@ var farm_levels:=FarmLevelsHUD.new()
 
 func _ready() -> void:
 	add_child(root)
-	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	root.size=DESIGN_SIZE
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var theme := Theme.new()
 	theme.default_font_size = 18
@@ -92,6 +94,19 @@ func _ready() -> void:
 	build_hud.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_build()
 	walking.setup(self)
+	get_viewport().size_changed.connect(_fit_screen)
+	_fit_screen()
+
+func _fit_screen() -> void:
+	# The world fills any aspect ratio; authored UI keeps its proportions and spacing.
+	var available:=get_viewport().get_visible_rect().size
+	if available.x<=0 or available.y<=0:return
+	var factor:=minf(available.x/DESIGN_SIZE.x,available.y/DESIGN_SIZE.y)
+	scale=Vector2.ONE*factor
+	offset=(available-DESIGN_SIZE*factor)*.5
+	if is_instance_valid(modal_shade):
+		modal_shade.position=-offset/factor
+		modal_shade.size=available/factor
 
 func style(color: Color, radius: int = 14, border_color: Color = Color("e3d9b9")) -> StyleBoxFlat:
 	var s := StyleBoxFlat.new()
@@ -370,6 +385,7 @@ func close_modal() -> void:
 	world_hud.visible=true
 	if is_instance_valid(overlay): overlay.queue_free()
 	overlay=null
+	modal_shade=null
 	modal=null
 	text_input=null
 	modal_kind=""
@@ -379,9 +395,13 @@ func _modal(kind: String, height: float = 530) -> Panel:
 	modal_kind=kind
 	world_hud.visible=false
 	overlay=ColorRect.new()
-	overlay.color=Color(0.025,0.07,0.045,0.68)
+	overlay.color=Color.TRANSPARENT
 	root.add_child(overlay)
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	modal_shade=ColorRect.new()
+	modal_shade.color=Color(0.025,0.07,0.045,0.68)
+	overlay.add_child(modal_shade)
+	_fit_screen()
 	modal=panel(overlay,Rect2(415,(900-height)/2,610,height))
 	return modal
 
@@ -399,7 +419,7 @@ func welcome(state: FarmState, has_save: bool) -> void:
 	text_input.text=state.farm_name
 	p.add_child(text_input)
 	button(p,"Voltar para minha fazenda" if has_save else "Escolher meu pedaço de terra",Rect2(34,494,542,55),"start",true)
-	label(p,"VERSÃO 0.17.0   •   CHICO QUEIJEIRO",Vector2(34,561),Vector2(542,17),11,MUTED)
+	label(p,"VERSÃO %s   •   F11 TELA CHEIA / JANELA"%ProjectSettings.get_setting("application/config/version"),Vector2(34,561),Vector2(542,17),11,MUTED)
 
 func coop(state:FarmState,index:int,selected_hen:int=-1) -> void:
 	FarmInteractionUI.coop(self,state,index,selected_hen)
@@ -609,7 +629,7 @@ func menu(state: FarmState) -> void:
 	button(p,"Salvar fazenda",Rect2(30,205,550,43),"save")
 	button(p,"Começar outra fazenda…",Rect2(30,264,550,43),"reset_ask")
 	button(p,"Salvar e sair",Rect2(30,323,550,43),"quit")
-	label(p,"TAB câmeras   •   F armazém   •   F5 salvar\nFeito com Godot e Blender. Modelos originais.",Vector2(30,395),Vector2(550,55),15,MUTED)
+	label(p,"F11 tela cheia / janela   •   TAB câmeras   •   F5 salvar\nFeito com Godot e Blender. Modelos originais.",Vector2(30,395),Vector2(550,55),15,MUTED)
 
 func confirm_reset() -> void:
 	var p:=_modal("reset",280)

@@ -1,5 +1,12 @@
 # Alterações
 
+## 0.23.2 — Tela cheia
+
+- Inicia em tela cheia na resolução do monitor. F11 alterna entre tela cheia e janela, inclusive com menus ou campos de texto em foco; a janela recupera sua posição e tamanho dentro da área disponível.
+- Cenário preenche a tela sem barras de proporção. HUD mantém escala uniforme, centralização, espaçamentos e cliques corretos em monitores largos ou altos.
+- Fundo dos menus cobre toda a tela; retículo continua no centro do disparo. Munição fica abaixo dos alertas da fazenda, sem sobreposição.
+- Tela inicial mostra a versão atual e o atalho F11. Saves, mapa, cavalo e armas mantidos.
+
 ## 0.23.1 — Damião, P-8 e cavalo juntos
 
 - Damião, armeiro original modelado no Blender: corpo cheio, pele negra, regata clara e expressão séria; bancada e três alvos de treino na estrada oeste.
