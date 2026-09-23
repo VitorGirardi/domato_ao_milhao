@@ -26,6 +26,12 @@ var effect_cursor:=0
 var animal_cursor:=0
 
 static func ensure_buses() -> void:
+	var limited:=false
+	for i in range(AudioServer.get_bus_effect_count(0)):
+		if AudioServer.get_bus_effect(0,i) is AudioEffectHardLimiter:limited=true
+	if not limited:
+		var limiter:=AudioEffectHardLimiter.new();limiter.ceiling_db=-1;limiter.release=.1
+		AudioServer.add_bus_effect(0,limiter)
 	for bus in [MUSIC_BUS,AMBIENCE_BUS,EFFECTS_BUS]:
 		if AudioServer.get_bus_index(bus)>=0:continue
 		AudioServer.add_bus();var index:=AudioServer.bus_count-1
@@ -80,7 +86,7 @@ func _process(delta:float) -> void:
 	if not is_instance_valid(game) or not is_instance_valid(game.hud):return
 	ui_cooldown=maxf(0,ui_cooldown-delta)
 	var active:bool=game.session_started and game.hud.modal_kind.is_empty() and not game.build_mode
-	var focused:bool=DisplayServer.get_name()=="headless" or game.get_window().has_focus()
+	var focused:bool=DisplayServer.get_name()=="headless" or (game.get_window().has_focus() and game.get_window().mode!=Window.MODE_MINIMIZED)
 	# Smooth changes keep settings, pause and build mode from producing abrupt jumps.
 	var music_target:float=-10 if not game.session_started else (-15 if active else -21)
 	if not focused:music_target=-60
@@ -99,7 +105,7 @@ func _process(delta:float) -> void:
 		return
 	var grounded:bool=game.player.is_on_floor()
 	var mounted:bool=game.horse.mounted
-	if previous_mounted!=mounted:distance_walked=0
+	if previous_mounted!=mounted or travel>=2:distance_walked=0
 	if travel<2 and (grounded or mounted):
 		distance_walked+=travel
 		var stride:float=1.45 if not mounted else (2.15 if game.horse.burst>0 else 1.75)

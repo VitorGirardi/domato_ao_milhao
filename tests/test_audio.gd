@@ -49,6 +49,21 @@ func run() -> void:
 	var snapshot:Dictionary=game.state.serialize()
 	audio._nearby_call(game.horse.position);assert(audio.animals[0].stream!=null)
 	assert(game.state.serialize()==snapshot,"Audio never mutates the farm")
+	# Inspect the actual Godot mixer output using the silent Dummy driver.
+	var capture:=AudioEffectCapture.new();capture.buffer_length=1
+	var capture_index:=AudioServer.get_bus_effect_count(0)
+	AudioServer.add_bus_effect(0,capture)
+	await create_timer(.3).timeout
+	var samples:=capture.get_buffer(capture.get_frames_available());var peak:=0.0
+	for sample in samples:peak=maxf(peak,maxf(absf(sample.x),absf(sample.y)))
+	assert(samples.size()>1000 and peak>.0001 and peak<1,"Imported audio mixes without clipping")
+	mix.music=0;mix.effects=0;mix.ambience=0;FarmAudio.apply_mix(mix)
+	await create_timer(.15).timeout;capture.clear_buffer();await create_timer(.15).timeout
+	samples=capture.get_buffer(capture.get_frames_available());peak=0
+	for sample in samples:peak=maxf(peak,maxf(absf(sample.x),absf(sample.y)))
+	assert(samples.size()>1000 and peak<.000001,"All category mutes produce actual silence")
+	AudioServer.remove_bus_effect(0,capture_index);FarmAudio.apply_mix(FarmSettings.DEFAULTS)
+
 	game.session_started=false;game.queue_free();await process_frame
-	print("AUDIO_QA_OK: 24 clips, exact musical loop, buses/mutes, bounded voices, footsteps, idle/menu silence, river distance and unchanged state")
+	print("AUDIO_QA_OK: 24 clips, exact musical loop, buses/mutes, bounded voices, footsteps, idle/menu silence, river distance unchanged state and mixer output/silence")
 	quit()
