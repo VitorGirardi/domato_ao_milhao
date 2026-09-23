@@ -190,8 +190,8 @@ func _refresh() -> void:
 	check_button.disabled = busy
 	back_button.disabled = busy or previous.is_empty()
 	progress.visible = busy
-	versions.text = "Instalada: " + (current if current != "" else "nenhuma") + "     •     Disponível: " + (latest if latest != "" else "verificando")
-	update_button.text = "INSTALAR" if current.is_empty() else ("REPARAR" if needs_repair else ("ATUALIZAR" if update_available else "ATUALIZADO"))
+	versions.text = "Instalada: " + (current if current != "" else "nenhuma") + "     •     Disponível: " + (latest if latest != "" else ("verificando" if busy else "não verificada"))
+	update_button.text = "INSTALAR" if current.is_empty() else ("VERIFICANDO..." if busy and operation in ["status","check"] else ("SEM CONSULTA" if not checked else ("REPARAR" if needs_repair else ("ATUALIZAR" if update_available else "ATUALIZADO"))))
 
 func _start(action: String) -> void:
 	if busy or helper.is_empty():

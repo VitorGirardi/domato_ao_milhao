@@ -27,7 +27,7 @@ func _run() -> void:
 	# Equal version and stale/offline results must not enable Update.
 	var operation:String=scene.operation
 	scene._start("update");assert(not scene.busy and scene.operation==operation)
-	scene.checked=false;scene._refresh();assert(scene.update_button.disabled and not scene.play_button.disabled)
+	scene.checked=false;scene._refresh();assert(scene.update_button.disabled and not scene.play_button.disabled and scene.update_button.text=="SEM CONSULTA")
 	scene.checked=true;scene.update_available=true;scene._refresh();assert(not scene.update_button.disabled)
 	scene.busy=true;scene._refresh();assert(scene.play_button.disabled and scene.update_button.disabled)
 	scene.busy=false;scene.update_available=false;scene._refresh()
