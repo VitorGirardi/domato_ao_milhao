@@ -29,6 +29,12 @@ func modal_bounds(label:String) -> void:
 	check(rect(game.hud.modal).get_center().distance_to(root.get_visible_rect().get_center())<1,label+" not centered")
 	check(rect(game.hud.modal_shade).grow(1).encloses(root.get_visible_rect()),label+" shade does not cover viewport")
 
+func title_button(text:String) -> Button:
+	for node in game.hud.modal.find_children("*","Button",true,false):
+		if node.text==text:return node
+	assert(false,"Title button missing: "+text)
+	return null
+
 func screenshot(label:String) -> void:
 	if not capture or DisplayServer.get_name()=="headless":return
 	await RenderingServer.frame_post_draw
@@ -73,7 +79,7 @@ func run() -> void:
 		game.front_end.has_save=false;game.front_end.show_title();await settle()
 		modal_bounds(tag+" title")
 		await screenshot(tag+"-title")
-		await click_at(game.hud.modal.get_global_transform_with_canvas()*Vector2(280,505))
+		await click_at(rect(title_button("Configura\u00e7\u00f5es")).get_center())
 		check(game.hud.modal_kind=="settings",tag+" settings click failed")
 		modal_bounds(tag+" settings")
 		await click_at(rect(game.front_end.controls.volume).get_center())
@@ -181,6 +187,7 @@ func run() -> void:
 		frames.sort()
 		print("FULLSCREEN_FRAMETIME_MS median=",frames[30]," p95=",frames[57]," max=",frames[59])
 	game.session_started=false
-	game.queue_free();await process_frame
+	game.audio.stop_all();await create_timer(.2).timeout
+	game.queue_free();await process_frame;await create_timer(.2).timeout
 	print("FULLSCREEN_QA_OK" if failures.is_empty() else "FULLSCREEN_QA_FAILED: "+str(failures))
 	quit(0 if failures.is_empty() else 1)

@@ -1,0 +1,113 @@
+name: Linux compatibility
+on:
+  pull_request:
+    paths: ['scripts/**', 'assets/**', 'project.godot', 'export_presets.cfg', 'tests/**', 'tools/linux/**', '.github/workflows/linux.yml']
+  workflow_dispatch:
+concurrency:
+  group: linux-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+jobs:
+  linux:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      GODOT_VERSION: 4.7.2
+      LIBGL_ALWAYS_SOFTWARE: '1'
+      XDG_DATA_HOME: ${{ github.workspace }}/test-results/linux-data
+      XDG_CONFIG_HOME: ${{ github.workspace }}/test-results/linux-config
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install Linux display and audio libraries
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y xvfb xauth openbox weston wmctrl imagemagick libgl1-mesa-dri libegl1 libpulse0 libasound2t64 libdecor-0-0
+      - name: Fetch matching official Godot engine and templates
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p test-results/linux exports/linux "$RUNNER_TEMP/godot"
+          cd "$RUNNER_TEMP/godot"
+          base="https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-stable"
+          curl -fL --retry 3 "$base/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip" -o engine.zip
+          curl -fL --retry 3 "$base/Godot_v${GODOT_VERSION}-stable_export_templates.tpz" -o templates.zip
+          unzip -q engine.zip
+          unzip -q templates.zip 'templates/linux_*x86_64' 'templates/version.txt'
+          chmod +x "Godot_v${GODOT_VERSION}-stable_linux.x86_64"
+          ln -s "$RUNNER_TEMP/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64" "$RUNNER_TEMP/godot/godot"
+          echo "$RUNNER_TEMP/godot" >> "$GITHUB_PATH"
+          target="$XDG_DATA_HOME/godot/export_templates/${GODOT_VERSION}.stable"
+          mkdir -p "$target"
+          cp templates/* "$target/"
+      - name: Import and audit case-sensitive resources
+        run: |
+          python3 tools/linux/audit_resources.py
+          timeout 300 godot --headless --editor --path . --import --quit > test-results/linux/import.log 2>&1
+          ! grep -E 'SCRIPT ERROR|ERROR:' test-results/linux/import.log
+      - name: Linux gameplay and saves
+        shell: bash
+        run: |
+          set -euo pipefail
+          for entry in 'test_horse HORSE_STATE_OK' 'test_settings SETTINGS_STATE_OK' 'test_fullscreen FULLSCREEN_QA_OK' 'test_linux LINUX_QA_OK'; do
+            read -r test marker <<< "$entry"
+            timeout 180 godot --headless --audio-driver Dummy --path . --script "tests/$test.gd" > "test-results/linux/$test.log" 2>&1
+            cat "test-results/linux/$test.log"
+            grep -q "$marker" "test-results/linux/$test.log"
+            if grep -E 'SCRIPT ERROR|ERROR:' "test-results/linux/$test.log"; then exit 1; fi
+          done
+      - name: Linux multiplayer with two isolated processes
+        run: |
+          python3 tests/run_network.py --godot godot
+          mkdir -p test-results/linux/network
+          cp test-results/network-*/*.log test-results/linux/network/
+      - name: X11 graphical gameplay and fullscreen
+        run: |
+          xvfb-run -a -s '-screen 0 1920x1080x24' bash -c 'openbox >test-results/linux/openbox.log 2>&1 & timeout 180 godot --display-driver x11 --audio-driver Dummy --path . --script tests/test_linux.gd >test-results/linux/x11.log 2>&1'
+          cat test-results/linux/x11.log
+          grep -q LINUX_QA_OK test-results/linux/x11.log
+          ! grep -E 'SCRIPT ERROR|ERROR:' test-results/linux/x11.log
+      - name: Wayland graphical gameplay and fullscreen
+        shell: bash
+        run: |
+          set -euo pipefail
+          export XDG_RUNTIME_DIR="$RUNNER_TEMP/wayland-runtime"
+          mkdir -p "$XDG_RUNTIME_DIR"; chmod 700 "$XDG_RUNTIME_DIR"
+          weston --backend=headless-backend.so --use-pixman --width=1920 --height=1080 --socket=wayland-qa --idle-time=0 >test-results/linux/weston.log 2>&1 &
+          for i in $(seq 1 50); do [ -S "$XDG_RUNTIME_DIR/wayland-qa" ] && break; sleep .1; done
+          export WAYLAND_DISPLAY=wayland-qa
+          timeout 180 godot --display-driver wayland --audio-driver Dummy --path . --script tests/test_linux.gd >test-results/linux/wayland.log 2>&1
+          cat test-results/linux/wayland.log
+          grep -q LINUX_QA_OK test-results/linux/wayland.log
+          ! grep -E 'SCRIPT ERROR|ERROR:' test-results/linux/wayland.log
+      - name: Export and run the native release
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 300 godot --headless --path . --export-release 'Linux Desktop' exports/linux/DoMatoAoMilhao.x86_64 >test-results/linux/export.log 2>&1
+          ! grep -E 'SCRIPT ERROR|ERROR:' test-results/linux/export.log
+          chmod +x exports/linux/DoMatoAoMilhao.x86_64
+          file exports/linux/DoMatoAoMilhao.x86_64 | tee test-results/linux/binary.txt
+          ldd exports/linux/DoMatoAoMilhao.x86_64 | tee test-results/linux/libraries.txt
+          ! grep -q 'not found' test-results/linux/libraries.txt
+          xvfb-run -a -s '-screen 0 1920x1080x24' timeout 180 bash tools/linux/smoke_release.sh
+          cat test-results/linux/export-smoke.log
+          ! grep -E 'SCRIPT ERROR|ERROR:' test-results/linux/export-smoke.log
+          git rev-parse HEAD > exports/linux/COMMIT.txt
+          cp tools/linux/jogar.sh exports/linux/
+          cp LINUX.md exports/linux/LEIA-ME.md
+          cp GODOT_LICENSE.txt AUDIO.md AUDIO_CREDITS.md MULTIPLAYER.md exports/linux/
+          chmod +x exports/linux/jogar.sh
+          tar -czf exports/DoMatoAoMilhao-Linux-x86_64.tar.gz -C exports/linux .
+          sha256sum exports/DoMatoAoMilhao-Linux-x86_64.tar.gz | tee exports/SHA256SUMS
+      - uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: linux-validation
+          path: test-results/linux/
+      - uses: actions/upload-artifact@v5
+        with:
+          name: DoMatoAoMilhao-Linux-x86_64
+          path: |
+            exports/DoMatoAoMilhao-Linux-x86_64.tar.gz
+            exports/SHA256SUMS
