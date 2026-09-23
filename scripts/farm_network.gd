@@ -46,6 +46,7 @@ func setup(owner_game:Node3D) -> void:
 	multiplayer.server_disconnected.connect(func():leave("O anfitrião encerrou a sessão. Sua fazenda solo está preservada."))
 	badge=game.hud.label(game.hud.root,"",Vector2(440,122),Vector2(610,35),18,FarmHUD.CREAM)
 	badge.mouse_filter=Control.MOUSE_FILTER_IGNORE;badge.visible=false
+	badge.add_theme_color_override("font_shadow_color",Color("20392a"));badge.add_theme_constant_override("shadow_offset_y",2)
 
 func show_menu(message:String="") -> void:
 	var p:=FarmGameUI.open(game.hud,"network","Jogar junto · 2 jogadores","worker",850,650)
@@ -55,9 +56,9 @@ func show_menu(message:String="") -> void:
 	name_input=LineEdit.new();name_input.position=Vector2(230,223);name_input.size=Vector2(580,43);name_input.max_length=20;name_input.text=local_name;p.add_child(name_input)
 	FarmGameUI.action(game.hud,p,"Hospedar minha fazenda",Rect2(32,288,786,52),"net:host",true)
 	game.hud.label(p,"Endereço do anfitrião",Vector2(32,363),Vector2(240,30),18)
-	address_input=LineEdit.new();address_input.position=Vector2(280,356);address_input.size=Vector2(538,45);address_input.placeholder_text="Ex.: 192.168.1.10 ou IP do Tailscale";address_input.max_length=64;p.add_child(address_input)
+	address_input=LineEdit.new();address_input.position=Vector2(280,356);address_input.size=Vector2(538,45);address_input.placeholder_text="Ex.: 192.168.1.10 ou IP do Tailscale";address_input.max_length=64;address_input.add_theme_color_override("font_placeholder_color",FarmHUD.MUTED);p.add_child(address_input)
 	FarmGameUI.action(game.hud,p,"Entrar na fazenda",Rect2(32,421,786,52),"net:join")
-	status=game.hud.label(p,message,Vector2(32,493),Vector2(786,65),18);status.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+	status=game.hud.label(p,message if not message.is_empty() else "Mesma rede: use o IP mostrado pelo anfitrião.\nEm casas diferentes: conectem os PCs pelo Tailscale.",Vector2(32,493),Vector2(786,65),18);status.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
 	FarmGameUI.action(game.hud,p,"Voltar",Rect2(32,568,786,46),"net:back")
 
 func session_menu() -> void:
