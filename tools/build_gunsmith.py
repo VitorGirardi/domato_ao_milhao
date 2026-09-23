@@ -129,6 +129,7 @@ body_api['rig_export']('gunsmith',body,details,head,True)
 
 if '--preview' in sys.argv:
     # Studio portrait uses the same authored mesh, with no model regeneration.
+    bpy.ops.wm.open_mainfile(filepath=str(ROOT/'art/source/gunsmith.blend'))
     for o in bpy.data.objects:
         if o.type=='MESH' and o.data.shape_keys:
             for k in o.data.shape_keys.key_blocks:k.value=0
