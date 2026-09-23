@@ -74,7 +74,13 @@ func setup(owner_game:Node3D) -> void:
 func show_menu(message:String="") -> void:
 	var p:=FarmGameUI.open(game.hud,"network","Jogar junto · 2 jogadores","worker",850,650)
 	game.hud.label(p,"COOPERATIVO · FAZENDA",Vector2(32,112),Vector2(780,30),20)
-	game.hud.label(p,"Construam, produzam e cuidem da fazenda juntos.\nCooperativo salvo à parte; sua fazenda solo fica preservada.",Vector2(32,153),Vector2(780,62),19)
+	game.hud.label(p,"Construam, produzam e cuidem da fazenda juntos.\nCooperativo salvo à parte; sua fazenda solo fica preservada.",Vector2(32,153),Vector2(585,62),17)
+	var character:=OptionButton.new();character.position=Vector2(630,159);character.size=Vector2(182,43)
+	character.add_item("Fazendeiro");character.add_item("Fazendeira");character.select(1 if game.avatar.get_meta("character_id","farmer")=="farmer_woman" else 0);p.add_child(character)
+	character.item_selected.connect(func(index:int):
+		var id:String=FarmCharacters.IDS[index]
+		if FarmCharacters.save_choice(id)==OK:FarmCharacters.apply_to_game(game,id)
+		else:game.hud.toast("Não foi possível guardar a escolha do personagem."))
 	game.hud.label(p,"Seu nome",Vector2(32,225),Vector2(180,32),18)
 	name_input=LineEdit.new();name_input.position=Vector2(230,223);name_input.size=Vector2(580,43);name_input.max_length=20;name_input.text=local_name;p.add_child(name_input)
 	FarmGameUI.action(game.hud,p,"Continuar cooperativo" if FarmCoop.load_farm(coop_path)!=null else "Criar cooperativo da minha fazenda",Rect2(32,288,786,52),"net:host",true)
@@ -98,7 +104,9 @@ func session_menu() -> void:
 func handle(value:String) -> bool:
 	if value.begins_with("net:"):
 		match value:
-			"net:menu":show_menu()
+			"net:menu":
+				if active:session_menu()
+				else:show_menu()
 			"net:stock":
 				if ready_session:show_stock()
 			"net:host":host(name_input.text)

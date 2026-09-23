@@ -1,3 +1,7 @@
+# 0.31.0 — Fazenda cooperativa
+
+Construção, comércio, animais, equipe e cavalo compartilhados. Comandos validados e persistidos no anfitrião, animação replicada e proteção de seleção após edições concorrentes. Fazendeira selecionável e sincronizada; galinha cisca e vaca mastiga. Save cooperativo da 0.30 continua válido.
+
 # 0.30.0 — Cultivo cooperativo
 
 - Plantio, rega, crescimento e colheita autoritativos no anfitrião; estoque compartilhado.
