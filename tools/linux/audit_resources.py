@@ -16,7 +16,7 @@ for name in tracked:
     if not name.endswith((".gd", ".tscn", ".tres", ".godot")) or name.startswith("tests/"):
         continue
     for value in re.findall(r'"res://([^"\n]+)"', (root / name).read_text(encoding="utf-8")):
-        if "%" in value or value.endswith("/"):
+        if "%" in value or value.endswith("/") or value.startswith("test-results/"):
             continue
         # Concatenated prefixes are not complete resource references.
         if not Path(value).suffix:
