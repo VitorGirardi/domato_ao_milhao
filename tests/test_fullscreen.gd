@@ -181,6 +181,7 @@ func run() -> void:
 		frames.sort()
 		print("FULLSCREEN_FRAMETIME_MS median=",frames[30]," p95=",frames[57]," max=",frames[59])
 	game.session_started=false
-	game.queue_free();await process_frame
+	game.audio.stop_all();await create_timer(.2).timeout
+	game.queue_free();await process_frame;await create_timer(.2).timeout
 	print("FULLSCREEN_QA_OK" if failures.is_empty() else "FULLSCREEN_QA_FAILED: "+str(failures))
 	quit(0 if failures.is_empty() else 1)

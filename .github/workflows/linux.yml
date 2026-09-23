@@ -5,6 +5,9 @@ on:
   pull_request:
     paths: ['scripts/**', 'assets/**', 'project.godot', 'export_presets.cfg', 'tests/**', 'tools/linux/**', '.github/workflows/linux.yml']
   workflow_dispatch:
+concurrency:
+  group: linux-${{ github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
@@ -17,11 +20,11 @@ jobs:
       XDG_DATA_HOME: ${{ github.workspace }}/test-results/linux-data
       XDG_CONFIG_HOME: ${{ github.workspace }}/test-results/linux-config
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install Linux display and audio libraries
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y xvfb xauth openbox weston libgl1-mesa-dri libegl1 libpulse0 libasound2t64
+          sudo apt-get install -y xvfb xauth openbox weston libgl1-mesa-dri libegl1 libpulse0 libasound2t64 libdecor-0-0
       - name: Fetch matching official Godot engine and templates
         shell: bash
         run: |
@@ -53,11 +56,13 @@ jobs:
             timeout 180 godot --headless --audio-driver Dummy --path . --script "tests/$test.gd" > "test-results/linux/$test.log" 2>&1
             cat "test-results/linux/$test.log"
             grep -q "$marker" "test-results/linux/$test.log"
-            ! grep -E 'SCRIPT ERROR|ERROR:' "test-results/linux/$test.log"
+            if grep -E 'SCRIPT ERROR|ERROR:' "test-results/linux/$test.log"; then exit 1; fi
           done
+      - name: Linux multiplayer with two isolated processes
+        run: python3 tools/linux/network_qa.py
       - name: X11 graphical gameplay and fullscreen
         run: |
-          xvfb-run -a -s '-screen 0 1920x1080x24' bash -c 'openbox >test-results/linux/openbox.log 2>&1 & timeout 180 godot --display-server x11 --audio-driver Dummy --path . --script tests/test_linux.gd >test-results/linux/x11.log 2>&1'
+          xvfb-run -a -s '-screen 0 1920x1080x24' bash -c 'openbox >test-results/linux/openbox.log 2>&1 & timeout 180 godot --display-driver x11 --audio-driver Dummy --path . --script tests/test_linux.gd >test-results/linux/x11.log 2>&1'
           cat test-results/linux/x11.log
           grep -q LINUX_QA_OK test-results/linux/x11.log
           ! grep -E 'SCRIPT ERROR|ERROR:' test-results/linux/x11.log
@@ -70,7 +75,7 @@ jobs:
           weston --backend=headless-backend.so --use-pixman --width=1920 --height=1080 --socket=wayland-qa --idle-time=0 >test-results/linux/weston.log 2>&1 &
           for i in $(seq 1 50); do [ -S "$XDG_RUNTIME_DIR/wayland-qa" ] && break; sleep .1; done
           export WAYLAND_DISPLAY=wayland-qa
-          timeout 180 godot --display-server wayland --audio-driver Dummy --path . --script tests/test_linux.gd >test-results/linux/wayland.log 2>&1
+          timeout 180 godot --display-driver wayland --audio-driver Dummy --path . --script tests/test_linux.gd >test-results/linux/wayland.log 2>&1
           cat test-results/linux/wayland.log
           grep -q LINUX_QA_OK test-results/linux/wayland.log
           ! grep -E 'SCRIPT ERROR|ERROR:' test-results/linux/wayland.log
@@ -87,17 +92,18 @@ jobs:
           xvfb-run -a -s '-screen 0 1920x1080x24' timeout 90 exports/linux/DoMatoAoMilhao.x86_64 --audio-driver Dummy --quit-after 120 >test-results/linux/export-smoke.log 2>&1
           cat test-results/linux/export-smoke.log
           ! grep -E 'SCRIPT ERROR|ERROR:' test-results/linux/export-smoke.log
+          git rev-parse HEAD > exports/linux/COMMIT.txt
           cp tools/linux/jogar.sh exports/linux/
           cp LINUX.md exports/linux/LEIA-ME.md
           chmod +x exports/linux/jogar.sh
           tar -czf exports/DoMatoAoMilhao-Linux-x86_64.tar.gz -C exports/linux .
           sha256sum exports/DoMatoAoMilhao-Linux-x86_64.tar.gz | tee exports/SHA256SUMS
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         if: always()
         with:
           name: linux-validation
           path: test-results/linux/
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: DoMatoAoMilhao-Linux-x86_64
           path: |
