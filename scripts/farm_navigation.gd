@@ -9,6 +9,7 @@ var terrain:Texture2D
 var waypoint:=Vector2.ZERO
 var waypoint_name:=""
 var target_key:=""
+var stable_target:Dictionary={}
 
 func setup(owner_game:Node3D) -> void:
 	game=owner_game;terrain=FarmMapView.background()
@@ -31,6 +32,9 @@ func destinations() -> Array:
 	values.append({"key":"horse","name":"Pé de Pano","at":Vector2(game.horse.position.x,game.horse.position.z)})
 	values.append({"key":"market","name":"Armazém da Lúcia","at":Vector2(-24,15)})
 	values.append({"key":"armory","name":"Damião · Armeiro","at":Vector2(-33.5,22)})
+	for i in range(game.state.items.size()):
+		var item:Dictionary=game.state.items[i]
+		if item.kind=="stable":values.append({"key":"stable:%d"%i,"name":"Estrebaria %d"%(i+1),"at":FarmStable.entrance(item)})
 	for key in FarmParcels.LOTS:
 		var lot:Dictionary=FarmParcels.LOTS[key]
 		values.append({"key":key,"name":lot.name+(" · seu" if key in game.state.owned_parcels else " · à venda"),"at":lot.center})
@@ -40,7 +44,10 @@ func destinations() -> Array:
 	return values
 
 func select(point:Vector2,title:String,key:String="") -> void:
-	waypoint=point;waypoint_name=title;target_key=key;refresh()
+	waypoint=point;waypoint_name=title;target_key=key
+	stable_target={}
+	if key.begins_with("stable:"):stable_target=game.state.items[int(key.trim_prefix("stable:"))]
+	refresh()
 
 func handle(action:String) -> void:
 	if action=="map":show()
@@ -57,15 +64,15 @@ func show() -> void:
 	large=FarmMapView.new();large.full=true;large.terrain=terrain;large.position=Vector2(22,110);large.size=Vector2(700,612);panel.add_child(large)
 	large.picked.connect(func(point:Vector2):select(point,"Ponto marcado"))
 	hud.label(panel,"PARA ONDE VAMOS?",Vector2(747,110),Vector2(410,29),20)
-	var i:=0
+	var scroll:=ScrollContainer.new();scroll.position=Vector2(747,149);scroll.size=Vector2(420,469);scroll.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED;panel.add_child(scroll)
+	var list:=VBoxContainer.new();list.size_flags_horizontal=Control.SIZE_EXPAND_FILL;list.add_theme_constant_override("separation",4);scroll.add_child(list)
 	for entry in destinations():
-		var button:=FarmGameUI.action(hud,panel,entry.name,Rect2(747,149+i*36,420,32),"map:go:"+entry.key)
+		var button:=FarmGameUI.action(hud,list,entry.name,Rect2(0,0,400,32),"map:go:"+entry.key)
 		button.add_theme_font_size_override("font_size",15)
 		for style_key in ["normal","hover","pressed","disabled"]:
 			var box:=button.get_theme_stylebox(style_key) as StyleBoxFlat
 			box.content_margin_top=3;box.content_margin_bottom=3
-		button.size.y=32
-		i+=1
+		button.custom_minimum_size.y=32;button.size_flags_horizontal=Control.SIZE_EXPAND_FILL
 	detail=hud.label(panel,"",Vector2(747,630),Vector2(420,57),17)
 	detail.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
 	FarmGameUI.action(hud,panel,"Limpar destino",Rect2(747,692,198,40),"map:clear")
@@ -77,6 +84,11 @@ func show() -> void:
 func refresh() -> void:
 	if mini==null:return
 	var p:=Vector2(game.player.position.x,game.player.position.z)
+	if target_key.begins_with("stable:"):
+		var found:=false
+		for item in game.state.items:
+			if is_same(item,stable_target):found=true;waypoint=FarmStable.entrance(item);break
+		if not found:waypoint_name="";target_key="";stable_target={}
 	if target_key=="horse":waypoint=Vector2(game.horse.position.x,game.horse.position.z)
 	for view in [mini,large]:
 		if not is_instance_valid(view):continue

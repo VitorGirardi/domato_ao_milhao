@@ -82,7 +82,7 @@ for x in [-.49,.49]:
 # Bridle and reins remain attached to the head/body instead of floating props.
 for x in [-.25,.25]:
  attach(beam((x*.83,-1.60,2.17),(x*.88,-1.01,2.59),.025,leather),neck)
- attach(beam((x*.83,-1.55,2.22),(x,-.32,2.06),.025,leather),body)
+ rein=attach(beam((x*.83,-1.55,2.22),(x,-.32,2.06),.025,leather),body);rein.name='ReinL' if x<0 else 'ReinR'
 # Continuous anatomical surface. Rigid pivots above keep tack and facial details attached.
 coat_objects=[o for o in bpy.context.scene.objects if o.type=='MESH' and len(o.data.materials) and o.data.materials[0]==coat and not o.name.startswith('Ear')]
 bpy.ops.object.select_all(action='DESELECT')

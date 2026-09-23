@@ -8,6 +8,7 @@ const CROPS = {
 	"corn": {"name": "Milho", "seconds": 62.0, "seed": 8, "price": 24, "yield": 3}
 }
 const ITEMS = {
+	"stable": {"name":"Estrebaria", "cost":550, "size":Vector2(6,6)},
 	"cheesery": {"name":"Queijaria","cost":900,"size":Vector2(6,6)},
 	"corral": {"name":"Curral","cost":650,"size":Vector2(8,6)},
 	"plot": {"name": "Canteiro", "cost": 20, "size": Vector2(2, 2)},
@@ -429,7 +430,7 @@ func rename_hen(index: int, hen: int, value: String) -> String:
 	return ""
 
 func paint_item(index: int, part: String, color: int) -> String:
-	if index<0 or index>=items.size() or items[index].kind not in ["barn","coop","workshop","fence","sign"]:
+	if index<0 or index>=items.size() or items[index].kind not in ["barn","coop","workshop","fence","sign","stable"]:
 		return "Selecione uma construção para pintar."
 	if part not in ["walls","roof","door"] or color<0 or color>=PALETTE.size(): return "Pintura inválida."
 	if part=="door" and items[index].kind=="workshop": return "A oficina tem entrada aberta."
@@ -541,6 +542,7 @@ func place(kind: String, at: Vector2, turn: int, crop: String = "carrot") -> Str
 	items.append({"kind": kind, "x": at.x, "z": at.y, "turn": posmod(turn, 4),
 		"level":1, "paint": 0, "text": "Aqui o fiado só amanhã", "crop": crop,
 		"growth": 0.0, "watered": false, "planted": kind == "plot", "egg_time": 0.0})
+	if kind=="stable":items[-1].paint=6
 	if kind=="coop": items[-1].flock=FarmAnimals.fresh()
 	if kind=="cheesery": items[-1].cheese=FarmCheese.fresh()
 	if kind=="corral": items[-1].dairy=FarmDairy.fresh()
@@ -650,7 +652,7 @@ func expand() -> String:
 	return ""
 
 func serialize() -> Dictionary:
-	return {"version": 16, "horse":horse.duplicate(), "armory":armory.duplicate(), "owned_parcels":owned_parcels.duplicate(), "unlimited_money":unlimited_money, "farm_xp":farm_xp, "dairy_worker":dairy_worker.duplicate(), "cheese_worker":cheese_worker.duplicate(), "cheese_stock":cheese_stock, "cheese_order":cheese_order.duplicate(), "milk_stock":milk_stock, "cultivation":cultivation.duplicate(true), "field_staff":field_staff.duplicate(true), "professional_watering":professional_watering, "irrigation":irrigation.duplicate(true), "money": _money, "claimed": claimed,
+	return {"version": 17, "horse":horse.duplicate(), "armory":armory.duplicate(), "owned_parcels":owned_parcels.duplicate(), "unlimited_money":unlimited_money, "farm_xp":farm_xp, "dairy_worker":dairy_worker.duplicate(), "cheese_worker":cheese_worker.duplicate(), "cheese_stock":cheese_stock, "cheese_order":cheese_order.duplicate(), "milk_stock":milk_stock, "cultivation":cultivation.duplicate(true), "field_staff":field_staff.duplicate(true), "professional_watering":professional_watering, "irrigation":irrigation.duplicate(true), "money": _money, "claimed": claimed,
 		"center": [center.x, center.y], "land_size": land_size,
 		"items": items.duplicate(true), "inventory": inventory.duplicate(),
 		"elapsed": elapsed, "revenue": revenue, "harvests": harvests,
@@ -660,7 +662,7 @@ func serialize() -> Dictionary:
 func restore(data: Variant) -> bool:
 	# Validate before mutating live state. Invalid files never partially replace it.
 	if data is Dictionary and data.has("armory") and not FarmArmory.valid(data.armory):return false
-	if not data is Dictionary or not _number(data.get("version")) or data.version<1 or data.version>16 or float(data.version)!=floorf(float(data.version)):
+	if not data is Dictionary or not _number(data.get("version")) or data.version<1 or data.version>17 or float(data.version)!=floorf(float(data.version)):
 		return false
 	if data.version>=16 and not FarmHorse.valid(data.get("horse")):return false
 	if data.has("horse") and not FarmHorse.valid(data.horse):return false

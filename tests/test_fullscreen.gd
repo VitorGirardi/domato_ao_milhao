@@ -78,7 +78,7 @@ func run() -> void:
 		game.build_mode=true;game._update_ui()
 		await settle()
 		fits(game.hud.tool_panel,tag+" toolbar")
-		fits(game.hud.buttons.cheesery,tag+" last tool")
+		fits(game.hud.buttons.stable,tag+" last tool")
 		fits(game.hud.select_panel,tag+" selection")
 		actions.clear()
 		await click_at(rect(game.hud.buttons.inspect).get_center())

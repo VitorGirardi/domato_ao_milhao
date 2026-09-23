@@ -1,6 +1,11 @@
 class_name FarmHorse
 extends Node3D
 const HOME:=Vector2(-30,5)
+var reins:=ImmediateMesh.new()
+var rein_ends:Array=[]
+var rein_material:=StandardMaterial3D.new()
+var life:=FarmHorseLife.new()
+var part_home:Dictionary={}
 var mounted:=false
 var stamina:=100.0
 var burst:=0.0
@@ -38,7 +43,14 @@ func _ready() -> void:
 		var index:=skin.find_bone("Skin"+key)
 		if index>=0:
 			skin_bones[key]=index;skin_rest[key]=skin.get_bone_global_rest(index).basis.get_rotation_quaternion()
+	for key in parts:part_home[key]=parts[key].position
 	body_home=parts.HorseBody.position
+	var strings:=MeshInstance3D.new();strings.mesh=reins;add_child(strings)
+	rein_material.albedo_color=Color("493325");rein_material.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED
+	for side in [-1.0,1.0]:
+		var original:=model.find_child("ReinL" if side<0 else "ReinR",true,false) as Node3D
+		assert(original!=null);original.visible=false
+		rein_ends.append([parts.HorseNeck.to_local(to_global(Vector3(side*.2075,2.22,1.55))),parts.HorseBody.to_local(to_global(Vector3(side*.25,2.06,.32)))])
 	var shape:=BoxShape3D.new();shape.size=Vector3(1.05,2.4,2.8);shape_node.shape=shape;shape_node.position=Vector3(0,1.2,.15)
 	obstacle.add_child(shape_node);add_child(obstacle)
 	label.text="PÉ DE PANO";label.position=Vector3(0,3.1,0);label.font_size=32;label.pixel_size=.012;label.billboard=BaseMaterial3D.BILLBOARD_ENABLED;add_child(label)
@@ -46,7 +58,7 @@ func _ready() -> void:
 
 func restore(data:Dictionary) -> void:
 	heading=data.angle;rotation.y=heading;position=Vector3(data.x,FarmLandscape.height_at(Vector2(data.x,data.z)),data.z)
-	snapshot=data.duplicate();burst=0;speed=0
+	snapshot=data.duplicate();burst=0;speed=0;life.reset(self)
 
 func store(state:FarmState) -> void:
 	state.horse={"x":position.x,"z":position.z,"angle":wrapf(heading,-PI,PI)}
@@ -57,6 +69,7 @@ func can_mount(player:CharacterBody3D) -> bool:
 
 func mount(player:CharacterBody3D,avatar:Node3D,actor:FarmAvatar) -> void:
 	mounted=true;obstacle.collision_layer=0;label.visible=false
+	parts.HorseNeck.position=part_home.HorseNeck;parts.HorseNeck.rotation=Vector3.ZERO;life.reset(self)
 	rider_collision=player.get_child(0) as CollisionShape3D;walk_shape=rider_collision.shape
 	var shape:=BoxShape3D.new();shape.size=Vector3(1.15,3.65,3.25)
 	rider_collision.shape=shape;rider_collision.position=Vector3(0,1.825,.15);rider_collision.rotation.y=heading
@@ -84,7 +97,7 @@ func dismount(player:CharacterBody3D,avatar:Node3D,actor:FarmAvatar,state:FarmSt
 			rider_collision.shape=walk_shape;rider_collision.position=Vector3(0,1.29,0);rider_collision.rotation=Vector3.ZERO
 			player.position=Vector3(p.x,FarmLandscape.height_at(p)+.12,p.y);player.velocity=Vector3.ZERO
 			avatar.position=Vector3.ZERO;avatar.rotation=Vector3(0,heading,0);actor.animate(1,false,false)
-			obstacle.collision_layer=1;label.visible=true;store(state);return true
+			obstacle.collision_layer=1;label.visible=true;store(state);life.reset(self);return true
 	return false
 
 func encourage() -> bool:
@@ -125,8 +138,8 @@ func drive(player:CharacterBody3D,avatar:Node3D,actor:FarmAvatar,direction:Vecto
 		actor.pose_bone("Forearm.R",Vector3(-.2,0,0))
 
 func animate(delta:float,velocity:float,running:bool) -> void:
-	gait+=delta*(12 if running else 7)
-	var moving:=velocity>.3;var amount:=minf(1,velocity/6)
+	gait+=delta*(12 if running else lerpf(2.5,7,clampf(velocity/6,0,1)))
+	var moving:=velocity>.3;var amount:=minf(1,velocity)
 	parts.HorseBody.position=body_home+Vector3(0,absf(sin(gait))*.045*amount,0)
 	parts.HorseNeck.rotation.x=sin(gait*(.65 if not moving else 1))*(.045 if not moving else .025)
 	parts.HorseTail.rotation.z=sin(gait*.45)*.16
@@ -136,12 +149,23 @@ func animate(delta:float,velocity:float,running:bool) -> void:
 		parts[key].rotation.x=sin(phase)*(.58 if running else .37)*amount
 		parts[key+"Lower"].rotation.x=maxf(0,-sin(phase))*.65*amount
 
+	sync_skin()
+
+func sync_skin() -> void:
 	# Match the continuous skin to the same joint motions as the tack and eyes.
 	for key in skin_bones:
 		var index:int=skin_bones[key]
 		var rest:Quaternion=skin_rest[key]
 		var pose:Quaternion=parts[key].quaternion
 		skin.set_bone_pose_rotation(index,skin.get_bone_rest(index).basis.get_rotation_quaternion()*rest.inverse()*pose*rest)
+		skin.set_bone_pose_position(index,skin.get_bone_rest(index).origin+parts[key].position-part_home[key])
+	reins.clear_surfaces()
+	for ends in rein_ends:
+		var start:=to_local(parts.HorseNeck.to_global(ends[0]));var end:=to_local(parts.HorseBody.to_global(ends[1]))
+		reins.surface_begin(Mesh.PRIMITIVE_LINE_STRIP,rein_material)
+		for i in range(13):
+			var t:=i/12.0;reins.surface_add_vertex(start.lerp(end,t)-Vector3.UP*sin(t*PI)*.16)
+		reins.surface_end()
 	var body_index:int=skin_bones.HorseBody
 	skin.set_bone_pose_position(body_index,skin.get_bone_rest(body_index).origin+parts.HorseBody.position-body_home)
 
