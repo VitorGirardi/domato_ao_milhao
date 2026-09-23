@@ -1,5 +1,11 @@
 # Versão 0.25.0 — estrebaria e cavalo solto
 
+## 0.28.0 — Montaria e vozes dos animais
+
+- Relincho ao montar e vocalização no sprint aceito, com fonte acompanhando o cavalo.
+- Chamados de galinhas, vacas, pássaros e cavalo com intervalos independentes, proximidade e volume revistos.
+
+
 ## 0.27.0 — O vale ganhou som
 
 - Tema original Manhã no Vale, com 96 segundos, e 23 efeitos/ambientes sintetizados para a fazenda.

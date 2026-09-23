@@ -1,5 +1,11 @@
 # Prioridades — Do Mato ao Milhão
 
+## Entregue — 0.28.0
+
+- [x] Sons próprios do cavalo ao montar e sprintar.
+- [x] Chamados dos animais com intervalos por espécie.
+
+
 ## Entregue — 0.27.0
 
 - [x] Música original e paisagem sonora com controles independentes.

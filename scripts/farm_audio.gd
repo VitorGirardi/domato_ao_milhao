@@ -1,10 +1,11 @@
 class_name FarmAudio
 extends Node
+signal animal_called(kind:String)
 ## Bounded voices and distance-driven ambience; no production or save mutations.
 const MUSIC_BUS:="Music"
 const AMBIENCE_BUS:="Ambience"
 const EFFECTS_BUS:="Effects"
-const NAMES:=["manha_no_vale","wind","river","water","plant","harvest","build","ui_tick","ui_confirm","ui_back","bird_0","bird_1","bird_2","chicken","cow","horse_snort","step_0","step_1","step_2","step_3","hoof_0","hoof_1","hoof_2","hoof_3"]
+const NAMES:=["manha_no_vale","wind","river","water","plant","harvest","build","ui_tick","ui_confirm","ui_back","bird_0","bird_1","bird_2","chicken","cow","horse_snort","horse_neigh","horse_sprint","step_0","step_1","step_2","step_3","hoof_0","hoof_1","hoof_2","hoof_3"]
 var shutting_down:=false
 var game:Node3D
 var clips:Dictionary={}
@@ -19,7 +20,10 @@ var distance_walked:=0.0
 var last_position:=Vector3.ZERO
 var previous_grounded:=true
 var previous_mounted:=false
-var event_wait:=4.0
+var event_wait:=1.0
+var call_timers:={"horse":2.0,"chicken":1.5,"cow":3.5,"bird":4.0}
+var call_cursor:=0
+var horse_voice:AudioStreamPlayer3D
 var ui_cooldown:=0.0
 var step_count:=0
 var emitted_events:=0
@@ -58,8 +62,11 @@ func setup(owner_game:Node3D) -> void:
 	for i in range(4):
 		var voice:=AudioStreamPlayer.new();voice.bus=EFFECTS_BUS;add_child(voice);effects.append(voice)
 	for i in range(4):
-		var voice:=AudioStreamPlayer3D.new();voice.bus=AMBIENCE_BUS;voice.unit_size=4;voice.max_distance=32
+		var voice:=AudioStreamPlayer3D.new();voice.bus=AMBIENCE_BUS;voice.unit_size=6;voice.max_distance=32
 		game.add_child(voice);animals.append(voice)
+	horse_voice=AudioStreamPlayer3D.new();horse_voice.bus=AMBIENCE_BUS;horse_voice.unit_size=6;horse_voice.max_distance=32
+	game.horse.add_child(horse_voice);horse_voice.position=Vector3(0,2,1.1)
+	game.horse.connect("encouraged",_horse_sprint)
 	game.player.add_child(listener);listener.position=Vector3(0,1.5,0)
 	last_position=game.player.position
 	game.hud.action.connect(ui_action)
@@ -78,10 +85,10 @@ func ui_action(value:String) -> void:
 	play_effect(key,-18)
 
 func spatial(key:String,at:Vector3) -> void:
-	if animals.is_empty():return
+	if shutting_down or animals.is_empty():return
 	var voice:=animals[animal_cursor%animals.size()];animal_cursor+=1
-	voice.stop();voice.stream=clips[key];voice.global_position=at;voice.volume_db=-17
-	voice.pitch_scale=rng.randf_range(.95,1.05);voice.play();emitted_events+=1
+	voice.stop();voice.stream=clips[key];voice.global_position=at;voice.volume_db=-8
+	voice.pitch_scale=rng.randf_range(.95,1.05);voice.play();emitted_events+=1;animal_called.emit(key)
 
 func _process(delta:float) -> void:
 	if not is_instance_valid(game) or not is_instance_valid(game.hud):return
@@ -97,15 +104,18 @@ func _process(delta:float) -> void:
 	var river_x:float=-42+sin(pos.z*.065)*2.6
 	var strength:float=clampf(1-absf(pos.x-river_x)/26,0,1) if active and focused else 0
 	river.volume_db=move_toward(river.volume_db,-13+linear_to_db(maxf(.003,strength)),delta*25)
-	if active:listener.make_current()
+	if active:
+		listener.make_current();listener.global_basis=game.camera.global_basis
 	var travel:float=Vector2(pos.x-last_position.x,pos.z-last_position.z).length()
 	last_position=pos
 	if not active or not focused:
 		distance_walked=0;previous_grounded=game.player.is_on_floor();previous_mounted=game.horse.mounted
 		for voice in animals:voice.stop()
+		horse_voice.stop()
 		return
 	var grounded:bool=game.player.is_on_floor()
 	var mounted:bool=game.horse.mounted
+	if mounted and not previous_mounted:_horse_call("horse_neigh")
 	if previous_mounted!=mounted or travel>=2:distance_walked=0
 	if travel<2 and (grounded or mounted):
 		distance_walked+=travel
@@ -115,28 +125,49 @@ func _process(delta:float) -> void:
 			play_effect(("hoof_" if mounted else "step_")+str(step_count%4),-17 if mounted else -22,rng.randf_range(.94,1.06))
 	if grounded and not previous_grounded and not mounted:play_effect("step_2",-17,.88)
 	previous_grounded=grounded;previous_mounted=mounted
+	for kind in call_timers:call_timers[kind]=maxf(0,call_timers[kind]-delta)
 	event_wait-=delta
-	if event_wait<=0:
-		event_wait=rng.randf_range(9,17);_nearby_call(pos)
+	if event_wait<=0:event_wait=1.3 if _nearby_call(pos) else .5
 
-func _nearby_call(pos:Vector3) -> void:
-	var candidates:Array=[]
+func _horse_call(key:String) -> void:
+	if shutting_down:return
+	horse_voice.stop();horse_voice.stream=clips[key];horse_voice.volume_db=-7
+	horse_voice.pitch_scale=rng.randf_range(.97,1.03);horse_voice.play()
+	call_timers.horse=rng.randf_range(16,24);emitted_events+=1;animal_called.emit(key)
+
+func _horse_sprint() -> void:
+	previous_mounted=true
+	_horse_call("horse_sprint")
+	play_effect("step_0",-17,1.15) # The soft hand pat; no whip.
+
+func _nearby_call(pos:Vector3) -> bool:
+	var nearest:Dictionary={}
 	for bird in game.world.landscape.birds:
-		if is_instance_valid(bird.node) and bird.node.global_position.distance_to(pos)<28:
-			candidates.append(["bird_"+str(rng.randi_range(0,2)),bird.node.global_position])
+		if is_instance_valid(bird.node):_candidate(nearest,"bird",bird.node.global_position,pos,28)
 	for chicken in game.world.chickens:
-		if is_instance_valid(chicken.node) and chicken.node.global_position.distance_to(pos)<19:
-			candidates.append(["chicken",chicken.node.global_position])
+		if is_instance_valid(chicken.node):_candidate(nearest,"chicken",chicken.node.global_position,pos,22)
 	for cow in game.world.cows:
-		if is_instance_valid(cow.node) and cow.node.visible and cow.node.global_position.distance_to(pos)<24:
-			candidates.append(["cow",cow.node.global_position])
-	if not game.horse.mounted and game.horse.global_position.distance_to(pos)<15:candidates.append(["horse_snort",game.horse.global_position+Vector3.UP*2])
-	if candidates.is_empty():return
-	var chosen:Array=candidates[rng.randi_range(0,candidates.size()-1)]
-	spatial(chosen[0],chosen[1])
+		if is_instance_valid(cow.node) and cow.node.visible:_candidate(nearest,"cow",cow.node.global_position+Vector3.UP,pos,26)
+	if not game.horse.mounted:_candidate(nearest,"horse",game.horse.global_position+Vector3.UP*2,pos,22)
+	# Each species has its own timer: many birds can never silence a cow or hen.
+	for offset in range(4):
+		var index:=(call_cursor+offset)%4
+		var kind:String=["horse","chicken","cow","bird"][index]
+		if call_timers[kind]>0 or not nearest.has(kind):continue
+		call_cursor=(index+1)%4
+		call_timers[kind]=rng.randf_range(10,17) if kind in ["chicken","bird"] else rng.randf_range(16,24)
+		if kind=="horse":_horse_call("horse_neigh" if rng.randf()<.6 else "horse_snort")
+		else:spatial("bird_"+str(rng.randi_range(0,2)) if kind=="bird" else kind,nearest[kind].at)
+		return true
+	return false
+
+func _candidate(nearest:Dictionary,kind:String,at:Vector3,pos:Vector3,radius:float) -> void:
+	var distance:=at.distance_to(pos)
+	if distance<radius and (not nearest.has(kind) or distance<nearest[kind].distance):nearest[kind]={"at":at,"distance":distance}
 
 func stop_all() -> void:
 	shutting_down=true;set_process(false)
 	music.stop();wind.stop();river.stop()
+	if is_instance_valid(horse_voice):horse_voice.stop()
 	for voice in effects:voice.stop()
 	for voice in animals:voice.stop()
