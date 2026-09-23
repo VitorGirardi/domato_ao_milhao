@@ -52,7 +52,7 @@ func setup(owner_game:Node3D) -> void:
 			clip=clip.duplicate();clip.loop_mode=AudioStreamWAV.LOOP_FORWARD
 			clip.loop_begin=0;clip.loop_end=roundi(clip.get_length()*clip.mix_rate)
 		clips[key]=clip
-	for entry in [[music,"manha_no_vale",MUSIC_BUS,-10.0],[wind,"wind",AMBIENCE_BUS,-24.0],[river,"river",AMBIENCE_BUS,-70.0]]:
+	for entry in [[music,"manha_no_vale",MUSIC_BUS,-7.0],[wind,"wind",AMBIENCE_BUS,-24.0],[river,"river",AMBIENCE_BUS,-70.0]]:
 		var voice:AudioStreamPlayer=entry[0];add_child(voice);voice.stream=clips[entry[1]];voice.bus=entry[2];voice.volume_db=entry[3];voice.play()
 	for i in range(4):
 		var voice:=AudioStreamPlayer.new();voice.bus=EFFECTS_BUS;add_child(voice);effects.append(voice)
@@ -88,7 +88,7 @@ func _process(delta:float) -> void:
 	var active:bool=game.session_started and game.hud.modal_kind.is_empty() and not game.build_mode
 	var focused:bool=DisplayServer.get_name()=="headless" or (game.get_window().has_focus() and game.get_window().mode!=Window.MODE_MINIMIZED)
 	# Smooth changes keep settings, pause and build mode from producing abrupt jumps.
-	var music_target:float=-10 if not game.session_started else (-15 if active else -21)
+	var music_target:float=-7 if not game.session_started else (-11 if active else -17)
 	if not focused:music_target=-60
 	music.volume_db=move_toward(music.volume_db,music_target,delta*14)
 	wind.volume_db=move_toward(wind.volume_db,-24.0 if active and focused else -60.0,delta*18)
