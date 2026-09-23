@@ -39,14 +39,14 @@ func setup(hud:FarmHUD) -> void:
 	controls=hud.label(root,"WASD andar   •   Shift correr   •   Espaço pular   •   Mouse direito girar",Vector2(370,815),Vector2(700,28),16,FarmHUD.CREAM)
 	controls.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
 	controls.add_theme_color_override("font_shadow_color",Color("20392a")); controls.add_theme_constant_override("shadow_offset_y",2)
-	for i in range(6):
-		FarmGameUI.action(hud,root,["F · Armazém","H · Ajudante","TAB · Construir","F5 · Salvar","Esc · Menu","B · Emotes"][i],Rect2(225+i*166,854,156,32),["market","staff","mode","save","menu","emotes"][i]).add_theme_font_size_override("font_size",14)
+	for i in range(7):
+		FarmGameUI.action(hud,root,["F · Armazém","H · Ajudante","TAB · Construir","F5 · Salvar","Esc · Menu","B · Emotes","T · Terrenos"][i],Rect2(139+i*166,854,156,32),["market","staff","mode","save","menu","emotes","parcels"][i]).add_theme_font_size_override("font_size",14)
 
 func update(hud:FarmHUD,state:FarmState,context:Dictionary,crop:String) -> void:
 	farm_levels.update(state)
 	target=context
 	clock.text=hud.clock_label.text
-	wallet.text="$ "+hud._money(state.money)
+	wallet.text=hud.money_text(state)
 	var step:=state.journey_step()
 	objective.text="Objetivo · "+FarmState.JOURNEY[step].title if step<FarmState.JOURNEY.size() else "Objetivos concluídos ✓"
 	objective.text_overrun_behavior=TextServer.OVERRUN_TRIM_ELLIPSIS

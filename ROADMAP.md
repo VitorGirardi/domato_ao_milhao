@@ -236,3 +236,11 @@ A feira fica para depois. Prioridade definida pelo autor: um mapa menos artifici
 - [x] Bosques, flores, pedras, água animada e colinas contínuas.
 - [x] Mais espaço para explorar, preservando a fazenda atual.
 - [ ] Próximo bloco de mapa: pontos de interesse próprios e ambientação sonora, após avaliação visual desta base.
+
+## Entrega — 0.21 e direção futura
+
+- [x] Grama mais fina, correnteza visível e pássaros em árvores maiores.
+- [x] Terrenos próximos compráveis e limpeza da natureza conforme aquisição/expansão.
+- [x] Dinheiro infinito permanente na partida do autor.
+- [ ] Cavalo como primeiro transporte, com interação e montaria.
+- [ ] Evoluir posteriormente para carros e outros veículos; manter vias largas.

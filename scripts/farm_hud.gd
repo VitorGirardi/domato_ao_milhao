@@ -143,6 +143,7 @@ func button(parent: Control, text: String, rect: Rect2, value: String, primary: 
 	return b
 
 func _build() -> void:
+	button(build_hud,"Terrenos [T]",Rect2(24,432,287,42),"parcels")
 	farm_levels.setup(self,build_hud,Rect2(328,88,244,54),true)
 	var brand := panel(build_hud, Rect2(24, 22, 287, 98), Color("294b3c"))
 	label(brand, "DO MATO", Vector2(21,10), Vector2(260,31), 29, CREAM)
@@ -249,7 +250,7 @@ func toast(message: String) -> void:
 func update(state: FarmState, build_mode: bool, selected: int, tool: String, crop: String, hover_hint: String) -> void:
 	build_hud.visible=build_mode or not state.claimed
 	walking.root.visible=not build_mode and state.claimed
-	money_label.text="$ %s" % _money(state.money)
+	money_label.text=money_text(state)
 	var total:=state.milk_stock+state.cheese_stock
 	for value in state.inventory.values():
 		total+=int(value)
@@ -353,6 +354,9 @@ func _set_active_buttons() -> void:
 		buttons[key].add_theme_stylebox_override("normal",style(Color("dfba6d") if key==current_tool else Color("f4edd9"),9))
 	for key in crop_buttons:
 		crop_buttons[key].add_theme_stylebox_override("normal",style(Color("d8e4c5") if key==current_crop else Color("f4edd9"),8))
+
+func money_text(state:FarmState) -> String:
+	return "$ ∞" if state.unlimited_money else "$ "+_money(state.money)
 
 func _money(value: int) -> String:
 	var text:=str(value)
@@ -472,7 +476,7 @@ func hen_editor(initial: String) -> void:
 func confirm_route(state: FarmState, plan: Array) -> void:
 	var p:=_modal("route",370)
 	label(p,"Conferir o traçado",Vector2(30,28),Vector2(550,44),29)
-	label(p,"%d peças  •  Total: $%d  •  Saldo: $%d"%[plan.size(),state.batch_cost(plan),state.money],Vector2(30,90),Vector2(550,36),20)
+	label(p,"%d peças  •  Total: $%d  •  Saldo: %s"%[plan.size(),state.batch_cost(plan),money_text(state)],Vector2(30,90),Vector2(550,36),20)
 	var error:=state.batch_error(plan)
 	var description:=label(p,"Tudo livre! Confirme para construir.\nNenhuma moeda foi gasta na prévia." if error.is_empty() else error+"\nCancele e tente outro traçado.",Vector2(30,150),Vector2(550,95),18)
 	description.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
@@ -500,7 +504,7 @@ func evolution(state:FarmState,index:int) -> void:
 	label(p,"EVOLUÇÃO DA FAZENDA • NÍVEL 1 → 2",Vector2(30,24),Vector2(550,27),13,MUTED)
 	label(p,offer.title,Vector2(30,65),Vector2(550,43),29)
 	label(p,offer.benefit,Vector2(30,128),Vector2(550,116),16)
-	label(p,"Construção em (%d, %d) • Saldo: $%d\nMantém o lugar, a pintura e o conteúdo da construção.\nA remoção devolve metade do valor investido na estrutura."%[item.x,item.z,state.money],Vector2(30,263),Vector2(550,91),16)
+	label(p,"Construção em (%d, %d) • Saldo: %s\nMantém o lugar, a pintura e o conteúdo da construção.\nA remoção devolve metade do valor investido na estrutura."%[item.x,item.z,money_text(state)],Vector2(30,263),Vector2(550,91),16)
 	var buy:=button(p,"Confirmar evolução • $%d"%offer.cost,Rect2(30,375,550,46),"evolution_buy:%d"%index,true)
 	buy.disabled=state.money<int(offer.cost) or FarmProgression.level(item)==2
 	button(p,"Voltar sem comprar",Rect2(30,440,550,43),"building_back")

@@ -1,9 +1,24 @@
-# Como testar a versão 0.20.0
+# Como testar a versão 0.21.0
 
 Extraia o ZIP e abra `DoMatoAoMilhao.exe`. Escolha **Voltar para minha fazenda**.
 A versão aceita a partida anterior. Não precisa começar outra.
 
-## Vale renovado — novidade
+## Terrenos, natureza e dinheiro infinito — novidade
+
+1. Continue sua fazenda. O saldo aparece como **∞** automaticamente, inclusive em partidas antigas. Compras e serviços não esgotam o dinheiro. Requisitos de nível, leite, sementes e limites configurados de funcionários continuam funcionando.
+2. Use **T · Terrenos** para comprar **Clareira do Bosque** (leste), **Campo dos Ipês** (norte) ou **Campina do Sol** (sul). Cada lote tem 24 × 24 m. Os preços são informativos enquanto o dinheiro infinito estiver ativo.
+3. Ao comprar, as árvores, pássaros, arbustos e capim que interferem no lote saem do cenário. A mesma limpeza ocorre ao expandir a propriedade original. O restante do vale continua arborizado; construções do jogador não são apagadas.
+4. Caminhe até a placa do novo terreno, use **TAB** e construa ali. A grade acompanha o terreno sob o cursor. O estoque é compartilhado; ajudantes podem trabalhar nesses lotes.
+5. Salve com **F5** e retome. Os terrenos continuam seus e a limpeza é reconstruída sem reaparecer dentro da propriedade.
+6. Fora do terreno, confira o capim fino e árvores maiores. Alguns galhos têm pássaros pousados, com pequenos saltos e movimentos de cabeça.
+7. Na margem do rio, observe os filetes claros acompanhando a correnteza numa mesma direção.
+
+A área de caminhada agora é 142 × 190 m. Cavalo como transporte e veículos continuam planejados para etapas futuras.
+O save foi atualizado para versão 15, preservando construções, produção, equipe e progresso anteriores. A regra permanente de dinheiro infinito está em `AGENTS.md`.
+
+**QA isolado:** `-- --qa --qa-v021`, em desenvolvimento, valida compras, limpeza, Zeca no terreno leste, dinheiro infinito, persistência e capturas do rio/pássaros. Usa apenas o save QA.
+
+## Vale renovado — 0.20
 
 1. Continue sua fazenda. O cenário novo aparece sem reiniciar nem mover suas construções.
 2. Caminhe com **WASD** e gire com **mouse direito**: confira as manchas naturais no gramado, flores menores e capim com movimento suave.
@@ -40,7 +55,7 @@ Sete novos modelos originais têm fontes Blender em `art/source/valley_*.blend`.
 O limite deste bloco é nível 6; XP continua registrado. Melhorias dos prédios e treinamento dos funcionários são independentes.
 Partidas antigas recebem XP de reconhecimento por colheitas/encomendas registradas e um nível mínimo pelas construções, funcionários e equipamentos existentes. Dinheiro, estoque e construções permanecem. Não resete sua fazenda para testar.
 
-**Teste automático do começo, sem tocar na partida real:** execute o projeto no Godot com `-- --qa --qa-v019` (somente versão de desenvolvimento). Usa `qa_farm_v020.json`. Três canteiros colhidos liberam o galinheiro; o teste também confere bloqueios, tela e recarga do XP. A versão exportada ignora esse modo.
+**Teste automático do começo, sem tocar na partida real:** execute o projeto no Godot com `-- --qa --qa-v019` (somente versão de desenvolvimento). Usa `qa_farm_v021.json`. Três canteiros colhidos liberam o galinheiro; o teste também confere bloqueios, tela e recarga do XP. A versão exportada ignora esse modo.
 
 ## Conferir as mãos corrigidas
 

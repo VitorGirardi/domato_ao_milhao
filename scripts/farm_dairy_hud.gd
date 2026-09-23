@@ -11,7 +11,7 @@ static func show(hud:FarmHUD,state:FarmState,index:int) -> void:
 		hud.label(p,"2 L por minuto com água e ração",Vector2(28,368),Vector2(784,30),21).horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
 		var buy:=FarmGameUI.action(hud,p,"Comprar vaca · $480",Rect2(215,459,410,53),"dairy:review",true)
 		buy.disabled=state.money<FarmDairy.COW_COST
-		hud.label(p,"Saldo: $%d"%state.money,Vector2(28,539),Vector2(784,28),18)
+		hud.label(p,"Saldo: "+hud.money_text(state),Vector2(28,539),Vector2(784,28),18)
 		return
 	for i in range(3):
 		var c:=FarmGameUI.card(hud,p,Rect2(26+i*268,126,250,302))

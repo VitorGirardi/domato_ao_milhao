@@ -217,6 +217,7 @@ func _trade_board() -> void:
 		root.add_child(text)
 
 func update_border(state: FarmState) -> void:
+	landscape.refresh(state)
 	for child in border.get_children():
 		child.free()
 	if not state.claimed:
@@ -225,15 +226,16 @@ func update_border(state: FarmState) -> void:
 	build_grid.position=Vector3(state.center.x,0.045,state.center.y)
 	build_grid.scale=Vector3(state.land_size,1,state.land_size)
 	var edge := material("f1d991")
-	var half := state.land_size / 2
-	for i in range(int(state.land_size / 2)):
-		var t: float = -half + i * 2 + 0.65
-		for side in [-1, 1]:
-			box(border, Vector3(state.center.x + t, 0.065, state.center.y + side * half), Vector3(1.25,0.055,0.09), edge)
-			box(border, Vector3(state.center.x + side * half,0.065,state.center.y+t), Vector3(0.09,0.055,1.25), edge)
+	for land in state.owned_areas():
+		var half:=land.size.x/2
+		var center:=land.get_center()
+		for i in range(int(land.size.x/2)):
+			var t:=-half+i*2+.65
+			for side in [-1,1]:
+				box(border,Vector3(center.x+t,.065,center.y+side*half),Vector3(1.25,.055,.09),edge)
+				box(border,Vector3(center.x+side*half,.065,center.y+t),Vector3(.09,.055,1.25),edge)
 
 func rebuild(state: FarmState) -> void:
-	landscape.refresh(state)
 	for node in structures.get_children():
 		node.free()
 	item_nodes.clear()
@@ -669,7 +671,9 @@ func animate(delta: float, player_pos: Vector3, state: FarmState, event: String 
 			if not dancing: hen.position.y=abs(sin(clock*13+phase))*0.045
 
 func _hen_walkable(at: Vector3, state: FarmState) -> bool:
-	if at.x < -31 or at.x>44 or at.z < -39 or at.z>43: return false
+	if at.x<FarmLandscape.WALK_MIN.x or at.x>FarmLandscape.WALK_MAX.x or at.z<FarmLandscape.WALK_MIN.y or at.z>FarmLandscape.WALK_MAX.y:return false
+	for area in state.scenery_obstacles:
+		if area.has_point(Vector2(at.x,at.z)):return false
 	for item in state.items:
 		if item.kind in ["plot","path"]: continue
 		var rect:=state.item_rect(item.kind,Vector2(item.x,item.z),item.turn).grow(0.18)

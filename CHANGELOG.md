@@ -1,5 +1,15 @@
 # Alterações
 
+## 0.21.0 — Terrenos vivos
+
+- Dinheiro infinito permanente no jogo normal, HUD ∞ e regra registrada no AGENTS.md.
+- Três lotes de 24 × 24 m compráveis pelo menu T; mapa explorável de 142 × 190 m.
+- Aquisição e expansão limpam apenas natureza que interfere na propriedade. Saves antigos preservados no formato 15.
+- Capim fino e curvo, distribuição mais densa e renderização por setores.
+- Árvores maiores com pássaros originais Blender pousados e animados.
+- Correnteza com camadas que se deslocam ao longo das curvas do rio.
+- Construção, grade, colisões e rotinas ajustadas aos novos terrenos.
+
 ## 0.20.0 — Um vale para explorar
 
 - Substitui o chão quadriculado por gramado, terra e margens com mistura procedural.

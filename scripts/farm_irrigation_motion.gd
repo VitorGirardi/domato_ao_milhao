@@ -77,6 +77,7 @@ func update(world:FarmWorld,state:FarmState,delta:float, field:bool=false) -> vo
 			plot=-1
 			return
 		node.position=next
+		node.position.y=FarmLandscape.height_at(Vector2(node.position.x,node.position.z))
 		node.rotation.y=lerp_angle(node.rotation.y,atan2(direction.x,direction.z),minf(delta*8,1))
 		remaining-=step
 		moving=true

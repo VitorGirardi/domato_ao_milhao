@@ -51,12 +51,13 @@ var picked_trade_board:=false
 
 func _ready() -> void:
 	qa_mode = OS.is_debug_build() and "--qa" in OS.get_cmdline_user_args()
-	if qa_mode: save_path="user://qa_farm_v020.json"
+	if qa_mode: save_path="user://qa_farm_v021.json"
 	get_tree().auto_accept_quit = false
 	_inputs()
 	world = FarmWorld.new()
 	add_child(world)
 	var loaded := false if qa_mode else _load_game()
+	state.unlimited_money=not qa_mode
 	next_silly=state.elapsed+75
 	world.rebuild(state)
 	add_child(feedback)
@@ -129,8 +130,8 @@ func _physics_process(delta: float) -> void:
 	if actor.action_time>0 and not build_mode: direction=Vector3.ZERO
 	if build_mode:
 		focus += direction * delta * build_distance * 0.45
-		focus.x = clampf(focus.x,-32,68)
-		focus.z = clampf(focus.z,-60,64)
+		focus.x = clampf(focus.x,-32,106)
+		focus.z = clampf(focus.z,-92,94)
 		player.velocity.x = 0
 		player.velocity.z = 0
 	else:
@@ -262,6 +263,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_F: _action("market")
 			KEY_J: _action("market_orders")
 			KEY_H: _action("staff")
+			KEY_T: _action("parcels")
 			KEY_B: _action("emotes")
 			KEY_F5: _action("save")
 			KEY_M: _action("move")
@@ -333,6 +335,10 @@ func _cancel_route() -> void:
 
 func _update_pointer() -> void:
 	ghost.visible = false
+	for land in state.owned_areas():
+		if land.has_point(pointer):
+			world.build_grid.position=Vector3(land.get_center().x,.045,land.get_center().y)
+			world.build_grid.scale=Vector3(land.size.x,1,land.size.y)
 	world.build_grid.visible=session_started and state.claimed and build_mode and hud.modal_kind.is_empty() and (FarmState.ITEMS.has(tool) or move_index>=0)
 	world.show_selection(state,selected if build_mode else _nearest())
 	if not hud.modal_kind.is_empty(): world.selection.visible=false
@@ -614,6 +620,14 @@ func _tend_selected() -> void:
 	elif item.kind=="corral": FarmDairyHUD.show(hud,state,selected)
 
 func _action(value: String) -> void:
+	if value=="parcels":
+		actor.stop_emote();FarmParcels.show(hud,state);return
+	if value.begins_with("parcel_buy:"):
+		var error:=FarmParcels.buy(state,value.get_slice(":",1))
+		if error.is_empty():
+			world.update_border(state);_save_game(false);hud.toast("Terreno comprado! A clareira está pronta para construir.")
+		else:hud.toast(error)
+		FarmParcels.show(hud,state);return
 	if value=="farm_levels":
 		actor.stop_emote();FarmLevelsHUD.show(hud,state);return
 	if value=="emotes":
@@ -867,7 +881,7 @@ func _action(value: String) -> void:
 	if value.begins_with("accept_order:") or value.begins_with("deliver_order:") or value.begins_with("cancel_order:"):
 		var key:=value.get_slice(":",1)
 		if not state.trade.has(key): return
-		var before_money:=state.money
+		var before_money:=state.revenue
 		var error:=""
 		var message:=""
 		if value.begins_with("accept_order:"):
@@ -875,7 +889,7 @@ func _action(value: String) -> void:
 			message="Encomenda aceita! O prazo avança só enquanto você joga."
 		elif value.begins_with("deliver_order:"):
 			error=state.deliver_order(key)
-			message="Entrega concluída! +$%d e +1 reputação com %s."%[state.money-before_money,FarmTrade.NEIGHBORS[key].name]
+			message="Entrega concluída! +$%d e +1 reputação com %s."%[state.revenue-before_money,FarmTrade.NEIGHBORS[key].name]
 			if error.is_empty(): _chime("harvest")
 		else:
 			error=state.cancel_order(key)
@@ -1054,7 +1068,7 @@ func _action(value: String) -> void:
 		"reset_ask": hud.confirm_reset()
 		"reset_confirm":
 			field_alerts=FarmFieldAlerts.new()
-			state=FarmState.new()
+			state=FarmState.new();state.unlimited_money=not qa_mode
 			world.rebuild(state)
 			selected=-1
 			journey_seen=-1
@@ -1141,6 +1155,7 @@ func _load_game() -> bool:
 		if FileAccess.file_exists(path):
 			var parser:=JSON.new()
 			if parser.parse(FileAccess.get_file_as_string(path))==OK and state.restore(parser.data):
+				if not qa_mode:state.unlimited_money=true
 				return true
 	return false
 
@@ -1169,6 +1184,8 @@ func _chime(kind: String = "build") -> void:
 	sound.play()
 
 func _qa() -> void:
+	if "--qa-v021" in OS.get_cmdline_user_args():
+		_action("start");await _qa_v021();get_tree().quit();return
 	if "--qa-v020" in OS.get_cmdline_user_args():
 		_action("start");await _qa_v020();get_tree().quit();return
 	if "--qa-v019" in OS.get_cmdline_user_args():
@@ -2720,7 +2737,7 @@ func _qa_v020() -> void:
 	await _qa_ui_capture("valley-v020-overview")
 	var meadow_started:=Time.get_ticks_msec()
 	for repetition in range(10):world.landscape.refresh(state)
-	assert(world.landscape.meadow.get_child_count()==3)
+	assert(world.landscape.meadow.get_child_count()>=3)
 	print("V020_MEADOW_REFRESH: ten rebuilds ms=",Time.get_ticks_msec()-meadow_started)
 	# Explicit triangle-floor checks in the larger walking area.
 	await get_tree().physics_frame
@@ -2728,7 +2745,7 @@ func _qa_v020() -> void:
 		var query:=PhysicsRayQueryParameters3D.create(Vector3(p.x,8,p.y),Vector3(p.x,-2,p.y))
 		var hit:=get_world_3d().direct_space_state.intersect_ray(query)
 		assert(not hit.is_empty() and absf(hit.position.y-FarmLandscape.height_at(p))<.1)
-	for p in world.landscape.trunk_points:assert(not FarmLandscape.CLEAR.has_point(p))
+	for p in world.landscape.trunk_points:assert(not state.bounds().grow(.6).has_point(p))
 	for patch in world.landscape.meadow.get_children():
 		for i in range(patch.multimesh.instance_count):
 			var pos:Vector3=patch.multimesh.get_instance_transform(i).origin
@@ -2750,3 +2767,44 @@ func _qa_v020() -> void:
 	print("V020_RENDER_SAMPLE: 90 frames ms=",Time.get_ticks_msec()-started," draw_calls=",Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME))
 	assert(state.restore(previous));world.rebuild(state);build_mode=true;_update_ui()
 	print("V020_LANDSCAPE_OK: continuous floor, expanded walking, protected land, vegetation clearance, four rendered views")
+
+func _qa_v021() -> void:
+	var previous:=state.serialize()
+	hud.close_modal();state=FarmState.new();state.farm_xp=950;state.unlimited_money=true;world.rebuild(state)
+	var wild:=world.landscape.nature.get_child_count()
+	state.claim(Vector2(4,-2));world.update_border(state)
+	assert(world.landscape.nature.get_child_count()<wild)
+	var trees:=world.landscape.trunk_points.size()
+	assert(state.expand().is_empty());world.update_border(state)
+	assert(world.landscape.trunk_points.size()<trees)
+	for p in world.landscape.trunk_points:assert(not state.bounds().grow(.65).has_point(p))
+	build_mode=false;player.position=Vector3(22,.1,17);yaw=.6;pitch=.28;walk_distance=10;_update_camera(0,true);_update_ui()
+	assert(hud.walking.wallet.text=="$ ∞")
+	await _qa_ui_capture("valley-v021-clearing")
+	_action("parcels");assert(hud.modal_kind=="parcels")
+	await _qa_ui_capture("valley-v021-parcels")
+	_action("parcel_buy:east");assert("east" in state.owned_parcels)
+	_action("close")
+	assert(state.place("coop",FarmParcels.LOTS.east.center,0).is_empty())
+	world.rebuild(state);state.hire_staff(0);state.items[0].flock.nest=4;world.rebuild(state)
+	for i in range(600):state.tick(.1);world.update_staff(state,.1);world.animate(.1,player.position,state)
+	assert(state.staff.eggs>=4 and state.inventory.egg>=4)
+	player.position=Vector3(58,.1,4);yaw=.3;pitch=.35;walk_distance=12;_update_camera(0,true);_update_ui()
+	await _qa_ui_capture("valley-v021-owned")
+	assert(_save_game(false));state=FarmState.new();assert(_load_game())
+	assert(state.unlimited_money and "east" in state.owned_parcels and state.items.size()==1)
+	world.rebuild(state)
+	assert(not world.landscape.birds.is_empty())
+	build_mode=true;_update_ui();hud.world_hud.visible=false;set_physics_process(false)
+	var bird:Dictionary=world.landscape.birds[0]
+	var outward:Vector3=bird.node.global_position-bird.node.get_parent().global_position;outward.y=0
+	camera.position=bird.node.global_position+outward.normalized()*3.2+Vector3.UP*.8;camera.look_at(bird.node.global_position)
+	await _qa_ui_capture("valley-v021-bird")
+	# Fixed camera and deterministic advection times show downstream flow clearly.
+	camera.position=Vector3(-31,7,8);camera.look_at(Vector3(-42,0,0));world.landscape.set_process(false)
+	for i in range(16):
+		world.landscape.water_material.set_shader_parameter("flow_time",i*.18)
+		await _qa_ui_capture("valley-v021-flow-%02d"%i)
+	world.landscape.set_process(true);hud.world_hud.visible=true;set_physics_process(true)
+	assert(state.restore(previous));world.rebuild(state);build_mode=true;_update_ui()
+	print("V021_INTEGRATION_OK: claim/expansion clearing, parcels UI, remote coop worker, infinite money, reload, birds and flowing river")
