@@ -17,6 +17,9 @@ var label:=Label3D.new()
 var walk_shape:Shape3D
 var rider_collision:CollisionShape3D
 var snapshot:Dictionary={}
+var skin:Skeleton3D
+var skin_bones:Dictionary={}
+var skin_rest:Dictionary={}
 
 static func defaults() -> Dictionary:return {"x":HOME.x,"z":HOME.y,"angle":0.0}
 static func valid(value:Variant) -> bool:
@@ -29,6 +32,12 @@ func _ready() -> void:
 	model=load("res://assets/models/horse.glb").instantiate();add_child(model)
 	for key in ["HorseBody","HorseNeck","HorseTail","FrontL","FrontR","HindL","HindR","FrontLLower","FrontRLower","HindLLower","HindRLower"]:
 		parts[key]=model.find_child(key,true,false);assert(parts[key]!=null,key)
+	skin=model.find_child("Skeleton3D",true,false) as Skeleton3D
+	assert(skin!=null,"Continuous horse rig missing")
+	for key in parts:
+		var index:=skin.find_bone("Skin"+key)
+		if index>=0:
+			skin_bones[key]=index;skin_rest[key]=skin.get_bone_global_rest(index).basis.get_rotation_quaternion()
 	body_home=parts.HorseBody.position
 	var shape:=BoxShape3D.new();shape.size=Vector3(1.05,2.4,2.8);shape_node.shape=shape;shape_node.position=Vector3(0,1.2,.15)
 	obstacle.add_child(shape_node);add_child(obstacle)
@@ -126,6 +135,15 @@ func animate(delta:float,velocity:float,running:bool) -> void:
 		var phase:float=gait+([0.0,.45,PI,PI+.45][i] if running else [0.0,PI,PI,0.0][i])
 		parts[key].rotation.x=sin(phase)*(.58 if running else .37)*amount
 		parts[key+"Lower"].rotation.x=maxf(0,-sin(phase))*.65*amount
+
+	# Match the continuous skin to the same joint motions as the tack and eyes.
+	for key in skin_bones:
+		var index:int=skin_bones[key]
+		var rest:Quaternion=skin_rest[key]
+		var pose:Quaternion=parts[key].quaternion
+		skin.set_bone_pose_rotation(index,skin.get_bone_rest(index).basis.get_rotation_quaternion()*rest.inverse()*pose*rest)
+	var body_index:int=skin_bones.HorseBody
+	skin.set_bone_pose_position(body_index,skin.get_bone_rest(body_index).origin+parts.HorseBody.position-body_home)
 
 func reset_rider(player:CharacterBody3D,avatar:Node3D,actor:FarmAvatar) -> void:
 	if not mounted:return
