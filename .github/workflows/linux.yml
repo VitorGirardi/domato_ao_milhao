@@ -22,7 +22,7 @@ jobs:
       - name: Install Linux display and audio libraries
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y xvfb xauth openbox weston libgl1-mesa-dri libegl1 libpulse0 libasound2t64 libdecor-0-0
+          sudo apt-get install -y xvfb xauth openbox weston wmctrl imagemagick libgl1-mesa-dri libegl1 libpulse0 libasound2t64 libdecor-0-0
       - name: Fetch matching official Godot engine and templates
         shell: bash
         run: |
@@ -90,7 +90,7 @@ jobs:
           file exports/linux/DoMatoAoMilhao.x86_64 | tee test-results/linux/binary.txt
           ldd exports/linux/DoMatoAoMilhao.x86_64 | tee test-results/linux/libraries.txt
           ! grep -q 'not found' test-results/linux/libraries.txt
-          xvfb-run -a -s '-screen 0 1920x1080x24' timeout 90 exports/linux/DoMatoAoMilhao.x86_64 --audio-driver Dummy --quit-after 120 >test-results/linux/export-smoke.log 2>&1
+          xvfb-run -a -s '-screen 0 1920x1080x24' timeout 180 bash tools/linux/smoke_release.sh
           cat test-results/linux/export-smoke.log
           ! grep -E 'SCRIPT ERROR|ERROR:' test-results/linux/export-smoke.log
           git rev-parse HEAD > exports/linux/COMMIT.txt
