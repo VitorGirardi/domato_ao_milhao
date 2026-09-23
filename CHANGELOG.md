@@ -2,6 +2,7 @@
 
 ## 0.26.0 — Um novo começo
 
+- Cavalo revisado: pescoço contínuo, cabeça/crina novas, pastejo sem afundar o peito e caminhada em quatro tempos.
 - Menu inicial com captura real do vale e acesso a Continuar, Novo jogo, Configurações, Controles e Sair.
 - Novo jogo com nome, confirmação e arquivo da fazenda anterior; cancelamento preserva a partida.
 - Volume, sensibilidade, tela cheia, qualidade gráfica e limite de FPS persistidos em settings.cfg.
