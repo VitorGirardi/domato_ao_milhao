@@ -1,4 +1,17 @@
-# Como testar a versão 0.23.2
+# Como testar a versão 0.24.0
+
+Extraia o ZIP e abra **DoMatoAoMilhao.exe**. Continue sua fazenda; não precisa reiniciar.
+
+1. **Minimapa:** andando ou montado, confira sua seta branca, o rio, os caminhos e seus terrenos. Norte fica para cima.
+2. **Mapa completo:** pressione **M** ou clique no minimapa. Escolha um destino à direita ou clique numa área do mapa. A distância aparece no minimapa; a linha é direta, não uma rota automática.
+3. **Encontrar o cavalo:** escolha **Pé de Pano** no mapa. O marcador acompanha sua posição atual. **Limpar destino** remove a marcação. Destinos são temporários, não ficam no save.
+4. **Cavalo remodelado:** observe de lado e de frente, monte com **E**, ande com **WASD** e toque **Shift** para galopar. Confira pernas, pescoço e focinho. **E** desmonta em local livre.
+5. **Tela cheia integrada:** use **F11** para alternar janela/tela cheia, inclusive com o mapa aberto. **M** ou **Esc** fecha o mapa. No modo construção, **M** continua sendo mover construção.
+6. **Save:** use **F5**, feche e reabra. Fazenda, cavalo e inventário da P-8 permanecem. Dinheiro infinito mantido.
+
+Abertura do mapa pausa deslocamento e ações. Terrenos comprados e construções aparecem no mapa; árvores removidas pela expansão também desaparecem dele.
+
+## Histórico — tela cheia 0.23.2
 
 O jogo inicia em **tela cheia**. Use **F11** para alternar entre janela e tela cheia. Experimente também no menu e ao digitar o nome da fazenda. A imagem deve ocupar toda a tela, com botões clicáveis, menus centralizados e sem faixas pretas.
 

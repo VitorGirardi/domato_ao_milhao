@@ -51,6 +51,7 @@ var picked_trade_board:=false
 var trail_journey:=FarmTrails.new()
 var weapons:=FarmWeapons.new()
 var horse:=FarmHorse.new()
+var navigator:=FarmNavigation.new()
 var windowed_rect:=Rect2i()
 var windowed_mode:=Window.MODE_WINDOWED
 
@@ -88,6 +89,7 @@ func _ready() -> void:
 	hud = FarmHUD.new()
 	add_child(hud)
 	hud.action.connect(_action)
+	navigator.setup(self)
 	add_child(weapons)
 	weapons.setup(self)
 	hud.welcome(state,loaded)
@@ -298,6 +300,8 @@ func _unhandled_input(event: InputEvent) -> void:
 				hud.menu(state)
 			get_viewport().set_input_as_handled()
 			return
+		if event.physical_keycode==KEY_M and hud.modal_kind=="valley_map":
+			hud.close_modal();get_viewport().set_input_as_handled();return
 		if not hud.modal_kind.is_empty():
 			return
 		match event.physical_keycode:
@@ -312,7 +316,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_T: _action("parcels")
 			KEY_B: _action("emotes")
 			KEY_F5: _action("save")
-			KEY_M: _action("move")
+			KEY_M: _action("move" if build_mode else "map")
 			KEY_R: turn=posmod(turn+1,4)
 			KEY_Q: turn=posmod(turn-1,4)
 			KEY_1: _action("tool:inspect")
@@ -672,6 +676,8 @@ func _tend_selected() -> void:
 	elif item.kind=="corral": FarmDairyHUD.show(hud,state,selected)
 
 func _action(value: String) -> void:
+	if value=="map" or value.begins_with("map:"):
+		navigator.handle(value);return
 	if horse.mounted and (value=="emotes" or value.begins_with("emote:") or value.begins_with("tool:") or value=="move"):
 		hud.toast("Desmonte com E para fazer isso.");return
 	if value=="parcels":
@@ -1149,6 +1155,7 @@ func _update_ui() -> void:
 	hud.update(state,build_mode,selected,tool,crop,hover_hint)
 	hud.walking.update(hud,state,_nearby_context(),crop)
 	hud.walking.mount_status(horse.mounted,horse.stamina,horse.burst)
+	navigator.refresh()
 	if horse.is_inside_tree():horse.ensure_parking(state,world.landscape)
 	var step:=state.journey_step()
 	if session_started and journey_seen>=0 and step>journey_seen:
@@ -1245,6 +1252,8 @@ func _chime(kind: String = "build") -> void:
 	sound.play()
 
 func _qa() -> void:
+	if "--qa-v024" in OS.get_cmdline_user_args():
+		_action("start");await _qa_v024();get_tree().quit();return
 	if "--qa-horse-preview" in OS.get_cmdline_user_args():
 		_action("start");await _qa_horse_preview();get_tree().quit();return
 	if "--qa-v023" in OS.get_cmdline_user_args():
@@ -2993,11 +3002,49 @@ func _qa_horse_preview() -> void:
 	horse.restore(FarmHorse.defaults());hud.close_modal();build_mode=false;player.position=horse.position+Vector3(1.8,.1,0)
 	for i in range(60):await get_tree().physics_frame
 	_horse_interact();assert(horse.mounted);set_physics_process(false)
+	player.position=Vector3(0,FarmLandscape.height_at(Vector2(0,30))+.05,30);horse.position=player.position;horse.heading=PI/2
 	for i in range(24):
 		if i==4:assert(horse.encourage())
-		horse.drive(player,avatar,actor,Vector3(0,0,1),.07,true)
+		horse.drive(player,avatar,actor,Vector3(1,0,0),.07,true)
 		camera.position=horse.position+Vector3(5,2.8,6);camera.look_at(horse.position+Vector3(0,1.8,0))
 		hud.world_hud.visible=i==0;_update_ui()
 		await _qa_ui_capture("horse-v023-ride-%02d"%i)
 	assert(hud.walking.horse_panel.visible and hud.walking.horse_stamina.value<100)
 	print("HORSE_PREVIEW_OK")
+
+func _qa_v024() -> void:
+	state=FarmState.new();state.claim(Vector2(4,-2));state.unlimited_money=true;state.farm_xp=950
+	world.rebuild(state);hud.close_modal();build_mode=false
+	horse.restore(FarmHorse.defaults());player.position=horse.position+Vector3(1.8,.1,0)
+	for i in range(60):await get_tree().physics_frame
+	_update_ui();_action("map");assert(hud.modal_kind=="valley_map")
+	var saved:=state.serialize()
+	_action("map:go:orchard");assert(navigator.waypoint==FarmTrails.STOPS.orchard.at)
+	assert(navigator.status.text.contains("m"))
+	await _qa_ui_capture("map-v024-full")
+	_action("map:clear");assert(navigator.waypoint_name.is_empty())
+	navigator.large.picked.emit(Vector2(50,90));assert(navigator.waypoint==Vector2(50,90))
+	assert(state.serialize()==saved)
+	_action("map:go:horse");horse.position.x+=1;navigator.refresh();assert(navigator.waypoint.x==horse.position.x)
+	_action("close");_horse_interact();assert(horse.mounted)
+	_action("map");assert(hud.modal_kind=="valley_map")
+	var mounted_at:=player.position
+	horse.drive(player,avatar,actor,Vector3.FORWARD,.1,false)
+	assert(Vector2(player.position.x,player.position.z).distance_to(Vector2(mounted_at.x,mounted_at.z))<.01)
+	_action("close");navigator.select(FarmTrails.STOPS.mill.at,"Mirante dos Ventos")
+	set_physics_process(false)
+	player.position=Vector3(0,FarmLandscape.height_at(Vector2(0,30))+.05,30);horse.position=player.position;horse.heading=PI/2
+	for i in range(24):
+		if i==4:assert(horse.encourage())
+		horse.drive(player,avatar,actor,Vector3(1,0,0),.07,true)
+		camera.position=horse.position+Vector3(5,2.8,6);camera.look_at(horse.position+Vector3(0,1.8,0))
+		_update_ui()
+		await _qa_ui_capture("map-v024-ride-%02d"%i)
+	assert(horse.skin!=null and horse.skin_bones.size()==10)
+	assert(horse.dismount(player,avatar,actor,state,world.landscape))
+	_update_ui()
+	for angle in [0.0,1.57,3.14]:
+		horse.animate(.1,0,false)
+		camera.position=horse.position+Vector3(sin(angle)*6,2.7,cos(angle)*6);camera.look_at(horse.position+Vector3(0,1.4,0))
+		await _qa_ui_capture("horse-v024-angle-%d"%int(angle*100))
+	print("V024_INTEGRATION_OK: destinations, map pause while mounted, no state mutation, horse tracking, continuous skin, riding and dismount")

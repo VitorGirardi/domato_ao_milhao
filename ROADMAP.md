@@ -252,3 +252,7 @@ A feira fica para depois. Prioridade definida pelo autor: um mapa menos artifici
 - [x] Moinho animado e adereços originais Blender; caminhos desobstruídos.
 - [x] 0.23: cavalo, montar/desmontar, câmera, tapinha/galope com fôlego e circuito ampliado.
 - [ ] Depois: aquisição, cuidados e progressão da montaria; veículos em etapa posterior.
+
+## Bloco 0.24 — orientação no vale
+
+Entregue: minimapa, mapa completo, destinos e revisão do cavalo. Estrebaria, cuidados e evolução do cavalo ficam para um próximo bloco conforme prioridade do autor.
