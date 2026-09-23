@@ -4,6 +4,7 @@ extends Node3D
 const TRADE_BOARD_AT:=Vector3(-22.1,0,15.4)
 
 var landscape:=FarmLandscape.new()
+var cat:=FarmCat.new()
 var models: Dictionary = {}
 var cows:Array[Dictionary]=[]
 var pigsties:Array[Dictionary]=[]
@@ -61,6 +62,7 @@ func _ready() -> void:
 	_environment()
 	_landscape()
 	_build_guides()
+	add_child(cat)
 
 func _build_guides() -> void:
 	add_child(build_grid)
@@ -385,6 +387,7 @@ func rebuild(state: FarmState) -> void:
 	staff_anchor=""
 	field_anchor=""
 	update_staff(state,0)
+	cat.anchored=false
 
 func _field_colors(node:Node) -> void:
 	if node is MeshInstance3D:
@@ -637,6 +640,7 @@ func _tint_model(node: Node, color: Material) -> void:
 
 func animate(delta: float, player_pos: Vector3, state: FarmState, event: String = "") -> void:
 	clock += delta
+	cat.update(delta,player_pos,state)
 	for pen in pigsties:
 		FarmPigPen.update(pen,state.items[pen.index].pigs)
 		FarmPigPen.animate(pen,delta,player_pos)

@@ -2,7 +2,7 @@ class_name FarmNetwork
 extends Node
 ## Host-authoritative cooperative farm.
 const PORT:=28729
-const PROTOCOL:=4
+const PROTOCOL:=5
 var game:Node3D
 var active:=false
 var ready_session:=false
@@ -556,3 +556,15 @@ func track_plots() -> void:
 		var current:=plot_stamp(item)
 		if plot_states.has(i) and plot_states[i]!=current:plot_versions[i]=int(plot_versions.get(i,0))+1
 		plot_states[i]=current
+
+# Affection is transient presentation, with proximity checked on the host.
+func pet_cat() -> void:
+	if not active or not ready_session:return
+	if hosting:game.world.cat.pet(game.player.position)
+	else:_pet_cat.rpc_id(1)
+
+@rpc("any_peer","call_remote","reliable",0)
+func _pet_cat() -> void:
+	if not hosting or not ready_session or multiplayer.get_remote_sender_id()!=accepted:return
+	if not is_instance_valid(remote) or Time.get_ticks_msec()-motion_received_at>1500:return
+	game.world.cat.pet(target)

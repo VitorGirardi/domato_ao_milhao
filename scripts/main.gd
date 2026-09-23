@@ -633,7 +633,9 @@ func _nearby_context() -> Dictionary:
 	if player.position.distance_to(FarmWorld.TRADE_BOARD_AT)<2.8: return {"text":"Ver encomendas","action":"orders"}
 	if player.position.distance_to(Vector3(-24,0,14))<4: return {"text":"Conversar com Lúcia","action":"market"}
 	var index:=_nearest()
-	if index<0: return {}
+	if world.cat.can_pet(player.position) and (index<0 or player.position.distance_to(world.cat.position)<_distance_to_item(index)):
+		return {"text":"Fazer carinho no gato","action":"cat"}
+	if index<0:return {}
 	var item:Dictionary=state.items[index]
 	var context:Dictionary={"text":"","action":"item","index":index,"hen":nearby_hen,"ready":true,"seeds":false}
 	match item.kind:
@@ -665,6 +667,10 @@ func _interact_nearest() -> void:
 	match context.action:
 		"armory": weapons.holster();weapons.show_shop()
 		"horse": _horse_interact()
+		"cat":
+			weapons.holster()
+			if network.active:network.pet_cat()
+			elif world.cat.pet(player.position):hud.toast("O gato fecha os olhos e se aconchega.")
 		"orders": hud.market(state,"orders")
 		"market": hud.market(state)
 		"item":
