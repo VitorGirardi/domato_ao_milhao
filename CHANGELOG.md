@@ -1,5 +1,12 @@
 # Alterações
 
+## 0.23.1 — Damião, P-8 e cavalo juntos
+
+- Damião, armeiro original modelado no Blender: corpo cheio, pele negra, regata clara e expressão séria; bancada e três alvos de treino na estrada oeste.
+- P-8 comprável, munição, câmera sobre o ombro, recarga, recuo, som, clarão e alvos com reação. P saca/guarda, mouse direito mira, clique esquerdo dispara e R recarrega.
+- Montar guarda a arma imediatamente e cancela a recarga sem perder munição. Disparos e recarga ficam bloqueados durante a montaria.
+- Save 16 mantém cavalo, arma e munição; migra as versões anteriores das duas entregas. Dinheiro infinito e mapa/circuito da 0.23 preservados.
+
 ## 0.23.0 — Pé de Pano e o circuito do vale
 
 - Cavalo original Blender com sela, rédeas e animação de pernas, cabeça, cauda e cavaleiro.

@@ -49,6 +49,7 @@ var silly_kind := "inspect"
 var silly_event_index := 0
 var picked_trade_board:=false
 var trail_journey:=FarmTrails.new()
+var weapons:=FarmWeapons.new()
 var horse:=FarmHorse.new()
 
 func _ready() -> void:
@@ -85,6 +86,8 @@ func _ready() -> void:
 	hud = FarmHUD.new()
 	add_child(hud)
 	hud.action.connect(_action)
+	add_child(weapons)
+	weapons.setup(self)
 	hud.welcome(state,loaded)
 	_update_camera(1.0, true)
 	_update_ui()
@@ -207,6 +210,11 @@ func _update_camera(delta: float, immediate: bool = false) -> void:
 	var target := focus if build_mode else player.position + Vector3(0,2.0 if horse.mounted else 1.1,0)
 	var distance := build_distance if build_mode else (walk_distance+3.0 if horse.mounted else walk_distance)
 	var angle := pitch if build_mode else clampf(pitch,0.2,1.0)
+	if weapons.armed and not build_mode:
+		target-=Vector3(cos(yaw),0,-sin(yaw))*.85
+		target+=Vector3.UP*.55
+		distance=5.2 if Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT) else 6.5
+		angle=clampf(pitch,-.35,.80)
 	var desired := target + Vector3(sin(yaw)*cos(angle),sin(angle),cos(yaw)*cos(angle))*distance
 	if not build_mode and is_inside_tree():
 		var query := PhysicsRayQueryParameters3D.create(target,desired,1,[player.get_rid(),horse.obstacle.get_rid()])
@@ -247,6 +255,9 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 func _unhandled_input(event: InputEvent) -> void:
+	if weapons.game!=null and weapons.handle_input(event):
+		get_viewport().set_input_as_handled()
+		return
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_ESCAPE:
 			if dragging or not route.is_empty():
@@ -542,6 +553,7 @@ func _nearest() -> int:
 func _nearby_context() -> Dictionary:
 	if build_mode or not state.claimed: return {}
 	if horse.mounted:return {"text":"Desmontar · Pé de Pano","action":"horse"}
+	if weapons.shop_has_priority():return {"text":"Conversar com Damião","action":"armory"}
 	if horse.can_mount(player):return {"text":"Montar · Pé de Pano","action":"horse"}
 	if player.position.distance_to(FarmWorld.TRADE_BOARD_AT)<2.8: return {"text":"Ver encomendas","action":"orders"}
 	if player.position.distance_to(Vector3(-24,0,14))<4: return {"text":"Conversar com Lúcia","action":"market"}
@@ -574,6 +586,7 @@ func _interact_nearest() -> void:
 	var context:=_nearby_context()
 	if context.is_empty(): return
 	match context.action:
+		"armory": weapons.holster();weapons.show_shop()
 		"horse": _horse_interact()
 		"orders": hud.market(state,"orders")
 		"market": hud.market(state)
@@ -2890,6 +2903,7 @@ func _horse_interact() -> void:
 	if horse.mounted:
 		if not horse.dismount(player,avatar,actor,state,world.landscape):hud.toast("Procure espaço livre ao lado do cavalo.")
 	elif horse.can_mount(player) and actor.action_time<=0:
+		weapons.holster()
 		horse.mount(player,avatar,actor);hud.toast("WASD cavalgar · Shift dá um tapinha para galopar · E desmontar")
 	_update_ui()
 
