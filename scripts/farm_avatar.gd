@@ -83,6 +83,33 @@ func pose_bone(key: String, angles: Vector3, blend: float = 1.0, axial_twist: fl
 	var local_rotation:=local_rest*rest.inverse()*model_rotation*rest*Quaternion(Vector3.UP,axial_twist)
 	skeleton.set_bone_pose_rotation(index,skeleton.get_bone_pose_rotation(index).slerp(local_rotation,blend))
 
+func rein_grip_world(side:String) -> Vector3:
+	# Palm center in the imported rest basis, mirrored for the left hand.
+	var index:int=bones["Hand."+side]
+	var rest:=skeleton.get_bone_global_rest(index)
+	var offset:=Vector3(.025 if side=="R" else -.025,-.085,.035)
+	var local_grip:=rest.affine_inverse()*(rest.origin+offset)
+	return skeleton.to_global(skeleton.get_bone_global_pose(index)*local_grip)
+
+func reach_rein_hand(side:String,target:Vector3,weight:float) -> void:
+	# Two-joint reach; preserve the wrist basis instead of bending the palm.
+	var joints:Array[int]=[bones["Forearm."+side],bones["UpperArm."+side]]
+	var original:Array[Quaternion]=[]
+	for joint in joints:original.append(skeleton.get_bone_pose_rotation(joint))
+	var goal:=skeleton.to_local(target)
+	for iteration in range(8):
+		for joint in joints:
+			var pose:=skeleton.get_bone_global_pose(joint)
+			var hand:=skeleton.to_local(rein_grip_world(side))
+			var from:Vector3=hand-pose.origin
+			var to:Vector3=goal-pose.origin
+			if from.length()<.001 or to.length()<.001:continue
+			var turn:=Quaternion(from.normalized(),to.normalized())
+			var parent:=skeleton.get_bone_global_pose(skeleton.get_bone_parent(joint)).basis.get_rotation_quaternion()
+			skeleton.set_bone_pose_rotation(joint,parent.inverse()*turn*pose.basis.get_rotation_quaternion())
+	for i in range(joints.size()):
+		skeleton.set_bone_pose_rotation(joints[i],original[i].slerp(skeleton.get_bone_pose_rotation(joints[i]),weight))
+
 func stop_emote() -> void:
 	emote_kind=""; emote_time=0; emote_elapsed=0
 	if root: root.position.y=0

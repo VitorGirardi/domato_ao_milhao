@@ -159,7 +159,31 @@ def effects():
     save('river',river,.48,True)
 
 
+def horse_calls():
+    # Equine whinny: a rising onset, nasal harmonics and the broken falling tail.
+    t=np.arange(int(2.05*SR))/SR
+    f=np.interp(t,[0,.13,.42,.95,1.4,2.05],[380,720,660,490,360,230])
+    f+=np.sin(2*np.pi*8.5*t)*(12+30*np.clip((t-.6)/1.4,0,1))
+    phase=2*np.pi*np.cumsum(f)/SR
+    y=np.zeros_like(t)
+    for h in range(1,16):
+        formant=.22+1.1*np.exp(-((f*h-1400)/600)**2)+.65*np.exp(-((f*h-2700)/850)**2)
+        y+=np.sin(phase*h)*formant/h**1.15
+    broken=.4+.6*(.5+.5*np.sin(2*np.pi*8*t))
+    modulation=np.where(t<.68,1,broken)
+    y*=modulation*np.sin(np.pi*t/2.05)**.7
+    y+=noise(2.05,3000)*.055*np.sin(np.pi*t/2.05)**2
+    save('horse_neigh',y,.64)
+    # Short voiced exhale for the accepted sprint, distinct from the idle whinny.
+    t=np.arange(int(.78*SR))/SR
+    f=200+105*np.exp(-t*4)+18*np.sin(t*45)
+    phase=2*np.pi*np.cumsum(f)/SR
+    y=sum(np.sin(phase*h)/h**1.4 for h in range(1,10))
+    y=(y*.65+noise(.78,2100)*.24)*np.sin(np.pi*t/.78)**1.1
+    save('horse_sprint',y,.65)
+
+
 if __name__=='__main__':
-    score();effects()
+    score();effects();horse_calls()
     (OUT/'audio_manifest.json').write_text(json.dumps(REPORT,indent=2),encoding='utf-8')
     print('AUDIO_ASSETS_OK:',len(REPORT),'original assets;',round(sum(v['seconds'] for v in REPORT.values()),1),'seconds')

@@ -166,5 +166,19 @@
     "rms": 0.0891,
     "loop": true,
     "boundary_jump": 0.0432
+  },
+  "horse_neigh": {
+    "seconds": 2.05,
+    "peak": 0.64,
+    "rms": 0.1614,
+    "loop": false,
+    "boundary_jump": 0.0
+  },
+  "horse_sprint": {
+    "seconds": 0.78,
+    "peak": 0.65,
+    "rms": 0.1771,
+    "loop": false,
+    "boundary_jump": 0.0
   }
 }

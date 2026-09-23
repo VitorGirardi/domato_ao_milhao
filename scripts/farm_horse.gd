@@ -1,5 +1,7 @@
 class_name FarmHorse
 extends Node3D
+signal encouraged
+var rider_actor:FarmAvatar
 const HOME:=Vector2(-30,5)
 var reins:=ImmediateMesh.new()
 var rein_ends:Array=[]
@@ -68,6 +70,7 @@ func can_mount(player:CharacterBody3D) -> bool:
 	return not mounted and player.position.distance_to(position)<2.8 and player.is_on_floor()
 
 func mount(player:CharacterBody3D,avatar:Node3D,actor:FarmAvatar) -> void:
+	rider_actor=actor
 	mounted=true;obstacle.collision_layer=0;label.visible=false
 	parts.HorseNeck.position=part_home.HorseNeck;parts.HorseNeck.rotation=Vector3.ZERO;life.reset(self)
 	rider_collision=player.get_child(0) as CollisionShape3D;walk_shape=rider_collision.shape
@@ -103,6 +106,7 @@ func dismount(player:CharacterBody3D,avatar:Node3D,actor:FarmAvatar,state:FarmSt
 func encourage() -> bool:
 	if not mounted or pat_time>0 or stamina<25:return false
 	stamina-=25;burst=3.5;pat_time=.55
+	encouraged.emit()
 	return true
 
 func drive(player:CharacterBody3D,avatar:Node3D,actor:FarmAvatar,direction:Vector3,delta:float,active:bool) -> void:
@@ -123,19 +127,25 @@ func drive(player:CharacterBody3D,avatar:Node3D,actor:FarmAvatar,direction:Vecto
 	var actual:=Vector2(player.get_real_velocity().x,player.get_real_velocity().z).length()
 	animate(delta if active else 0,actual,burst>0)
 	actor.animate(delta if active else 0,false,false)
+	pose_rider(avatar,actor)
+
+func pose_rider(avatar:Node3D,actor:FarmAvatar) -> void:
+	rider_actor=actor
 	avatar.position=Vector3(0,1.04+(parts.HorseBody.position.y-body_home.y),-.04)
+	var tap:=sin(clampf(1-pat_time/.55,0,1)*PI) if pat_time>0 else 0.0
+	actor.pose_bone("Spine",Vector3((.08 if burst<=0 else .17)+tap*.35,0,0))
+	actor.pose_bone("Chest",Vector3.ZERO)
 	for side in ["L","R"]:
 		var sign_value:=1.0 if side=="R" else -1.0
 		actor.pose_bone("Thigh."+side,Vector3(-.72,0,sign_value*.85))
 		actor.pose_bone("Shin."+side,Vector3(1.05,0,0))
 		actor.pose_bone("Foot."+side,Vector3(-.38,0,0))
-		actor.pose_bone("UpperArm."+side,Vector3(-.62,0,sign_value*.08))
-		actor.pose_bone("Forearm."+side,Vector3(-.70,0,0))
-	actor.pose_bone("Spine",Vector3(.08 if burst<=0 else .17,0,0))
+		actor.pose_bone("UpperArm."+side,Vector3(-.60,0,-sign_value*.45))
+		actor.pose_bone("Forearm."+side,Vector3(-.85,0,0))
+		actor.pose_bone("Hand."+side,Vector3.ZERO)
 	if pat_time>0:
-		var tap:=sin((1-pat_time/.55)*PI)
-		actor.pose_bone("UpperArm.R",Vector3(.2+tap*.45,0,-.38))
-		actor.pose_bone("Forearm.R",Vector3(-.2,0,0))
+		actor.reach_rein_hand("R",to_global(Vector3(.28,2.30,.76)),tap)
+	update_reins()
 
 func animate(delta:float,velocity:float,running:bool) -> void:
 	gait+=delta*(12 if running else lerpf(2.5,7,clampf(velocity/6,0,1)))
@@ -160,15 +170,44 @@ func sync_skin() -> void:
 		var pose:Quaternion=parts[key].quaternion
 		skin.set_bone_pose_rotation(index,skin.get_bone_rest(index).basis.get_rotation_quaternion()*rest.inverse()*pose*rest)
 		skin.set_bone_pose_position(index,skin.get_bone_rest(index).origin+parts[key].position-part_home[key])
-	reins.clear_surfaces()
-	for ends in rein_ends:
-		var start:=to_local(parts.HorseNeck.to_global(ends[0]));var end:=to_local(parts.HorseBody.to_global(ends[1]))
-		reins.surface_begin(Mesh.PRIMITIVE_LINE_STRIP,rein_material)
-		for i in range(13):
-			var t:=i/12.0;reins.surface_add_vertex(start.lerp(end,t)-Vector3.UP*sin(t*PI)*.16)
-		reins.surface_end()
 	var body_index:int=skin_bones.HorseBody
 	skin.set_bone_pose_position(body_index,skin.get_bone_rest(body_index).origin+parts.HorseBody.position-body_home)
+	update_reins()
+
+func rein_end(index:int) -> Vector3:
+	if mounted and rider_actor!=null:
+		# The left hand holds both reins while the right gives the neck a pat.
+		var side:="L" if index==0 or pat_time>0 else "R"
+		return to_local(rider_actor.rein_grip_world(side))
+	return to_local(parts.HorseBody.to_global(rein_ends[index][1]))
+
+func update_reins() -> void:
+	reins.clear_surfaces()
+	for index in range(rein_ends.size()):
+		var start:=to_local(parts.HorseNeck.to_global(rein_ends[index][0]))
+		var end:=rein_end(index)
+		# Round leather cord retains its width from every camera angle.
+		reins.surface_begin(Mesh.PRIMITIVE_TRIANGLES,rein_material)
+		var points:Array[Vector3]=[]
+		for i in range(17):
+			var t:=i/16.0
+			var point:=start.lerp(end,t)
+			if mounted and pat_time>0 and index==1:
+				# Bring the right cord around the flank of the neck before crossing to the left palm.
+				var guide:=Vector3(.38,end.y-.08,.40)
+				point=start.lerp(guide,t/.65) if t<.65 else guide.lerp(end,(t-.65)/.35)
+			points.append(point-Vector3.UP*sin(t*PI)*(.09 if mounted else .16))
+		for i in range(16):
+			var tangent:Vector3=(points[i+1]-points[i]).normalized()
+			var across:=tangent.cross(Vector3.UP).normalized()*.009
+			if across.length_squared()<.000001:across=Vector3.RIGHT*.009
+			var up:=tangent.cross(across).normalized()*.009
+			for j in range(6):
+				var a:=across*cos(j*TAU/6)+up*sin(j*TAU/6)
+				var b:=across*cos((j+1)*TAU/6)+up*sin((j+1)*TAU/6)
+				for vertex in [points[i]+a,points[i+1]+a,points[i+1]+b,points[i]+a,points[i+1]+b,points[i]+b]:
+					reins.surface_add_vertex(vertex)
+		reins.surface_end()
 
 func reset_rider(player:CharacterBody3D,avatar:Node3D,actor:FarmAvatar) -> void:
 	if not mounted:return
