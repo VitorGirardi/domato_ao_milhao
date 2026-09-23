@@ -9,6 +9,8 @@ func _initialize() -> void:
 		assert(not restored.restore(data) and restored.serialize()==before)
 	var old:=before.duplicate(true);old.version=15;old.erase("horse")
 	assert(restored.restore(old) and restored.horse==FarmHorse.defaults())
+	var extension:=old.duplicate(true);extension.armory={"version":1,"ammo":17,"owned":["pistol"]}
+	assert(restored.restore(extension) and restored.serialize().armory==extension.armory)
 	var horse:=FarmHorse.new();horse.mounted=true
 	assert(horse.encourage() and horse.stamina==75 and horse.burst==3.5)
 	assert(not horse.encourage())
