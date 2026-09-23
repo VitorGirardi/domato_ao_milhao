@@ -1,3 +1,10 @@
+# 0.29.0 — Visita multiplayer
+
+- Jogar junto: hospedar ou entrar por IP, para dois jogadores.
+- Snapshot da fazenda, movimento/corrida/pulo, nomes e emotes sincronizados.
+- Saves solo isolados, cancelamento, timeout e reconexão; visita sem produção/construção/montaria.
+- HUD específico da visita e preset nativo Linux.
+
 # 0.28.1 — Voz natural do cavalo
 
 - Substitui relincho e bufadas sintéticos por gravações reais CC0, com créditos e fontes preservadas.

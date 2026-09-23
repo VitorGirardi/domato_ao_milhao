@@ -3,15 +3,15 @@
 **Comece com um terreno. Termine comprando a vizinhança.**
 
 Protótipo jogável de um tycoon de fazenda 3D estilizado para Windows, em português.
-Godot 4.7.2 + modelos originais feitos no Blender 5.2.1. Campanha solo e offline.
+Godot 4.7.2 + modelos originais feitos no Blender 5.2.1. Campanha solo offline e visita multiplayer para dois PCs.
 
-**Versão atual: 0.28.1.** Veja [as prioridades](ROADMAP.md) e [as novidades](CHANGELOG.md).
+**Versão atual: 0.29.0.** Veja [as prioridades](ROADMAP.md) e [as novidades](CHANGELOG.md).
 
 Veja o [roteiro de teste manual](COMO_TESTAR.md), incluindo encomendas e vendas da 0.5.
 
 ## Jogar
 
-O executável local fica em `exports/windows-v0.28.1/DoMatoAoMilhao.exe` depois da exportação.
+O executável local fica em `exports/windows-v0.29.0/DoMatoAoMilhao.exe` depois da exportação.
 Ele abre diretamente, sem instalar Godot ou Blender. Os binários não são enviados ao Git.
 
 Para executar a partir do código:
@@ -19,9 +19,13 @@ Para executar a partir do código:
 2. Aguarde a importação dos modelos.
 3. Pressione **F5** para jogar. O cenário é montado pelos scripts durante a execução.
 
+## Visita multiplayer — 0.29.0
+
+Menu **Jogar junto**, hospedar/entrar por IP, dois personagens, movimento, pulo e emotes. A fazenda compartilhada é uma cópia em memória; produção/construções pausadas nesta etapa. [Conexão, limites e testes](MULTIPLAYER.md).
+
 ## Correção 0.28.1
 
-Cavalo com relincho e respiração gravados, pitch natural e volume moderado. [Créditos CC0](AUDIO_CREDITS.md). [Proposta de cooperativo gratuito](MULTIPLAYER.md), ainda não implementado.
+Cavalo com relincho e respiração gravados, pitch natural e volume moderado. [Créditos CC0](AUDIO_CREDITS.md). [Visita multiplayer gratuita](MULTIPLAYER.md), implementada no bloco 0.29.
 
 ## Novidades da 0.28.0
 
@@ -401,7 +405,7 @@ Os três vizinhos aparecem como perfis e encomendas; ainda não têm ranchos exp
 O personagem tem animações procedurais de caminhada e ações. As galinhas tentam
 desviar localmente de construções e cercas, mas ainda não planejam rotas longas
 nem entendem portões; podem parar quando não encontram uma passagem.
-A equipe tem duas vagas fixas. Sem multiplayer, vagas livres, tratores dirigíveis, indústrias, clima, estações ou continente.
+A equipe tem duas vagas fixas. Visita multiplayer disponível; cooperativo de produção, vagas livres, tratores dirigíveis, indústrias, clima, estações e continente ainda não implementados.
 O jogo não cresce enquanto está fechado. O relógio representa dias de trabalho simplificados.
 
 ## Salvamento

@@ -1,3 +1,7 @@
+# Teste 0.29.0 — Jogar junto
+
+Nos dois PCs use a versão 0.29.0. Vitor: Jogar junto → nome → Hospedar minha fazenda. Ian: Jogar junto → nome → IP exibido por Vitor → Entrar na fazenda. Mesma rede local ou IP Tailscale entre PCs autorizados. Porta UDP 28729. WASD anda, Shift corre, Espaço pula, B emotes; Esc abre opções/sair. A visita pausa produção e bloqueia mudanças na fazenda. [Guia e limites completos](MULTIPLAYER.md).
+
 # Teste 0.28.1 — Áudio do cavalo
 
 Extraia em pasta nova, abra DoMatoAoMilhao.exe e use Continuar. E monta e toca um relincho gravado; Shift, com fôlego, toca uma bufada curta. Sem fôlego/cooldown não repete. Ajuste em Configurações > Som > Ambiente e animais. Não precisa iniciar outra fazenda.

@@ -1,3 +1,7 @@
+# Bloco 0.29 — Visita multiplayer concluída
+
+Dois PCs: hospedar/entrar, snapshot em memória, movimento/pulo/emotes, reconexão e isolamento de saves. Próximo: ações de plantio e colheita autorizadas pelo host, inventário sincronizado e save cooperativo separado. Veja MULTIPLAYER.md.
+
 # Prioridades — Do Mato ao Milhão
 
 ## Entregue — 0.28.0
