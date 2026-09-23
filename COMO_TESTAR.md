@@ -1,5 +1,15 @@
 # Como testar a versão 0.25.0
 
+## Menu inicial — 0.26.0
+
+1. Extraia o ZIP e abra DoMatoAoMilhao.exe: a foto do vale aparece antes da partida.
+2. Com uma fazenda salva, use Continuar; sem save, use Novo jogo e escolha um nome.
+3. Configurações: altere volume, sensibilidade, qualidade, FPS e tela cheia. Aplicar e voltar salva; Cancelar descarta. Reinicie para conferir persistência.
+4. Dentro da partida, Esc abre pausa; Salvar e voltar ao menu mantém a fazenda para Continuar.
+5. Novo jogo com save existente pede confirmação. Cancelar mantém tudo; confirmar arquiva a fazenda em farms_archive, junto ao save, antes de criar outra.
+6. Controles mostra os atalhos. F11 continua alternando tela cheia/janela. Dinheiro infinito mantido.
+
+
 Extraia o ZIP e abra **DoMatoAoMilhao.exe**. Continue sua fazenda.
 
 1. **Construir:** com fazenda no nível 5 ou 6, use **TAB**, selecione **Estrebaria** no fim da barra (atalho **K**) e coloque em terreno seu. Custa $550; seu dinheiro infinito continua ativo. R/Q giram, M move a seleção.

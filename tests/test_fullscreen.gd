@@ -60,6 +60,7 @@ func run() -> void:
 	game=load("res://scenes/main.tscn").instantiate()
 	game.save_path="user://qa_fullscreen.json"
 	root.add_child(game)
+	root.mode=Window.MODE_WINDOWED
 	await settle()
 	game.set_physics_process(false)
 	game.hud.action.connect(func(value:String):actions.append(value))
@@ -69,6 +70,20 @@ func run() -> void:
 		var tag:="%dx%d"%[root.size.x,root.size.y]
 		print("FULLSCREEN_SIZE requested=",requested," actual=",root.size," logical=",root.get_visible_rect().size)
 		check(root.size==requested,"OS limited requested size "+str(requested)+" to "+str(root.size))
+		game.front_end.has_save=false;game.front_end.show_title();await settle()
+		modal_bounds(tag+" title")
+		await screenshot(tag+"-title")
+		await click_at(game.hud.modal.get_global_transform_with_canvas()*Vector2(280,505))
+		check(game.hud.modal_kind=="settings",tag+" settings click failed")
+		modal_bounds(tag+" settings")
+		await click_at(rect(game.front_end.controls.volume).get_center())
+		check(absf(game.front_end.pending.volume-.5)<.1,tag+" slider transform failed")
+		game._action("close");await settle()
+		check(game.hud.modal_kind=="title",tag+" settings close failed")
+		await click_at(game.hud.modal.get_global_transform_with_canvas()*Vector2(280,440))
+		check(game.hud.modal_kind=="new_farm",tag+" new game click failed")
+		modal_bounds(tag+" new farm")
+		game._action("front:back")
 		game.hud.welcome(game.state,false)
 		await settle()
 		modal_bounds(tag+" welcome")

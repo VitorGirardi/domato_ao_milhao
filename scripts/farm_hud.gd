@@ -625,14 +625,16 @@ func editor_dialog(kind: String, initial: String) -> void:
 	button(p,"Pronto!",Rect2(204,209,378,45),"apply_text",true)
 
 func menu(state: FarmState) -> void:
-	var p:=_modal("menu",470)
+	var p:=_modal("menu",620)
 	label(p,state.farm_name,Vector2(30,28),Vector2(550,46),28)
 	label(p,"Uma pausa à sombra da árvore.",Vector2(30,85),Vector2(550,34),18,MUTED)
 	button(p,"Continuar jogando",Rect2(30,144,550,47),"close",true)
 	button(p,"Salvar fazenda",Rect2(30,205,550,43),"save")
-	button(p,"Começar outra fazenda…",Rect2(30,264,550,43),"reset_ask")
-	button(p,"Salvar e sair",Rect2(30,323,550,43),"quit")
-	label(p,"F11 tela cheia / janela   •   TAB câmeras   •   F5 salvar\nFeito com Godot e Blender. Modelos originais.",Vector2(30,395),Vector2(550,55),15,MUTED)
+	button(p,"Configurações",Rect2(30,263,550,43),"front:settings")
+	button(p,"Controles",Rect2(30,321,550,43),"front:controls")
+	button(p,"Salvar e voltar ao menu inicial",Rect2(30,379,550,43),"front:title")
+	button(p,"Salvar e sair",Rect2(30,437,550,43),"quit")
+	label(p,"F11 tela cheia / janela   •   TAB câmeras   •   F5 salvar",Vector2(30,529),Vector2(550,55),15,MUTED)
 
 func confirm_reset() -> void:
 	var p:=_modal("reset",280)
