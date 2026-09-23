@@ -8,6 +8,7 @@ const CROPS = {
 	"corn": {"name": "Milho", "seconds": 62.0, "seed": 8, "price": 24, "yield": 3}
 }
 const ITEMS = {
+	"pigsty": {"name":"Chiqueiro","cost":500,"size":Vector2(8,6)},
 	"stable": {"name":"Estrebaria", "cost":550, "size":Vector2(6,6)},
 	"cheesery": {"name":"Queijaria","cost":900,"size":Vector2(6,6)},
 	"corral": {"name":"Curral","cost":650,"size":Vector2(8,6)},
@@ -370,6 +371,8 @@ func remove_item(index: int) -> String:
 	if index<0 or index>=items.size(): return "Selecione uma construção."
 	if items[index].kind=="cheesery" and (items[index].cheese.batch>0 or items[index].cheese.ready>0):
 		return "Recolha a produção antes de remover a queijaria."
+	if items[index].kind=="pigsty" and items[index].pigs.count>0:
+		return "Chiqueiro ocupado: use Mover para preservar os porcos."
 	if items[index].kind=="corral" and (items[index].dairy.owned or items[index].dairy.milk>0):
 		return "Curral ocupado: use Mover para preservar a vaca e o leite."
 	if items[index].kind=="coop" and items[index].flock.nest>0:
@@ -546,6 +549,7 @@ func place(kind: String, at: Vector2, turn: int, crop: String = "carrot") -> Str
 	if kind=="coop": items[-1].flock=FarmAnimals.fresh()
 	if kind=="cheesery": items[-1].cheese=FarmCheese.fresh()
 	if kind=="corral": items[-1].dairy=FarmDairy.fresh()
+	if kind=="pigsty": items[-1].pigs=FarmPigs.fresh()
 	refresh_journey()
 	return ""
 
@@ -600,6 +604,7 @@ func tick(delta: float) -> bool:
 				item.growth=minf(1.0,float(item.growth)+span/float(CROPS[item.crop].seconds))
 			if item.kind=="cheesery": FarmCheese.tick(item.cheese,span)
 			if item.kind=="corral": FarmDairy.tick(item.dairy,span)
+			if item.kind=="pigsty": FarmPigs.tick(item.pigs,span)
 			if item.kind=="coop":
 				if FarmAnimals.tick(item,span): eggs=true
 		if active:
@@ -652,7 +657,7 @@ func expand() -> String:
 	return ""
 
 func serialize() -> Dictionary:
-	return {"version": 17, "horse":horse.duplicate(), "armory":armory.duplicate(), "owned_parcels":owned_parcels.duplicate(), "unlimited_money":unlimited_money, "farm_xp":farm_xp, "dairy_worker":dairy_worker.duplicate(), "cheese_worker":cheese_worker.duplicate(), "cheese_stock":cheese_stock, "cheese_order":cheese_order.duplicate(), "milk_stock":milk_stock, "cultivation":cultivation.duplicate(true), "field_staff":field_staff.duplicate(true), "professional_watering":professional_watering, "irrigation":irrigation.duplicate(true), "money": _money, "claimed": claimed,
+	return {"version": 18, "horse":horse.duplicate(), "armory":armory.duplicate(), "owned_parcels":owned_parcels.duplicate(), "unlimited_money":unlimited_money, "farm_xp":farm_xp, "dairy_worker":dairy_worker.duplicate(), "cheese_worker":cheese_worker.duplicate(), "cheese_stock":cheese_stock, "cheese_order":cheese_order.duplicate(), "milk_stock":milk_stock, "cultivation":cultivation.duplicate(true), "field_staff":field_staff.duplicate(true), "professional_watering":professional_watering, "irrigation":irrigation.duplicate(true), "money": _money, "claimed": claimed,
 		"center": [center.x, center.y], "land_size": land_size,
 		"items": items.duplicate(true), "inventory": inventory.duplicate(),
 		"elapsed": elapsed, "revenue": revenue, "harvests": harvests,
@@ -662,7 +667,7 @@ func serialize() -> Dictionary:
 func restore(data: Variant) -> bool:
 	# Validate before mutating live state. Invalid files never partially replace it.
 	if data is Dictionary and data.has("armory") and not FarmArmory.valid(data.armory):return false
-	if not data is Dictionary or not _number(data.get("version")) or data.version<1 or data.version>17 or float(data.version)!=floorf(float(data.version)):
+	if not data is Dictionary or not _number(data.get("version")) or data.version<1 or data.version>18 or float(data.version)!=floorf(float(data.version)):
 		return false
 	if data.version>=16 and not FarmHorse.valid(data.get("horse")):return false
 	if data.has("horse") and not FarmHorse.valid(data.horse):return false
@@ -732,6 +737,7 @@ func restore(data: Variant) -> bool:
 		if data.version>=7 and not item.has("level"): return false
 		if level==2 and not FarmProgression.UPGRADES.has(item.kind): return false
 		if item.kind=="cheesery" and (data.version<11 or not FarmCheese.valid(item.get("cheese"))): return false
+		if item.kind=="pigsty" and (data.version<18 or not FarmPigs.valid(item.get("pigs"))): return false
 		if item.kind=="corral" and (data.version<10 or not FarmDairy.valid(item.get("dairy"))): return false
 		if item.kind=="barn": barn_count+=FarmProgression.reserve_slots(item)
 		if item.kind=="coop":

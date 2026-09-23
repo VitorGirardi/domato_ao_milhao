@@ -106,13 +106,24 @@ func run() -> void:
 		if not game.state.claimed:game.state.claim(Vector2(4,-2))
 		game.build_mode=true;game._update_ui()
 		await settle()
-		fits(game.hud.tool_panel,tag+" toolbar")
-		fits(game.hud.buttons.stable,tag+" last tool")
-		fits(game.hud.select_panel,tag+" selection")
+		fits(game.hud.construction.catalog,tag+" catalog")
+		await click_at(rect(game.hud.construction.tabs["Animais"]).get_center())
+		check(game.hud.construction.category=="Animais",tag+" category click failed")
+		fits(game.hud.construction.cards.stable,tag+" stable card")
 		actions.clear()
-		await click_at(rect(game.hud.buttons.inspect).get_center())
+		await click_at(rect(game.hud.construction.select_button).get_center())
 		check(actions.has("tool:inspect"),tag+" transformed tool click failed")
 		await screenshot(tag+"-build")
+		# Painting only exists after selecting a paintable building and pressing Pintar.
+		game.state.farm_xp=950;game.state.unlimited_money=true
+		if game.state.count_items("barn")==0:check(game.state.place("barn",Vector2(4,-2),0).is_empty(),"QA barn placement")
+		for i in range(game.state.items.size()):
+			if game.state.items[i].kind=="barn":game.selected=i;break
+		game._update_ui();await settle()
+		fits(game.hud.construction.selection,tag+" selection")
+		check(game.hud.construction.selection.visible,tag+" selection actions hidden")
+		await click_at(rect(game.hud.construction.paint_button).get_center())
+		check(game.hud.construction.paint_panel.visible,tag+" paint panel did not open")
 		# Embedded dropdown is a Window and must be checked independently.
 		await click_at(rect(game.hud.paint_selector).get_center())
 		var popup:PopupMenu=game.hud.paint_selector.get_popup()

@@ -121,7 +121,7 @@ func _frame(number:int,owner_id:int,position:Vector3,heading:float,stamina:float
 	if rider!=0:
 		body(rider).position=position;model(rider).rotation.y=heading
 		if rider!=multiplayer.get_unique_id():network.target=position;network.target_yaw=heading
-	else:h.animate(.05,0,false)
+	else:h.animate(.05,speed,false)
 	if sprint_started:h.encouraged.emit()
 
 func send_initial() -> void:

@@ -1,3 +1,7 @@
+# Atualização 0.34 — animais e companheiros
+
+Atualizem os dois PCs pelo launcher. Protocolo 6, save 18 (carrega fazendas anteriores). Chiqueiro em TAB → Animais; E abre os cuidados. E perto do gato faz carinho, V alterna acompanhar/ficar e C a pé chama o cavalo livre próximo. [Porcos](PORCOS.md) · [Companheiros](COMPANHEIROS.md).
+
 # Fazenda cooperativa — 0.31.0
 
 Dois jogadores por ENet/UDP, sem servidor pago. Os dois usam a **mesma versão 0.31.0**. O anfitrião mantém o jogo aberto e valida as mudanças da fazenda.

@@ -69,6 +69,8 @@ var current_tool := "inspect"
 var current_crop := "carrot"
 
 var farm_levels:=FarmLevelsHUD.new()
+var construction:=FarmBuildHUD.new()
+var legacy_build:Control
 
 func _ready() -> void:
 	add_child(root)
@@ -93,6 +95,13 @@ func _ready() -> void:
 	build_hud.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	build_hud.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_build()
+	# Keep shared quest/clock data controls for walking and modal consumers.
+	var legacy_nodes:=build_hud.get_children()
+	legacy_build=Control.new();legacy_build.name="LegacyBuildData"
+	build_hud.add_child(legacy_build)
+	for node in legacy_nodes:node.reparent(legacy_build)
+	legacy_build.hide()
+	construction.setup(self)
 	walking.setup(self)
 	get_viewport().size_changed.connect(_fit_screen)
 	_fit_screen()
@@ -270,10 +279,7 @@ func update(state: FarmState, build_mode: bool, selected: int, tool: String, cro
 	for value in state.inventory.values():
 		total+=int(value)
 	stock_label.text="%d produtos no estoque   •   Venda: $%d"%[total,state.sale_value()]
-	var day:=1+int(state.elapsed/240)
-	var hour:=8+int(fmod(state.elapsed,240)/20)
-	var minute:=int(fmod(state.elapsed,20)*3)
-	clock_label.text="DIA %02d   •   %02d:%02d"%[day,hour,minute]
+	clock_label.text=FarmDayNight.clock_text(state.elapsed)
 	mode_label.text="CONSTRUÇÃO • PAUSADO" if build_mode else "VIDA NO CAMPO"
 	if not state.claimed:
 		mode_label.text="ESCOLHA SEU TERRENO"
@@ -322,7 +328,8 @@ func update(state: FarmState, build_mode: bool, selected: int, tool: String, cro
 	barn_button.visible=selected>=0 and selected<state.items.size() and state.items[selected].kind in ["barn","workshop","stable"]
 	barn_button.text="Estoque do celeiro" if selected<0 or selected>=state.items.size() or state.items[selected].kind!="workshop" else "Bancada de melhorias"
 	if selected>=0 and selected<state.items.size() and state.items[selected].kind=="stable":barn_button.text="Ver estrebaria"
-	coop_button.visible=selected>=0 and selected<state.items.size() and state.items[selected].kind=="coop"
+	coop_button.visible=selected>=0 and selected<state.items.size() and state.items[selected].kind in ["coop","pigsty"]
+	coop_button.text="Cuidar dos porcos" if coop_button.visible and state.items[selected].kind=="pigsty" else "Cuidar das galinhas"
 	var multipart:bool=selected>=0 and selected<state.items.size() and state.items[selected].kind in ["barn","coop","workshop"]
 	paint_selector.set_item_disabled(1,not multipart)
 	var has_door:bool=multipart and state.items[selected].kind!="workshop"
@@ -341,6 +348,8 @@ func update(state: FarmState, build_mode: bool, selected: int, tool: String, cro
 			details_label.text="%s\n%s\n\nClique com Cuidar ou use E\nperto do canteiro."%[FarmState.CROPS[item.crop].name,status]
 		elif item.kind=="cheesery":
 			details_label.text="[E] Abrir queijaria\n2 L → 1 queijo · lotes de até 4\nProntos: %d"%item.cheese.ready
+		elif item.kind=="pigsty":
+			details_label.text="%d / 3 porcos · %s\n[E] Comprar e cuidar\nRação: %d%% • Água: %d%%"%[item.pigs.count,FarmPigs.status(item.pigs),roundi(item.pigs.food),roundi(item.pigs.water)]
 		elif item.kind=="corral":
 			details_label.text="Uma vaga para vaca\n[E] Comprar, cuidar e coletar leite.\nLeite no curral: %d / 8 L"%item.dairy.milk
 		elif item.kind=="coop":
@@ -366,6 +375,8 @@ func update(state: FarmState, build_mode: bool, selected: int, tool: String, cro
 		hint_label.text="Clique para construir / cuidar  •  R / Q girar  •  TAB caminhar"
 	else:
 		hint_label.text="WASD andar • Espaço pular • E cuidar • TAB construir"
+
+	construction.update(state,selected,tool,crop,hover_hint)
 
 func _set_active_buttons() -> void:
 	for key in buttons:

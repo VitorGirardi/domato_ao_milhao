@@ -2,7 +2,7 @@ class_name FarmNetwork
 extends Node
 ## Host-authoritative cooperative farm.
 const PORT:=28729
-const PROTOCOL:=3
+const PROTOCOL:=6
 var game:Node3D
 var active:=false
 var ready_session:=false
@@ -532,7 +532,7 @@ func refresh_panel() -> void:
 		"barn":h.barn(s,h.building_index)
 		"workshop":
 			if i>=0 and i<s.items.size():h.workshop(s,i)
-		"coop","dairy","dairy_confirm","cheesery","cheese_confirm":
+		"coop","dairy","dairy_confirm","cheesery","cheese_confirm","pigsty","pig_confirm":
 			if i>=0 and i<s.items.size():game._tend_selected()
 
 @rpc("authority","call_remote","reliable",3)
@@ -543,7 +543,9 @@ func _visuals(topology:int,packet:PackedByteArray) -> void:
 
 @rpc("any_peer","call_remote","reliable",0)
 func _client_ready() -> void:
-	if hosting and multiplayer.get_remote_sender_id()==accepted:mounts.send_initial()
+	if hosting and multiplayer.get_remote_sender_id()==accepted:
+		mounts.send_initial()
+		game.companions._event.rpc_id(accepted,1,"follow",game.world.cat.position,game.companions.follow_owner)
 
 
 func plot_stamp(item:Dictionary) -> Array:
@@ -556,3 +558,14 @@ func track_plots() -> void:
 		var current:=plot_stamp(item)
 		if plot_states.has(i) and plot_states[i]!=current:plot_versions[i]=int(plot_versions.get(i,0))+1
 		plot_states[i]=current
+
+# Affection is transient presentation, with proximity checked on the host.
+func pet_cat() -> void:
+	if not active or not ready_session:return
+	game.companions.request("pet")
+
+@rpc("any_peer","call_remote","reliable",0)
+func _pet_cat() -> void:
+	if not hosting or not ready_session or multiplayer.get_remote_sender_id()!=accepted:return
+	if not is_instance_valid(remote) or Time.get_ticks_msec()-motion_received_at>1500:return
+	game.companions.apply(accepted,"pet")
