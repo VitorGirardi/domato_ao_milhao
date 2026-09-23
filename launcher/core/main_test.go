@@ -63,7 +63,7 @@ func fixture(t *testing.T, platform string) []byte {
 func release(t *testing.T, platform string, b []byte) Release {
 	name := "DoMatoAoMilhao-Windows-v0.31.0.zip"
 	if platform == "linux" {
-		name = "DoMatoAoMilhao-Linux-v0.31.0_x86_64.tar.gz"
+		name = "DoMatoAoMilhao-Linux-v0.31.0-x86_64.tar.gz"
 	}
 	h := sha256.Sum256(b)
 	return Release{Tag: "v0.31.0", Assets: []Asset{{Name: name, URL: "https://github.com/" + repo + "/releases/download/v0.31.0/" + name, Size: int64(len(b)), Digest: "sha256:" + hex.EncodeToString(h[:])}}}

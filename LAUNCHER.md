@@ -41,7 +41,7 @@ continua disponível. A versão 1.0 atualiza o **jogo**, não o próprio launche
 Use tags estáveis `vMAJOR.MINOR.PATCH`, release marcada como latest e pacotes:
 
 - `DoMatoAoMilhao-Windows-vMAJOR.MINOR.PATCH.zip`
-- `DoMatoAoMilhao-Linux-vMAJOR.MINOR.PATCH_x86_64.tar.gz`
+- `DoMatoAoMilhao-Linux-vMAJOR.MINOR.PATCH-x86_64.tar.gz`
 - SHA-256 do asset fornecido pelo GitHub; fallback
   `SHA256SUMS-vMAJOR.MINOR.PATCH.txt` com `hash  nome-do-pacote`.
 

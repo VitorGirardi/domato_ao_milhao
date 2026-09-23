@@ -326,7 +326,7 @@ func latest() (Release, error) {
 func assetFor(r Release, platform string) (Asset, error) {
 	name := "DoMatoAoMilhao-Windows-" + r.Tag + ".zip"
 	if platform == "linux" {
-		name = "DoMatoAoMilhao-Linux-" + r.Tag + "_x86_64.tar.gz"
+		name = "DoMatoAoMilhao-Linux-" + r.Tag + "-x86_64.tar.gz"
 	} else if platform != "windows" {
 		return Asset{}, errors.New("Sistema não suportado.")
 	}
