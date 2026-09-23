@@ -1,43 +1,32 @@
-# Cultivo cooperativo — 0.30.0
+# Fazenda cooperativa — 0.31.0
 
-Multiplayer para plantio, rega e colheita compartilhados: dois jogadores no mesmo mapa, por ENet/UDP. Nome acima do visitante, movimento interpolado, corrida, pulo, danças e reações. Você hospeda sua fazenda e seu amigo visita; não precisa alugar servidor.
+Dois jogadores por ENet/UDP, sem servidor pago. Os dois usam a **mesma versão 0.31.0**. O anfitrião mantém o jogo aberto e valida as mudanças da fazenda.
 
-## Testar com Vitor e Ian
+## Entrar e jogar
+1. Extraia o pacote em uma pasta nova. Windows: `DoMatoAoMilhao.exe`. Linux/Omarchy: `./jogar.sh`.
+2. Abra **Jogar junto**, escolha seu nome e personagem. A escolha é local: não altera o personagem do amigo nem exige reiniciar o save.
+3. Vitor: **Criar cooperativo da minha fazenda** ou **Continuar cooperativo**. Ian: informe o IP de Vitor e use **Entrar na fazenda**. Porta **UDP 28729**.
+4. Feche o painel com **Voltar à fazenda**. WASD anda, Shift corre, Espaço pula, mouse direito gira a câmera. E interage; Tab alterna construção; F abre comércio; H abre equipe; T abre terrenos; I mostra estoque; B abre emotes; M abre mapa; F5 salva no anfitrião; Esc abre opções/sair.
 
-1. Nos dois PCs, extraia a versão **0.30.0** em pastas novas. Mantenha as versões iguais.
-2. No PC de Vitor: menu inicial → **Jogar junto**, digite o nome e escolha **Criar cooperativo da minha fazenda** (primeira vez) ou **Continuar cooperativo**. Se ainda não houver fazenda, o vale inicial é compartilhado. O menu da sessão mostra os endereços do PC.
-3. No PC de Ian: **Jogar junto**, digite seu nome, informe o IP local de Vitor e clique em **Entrar na fazenda**. Na mesma rede, costuma ser `192.168.x.x` ou `10.x.x.x`; não use `127.0.0.1` entre computadores.
-4. Vitor fecha o painel com **Voltar à fazenda**. Usem **WASD**, **Shift**, **Espaço**, **B** e **M**. Mouse direito gira a câmera. Cada um controla o próprio personagem.
-5. **Esc** abre as opções/endereço. **Salvar e encerrar / Sair do cooperativo** retorna ao menu; quem saiu recupera sua fazenda solo. Se o anfitrião fechar o jogo, o visitante recebe aviso e sai da sessão.
+Na mesma rede use o IP local do anfitrião. Em redes diferentes vocês podem usar uma rede privada Tailscale já configurada e seu IP. O jogo não instala VPN nem modifica roteador/firewall.
 
-Se o Windows perguntar, permita o jogo na rede privada usada por vocês. A porta da sessão é **UDP 28729**. A aplicação não muda o firewall nem o roteador. Wi-Fi de convidados/isolamento entre aparelhos pode bloquear LAN. Se houver vários IPs, use o da mesma rede do outro PC. Porta ocupada mostra erro; feche a outra sessão hospedada.
+## O que os dois podem fazer
+- Escolher o terreno inicial, construir, girar, mover, remover, pintar, editar placas, traçar cercas/caminhos, comprar terrenos e evoluir construções.
+- Plantar, regar e colher; guardar/retirar reservas no celeiro; melhorar ferramentas e configurar irrigação.
+- Vender produtos, leite e queijo; aceitar, entregar e cancelar encomendas. Estoque, reputação, nível e evolução são compartilhados.
+- Cuidar das galinhas, recolher ovos e dar nomes; comprar/cuidar da vaca e ordenhar; produzir/recolher queijo.
+- Contratar, atribuir, treinar, pausar e dispensar a equipe disponível. Configurar rotinas e limites de gastos. A produção acontece somente no anfitrião; o convidado recebe resultados e animações.
+- Montar o Pé de Pano, cavalgar, dar o tapinha com Shift e desmontar com E. Há **um cavalo compartilhado**, ocupado por um jogador de cada vez. Desconectar libera o cavalo.
 
-## De casas diferentes
+Menus e câmera de construção de um jogador **não pausam a fazenda compartilhada**. Uma edição estrutural invalida seleções antigas para não atingir o prédio errado. Reabra a construção se o outro jogador a modificar. Ações repetidas e colheitas concorrentes são validadas no anfitrião.
 
-Conectem os dois computadores numa rede Tailscale autorizada para vocês e usem o IP Tailscale do anfitrião. O plano Personal consultado é gratuito para até seis usuários. Isso evita depender de aluguel de servidor ou configurar encaminhamento no roteador. Nenhuma conta, instalação de VPN ou mudança de rede foi feita automaticamente.
+## Progresso e segurança do save
+O cooperativo usa `farm_v1_coop.json` com `.bak`, separado de `farm_v1.json`. A primeira hospedagem copia a fazenda solo; as próximas continuam o cooperativo. A versão 0.31 retoma o cooperativo da 0.30. Não precisa reiniciar. Fazenda solo, backup e dinheiro infinito são preservados.
 
-## Cultivar juntos
+As alterações confirmadas são salvas antes da resposta. Uma falha de gravação desfaz a alteração. F5, autosave e saída também salvam. O visitante não grava por cima da própria fazenda solo. Não há migração de anfitrião: quando ele sai, o convidado volta ao menu; o progresso fica no PC anfitrião.
 
-Aproxime-se de um canteiro e use **E** para plantar, regar ou colher, conforme a indicação na tela. Num canteiro vazio, escolha cenoura, trigo ou milho nos botões de sementes. Os dois podem cuidar dos canteiros; as plantas crescem no computador do anfitrião e são atualizadas para o convidado. Não é preciso esperar o anfitrião fechar o menu para a plantação crescer.
+## Limites
+Dois jogadores, acesso por IP e um cavalo. Sem servidor dedicado, descoberta automática ou migração de anfitrião. A pistola e treino de tiro continuam apenas no solo; não há combate entre jogadores. O porco é um modelo de prévia, ainda não uma espécie comprável. Jogue com amigos na sua rede privada.
 
-**I** abre o estoque compartilhado; também é possível abri-lo perto do celeiro. A colheita dos dois é somada ao mesmo estoque. Pedidos repetidos, ações distantes e tentativas simultâneas no mesmo canteiro são validados pelo anfitrião para evitar duplicar produção.
-
-## Salvamento e continuidade
-
-Na primeira hospedagem, o jogo copia sua fazenda solo para um cooperativo separado. Depois o botão **Continuar cooperativo** retoma esse progresso, mesmo que você tenha jogado no solo entre as sessões. Prepare canteiros no solo antes de criar seu primeiro cooperativo; construir no multiplayer ainda não está liberado.
-
-No computador anfitrião, o arquivo é `farm_v1_coop.json`, ao lado do save solo, com backup `.bak`. Ações de cultivo confirmadas são gravadas antes de serem reconhecidas; F5, autosave e encerramento também salvam o cooperativo. Se houver falha de gravação, a ação é desfeita; ao tentar sair, a sessão permanece aberta para tentar salvar novamente. Arquivos cooperativos inválidos não são substituídos por uma fazenda nova automaticamente.
-
-O convidado não grava a fazenda compartilhada por cima do seu save. Ao sair, ambos recuperam a fazenda solo que tinham antes de conectar. Dinheiro infinito preservado. O anfitrião precisa permanecer com o jogo aberto.
-
-## Limites desta etapa
-
-Plantio, rega, crescimento, colheita, estoque e salvamento cooperativo estão ativos. Construções, compras/vendas, encomendas, animais, funcionários, armas e montaria ainda não têm ações cooperativas; os controles dessas funções continuam bloqueados. Os sistemas de produção de animais e funcionários não avançam nesta etapa. O solo continua completo. Sem servidor dedicado, migração de anfitrião, senha ou descoberta automática de salas. Use com amigos na rede privada.
-
-## Validação
-
-`tests/run_network.py --godot CAMINHO --test test_coop [--gui]` executa dois processos distintos, com APPDATA/XDG isolados. Testa plantio/regas cruzados, crescimento, duas tentativas de colher o mesmo canteiro, repetição de requisição, distância, estoque idêntico, falha de disco com rollback e retomada do cooperativo. `test_coop_save.gd` testa arquivo separado, backup, recuperação e erro de gravação. `test_network.gd` mantém conexão/movimento/emotes/reconexão. LAN real e desempenho no Omarchy do Ian precisam do teste de vocês.
-
-Fontes:
-- https://docs.godotengine.org/en/4.7/tutorials/networking/high_level_multiplayer.html
-- https://tailscale.com/pricing
+## Testes
+`tests/run_network.py --godot CAMINHO --test test_coop_full --gui` executa dois jogos isolados e verifica comércio sem duplicação, animais, contratação, construção, seleções antigas, identidade masculina/feminina, animação replicada, ocupação/movimento/sprint/desmontagem do cavalo, desconexão montado e persistência. Os testes `test_coop`, `test_network`, `test_coop_commands` e `test_coop_save` cobrem cultivo, reconexão, operações de domínio e recuperação de save. CI Linux valida X11, Wayland e o executável exportado. Desempenho e latência nos PCs de Vitor e Ian ainda precisam do teste real.

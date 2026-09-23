@@ -655,16 +655,16 @@ func animate(delta: float, player_pos: Vector3, state: FarmState, event: String 
 			target=chicken.home+Vector3((chicken.hen-1)*0.75,0,2.3).rotated(Vector3.UP,chicken.turn)
 		var direction := target - hen.position
 		# Feet pivot at the hips; keep them planted when the hen stops.
-		var stepping:bool=direction.length()>0.12 and not (resting and chicken.hen==2 and event.is_empty())
-		for side in ["L","R"]:
-			var leg:Node3D=hen.find_child("Leg"+side,true,false)
-			if leg: leg.rotation.x=sin(clock*13+phase+(PI if side=="L" else 0))*0.38 if stepping else 0.0
+		var foraging:bool=fposmod(clock+phase,11.6)<5.8 and event.is_empty()
+		var paused:bool=foraging or (resting and chicken.hen==2 and event.is_empty())
+		var stepping:bool=direction.length()>0.12 and not paused
+		FarmHenMotion.pose(hen,clock+phase,delta,stepping,foraging)
 		direction.y = 0
 		var dancing:bool=event=="dance" and is_manager
-		hen.rotation.x=sin(clock*7+phase)*0.18 if resting and chicken.hen==1 else 0.0
+		hen.rotation.x=0.0
 		hen.rotation.z=sin(clock*9)*0.2 if dancing else 0.0
 		hen.position.y=absf(sin(clock*9))*0.26 if dancing else 0.0
-		if resting and chicken.hen==2 and event.is_empty(): continue
+		if paused: continue
 		if direction.length() > 0.1:
 			hen.rotation.y = lerp_angle(hen.rotation.y, atan2(direction.x, direction.z), delta * 4)
 			var step:=direction.normalized()*minf(direction.length(),delta*(2.0 if event=="inspect" and is_manager else 0.65))

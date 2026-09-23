@@ -7,9 +7,13 @@ var pending_name:=""
 var resume_session:=false
 var controls:Dictionary={}
 var pending:Dictionary={}
+var pending_character:="farmer"
+var character_cards:Dictionary={}
 
 func setup(owner_game:Node3D,loaded:bool) -> void:
 	game=owner_game;has_save=loaded
+	pending_character=FarmCharacters.load_choice()
+	FarmCharacters.apply_to_game(game,pending_character)
 
 func show_title() -> void:
 	var hud:FarmHUD=game.hud
@@ -48,14 +52,39 @@ func back() -> void:
 func new_game() -> void:
 	return_to="title"
 	var hud:FarmHUD=game.hud
-	var p:=FarmGameUI.open(hud,"new_farm","Seu novo começo","seed",760,440)
-	hud.label(p,"Como vai se chamar sua fazenda?",Vector2(32,121),Vector2(696,40),25)
-	hud.text_input=LineEdit.new();hud.text_input.position=Vector2(32,188);hud.text_input.size=Vector2(696,54)
+	var p:=FarmGameUI.open(hud,"new_farm","Seu novo começo","seed",940,800)
+	hud.label(p,"Nome da fazenda",Vector2(32,112),Vector2(876,30),20)
+	hud.text_input=LineEdit.new();hud.text_input.position=Vector2(32,148);hud.text_input.size=Vector2(876,48)
 	hud.text_input.max_length=32;hud.text_input.placeholder_text="Meu pedacinho de mundo";hud.text_input.text=pending_name;p.add_child(hud.text_input)
-	hud.text_input.grab_focus()
-	hud.label(p,"Você começa escolhendo seu terreno no vale.",Vector2(32,265),Vector2(696,30),18)
-	FarmGameUI.action(hud,p,"Voltar",Rect2(32,351,210,49),"front:back")
-	FarmGameUI.action(hud,p,"Criar minha fazenda",Rect2(264,351,464,49),"front:new_review",true)
+	hud.label(p,"Quem vai cuidar desse pedacinho de mundo?",Vector2(32,212),Vector2(876,35),23)
+	character_cards.clear()
+	for i in range(2):
+		var id:String=FarmCharacters.IDS[i]
+		var card:=Button.new();card.position=Vector2(32+i*446,257);card.size=Vector2(430,416)
+		card.toggle_mode=true;card.mouse_default_cursor_shape=Control.CURSOR_POINTING_HAND;card.focus_mode=Control.FOCUS_ALL
+		var normal:=StyleBoxFlat.new();normal.bg_color=Color("e5e1cb");normal.set_corner_radius_all(18);normal.set_border_width_all(2);normal.border_color=Color("c1c5a5")
+		var selected:StyleBoxFlat=normal.duplicate();selected.bg_color=Color("f4ead0");selected.border_color=Color("b67c25");selected.set_border_width_all(4)
+		var hover:StyleBoxFlat=normal.duplicate();hover.border_color=Color("6b9479");hover.set_border_width_all(3)
+		card.add_theme_stylebox_override("normal",normal);card.add_theme_stylebox_override("hover",hover)
+		card.add_theme_stylebox_override("pressed",selected);card.add_theme_stylebox_override("hover_pressed",selected)
+		card.add_theme_stylebox_override("focus",hover);p.add_child(card)
+		var portrait:=FarmCharacterPreview.new();portrait.character_id=id;portrait.position=Vector2(32,12);portrait.size=Vector2(366,320);card.add_child(portrait)
+		var name_label:=hud.label(card,"Fazendeiro" if i==0 else "Fazendeira",Vector2(20,335),Vector2(390,34),25,Color("294d3d"));name_label.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
+		var choice:=hud.label(card,"",Vector2(20,373),Vector2(390,24),16,Color("48694c"));choice.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
+		name_label.mouse_filter=Control.MOUSE_FILTER_IGNORE;choice.mouse_filter=Control.MOUSE_FILTER_IGNORE
+		character_cards[id]={"button":card,"label":choice}
+		card.pressed.connect(func():select_character(id))
+	select_character(pending_character)
+	hud.label(p,"Mesmo talento, mesmas aventuras. Escolha quem combina com você.",Vector2(32,681),Vector2(876,28),17)
+	FarmGameUI.action(hud,p,"Voltar",Rect2(32,735,250,46),"front:back")
+	FarmGameUI.action(hud,p,"Criar minha fazenda",Rect2(300,735,608,46),"front:new_review",true)
+
+func select_character(id:String) -> void:
+	if not FarmCharacters.valid(id):return
+	pending_character=id
+	for key in character_cards:
+		character_cards[key].button.set_pressed_no_signal(key==id)
+		character_cards[key].label.text="SELECIONADO" if key==id else "Escolher personagem"
 
 func review_new() -> void:
 	if game.hud.modal_kind!="new_farm":return
@@ -81,10 +110,15 @@ func commit_new() -> void:
 		var error:=file.get_error();file.close()
 		if error!=OK:game.hud.toast("Não foi possível guardar a fazenda atual. Nada foi substituído.");return
 	# Write the new state atomically before replacing the running scene.
+	var previous_character:=FarmCharacters.load_choice()
+	if FarmCharacters.save_choice(pending_character)!=OK:
+		game.hud.toast("Não foi possível salvar o personagem. A fazenda foi preservada.");return
 	var previous:FarmState=game.state
 	game.state=FarmState.new();game.state.unlimited_money=not game.qa_mode;game.state.farm_name=pending_name
-	if not game._save_game(false,true):game.state=previous;return
+	if not game._save_game(false,true):
+		game.state=previous;FarmCharacters.save_choice(previous_character);return
 	game.state=previous;game._reset_farm();game.state.farm_name=pending_name
+	FarmCharacters.apply_to_game(game,pending_character)
 	has_save=true;resume_session=false;game._action("start");game._update_ui()
 
 func _slider(parent:Control,key:String,title:String,y:float) -> void:
@@ -160,7 +194,8 @@ func handle(action:String) -> void:
 			if not has_save:return
 			if not resume_session:game.build_mode=not game.state.claimed;game.pitch=.45 if game.state.claimed else .78
 			game._action("start");resume_session=true
-		"front:new":new_game()
+		"front:new":
+			pending_character=FarmCharacters.load_choice();new_game()
 		"front:new_review":review_new()
 		"front:new_commit":
 			if game.hud.modal_kind=="new_confirm":commit_new()

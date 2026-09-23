@@ -54,7 +54,26 @@ for i in range(5):
     feather=ellipsoid('Tail feather',(x,.34+abs(i-2)*.016,.67-abs(i-2)*.025),(.056,.20,.18),'Cream')
     tilt(feather,(x,.34+abs(i-2)*.016,.67-abs(i-2)*.025),-.65)
     details.append(feather)
-group('HenBody',details,(0,0,0))
+body=group('HenBody',details,(0,0,0))
+# The glTF morph importer generates tangents, even for palette-only materials.
+# Supply a real UV atlas so clean Linux imports do not depend on editor caches.
+bpy.context.view_layer.objects.active=body
+bpy.ops.object.mode_set(mode='EDIT')
+bpy.ops.mesh.select_all(action='SELECT')
+bpy.ops.uv.smart_project(angle_limit=1.15,island_margin=.02)
+bpy.ops.object.mode_set(mode='OBJECT')
+# Deform the continuous neck together with every facial detail. Feet and tail
+# stay planted: the hen reaches the soil without pitching its entire body.
+from mathutils import Vector, Matrix
+body.shape_key_add(name='Basis')
+peck=body.shape_key_add(name='Peck')
+anchor=Vector((0,-.10,.42))
+for vertex in peck.data:
+    co=vertex.co.copy()
+    height=max(0,min(1,(co.z-.43)/.29))
+    forward=max(0,min(1,(.12-co.y)/.25))
+    weight=height*height*(3-2*height)*forward*forward*(3-2*forward)
+    vertex.co=anchor+Matrix.Rotation(1.28*weight,3,'X')@(co-anchor)
 for side,suffix in [(-1,'L'),(1,'R')]:
     x=side*.115
     leg=[tube('Shank',[(x,.015,.29),(x,.005,.15),(x,-.01,.052)],.027,'Gold')]

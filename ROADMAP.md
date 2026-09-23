@@ -1,3 +1,7 @@
+# Bloco 0.31 — Fazenda cooperativa
+
+Construção, comércio, cuidados/produção animal, equipe e montaria compartilhados, além de identidade por jogador. Próximas expansões opcionais: mais jogadores, cavalos adicionais, descoberta de salas e servidor dedicado.
+
 # Bloco 0.30 — Cultivo cooperativo
 
 Plantio, rega, crescimento, colheita e estoque sincronizados, com persistência separada. Próximos blocos: construção e economia; depois animais, funcionários e montaria.

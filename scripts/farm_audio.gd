@@ -109,12 +109,12 @@ func _process(delta:float) -> void:
 	var travel:float=Vector2(pos.x-last_position.x,pos.z-last_position.z).length()
 	last_position=pos
 	if not active or not focused:
-		distance_walked=0;previous_grounded=game.player.is_on_floor();previous_mounted=game.horse.mounted
+		distance_walked=0;previous_grounded=game.player.is_on_floor();previous_mounted=game._mounted()
 		for voice in animals:voice.stop()
 		horse_voice.stop()
 		return
 	var grounded:bool=game.player.is_on_floor()
-	var mounted:bool=game.horse.mounted
+	var mounted:bool=game._mounted()
 	if mounted and not previous_mounted:_horse_call("horse_neigh")
 	if previous_mounted!=mounted or travel>=2:distance_walked=0
 	if travel<2 and (grounded or mounted):

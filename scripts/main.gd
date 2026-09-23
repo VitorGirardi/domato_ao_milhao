@@ -127,9 +127,12 @@ func _player() -> void:
 	avatar = world.model("farmer",player)
 	actor.setup(avatar,world)
 
+func _mounted() -> bool:
+	return horse.mounted and (not network.active or network.mounts.local_rider())
+
 func _try_jump() -> bool:
 	actor.stop_emote()
-	if horse.mounted or not session_started or build_mode or not hud.modal_kind.is_empty() or not player.is_on_floor() or actor.action_time>0: return false
+	if _mounted() or not session_started or build_mode or not hud.modal_kind.is_empty() or not player.is_on_floor() or actor.action_time>0: return false
 	player.velocity.y=6.8
 	actor.airborne=true
 	actor.landing=0.0
@@ -145,7 +148,9 @@ func _physics_process(delta: float) -> void:
 	var right := Vector3(cos(yaw),0,-sin(yaw))
 	var back := Vector3(sin(yaw),0,cos(yaw))
 	var direction := right * movement.x + back * movement.y
-	if horse.mounted:
+	if _mounted():
+		if network.active and not network.hosting:
+			_update_camera(delta);return
 		horse.drive(player,avatar,actor,direction,delta,session_started and hud.modal_kind.is_empty())
 		horse.store(state);_update_camera(delta);return
 	if not network.active and horse.is_inside_tree():horse.life.update(horse,delta,session_started and hud.modal_kind.is_empty() and not build_mode,state,world.landscape,player)
@@ -222,8 +227,8 @@ func _start_silly() -> void:
 	hud.toast(messages[silly_kind]%name)
 
 func _update_camera(delta: float, immediate: bool = false) -> void:
-	var target := focus if build_mode else player.position + Vector3(0,2.0 if horse.mounted else 1.1,0)
-	var distance := build_distance if build_mode else (walk_distance+3.0 if horse.mounted else walk_distance)
+	var target := focus if build_mode else player.position + Vector3(0,2.0 if _mounted() else 1.1,0)
+	var distance := build_distance if build_mode else (walk_distance+3.0 if _mounted() else walk_distance)
 	var angle := pitch if build_mode else clampf(pitch,0.2,1.0)
 	if weapons.armed and not build_mode:
 		target-=Vector3(cos(yaw),0,-sin(yaw))*.85
@@ -314,8 +319,6 @@ func _unhandled_input(event: InputEvent) -> void:
 				else:hud.close_modal()
 				get_viewport().set_input_as_handled();return
 			if event.physical_keycode==KEY_I:network.show_stock();return
-			if event.physical_keycode not in [KEY_SPACE,KEY_B,KEY_M,KEY_E,KEY_F5]:return
-		if event is InputEventMouseButton and event.button_index==MOUSE_BUTTON_LEFT:return
 	if weapons.game!=null and weapons.handle_input(event):
 		get_viewport().set_input_as_handled()
 		return
@@ -342,7 +345,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			return
 		match event.physical_keycode:
 			KEY_SHIFT:
-				if horse.mounted and horse.encourage():hud.toast("Bora, Pé de Pano!")
+				if network.active:
+					if _mounted():network.mounts.request("sprint")
+				elif _mounted() and horse.encourage():hud.toast("Bora, Pé de Pano!")
 			KEY_SPACE: _try_jump()
 			KEY_TAB: _action("mode")
 			KEY_E: _interact_nearest()
@@ -497,7 +502,7 @@ func _ghost_material(node: Node) -> void:
 	for child in node.get_children(): _ghost_material(child)
 
 func _click_world() -> void:
-	if network.active:return
+	if network.active and network.click_world():return
 	if not pointer_valid:
 		return
 	if move_index>=0:
@@ -619,10 +624,9 @@ func _nearest() -> int:
 	return best
 
 func _nearby_context() -> Dictionary:
-	if network.active:return network.context()
 	if build_mode or not state.claimed: return {}
-	if horse.mounted:return {"text":"Desmontar · Pé de Pano","action":"horse"}
-	if weapons.shop_has_priority():return {"text":"Conversar com Damião","action":"armory"}
+	if _mounted():return {"text":"Desmontar · Pé de Pano","action":"horse"}
+	if not network.active and weapons.shop_has_priority():return {"text":"Conversar com Damião","action":"armory"}
 	if horse.can_mount(player):
 		var nearby:=_nearest()
 		if nearby<0 or state.items[nearby].kind!="stable" or player.position.distance_to(horse.position)<=_distance_to_item(nearby):return {"text":"Montar · Pé de Pano","action":"horse"}
@@ -653,7 +657,6 @@ func _nearby_context() -> Dictionary:
 	return context
 
 func _interact_nearest() -> void:
-	if network.active:network.interact();return
 	actor.stop_emote()
 	if not hud.modal_kind.is_empty(): return
 	var context:=_nearby_context()
@@ -669,12 +672,14 @@ func _interact_nearest() -> void:
 			_tend_selected()
 
 func _tend_selected() -> void:
-	if horse.mounted:return
+	if _mounted():return
 	actor.stop_emote()
 	if not build_mode and actor.airborne: return
 	if selected<0 or selected>=state.items.size(): return
 	var item:Dictionary=state.items[selected]
 	if item.kind=="plot":
+		if network.active:
+			network.request_tend(selected,FarmCoop.operation(item),crop);return
 		if action_cooldown>0: return
 		var old_crop:String=item.crop
 		var before:bool=item.planted
@@ -729,7 +734,7 @@ func _action(value: String) -> void:
 		front_end.handle(value);return
 	if value=="map" or value.begins_with("map:"):
 		navigator.handle(value);return
-	if horse.mounted and (value=="emotes" or value.begins_with("emote:") or value.begins_with("tool:") or value=="move"):
+	if _mounted() and (value=="emotes" or value.begins_with("emote:") or value.begins_with("tool:") or value=="move"):
 		hud.toast("Desmonte com E para fazer isso.");return
 	if value=="parcels":
 		actor.stop_emote();FarmParcels.show(hud,state);return
@@ -1132,7 +1137,7 @@ func _action(value: String) -> void:
 			hud.close_modal()
 			if state.claimed: hud.toast("Bem-vindo de volta! A fazenda estava esperando.")
 		"mode":
-			if horse.mounted and not horse.dismount(player,avatar,actor,state,world.landscape):
+			if _mounted() and not horse.dismount(player,avatar,actor,state,world.landscape):
 				hud.toast("Procure um espaço livre para desmontar.");return
 			if not state.claimed:
 				hud.toast("Primeiro, escolha seu pedacinho de terra.")
@@ -1191,9 +1196,9 @@ func _action(value: String) -> void:
 func _update_ui() -> void:
 	hud.update(state,build_mode,selected,tool,crop,hover_hint)
 	hud.walking.update(hud,state,_nearby_context(),crop)
-	hud.walking.mount_status(horse.mounted,horse.stamina,horse.burst)
+	hud.walking.mount_status(_mounted(),horse.stamina,horse.burst)
 	hud.walking.visit_mode(network.active)
-	if network.active:hud.build_hud.visible=false
+	if network.active:hud.mode_label.text="CONSTRUÇÃO · COOPERATIVO" if build_mode else "FAZENDA COOPERATIVA"
 	navigator.refresh()
 	if not network.active and horse.is_inside_tree():horse.ensure_parking(state,world.landscape)
 	var step:=state.journey_step()
@@ -1263,7 +1268,7 @@ func _load_game() -> bool:
 			var parser:=JSON.new()
 			if parser.parse(FileAccess.get_file_as_string(path))==OK and state.restore(parser.data):
 				if not qa_mode:state.unlimited_money=true
-				if is_instance_valid(horse) and horse.is_inside_tree() and not horse.mounted:horse.restore(state.horse)
+				if is_instance_valid(horse) and horse.is_inside_tree() and not _mounted():horse.restore(state.horse)
 				return true
 	return false
 
@@ -2991,6 +2996,8 @@ func _qa_v022() -> void:
 	print("V022_INTEGRATION_OK: 6 routes walked with player collision; 9 signs, 3 discoveries, animated mill, infinite wallet and isolated save reload")
 
 func _horse_interact() -> void:
+	if network.active:
+		network.mounts.request("dismount" if _mounted() else "mount");return
 	if not session_started or build_mode or not hud.modal_kind.is_empty():return
 	if horse.mounted:
 		if not horse.dismount(player,avatar,actor,state,world.landscape):hud.toast("Procure espaço livre ao lado do cavalo.")

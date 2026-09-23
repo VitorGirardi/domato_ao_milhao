@@ -96,8 +96,9 @@ func mount_status(mounted:bool,stamina:float,burst:float) -> void:
 	controls.text="WASD cavalgar   •   Shift tapinha / galope   •   E desmontar" if mounted else "WASD andar   •   Shift correr   •   Espaço pular   •   Mouse direito girar"
 
 func visit_mode(active:bool) -> void:
-	for i in range(shortcuts.size()):shortcuts[i].visible=not active or i in [3,4,5]
-	objective.visible=not active
+	for i in range(shortcuts.size()):
+		shortcuts[i].visible=true;shortcuts[i].position.x=(61 if active else 139)+i*166
+	objective.visible=true
 	if active:
-		root.visible=true;attention.visible=false;horse_panel.visible=false
-		controls.text="COOP · E cultivar · I estoque · F5 salvar · B emotes · M mapa"
+		pass
+		controls.text="COOP · E interagir · Tab construir · I estoque · F5 salvar"

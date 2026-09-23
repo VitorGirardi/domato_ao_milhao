@@ -1,3 +1,7 @@
+# Testar 0.31 — Cooperativo completo da fazenda
+
+Atualizem os dois PCs. Jogar junto → Criar/Continuar cooperativo; convidado entra pelo IP. Tab constrói; F vende e recebe encomendas; E cuida das construções/animais; H gerencia equipe; I abre estoque. E monta o cavalo, Shift dá tapinha e E desmonta. Um cavalo por vez. F5 salva no anfitrião. Saiam e hospedem novamente para verificar o progresso. Consulte MULTIPLAYER.md para detalhes.
+
 # Testar 0.30 — Trabalhar juntos
 
 Atualizem os dois PCs para 0.30. No anfitrião: Jogar junto → Criar/Continuar cooperativo. Ian entra pelo IP. Perto dos canteiros, E planta/rega/colhe; escolha sementes nos botões quando o canteiro estiver vazio. I mostra o estoque dos dois; F5 salva no anfitrião. Saiam e hospedem novamente: Continuar cooperativo deve manter a colheita. Continuar no menu principal ainda abre sua fazenda solo, intacta. Construções, animais, vendas e montaria seguem para próximos blocos. Guia completo em MULTIPLAYER.md.

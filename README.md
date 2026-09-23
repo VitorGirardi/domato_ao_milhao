@@ -1,17 +1,21 @@
+# Multiplayer da fazenda — 0.31
+
+Construam, negociem, cuidem dos animais, contratem a equipe e usem o cavalo juntos. Personagem masculino/feminino por jogador. [Como jogar e limites](MULTIPLAYER.md).
+
 # Do Mato ao Milhão
 
 **Comece com um terreno. Termine comprando a vizinhança.**
 
-Protótipo jogável de um tycoon de fazenda 3D estilizado para Windows, em português.
-Godot 4.7.2 + modelos originais feitos no Blender 5.2.1. Campanha solo offline e visita multiplayer para dois PCs.
+Protótipo jogável de um tycoon de fazenda 3D estilizado para Windows e Linux, em português.
+Godot 4.7.2 + modelos originais feitos no Blender 5.2.1. Campanha solo offline e fazenda cooperativa para dois PCs.
 
-**Versão atual: 0.30.0.** Veja [as prioridades](ROADMAP.md) e [as novidades](CHANGELOG.md).
+**Versão atual: 0.31.0.** Veja [as prioridades](ROADMAP.md) e [as novidades](CHANGELOG.md).
 
 Veja o [roteiro de teste manual](COMO_TESTAR.md), incluindo encomendas e vendas da 0.5.
 
 ## Jogar
 
-O executável local fica em `exports/windows-v0.30.0/DoMatoAoMilhao.exe` depois da exportação.
+O executável local fica em `exports/windows-v0.31.0/DoMatoAoMilhao.exe` depois da exportação.
 Ele abre diretamente, sem instalar Godot ou Blender. Os binários não são enviados ao Git.
 
 Para executar a partir do código:
@@ -19,9 +23,9 @@ Para executar a partir do código:
 2. Aguarde a importação dos modelos.
 3. Pressione **F5** para jogar. O cenário é montado pelos scripts durante a execução.
 
-## Cultivo cooperativo — 0.30.0
+## Fazenda cooperativa — 0.31.0
 
-E para plantar, regar e colher; I para estoque compartilhado; F5 salva no anfitrião. Save cooperativo separado e retomada automática. [Como jogar e limites](MULTIPLAYER.md).
+Construção, comércio, animais, equipe e montaria para os dois jogadores. Tab constrói; E interage; F abre comércio; H gerencia equipe; I mostra estoque; F5 salva no anfitrião. Save cooperativo separado, compatível com a 0.30 e retomado automaticamente. [Como jogar e limites](MULTIPLAYER.md).
 
 ## Visita multiplayer — 0.29.0
 

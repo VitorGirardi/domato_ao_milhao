@@ -8,9 +8,12 @@ game_pid=$!
 trap 'kill "$game_pid" "$wm_pid" 2>/dev/null || true' EXIT
 window_id=""
 for attempt in $(seq 1 120); do
-  kill -0 "$game_pid"
-  window_id=$(wmctrl -lp | awk -v pid="$game_pid" '$3 == pid {print $1; exit}')
-  [ -n "$window_id" ] && break
+  kill -0 "$game_pid" "$wm_pid"
+  # Openbox can be alive before it publishes _NET_CLIENT_LIST. Keep polling
+  # within the same deadline; an exited game/WM still fails immediately.
+  if window_id=$(wmctrl -lp 2>>test-results/linux/release-openbox.log | awk -v pid="$game_pid" '$3 == pid {print $1; exit}'); then
+    [ -n "$window_id" ] && break
+  fi
   sleep .5
 done
 [ -n "$window_id" ]
