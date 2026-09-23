@@ -1,5 +1,13 @@
 # Alterações
 
+## 0.22.0 — Caminhos do vale
+
+- Trilhas de terra conectam os terrenos e três paradas, com passagem livre e nove placas de orientação.
+- Mirante dos Ventos com moinho animado, Recanto da Prosa com piquenique e Curva da Abóbora com carroça original Blender.
+- Vegetação respeita caminhos e paradas; colisões dos marcos também orientam os ajudantes.
+- Descobertas exibem uma frase curta ao chegar, uma vez por sessão.
+- Dinheiro infinito, saves e margens corrigidas preservados. Cavalo ainda é a próxima etapa.
+
 ## 0.21.1 — Margens do rio
 
 - Corrige a borda exposta da água: a superfície agora termina enterrada nas duas margens.

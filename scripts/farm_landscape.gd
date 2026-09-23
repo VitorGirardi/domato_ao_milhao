@@ -19,6 +19,8 @@ var property_stamp:="unset"
 var lot_labels:Dictionary={}
 var water_material:ShaderMaterial
 var flow_clock:=0.0
+var trail_rotor:Node3D
+var trail_signs:Array[Node3D]=[]
 
 static func base_height(p:Vector2) -> float:
 	# Banks share the river's longitudinal elevation. Cross-slope noise must not
@@ -44,7 +46,7 @@ static func height_at(p:Vector2) -> float:
 static func road_distance(p:Vector2) -> float:
 	var trunk:=-27+sin(p.y*.07)*smoothstep(42,66,absf(p.y))*3
 	var lane:=30+sin(p.x*.09)*smoothstep(44,75,p.x)*3
-	return minf(absf(p.x-trunk),absf(p.y-lane))
+	return minf(minf(absf(p.x-trunk),absf(p.y-lane)),FarmTrails.distance_to_path(p))
 
 func setup(world:FarmWorld) -> void:
 	name="ValleyLandscape";rng.seed=202020
@@ -64,7 +66,7 @@ func setup(world:FarmWorld) -> void:
 	add_child(meadow)
 	for i in range(39000):
 		var p:=Vector2(rng.randf_range(-34,112),rng.randf_range(-98,100))
-		if road_distance(p)<3.15 or Rect2(-27,10,7,9).has_point(p): continue
+		if road_distance(p)<3.15 or FarmTrails.reserved(p) or Rect2(-27,10,7,9).has_point(p): continue
 		# Islands of vegetation rather than evenly scattered dots.
 		if rng.randf()<.15:continue
 		decoration_points.append(p)
@@ -95,6 +97,9 @@ func _terrain() -> void:
 	surface.generate_normals();surface.index()
 	ground=MeshInstance3D.new();ground.name="ContinuousMeadow";ground.mesh=surface.commit()
 	var mat:=ShaderMaterial.new();mat.shader=load("res://assets/shaders/valley_ground.gdshader")
+	var segments:=FarmTrails.shader_segments()
+	mat.set_shader_parameter("trail_count",segments.size())
+	segments.resize(32);mat.set_shader_parameter("trails",segments)
 	ground.material_override=mat;add_child(ground)
 	ground.create_trimesh_collision()
 
@@ -131,7 +136,7 @@ func _bosques() -> void:
 	for center in centers:
 		for i in range(22):
 			var p:Vector2=center+Vector2(rng.randfn(0,7),rng.randfn(0,6))
-			if road_distance(p)<4.8 or p.distance_to(Vector2(57,38))<5 or Rect2(-28,9,9,12).has_point(p):continue
+			if road_distance(p)<4.8 or FarmTrails.reserved(p,3) or p.distance_to(Vector2(57,38))<5 or Rect2(-28,9,9,12).has_point(p):continue
 			if p.distance_to(Vector2(4,-2))<4:continue
 			if absf(p.x-(-42+sin(p.y*.065)*2.6))<6:continue
 			var blocked:=false
@@ -179,6 +184,7 @@ func _refresh_nature(state:FarmState) -> void:
 		for key in groups:
 			var batch:Array[Transform3D]=[];batch.assign(groups[key]);_instance_batch(key,batch,nature)
 	state.scenery_obstacles=runtime_obstacles.duplicate()
+	for area in solid_bounds:state.scenery_obstacles.append(area.grow(.4))
 
 func _perch(record:Dictionary) -> void:
 	var scale_value:float=record.scale;var p:Vector2=record.p
@@ -194,6 +200,10 @@ func _perch(record:Dictionary) -> void:
 
 func _process(delta:float) -> void:
 	flow_clock+=delta
+	var view:=get_viewport().get_camera_3d()
+	if view!=null:
+		for sign_face in trail_signs:sign_face.look_at(view.global_position,Vector3.UP,true)
+	if is_instance_valid(trail_rotor):trail_rotor.rotation.z=flow_clock*.24
 	if water_material!=null:water_material.set_shader_parameter("flow_time",flow_clock)
 	for bird in birds:
 		var t:=flow_clock+float(bird.phase)
@@ -274,9 +284,47 @@ func _landmarks(world:FarmWorld) -> void:
 	solid_bounds.append(Rect2(55.6,37.6,2.8,.8))
 	var body:=StaticBody3D.new();var collider:=CollisionShape3D.new();var shape:=BoxShape3D.new();shape.size=Vector3(2.8,1.25,.8)
 	collider.shape=shape;collider.position.y=.625;body.add_child(collider);root.add_child(body)
+	_trail_places(world)
 	# Road signs make the expanded playable outskirts understandable.
 	for entry in [[Vector2(-30,46),"ARMAZÉM ↑",0.0],[Vector2(49,26),"BOSQUE →",0.0],[Vector2(-30,-46),"VALE DO IPÊ",0.0]]:
 		var p:Vector2=entry[0];var sign_root:=Node3D.new();sign_root.position=Vector3(p.x,height_at(p),p.y);add_child(sign_root)
 		world.box(sign_root,Vector3(0,.65,0),Vector3(.12,1.3,.12),wood)
 		world.box(sign_root,Vector3(0,1.35,0),Vector3(2.4,.55,.12),wood)
 		var text:=Label3D.new();text.text=entry[1];text.position=Vector3(0,1.35,.07);text.font_size=36;text.pixel_size=.009;text.modulate=Color("fff0cd");text.outline_size=0;sign_root.add_child(text)
+
+func _trail_prop(asset:String,p:Vector2,bounds:Vector2) -> Node3D:
+	var node:Node3D=load("res://assets/models/"+asset+".glb").instantiate()
+	node.position=Vector3(p.x,height_at(p),p.y);add_child(node)
+	var area:=Rect2(p-bounds/2,bounds);solid_bounds.append(area)
+	var body:=StaticBody3D.new();var collision:=CollisionShape3D.new();var shape:=BoxShape3D.new()
+	shape.size=Vector3(bounds.x,2,bounds.y);collision.shape=shape;collision.position.y=1
+	body.add_child(collision);node.add_child(body)
+	return node
+
+func _trail_sign(world:FarmWorld,p:Vector2,title:String,tint:String) -> void:
+	var root:=Node3D.new();root.name="TrailSign";root.position=Vector3(p.x,height_at(p),p.y);add_child(root)
+	world.box(root,Vector3(0,.95,0),Vector3(.14,1.9,.14),world.material("775437"))
+	var face:=Node3D.new();face.position.y=2;root.add_child(face);trail_signs.append(face)
+	var board:=MeshInstance3D.new();var quad:=QuadMesh.new();quad.size=Vector2(3.6,.85);board.mesh=quad
+	var mat:=world.material(tint);mat.cull_mode=BaseMaterial3D.CULL_DISABLED
+	board.material_override=mat;face.add_child(board)
+	var label:=Label3D.new();label.text=title;label.position=Vector3(0,0,.03);label.font_size=40;label.pixel_size=.007
+	label.modulate=Color("fff1cf");label.outline_size=3;label.no_depth_test=false;face.add_child(label)
+
+func _trail_places(world:FarmWorld) -> void:
+	_trail_prop("trail_windmill",FarmTrails.STOPS.mill.at,Vector2(2.8,2.8))
+	var rotor:Node3D=load("res://assets/models/trail_rotor.glb").instantiate()
+	rotor.position=Vector3(-10,height_at(FarmTrails.STOPS.mill.at)+4.8,-83.8);add_child(rotor);trail_rotor=rotor
+	_trail_prop("trail_picnic",FarmTrails.STOPS.picnic.at,Vector2(3.2,2.6))
+	_trail_prop("trail_cart",FarmTrails.STOPS.cart.at,Vector2(3.5,2.4))
+	for entry in [
+		[Vector2(-23,-47),"IPÊS / MIRANTE\nSIGA A TRILHA", "626749"],
+		[Vector2(-5,-54),"IPÊS: LESTE\nMIRANTE: NORTE", "626749"],
+		[Vector2(-15,-80),"MIRANTE DOS VENTOS", "626749"],
+		[Vector2(-22,47),"CAMPINA / ABÓBORAS\nSIGA A TRILHA", "94733e"],
+		[Vector2(-5,56),"CAMPINA: LESTE\nABÓBORAS: SUL", "94733e"],
+		[Vector2(33,78),"CURVA DA ABÓBORA", "94733e"],
+		[Vector2(68,24),"BOSQUE: SIGA AO NORTE", "487768"],
+		[Vector2(76,-16),"CLAREIRA: A OESTE", "487768"],
+		[Vector2(61,30),"RECANTO: SIGA A TRILHA", "487768"]
+	]:_trail_sign(world,entry[0],entry[1],entry[2])

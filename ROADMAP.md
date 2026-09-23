@@ -244,3 +244,11 @@ A feira fica para depois. Prioridade definida pelo autor: um mapa menos artifici
 - [x] Dinheiro infinito permanente na partida do autor.
 - [ ] Cavalo como primeiro transporte, com interação e montaria.
 - [ ] Evoluir posteriormente para carros e outros veículos; manter vias largas.
+
+
+## Exploração — 0.22 entregue
+
+- [x] Trilhas, placas e três paradas fora das áreas de construção.
+- [x] Moinho animado e adereços originais Blender; caminhos desobstruídos.
+- [ ] Próximo bloco: cavalo, montar/desmontar, câmera e deslocamento pelas trilhas.
+- [ ] Depois: aquisição, cuidados e progressão da montaria; veículos em etapa posterior.

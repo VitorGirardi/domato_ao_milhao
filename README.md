@@ -5,13 +5,13 @@
 Protótipo jogável de um tycoon de fazenda 3D estilizado para Windows, em português.
 Godot 4.7.2 + modelos originais feitos no Blender 5.2.1. Campanha solo e offline.
 
-**Versão atual: 0.21.1.** Veja [as prioridades](ROADMAP.md) e [as novidades](CHANGELOG.md).
+**Versão atual: 0.22.0.** Veja [as prioridades](ROADMAP.md) e [as novidades](CHANGELOG.md).
 
 Veja o [roteiro de teste manual](COMO_TESTAR.md), incluindo encomendas e vendas da 0.5.
 
 ## Jogar
 
-O executável local fica em `exports/windows-v0.21.1/DoMatoAoMilhao.exe` depois da exportação.
+O executável local fica em `exports/windows-v0.22.0/DoMatoAoMilhao.exe` depois da exportação.
 Ele abre diretamente, sem instalar Godot ou Blender. Os binários não são enviados ao Git.
 
 Para executar a partir do código:
@@ -19,9 +19,9 @@ Para executar a partir do código:
 2. Aguarde a importação dos modelos.
 3. Pressione **F5** para jogar. O cenário é montado pelos scripts durante a execução.
 
-## Novidades da 0.21.1
+## Novidades da 0.22.0
 
-Terrenos extras compráveis em **T**, dinheiro infinito permanente, limpeza da vegetação ao adquirir/expandir a propriedade, capim fino, árvores maiores com pássaros e correnteza direcional. [Como testar](COMO_TESTAR.md). Cavalo e veículos são etapas futuras.
+Seis trechos de trilha ligam os terrenos e três paradas: Mirante dos Ventos, Recanto da Prosa e Curva da Abóbora. Nove placas, moinho animado e adereços originais Blender. Terrenos em **T**, dinheiro infinito e saves preservados. [Como testar](COMO_TESTAR.md). Cavalo e veículos são etapas futuras.
 
 ## Novidades da 0.20.0
 

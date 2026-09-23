@@ -383,3 +383,13 @@ o galinheiro escolhido ajudam a reproduzir o problema.
 
 Esta entrega tem um cuidador em um posto junto ao galinheiro. Ainda não há
 deslocamento com rotas, vários funcionários, salários por dia ou automação da lavoura.
+
+
+## 0.22 — Passeio pelo vale
+
+Continue sua fazenda e aperte TAB para caminhar. Use WASD e Shift para correr.
+Siga a estrada ao norte: a placa IPÊS / MIRANTE leva ao Campo dos Ipês e ao moinho do Mirante dos Ventos.
+Ao sul, siga CAMPINA / ABÓBORAS para a Campina do Sol e a carroça na Curva da Abóbora.
+Ao leste, a estrada leva ao Recanto da Prosa; a trilha que segue ao norte chega à Clareira do Bosque.
+Observe o moinho girando e as mensagens ao chegar às três paradas. Elas aparecem uma vez por sessão.
+T continua abrindo os terrenos; F5 salva. O cavalo ainda não foi implementado.

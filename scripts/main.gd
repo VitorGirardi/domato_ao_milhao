@@ -48,10 +48,11 @@ var nearby_hen := -1
 var silly_kind := "inspect"
 var silly_event_index := 0
 var picked_trade_board:=false
+var trail_journey:=FarmTrails.new()
 
 func _ready() -> void:
 	qa_mode = OS.is_debug_build() and "--qa" in OS.get_cmdline_user_args()
-	if qa_mode: save_path="user://qa_farm_v021.json"
+	if qa_mode: save_path="user://qa_farm_v022.json"
 	get_tree().auto_accept_quit = false
 	_inputs()
 	world = FarmWorld.new()
@@ -157,6 +158,8 @@ func _process(delta: float) -> void:
 		return
 	action_cooldown=maxf(0,action_cooldown-delta)
 	if session_started and not build_mode and hud.modal_kind.is_empty():
+		var discovery:=trail_journey.discover(Vector2(player.position.x,player.position.z))
+		if not discovery.is_empty():hud.toast(discovery)
 		state.tick(delta)
 		if not state.trade_notices.is_empty():
 			hud.toast("Prazo de %s encerrado. Sem multa. Veja novos pedidos em J."%state.trade_notices[0] if state.trade_notices.size()==1 else "%d prazos encerrados. Sem multa; consulte o quadro com J."%state.trade_notices.size())
@@ -1184,6 +1187,8 @@ func _chime(kind: String = "build") -> void:
 	sound.play()
 
 func _qa() -> void:
+	if "--qa-v022" in OS.get_cmdline_user_args():
+		_action("start");await _qa_v022();get_tree().quit();return
 	if "--qa-v021" in OS.get_cmdline_user_args():
 		_action("start");await _qa_v021();get_tree().quit();return
 	if "--qa-v020" in OS.get_cmdline_user_args():
@@ -2812,3 +2817,45 @@ func _qa_v021() -> void:
 	world.landscape.set_process(true);hud.world_hud.visible=true;set_physics_process(true)
 	assert(state.restore(previous));world.rebuild(state);build_mode=true;_update_ui()
 	print("V021_INTEGRATION_OK: claim/expansion clearing, parcels UI, remote coop worker, infinite money, reload, birds and flowing river")
+
+func _qa_v022() -> void:
+	state=FarmState.new();state.claim(Vector2(4,-2));state.unlimited_money=true
+	world.rebuild(state);hud.close_modal();build_mode=false;set_physics_process(false)
+	assert(world.landscape.trail_signs.size()==9)
+	var journey:=FarmTrails.new()
+	for key in FarmTrails.STOPS:
+		var stop:Dictionary=FarmTrails.STOPS[key]
+		assert(not journey.discover(stop.at).is_empty())
+		assert(journey.discover(stop.at).is_empty())
+		for p in world.landscape.trunk_points:assert(p.distance_to(stop.at)>float(stop.radius))
+	# Walk every route using the player's actual collision shape and terrain.
+	for route_points in FarmTrails.ROUTES:
+		var start:Vector2=route_points[0]
+		player.position=Vector3(start.x,FarmLandscape.height_at(start)+.1,start.y)
+		for i in range(1,route_points.size()):
+			var finish:Vector2=route_points[i]
+			for step in range(1200):
+				var delta_2d:=finish-Vector2(player.position.x,player.position.z)
+				if delta_2d.length()<.18:break
+				var speed:=minf(7.5,delta_2d.length()*60)
+				player.velocity=Vector3(delta_2d.normalized().x*speed,player.velocity.y-18.0/60,delta_2d.normalized().y*speed)
+				player.move_and_slide()
+				await get_tree().physics_frame
+			assert(Vector2(player.position.x,player.position.z).distance_to(finish)<.25,"Trail blocked")
+	assert(_save_game(false));assert(_load_game());assert(state.unlimited_money)
+	hud.world_hud.visible=false;avatar.visible=false
+	var views:=[
+		[Vector3(-19,10,-68),Vector3(-10,3,-84),"mill"],
+		[Vector3(66,6,47),Vector3(59,1,38),"picnic"],
+		[Vector3(32,5,78),Vector3(39,1,84),"cart"],
+		[Vector3(-18,4,-58),Vector3(-3,1,-55),"junction"]
+	]
+	for view in views:
+		var at:Vector3=view[0];at.y+=FarmLandscape.height_at(Vector2(at.x,at.z))
+		var target:Vector3=view[1];target.y+=FarmLandscape.height_at(Vector2(target.x,target.z))
+		camera.position=at;camera.look_at(target)
+		await _qa_ui_capture("valley-v022-"+view[2])
+	var before:float=world.landscape.trail_rotor.rotation.z
+	await get_tree().create_timer(.2).timeout
+	assert(absf(world.landscape.trail_rotor.rotation.z-before)>.01)
+	print("V022_INTEGRATION_OK: 6 routes walked with player collision; 9 signs, 3 discoveries, animated mill, infinite wallet and isolated save reload")
