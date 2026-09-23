@@ -13,6 +13,8 @@ var cycle:=0
 var remaining:=3.0
 var destination:=Vector2.ZERO
 var pet_count:=0
+var following:=false
+var roam_valley:=false
 
 func _ready() -> void:
 	model=load("res://assets/models/cat.glb").instantiate();model.scale=Vector3.ONE*.72;add_child(model)
@@ -20,7 +22,10 @@ func _ready() -> void:
 
 func clear_at(point:Vector2,state:FarmState) -> bool:
 	if not state.claimed:return false
-	if not state.bounds().grow(-.6).has_point(point):return false
+	if following or roam_valley:
+		if not Rect2(FarmLandscape.WALK_MIN, FarmLandscape.WALK_MAX-FarmLandscape.WALK_MIN).grow(-.6).has_point(point):return false
+		if not get_parent().landscape.clear_for_player(point):return false
+	elif not state.bounds().grow(-.6).has_point(point):return false
 	for item in state.items:
 		if state.item_rect(item.kind,Vector2(item.x,item.z),item.turn).grow(.45).has_point(point):return false
 	var shape:=SphereShape3D.new();shape.radius=.37
@@ -31,7 +36,7 @@ func clear_at(point:Vector2,state:FarmState) -> bool:
 	return true
 
 func reset(state:FarmState) -> void:
-	anchored=false;visible=false;pet_remaining=0;walking=0;sitting=0;affection=0
+	anchored=false;visible=false;roam_valley=false;pet_remaining=0;walking=0;sitting=0;affection=0
 	if not state.claimed:return
 	for i in range(80):
 		var angle:=i*2.39996
@@ -53,23 +58,23 @@ func pet(player:Vector3) -> bool:
 
 func update(delta:float,player:Vector3,state:FarmState) -> void:
 	if not state.claimed:visible=false;anchored=false;return
-	if not anchored or home.distance_to(state.center)>state.land_size:reset(state)
+	if not anchored or (not roam_valley and home.distance_to(state.center)>state.land_size):reset(state)
 	if not anchored or delta<=0:return
 	clock+=delta;remaining-=delta;pet_remaining=maxf(0,pet_remaining-delta)
 	var at:=Vector2(position.x,position.z)
 	if not clear_at(at,state):
 		# A construction may occupy the resting spot; relocate only after edits.
 		reset(state);return
-	if remaining<=0:
+	if remaining<=0 and not following:
 		cycle+=1;remaining=4.0+float(cycle%3)
 		var angle:=cycle*2.39996
 		destination=home+Vector2(sin(angle),cos(angle))*1.6
 		if cycle%3!=1 or not clear_at(destination,state):destination=at
 	var direction:=destination-at
-	var stepping:=direction.length()>.10 and pet_remaining<=0 and position.distance_to(player)>1.1
-	sitting=move_toward(sitting,1.0 if not stepping and cycle%3==2 and pet_remaining<=0 else 0.0,delta*1.8)
+	var stepping:=direction.length()>.10 and pet_remaining<=0 and (following or position.distance_to(player)>1.1)
+	sitting=move_toward(sitting,1.0 if not stepping and cycle%3==2 and pet_remaining<=0 and not following else 0.0,delta*1.8)
 	if stepping and sitting<.05:
-		var next:=at+direction.normalized()*minf(minf(delta,.1)*.65,direction.length())
+		var next:=at+direction.normalized()*minf(minf(delta,.1)*(2.6 if following else .65),direction.length())
 		if clear_at(next,state):
 			position=Vector3(next.x,FarmLandscape.height_at(next),next.y)
 			rotation.y=rotate_toward(rotation.y,atan2(direction.x,direction.y),delta*3)

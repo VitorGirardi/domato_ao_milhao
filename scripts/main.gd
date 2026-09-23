@@ -57,6 +57,7 @@ var navigator:=FarmNavigation.new()
 var preferences:=FarmSettings.new()
 var front_end:=FarmFrontEnd.new()
 var network:=FarmNetwork.new()
+var companions:=FarmCompanions.new()
 var windowed_rect:=Rect2i()
 var windowed_mode:=Window.MODE_WINDOWED
 
@@ -99,6 +100,7 @@ func _ready() -> void:
 	add_child(audio);audio.setup(self);weapons.sound.bus=FarmAudio.EFFECTS_BUS
 	front_end.setup(self,loaded)
 	add_child(network);network.setup(self)
+	add_child(companions);companions.setup(self)
 	preferences.load_preferences();preferences.apply(self)
 	front_end.show_title()
 	_update_camera(1.0, true)
@@ -351,6 +353,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_SPACE: _try_jump()
 			KEY_TAB: _action("mode")
 			KEY_E: _interact_nearest()
+			KEY_C: companions.request("whistle")
+			KEY_V: companions.request("follow")
 			KEY_F: _action("market")
 			KEY_J: _action("market_orders")
 			KEY_H: _action("staff")
@@ -633,7 +637,7 @@ func _nearby_context() -> Dictionary:
 	if player.position.distance_to(FarmWorld.TRADE_BOARD_AT)<2.8: return {"text":"Ver encomendas","action":"orders"}
 	if player.position.distance_to(Vector3(-24,0,14))<4: return {"text":"Conversar com Lúcia","action":"market"}
 	var index:=_nearest()
-	if world.cat.can_pet(player.position) and (index<0 or player.position.distance_to(world.cat.position)<_distance_to_item(index)):
+	if world.cat.can_pet(player.position) and player.position.distance_to(world.cat.position)<1.25 and (index<0 or player.position.distance_to(world.cat.position)<_distance_to_item(index)):
 		return {"text":"Fazer carinho no gato","action":"cat"}
 	if index<0:return {}
 	var item:Dictionary=state.items[index]
@@ -669,8 +673,7 @@ func _interact_nearest() -> void:
 		"horse": _horse_interact()
 		"cat":
 			weapons.holster()
-			if network.active:network.pet_cat()
-			elif world.cat.pet(player.position):hud.toast("O gato fecha os olhos e se aconchega.")
+			companions.request("pet")
 		"orders": hud.market(state,"orders")
 		"market": hud.market(state)
 		"item":

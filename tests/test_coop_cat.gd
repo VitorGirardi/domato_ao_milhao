@@ -22,14 +22,16 @@ func run() -> void:
 		game.hud.close_modal();game.player.position=Vector3(60,0,60)
 		await create_timer(.35).timeout;n.pet_cat();await create_timer(.35).timeout;flag("far_attempt")
 		await until(func():return exists("far_denied"))
+		await create_timer(.5).timeout
 		game.player.position=game.world.cat.position+Vector3(0,0,1)
 		await create_timer(.35).timeout;n.pet_cat()
 		await until(func():return exists("pet_accepted"))
 		for i in range(8):n.pet_cat()
 		await create_timer(.45).timeout
 		assert(n.visual_state.has("cat"))
-		var head:Node3D=game.world.cat.model.find_child("CatHead",true,false)
-		assert(absf(head.rotation.x)>.05,"Client sees host affection pose")
+		var eye:Node3D=game.world.cat.model.find_child("CatClosedEyeL",true,false)
+		await until(func():return eye.visible and game.companions.gestures.has(game.multiplayer.get_unique_id()))
+		assert(eye.visible,"Client sees host affection pose and its own pet gesture")
 		flag("seen");await create_timer(.2).timeout;flag("client_done");n.leave("Fim")
 		assert(FileAccess.get_file_as_string(game.save_path)==solo)
 	game.audio.stop_all();game.queue_free();await process_frame;await create_timer(.2).timeout
