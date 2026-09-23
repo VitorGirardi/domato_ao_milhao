@@ -1,5 +1,13 @@
 # Prioridades — Do Mato ao Milhão
 
+## Entregue — 0.27.0
+
+- [x] Música original e paisagem sonora com controles independentes.
+- [x] Passos, cascos e efeitos de ações com vozes limitadas.
+- [x] Câmera sem atraso ao encontrar paredes, sensibilidade da mira e pausa por perda de foco.
+- [x] Verificação de áudio e preservação dos saves em ambiente isolado.
+
+
 ## Entregue — 0.26.0
 
 - [x] Menu inicial com foto real do jogo.

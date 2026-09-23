@@ -1,5 +1,17 @@
 # Como testar a versão 0.25.0
 
+## Som e conforto — 0.27.0
+
+1. Extraia o ZIP em uma pasta nova e abra DoMatoAoMilhao.exe. A música toca já no menu; Continuar retoma sua fazenda.
+2. Configurações → Som: teste Música, Ambiente e animais, Efeitos e passos. Zero silencia a categoria. Aplicar e voltar salva; Cancelar descarta.
+3. Na fazenda, caminhe, corra, pare e pule: os passos acompanham o deslocamento e há som ao aterrissar. Montado, ouça os cascos.
+4. Aproxime-se do rio no oeste e depois se afaste. Perto de galinhas, vaca, cavalo e árvores com pássaros, espere alguns segundos pelos chamados ocasionais.
+5. Plante, regue, colha e construa: as ações têm respostas sonoras distintas. O menu mantém a trilha suave e pausa sons de atividade.
+6. Feche e abra o jogo para conferir os volumes salvos. Dinheiro infinito continua ativo.
+7. Caminhe junto de um prédio e gire a câmera: ela recua ao encontrar a parede. Compare a mira com sensibilidade 50% e 200%.
+8. Minimize ou use Alt-Tab durante a partida: ao voltar, o menu de pausa deve estar aberto. Retome com Continuar; recarga/arraste não continuam sozinhos. F11 e listas de configurações não devem pausar indevidamente.
+
+
 ## Menu inicial — 0.26.0
 
 1. Extraia o ZIP e abra DoMatoAoMilhao.exe: a foto do vale aparece antes da partida.

@@ -1,0 +1,170 @@
+{
+  "manha_no_vale": {
+    "seconds": 96.0,
+    "peak": 0.56,
+    "rms": 0.1112,
+    "loop": true,
+    "boundary_jump": 0.0
+  },
+  "step_0": {
+    "seconds": 0.19,
+    "peak": 0.43,
+    "rms": 0.0586,
+    "loop": false,
+    "boundary_jump": 0.0
+  },
+  "hoof_0": {
+    "seconds": 0.2,
+    "peak": 0.56,
+    "rms": 0.0787,
+    "loop": false,
+    "boundary_jump": 0.0
+  },
+  "step_1": {
+    "seconds": 0.19,
+    "peak": 0.43,
+    "rms": 0.0678,
+    "loop": false,
+    "boundary_jump": 0.0
+  },
+  "hoof_1": {
+    "seconds": 0.2,
+    "peak": 0.56,
+    "rms": 0.0781,
+    "loop": false,
+    "boundary_jump": 0.0
+  },
+  "step_2": {
+    "seconds": 0.19,
+    "peak": 0.2833,
+    "rms": 0.0481,
+    "loop": false,
+    "boundary_jump": 0.0
+  },
+  "hoof_2": {
+    "seconds": 0.2,
+    "peak": 0.5248,
+    "rms": 0.0618,
+    "loop": false,
+    "boundary_jump": 0.0
+  },
+  "step_3": {
+    "seconds": 0.19,
+    "peak": 0.427,
+    "rms": 0.0689,
+    "loop": false,
+    "boundary_jump": 0.0
+  },
+  "hoof_3": {
+    "seconds": 0.2,
+    "peak": 0.56,
+    "rms": 0.066,
+    "loop": false,
+    "boundary_jump": 0.0
+  },
+  "harvest": {
+    "seconds": 0.65,
+    "peak": 0.52,
+    "rms": 0.15,
+    "loop": false,
+    "boundary_jump": 0.0
+  },
+  "build": {
+    "seconds": 0.65,
+    "peak": 0.52,
+    "rms": 0.1462,
+    "loop": false,
+    "boundary_jump": 0.0
+  },
+  "plant": {
+    "seconds": 0.65,
+    "peak": 0.52,
+    "rms": 0.1474,
+    "loop": false,
+    "boundary_jump": 0.0
+  },
+  "ui_confirm": {
+    "seconds": 0.65,
+    "peak": 0.52,
+    "rms": 0.1448,
+    "loop": false,
+    "boundary_jump": 0.0
+  },
+  "ui_back": {
+    "seconds": 0.65,
+    "peak": 0.36,
+    "rms": 0.1284,
+    "loop": false,
+    "boundary_jump": 0.0
+  },
+  "water": {
+    "seconds": 0.85,
+    "peak": 0.58,
+    "rms": 0.0907,
+    "loop": false,
+    "boundary_jump": 0.0
+  },
+  "ui_tick": {
+    "seconds": 0.12,
+    "peak": 0.2334,
+    "rms": 0.0454,
+    "loop": false,
+    "boundary_jump": 0.0
+  },
+  "bird_0": {
+    "seconds": 0.65,
+    "peak": 0.36,
+    "rms": 0.102,
+    "loop": false,
+    "boundary_jump": 0.0
+  },
+  "bird_1": {
+    "seconds": 0.75,
+    "peak": 0.36,
+    "rms": 0.1007,
+    "loop": false,
+    "boundary_jump": 0.0
+  },
+  "bird_2": {
+    "seconds": 0.85,
+    "peak": 0.36,
+    "rms": 0.0999,
+    "loop": false,
+    "boundary_jump": 0.0
+  },
+  "chicken": {
+    "seconds": 1.1,
+    "peak": 0.5,
+    "rms": 0.0833,
+    "loop": false,
+    "boundary_jump": 0.0
+  },
+  "cow": {
+    "seconds": 1.8,
+    "peak": 0.6,
+    "rms": 0.1491,
+    "loop": false,
+    "boundary_jump": 0.0
+  },
+  "horse_snort": {
+    "seconds": 0.65,
+    "peak": 0.55,
+    "rms": 0.0798,
+    "loop": false,
+    "boundary_jump": 0.0
+  },
+  "wind": {
+    "seconds": 24.0,
+    "peak": 0.35,
+    "rms": 0.0679,
+    "loop": true,
+    "boundary_jump": 0.00522
+  },
+  "river": {
+    "seconds": 16.0,
+    "peak": 0.48,
+    "rms": 0.0891,
+    "loop": true,
+    "boundary_jump": 0.0432
+  }
+}

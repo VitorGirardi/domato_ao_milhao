@@ -1,15 +1,15 @@
 class_name FarmSettings
 extends RefCounted
-const DEFAULTS:={"volume":0.8,"sensitivity":1.0,"fullscreen":true,"quality":1,"fps":60}
+const DEFAULTS:={"volume":0.8,"music":.65,"ambience":.8,"effects":.85,"sensitivity":1.0,"fullscreen":true,"quality":1,"fps":60}
 var data:Dictionary=DEFAULTS.duplicate()
 var path:="user://settings.cfg"
 
 static func normalized(value:Dictionary) -> Dictionary:
 	var result:=DEFAULTS.duplicate()
-	for key in ["volume","sensitivity"]:
+	for key in ["volume","music","ambience","effects","sensitivity"]:
 		var n:Variant=value.get(key)
 		if (n is int or n is float) and is_finite(float(n)):
-			result[key]=clampf(n,0 if key=="volume" else .25,1 if key=="volume" else 2.5)
+			result[key]=clampf(n,.25 if key=="sensitivity" else 0,2.5 if key=="sensitivity" else 1)
 	if value.get("fullscreen") is bool:result.fullscreen=value.fullscreen
 	if value.get("quality") in [0,1,2]:result.quality=int(value.quality)
 	if value.get("fps") in [0,30,60,120]:result.fps=int(value.fps)
@@ -28,6 +28,7 @@ func save_preferences() -> Error:
 	return file.save(path)
 
 func apply(game:Node3D,window:bool=true) -> void:
+	FarmAudio.apply_mix(data)
 	AudioServer.set_bus_mute(0,data.volume<=0)
 	AudioServer.set_bus_volume_db(0,linear_to_db(maxf(.001,data.volume)))
 	Engine.max_fps=int(data.fps)
