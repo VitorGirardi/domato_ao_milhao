@@ -94,7 +94,10 @@ func _build_hud() -> void:
 	reticle=Label.new();reticle.set_anchors_and_offsets_preset(Control.PRESET_CENTER);reticle.position=Vector2(-24,-24);reticle.size=Vector2(48,48);reticle.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;reticle.vertical_alignment=VERTICAL_ALIGNMENT_CENTER;reticle.add_theme_font_size_override("font_size",30);reticle.mouse_filter=Control.MOUSE_FILTER_IGNORE;ui.add_child(reticle)
 
 func active() -> bool:
-	return game!=null and game.session_started and not game.build_mode and game.hud.modal_kind.is_empty()
+	if game==null or not game.session_started or game.build_mode or not game.hud.modal_kind.is_empty():return false
+	# Horse is optional so the armory also works before the mount feature lands.
+	var mount:Variant=game.get("horse")
+	return mount==null or not mount.mounted
 
 func near_shop() -> bool:
 	var p:Vector3=game.player.position;var door:=SHOP_AT+Vector3(2.8,0,0)
@@ -120,7 +123,12 @@ func handle_input(event:InputEvent) -> bool:
 				else:game.hud.toast("Damião vende a P-8 na margem oeste da estrada, perto do armazém.")
 				return true
 			KEY_E:
-				if near_shop():holster();show_shop();return true
+				if near_shop():
+					var mount:Variant=game.get("horse")
+					if mount!=null and mount.can_mount(game.player):
+						var counter:=SHOP_AT+Vector3(1,0,0)
+						if game.player.position.distance_to(mount.position)<game.player.position.distance_to(counter):return false
+					holster();show_shop();return true
 				holster()
 			KEY_R:
 				if armed:start_reload();return true
