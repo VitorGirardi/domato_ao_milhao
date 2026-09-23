@@ -22,6 +22,9 @@ func run() -> void:
 	game.qa_mode=true
 	game.state.farm_name="Fazenda Host QA" if mode=="host" else "Solo Ian QA"
 	game.state.unlimited_money=true
+	if mode=="host":
+		game.state.claim(Vector2(4,0));game.world.rebuild(game.state)
+		game.player.position=Vector3(4,.2,7)
 	game._save_game(false,true)
 	original=FileAccess.get_file_as_string(game.save_path)
 	var n:FarmNetwork=game.network
@@ -55,7 +58,10 @@ func run() -> void:
 		game.actor.emote("heart");n.send_emote("heart")
 		await create_timer(.4).timeout
 		if DisplayServer.get_name()!="headless":
-			game.yaw=0;game.pitch=.35;game.walk_distance=8;game._update_camera(1,true)
+			game.set_physics_process(false)
+			var center:Vector3=(game.player.position+n.remote.position)*.5+Vector3.UP*1.3
+			game.camera.position=center+Vector3(7,5,12);game.camera.look_at(center)
+			game.hud.toast_time=0;game.hud.toast_panel.visible=false
 			await process_frame;await RenderingServer.frame_post_draw
 			root.get_texture().get_image().save_png(flags.path_join("visit-client.png"))
 		flag("client_checked")
@@ -66,6 +72,9 @@ func run() -> void:
 		check(await until(func():return not n.active),"host disconnect noticed")
 		check(game.state.farm_name=="Solo Ian QA" and FileAccess.get_file_as_string(game.save_path)==original,"disconnect preserves save")
 		n.join("127.0.0.1","Ian QA");n.leave("Conexão cancelada.");check(not n.active,"cancel")
+		n.join("127.0.0.1","Ian QA")
+		check(await until(func():return not n.active,18),"connection failure timeout")
+		check(game.state.farm_name=="Solo Ian QA","failed connection restores solo")
 	game.audio.stop_all();await create_timer(.2).timeout
 	game.queue_free();await process_frame;await create_timer(.2).timeout
 	print("NETWORK_QA_OK: "+mode+" connection, motion, emote, reconnect and save isolation")
