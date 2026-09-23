@@ -4,6 +4,7 @@
 
 - [x] Música original e paisagem sonora com controles independentes.
 - [x] Passos, cascos e efeitos de ações com vozes limitadas.
+- [x] Câmera sem atraso ao encontrar paredes, sensibilidade da mira e pausa por perda de foco.
 - [x] Verificação de áudio e preservação dos saves em ambiente isolado.
 
 

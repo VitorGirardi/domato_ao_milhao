@@ -21,7 +21,7 @@ Para executar a partir do código:
 
 ## Novidades da 0.27.0
 
-Trilha instrumental original, vento, rio, animais próximos, passos e cascos. Configurações separa Som de Jogo e vídeo, com volume independente para música, ambiente e efeitos. [Áudio e composição](AUDIO.md).
+Trilha instrumental original, vento, rio, animais próximos, passos e cascos. Configurações separa Som de Jogo e vídeo, com volume independente para música, ambiente e efeitos. [Áudio e composição](AUDIO.md). Câmera corrigida junto a paredes, sensibilidade consistente na mira e pausa automática ao sair da janela.
 
 ## Menu inicial — 0.26.0
 

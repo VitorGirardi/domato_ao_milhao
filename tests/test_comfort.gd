@@ -103,4 +103,6 @@ func run() -> void:
 		assert(game.hud.modal_kind=="menu","Restoring the window must not auto-resume")
 	game.hud.close_modal();game.session_started=false;game._pause_for_focus_loss();assert(game.hud.modal_kind.is_empty())
 	print("COMFORT_QA_OK: immediate camera occlusion, smooth recovery, mounted/armed camera, sensitivity, focus pause, movement release, reload and construction cancellation, dialog preservation")
-	game.queue_free();await process_frame;quit()
+	game.queue_free();await process_frame
+	# AudioServer releases stopped loop playbacks on its next mix tick.
+	await create_timer(.15).timeout;quit()

@@ -5,6 +5,7 @@ const MUSIC_BUS:="Music"
 const AMBIENCE_BUS:="Ambience"
 const EFFECTS_BUS:="Effects"
 const NAMES:=["manha_no_vale","wind","river","water","plant","harvest","build","ui_tick","ui_confirm","ui_back","bird_0","bird_1","bird_2","chicken","cow","horse_snort","step_0","step_1","step_2","step_3","hoof_0","hoof_1","hoof_2","hoof_3"]
+var shutting_down:=false
 var game:Node3D
 var clips:Dictionary={}
 var music:=AudioStreamPlayer.new()
@@ -64,7 +65,7 @@ func setup(owner_game:Node3D) -> void:
 	game.hud.action.connect(ui_action)
 
 func play_effect(key:String,gain:float=-13.0,pitch:float=1.0) -> void:
-	if not clips.has(key) or effects.is_empty():return
+	if shutting_down or not clips.has(key) or effects.is_empty():return
 	var voice:=effects[effect_cursor%effects.size()];effect_cursor+=1
 	voice.stop();voice.stream=clips[key];voice.volume_db=gain;voice.pitch_scale=pitch;voice.play()
 	emitted_events+=1
@@ -133,3 +134,9 @@ func _nearby_call(pos:Vector3) -> void:
 	if candidates.is_empty():return
 	var chosen:Array=candidates[rng.randi_range(0,candidates.size()-1)]
 	spatial(chosen[0],chosen[1])
+
+func stop_all() -> void:
+	shutting_down=true;set_process(false)
+	music.stop();wind.stop();river.stop()
+	for voice in effects:voice.stop()
+	for voice in animals:voice.stop()

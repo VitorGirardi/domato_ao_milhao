@@ -5,6 +5,8 @@
 - Tema original Manhã no Vale, com 96 segundos, e 23 efeitos/ambientes sintetizados para a fazenda.
 - Passos e cascos por distância percorrida, chamados espaciais de animais/pássaros e rio audível conforme proximidade.
 - Quatro controles de volume persistentes, abas Som/Jogo e vídeo, transições suaves e limite de vozes simultâneas.
+- Câmera recua imediatamente diante de paredes e volta suavemente; mira respeita a sensibilidade escolhida.
+- Minimizar/Alt-Tab pausa a partida, interrompe recarga e cancela arrastes sem gastar recursos. Menus já abertos são preservados.
 - Testes isolados de mixagem, silêncio das categorias e preservação do estado da fazenda.
 
 

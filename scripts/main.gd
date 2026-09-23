@@ -28,12 +28,13 @@ var pointer_valid := false
 var hover_hint := ""
 var field_alerts:=FarmFieldAlerts.new()
 var session_started := false
+var quitting:=false
 var focus_check_pending:=false
 var save_timer := 0.0
 var ui_timer := 0.0
 var silly_timer := 0.0
 var next_silly := 75.0
-var sound := AudioStreamPlayer.new()
+var audio:=FarmAudio.new()
 var qa_mode := false
 var move_index: int = -1
 var action_cooldown := 0.0
@@ -88,13 +89,13 @@ func _ready() -> void:
 	ghost_mat.albedo_color = Color(0.65,0.85,0.35,0.35)
 	ghost_mat.no_depth_test = false
 	ghost_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-	add_child(sound)
 	hud = FarmHUD.new()
 	add_child(hud)
 	hud.action.connect(_action)
 	navigator.setup(self)
 	add_child(weapons)
 	weapons.setup(self)
+	add_child(audio);audio.setup(self);weapons.sound.bus=FarmAudio.EFFECTS_BUS
 	front_end.setup(self,loaded)
 	preferences.load_preferences();preferences.apply(self)
 	front_end.show_title()
@@ -704,6 +705,7 @@ func _tend_selected() -> void:
 	elif item.kind=="stable": FarmStable.show(hud,state,horse,selected)
 
 func _action(value: String) -> void:
+	if quitting:return
 	if value=="close" and front_end.escape():return
 	if value.begins_with("front:"):
 		front_end.handle(value);return
@@ -1164,8 +1166,7 @@ func _action(value: String) -> void:
 			_reset_farm()
 			hud.welcome(state,false)
 			_save_game(false,true)
-		"quit":
-			if _save_game(false): get_tree().quit()
+		"quit":_request_quit()
 	_update_ui()
 
 func _update_ui() -> void:
@@ -1244,9 +1245,16 @@ func _load_game() -> bool:
 				return true
 	return false
 
+func _request_quit() -> void:
+	if quitting or not _save_game(false):return
+	quitting=true;session_started=false;audio.stop_all()
+	# Let the audio mixer release loop playbacks before destroying the engine.
+	await get_tree().create_timer(.15).timeout
+	get_tree().quit()
+
 func _notification(what: int) -> void:
 	if what==NOTIFICATION_WM_CLOSE_REQUEST:
-		if _save_game(false): get_tree().quit()
+		_request_quit()
 	elif what==NOTIFICATION_APPLICATION_FOCUS_OUT and session_started and not qa_mode and DisplayServer.get_name()!="headless" and not focus_check_pending:
 		_check_focus_pause()
 
@@ -1269,24 +1277,7 @@ func _pause_for_focus_loss() -> void:
 	hud.toast("Jogo pausado enquanto você estava fora da janela.")
 
 func _chime(kind: String = "build") -> void:
-	var stream:=AudioStreamWAV.new()
-	stream.format=AudioStreamWAV.FORMAT_16_BITS
-	stream.mix_rate=22050
-	var bytes:=PackedByteArray()
-	bytes.resize(4410*2)
-	for i in range(4410):
-		var t:=float(i)/22050
-		var frequency:=660.0 if t<0.1 else 880.0
-		if kind=="harvest": frequency=[523.25,659.25,783.99][mini(2,int(t/0.066))]
-		if kind=="plant": frequency=360+t*400
-		var wave:=sin(t*TAU*frequency)
-		if kind=="water": wave=(sin(t*TAU*(900-t*2500))*0.35+sin(i*1.719)*sin(i*0.827)*0.3)
-		var sample:=int(wave*exp(-t*15)*6500)
-		bytes.encode_s16(i*2,sample)
-	stream.data=bytes
-	sound.stream=stream
-	sound.volume_db=-15
-	sound.play()
+	audio.play_effect(kind if kind in ["build","harvest","plant","water"] else "build")
 
 func _qa() -> void:
 	if "--qa-v026" in OS.get_cmdline_user_args():

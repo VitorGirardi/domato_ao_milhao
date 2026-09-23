@@ -13,6 +13,8 @@ func run() -> void:
 	var count:=AudioServer.bus_count
 	FarmAudio.ensure_buses();FarmAudio.ensure_buses();assert(AudioServer.bus_count==count)
 	assert(audio.music.bus=="Music" and audio.wind.bus=="Ambience" and audio.effects[0].bus=="Effects")
+	assert(game.weapons.sound.bus=="Effects")
+	var event_count:=audio.emitted_events;game._chime("water");assert(audio.emitted_events==event_count+1)
 	assert(is_equal_approx(audio.clips.manha_no_vale.get_length(),96.0))
 	for key in audio.clips:
 		var clip:AudioStreamWAV=audio.clips[key]
@@ -64,6 +66,7 @@ func run() -> void:
 	assert(samples.size()>1000 and peak<.000001,"All category mutes produce actual silence")
 	AudioServer.remove_bus_effect(0,capture_index);FarmAudio.apply_mix(FarmSettings.DEFAULTS)
 
-	game.session_started=false;game.queue_free();await process_frame
+	game.session_started=false;audio.stop_all();await create_timer(.15).timeout
+	game.queue_free();await process_frame
 	print("AUDIO_QA_OK: 24 clips, exact musical loop, buses/mutes, bounded voices, footsteps, idle/menu silence, river distance unchanged state and mixer output/silence")
 	quit()
