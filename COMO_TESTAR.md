@@ -1,9 +1,103 @@
-# Como testar a versão 0.20.0
+# Teste 0.29.0 — Jogar junto
+
+Nos dois PCs use a versão 0.29.0. Vitor: Jogar junto → nome → Hospedar minha fazenda. Ian: Jogar junto → nome → IP exibido por Vitor → Entrar na fazenda. Mesma rede local ou IP Tailscale entre PCs autorizados. Porta UDP 28729. WASD anda, Shift corre, Espaço pula, B emotes; Esc abre opções/sair. A visita pausa produção e bloqueia mudanças na fazenda. [Guia e limites completos](MULTIPLAYER.md).
+
+# Teste 0.28.1 — Áudio do cavalo
+
+Extraia em pasta nova, abra DoMatoAoMilhao.exe e use Continuar. E monta e toca um relincho gravado; Shift, com fôlego, toca uma bufada curta. Sem fôlego/cooldown não repete. Ajuste em Configurações > Som > Ambiente e animais. Não precisa iniciar outra fazenda.
+
+# Como testar a versão 0.25.0
+
+## Montaria e animais — 0.28.0
+
+1. Continue sua fazenda e monte com E: ouça o relincho e gire a câmera para conferir as mãos segurando as rédeas. Parado, andando e galopando, elas acompanham as palmas.
+2. Cavalgue com WASD e aperte Shift: o sprint aceito tem reação do cavalo e som do tapinha. Sem fôlego ou durante o tapinha, o comando recusado não repete o áudio.
+3. Fique perto das galinhas e da vaca por 10–20 segundos: cada espécie tem seus chamados. Afaste-se para conferir a distância. Menus pausam os chamados.
+4. Configurações → Som → Ambiente e animais controla esses sons; Efeitos e passos controla cascos e tapinha.
+
+
+## Som e conforto — 0.27.0
+
+1. Extraia o ZIP em uma pasta nova e abra DoMatoAoMilhao.exe. A música toca já no menu; Continuar retoma sua fazenda.
+2. Configurações → Som: teste Música, Ambiente e animais, Efeitos e passos. Zero silencia a categoria. Aplicar e voltar salva; Cancelar descarta.
+3. Na fazenda, caminhe, corra, pare e pule: os passos acompanham o deslocamento e há som ao aterrissar. Montado, ouça os cascos.
+4. Aproxime-se do rio no oeste e depois se afaste. Perto de galinhas, vaca, cavalo e árvores com pássaros, espere alguns segundos pelos chamados ocasionais.
+5. Plante, regue, colha e construa: as ações têm respostas sonoras distintas. O menu mantém a trilha suave e pausa sons de atividade.
+6. Feche e abra o jogo para conferir os volumes salvos. Dinheiro infinito continua ativo.
+7. Caminhe junto de um prédio e gire a câmera: ela recua ao encontrar a parede. Compare a mira com sensibilidade 50% e 200%.
+8. Minimize ou use Alt-Tab durante a partida: ao voltar, o menu de pausa deve estar aberto. Retome com Continuar; recarga/arraste não continuam sozinhos. F11 e listas de configurações não devem pausar indevidamente.
+
+
+## Menu inicial — 0.26.0
+
+1. Extraia o ZIP e abra DoMatoAoMilhao.exe: a foto do vale aparece antes da partida.
+2. Com uma fazenda salva, use Continuar; sem save, use Novo jogo e escolha um nome.
+3. Configurações: altere volume, sensibilidade, qualidade, FPS e tela cheia. Aplicar e voltar salva; Cancelar descarta. Reinicie para conferir persistência.
+4. Dentro da partida, Esc abre pausa; Salvar e voltar ao menu mantém a fazenda para Continuar.
+5. Novo jogo com save existente pede confirmação. Cancelar mantém tudo; confirmar arquiva a fazenda em farms_archive, junto ao save, antes de criar outra.
+6. Controles mostra os atalhos. F11 continua alternando tela cheia/janela. Dinheiro infinito mantido.
+
+
+Extraia o ZIP e abra **DoMatoAoMilhao.exe**. Continue sua fazenda.
+
+1. **Construir:** com fazenda no nível 5 ou 6, use **TAB**, selecione **Estrebaria** no fim da barra (atalho **K**) e coloque em terreno seu. Custa $550; seu dinheiro infinito continua ativo. R/Q giram, M move a seleção.
+2. **Descanso:** leve Pé de Pano até a frente da estrebaria, desmonte com **E** e feche os menus. O fôlego recupera 14 pontos/s ali, contra 7 fora dela. Aproxime-se da porta para **E · Ver estrebaria**. Mais perto do cavalo, E monta.
+3. **Vida própria:** afaste-se um pouco e observe por uns 20 segundos. Ele alterna entre olhar, pastar e passear até 4,5 m de onde ficou. Aproximar-se interrompe o passeio para você montar.
+4. **Mapa:** **M** mostra o cavalo em movimento e a estrebaria como destino. A lista agora rola quando existem muitos lugares.
+5. **Regressão:** monte e use Shift para galopar; abra o mapa e confira a pausa. Mova/gire/remova a estrebaria e verifique que o cavalo continua utilizável. F5 salva a construção e a posição atual dele.
+
+A estrebaria e os comportamentos estão neste bloco. Alimentação manual, escovação e melhorias permanentes ficam para a próxima etapa. Saves antigos são aceitos; a nova gravação usa versão 17.
+
+## Histórico — versão 0.24.0
+
+Extraia o ZIP e abra **DoMatoAoMilhao.exe**. Continue sua fazenda; não precisa reiniciar.
+
+1. **Minimapa:** andando ou montado, confira sua seta branca, o rio, os caminhos e seus terrenos. Norte fica para cima.
+2. **Mapa completo:** pressione **M** ou clique no minimapa. Escolha um destino à direita ou clique numa área do mapa. A distância aparece no minimapa; a linha é direta, não uma rota automática.
+3. **Encontrar o cavalo:** escolha **Pé de Pano** no mapa. O marcador acompanha sua posição atual. **Limpar destino** remove a marcação. Destinos são temporários, não ficam no save.
+4. **Cavalo remodelado:** observe de lado e de frente, monte com **E**, ande com **WASD** e toque **Shift** para galopar. Confira pernas, pescoço e focinho. **E** desmonta em local livre.
+5. **Tela cheia integrada:** use **F11** para alternar janela/tela cheia, inclusive com o mapa aberto. **M** ou **Esc** fecha o mapa. No modo construção, **M** continua sendo mover construção.
+6. **Save:** use **F5**, feche e reabra. Fazenda, cavalo e inventário da P-8 permanecem. Dinheiro infinito mantido.
+
+Abertura do mapa pausa deslocamento e ações. Terrenos comprados e construções aparecem no mapa; árvores removidas pela expansão também desaparecem dele.
+
+## Histórico — tela cheia 0.23.2
+
+O jogo inicia em **tela cheia**. Use **F11** para alternar entre janela e tela cheia. Experimente também no menu e ao digitar o nome da fazenda. A imagem deve ocupar toda a tela, com botões clicáveis, menus centralizados e sem faixas pretas.
+
+## Conteúdo integrado
+
+Extraia todo o ZIP para uma pasta e abra **DoMatoAoMilhao.exe**. Retome sua fazenda existente.
+
+1. **Damião:** siga a estrada oeste até a bancada próxima ao armazém. Use **E**, compre a P-8 e feche a loja.
+2. **Treino:** **P** saca/guarda, botão direito e mouse miram, clique esquerdo dispara e **R** recarrega. Os três alvos ao lado da loja reagem aos acertos.
+3. **Pé de Pano:** chegue perto do cavalo e use **E** para montar. A pistola será guardada. **WASD** cavalga, toque em **Shift** dá o tapinha para galopar e **E** desmonta em local livre.
+4. **Passeio:** confira o pomar, as pedras e a campina no circuito ampliado do vale.
+5. **Persistência:** use **F5**, feche e reabra. Fazenda, cavalo, arma e munição continuam salvos. Dinheiro infinito permanece ativo.
+
+A versão reúne as duas entregas no save 16. Ao montar ou abrir menus, uma recarga em andamento é cancelada sem consumir munição. Armas funcionam a pé e os disparos atingem os alvos de treino; personagens e animais não recebem dano.
+
+## Histórico de testes — terrenos 0.21
 
 Extraia o ZIP e abra `DoMatoAoMilhao.exe`. Escolha **Voltar para minha fazenda**.
 A versão aceita a partida anterior. Não precisa começar outra.
 
-## Vale renovado — novidade
+## Terrenos, natureza e dinheiro infinito — novidade
+
+1. Continue sua fazenda. O saldo aparece como **∞** automaticamente, inclusive em partidas antigas. Compras e serviços não esgotam o dinheiro. Requisitos de nível, leite, sementes e limites configurados de funcionários continuam funcionando.
+2. Use **T · Terrenos** para comprar **Clareira do Bosque** (leste), **Campo dos Ipês** (norte) ou **Campina do Sol** (sul). Cada lote tem 24 × 24 m. Os preços são informativos enquanto o dinheiro infinito estiver ativo.
+3. Ao comprar, as árvores, pássaros, arbustos e capim que interferem no lote saem do cenário. A mesma limpeza ocorre ao expandir a propriedade original. O restante do vale continua arborizado; construções do jogador não são apagadas.
+4. Caminhe até a placa do novo terreno, use **TAB** e construa ali. A grade acompanha o terreno sob o cursor. O estoque é compartilhado; ajudantes podem trabalhar nesses lotes.
+5. Salve com **F5** e retome. Os terrenos continuam seus e a limpeza é reconstruída sem reaparecer dentro da propriedade.
+6. Fora do terreno, confira o capim fino e árvores maiores. Alguns galhos têm pássaros pousados, com pequenos saltos e movimentos de cabeça.
+7. Na margem do rio, observe os filetes claros acompanhando a correnteza numa mesma direção.
+
+A área de caminhada agora é 142 × 190 m. Cavalo como transporte e veículos continuam planejados para etapas futuras.
+O save foi atualizado para versão 15, preservando construções, produção, equipe e progresso anteriores. A regra permanente de dinheiro infinito está em `AGENTS.md`.
+
+**QA isolado:** `-- --qa --qa-v021`, em desenvolvimento, valida compras, limpeza, Zeca no terreno leste, dinheiro infinito, persistência e capturas do rio/pássaros. Usa apenas o save QA.
+
+## Vale renovado — 0.20
 
 1. Continue sua fazenda. O cenário novo aparece sem reiniciar nem mover suas construções.
 2. Caminhe com **WASD** e gire com **mouse direito**: confira as manchas naturais no gramado, flores menores e capim com movimento suave.
@@ -40,7 +134,7 @@ Sete novos modelos originais têm fontes Blender em `art/source/valley_*.blend`.
 O limite deste bloco é nível 6; XP continua registrado. Melhorias dos prédios e treinamento dos funcionários são independentes.
 Partidas antigas recebem XP de reconhecimento por colheitas/encomendas registradas e um nível mínimo pelas construções, funcionários e equipamentos existentes. Dinheiro, estoque e construções permanecem. Não resete sua fazenda para testar.
 
-**Teste automático do começo, sem tocar na partida real:** execute o projeto no Godot com `-- --qa --qa-v019` (somente versão de desenvolvimento). Usa `qa_farm_v020.json`. Três canteiros colhidos liberam o galinheiro; o teste também confere bloqueios, tela e recarga do XP. A versão exportada ignora esse modo.
+**Teste automático do começo, sem tocar na partida real:** execute o projeto no Godot com `-- --qa --qa-v019` (somente versão de desenvolvimento). Usa `qa_farm_v021.json`. Três canteiros colhidos liberam o galinheiro; o teste também confere bloqueios, tela e recarga do XP. A versão exportada ignora esse modo.
 
 ## Conferir as mãos corrigidas
 
@@ -368,3 +462,26 @@ o galinheiro escolhido ajudam a reproduzir o problema.
 
 Esta entrega tem um cuidador em um posto junto ao galinheiro. Ainda não há
 deslocamento com rotas, vários funcionários, salários por dia ou automação da lavoura.
+
+
+## 0.22 — Passeio pelo vale
+
+Continue sua fazenda e aperte TAB para caminhar. Use WASD e Shift para correr.
+Siga a estrada ao norte: a placa IPÊS / MIRANTE leva ao Campo dos Ipês e ao moinho do Mirante dos Ventos.
+Ao sul, siga CAMPINA / ABÓBORAS para a Campina do Sol e a carroça na Curva da Abóbora.
+Ao leste, a estrada leva ao Recanto da Prosa; a trilha que segue ao norte chega à Clareira do Bosque.
+Observe o moinho girando e as mensagens ao chegar às três paradas. Elas aparecem uma vez por sessão.
+T continua abrindo os terrenos; F5 salva. O cavalo ainda não foi implementado.
+
+
+## 0.23 — Cavalo e mapa ampliado
+
+1. Continue sua fazenda e use TAB para caminhar. Pé de Pano começa na estrada junto ao rio, um pouco ao norte do armazém de Lúcia (x=-30, z=5). Ele já está disponível, sem compra nesta versão.
+2. Chegue perto e aperte E para montar. WASD cavalga; mouse direito gira a câmera.
+3. Dê um toque em Shift: o personagem dá um tapinha na lateral e o cavalo galopa por 3,5 segundos. Cada impulso custa 25 de fôlego; veja a barra. O fôlego recupera andando ou parado fora do galope.
+4. Siga ao norte, passe o moinho e procure CIRCUITO DO VALE. O trajeto passa pelo pomar, pedras e flores, voltando perto da carroça. Uma ligação ao leste também acessa o circuito.
+5. E desmonta ao lado, procurando espaço livre. Se estiver apertado, afaste-se dos obstáculos. TAB desmonta antes de entrar na construção. Emotes e salto do personagem ficam disponíveis a pé.
+6. F5 salva a posição do cavalo. Ao reabrir, você começa a pé e ele permanece onde foi deixado. Se uma construção ocupar o lugar, ele é reposicionado para perto, em espaço livre.
+7. Abra um menu durante a montaria: o deslocamento e o impulso devem pausar. Feche para continuar.
+
+O cavalo ainda não tem compra, alimentação ou evolução; este bloco entrega montaria e exploração. Seu dinheiro infinito continua ativo.

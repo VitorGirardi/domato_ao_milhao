@@ -1,4 +1,105 @@
+# 0.29.0 — Visita multiplayer
+
+- Jogar junto: hospedar ou entrar por IP, para dois jogadores.
+- Snapshot da fazenda, movimento/corrida/pulo, nomes e emotes sincronizados.
+- Saves solo isolados, cancelamento, timeout e reconexão; visita sem produção/construção/montaria.
+- HUD específico da visita e preset nativo Linux.
+
+# 0.28.1 — Voz natural do cavalo
+
+- Substitui relincho e bufadas sintéticos por gravações reais CC0, com créditos e fontes preservadas.
+- Sprint usa expiração curta; pitch original e volume moderado.
+- Mantém gatilhos de montaria, cooldown, áudio espacial e saves da 0.28.
+
+# Versão 0.25.0 — estrebaria e cavalo solto
+
+## 0.28.0 — Montaria e vozes dos animais
+
+- Rédeas chegam às palmas e acompanham a pose montada. Durante o tapinha, a mão esquerda mantém as duas rédeas e a direita alcança o pescoço.
+- Relincho ao montar e vocalização no sprint aceito, com fonte acompanhando o cavalo.
+- Chamados de galinhas, vacas, pássaros e cavalo com intervalos independentes, proximidade e volume revistos.
+
+
+## 0.27.0 — O vale ganhou som
+
+- Tema original Manhã no Vale, com 96 segundos, e 23 efeitos/ambientes sintetizados para a fazenda.
+- Passos e cascos por distância percorrida, chamados espaciais de animais/pássaros e rio audível conforme proximidade.
+- Quatro controles de volume persistentes, abas Som/Jogo e vídeo, transições suaves e limite de vozes simultâneas.
+- Câmera recua imediatamente diante de paredes e volta suavemente; mira respeita a sensibilidade escolhida.
+- Minimizar/Alt-Tab pausa a partida, interrompe recarga e cancela arrastes sem gastar recursos. Menus já abertos são preservados.
+- Testes isolados de mixagem, silêncio das categorias e preservação do estado da fazenda.
+
+
+## 0.26.0 — Um novo começo
+
+- Cavalo revisado: pescoço contínuo, cabeça/crina novas, pastejo sem afundar o peito e caminhada em quatro tempos.
+- Menu inicial com captura real do vale e acesso a Continuar, Novo jogo, Configurações, Controles e Sair.
+- Novo jogo com nome, confirmação e arquivo da fazenda anterior; cancelamento preserva a partida.
+- Volume, sensibilidade, tela cheia, qualidade gráfica e limite de FPS persistidos em settings.cfg.
+- Menu de pausa permite configurar, consultar controles e salvar/voltar à tela inicial.
+
+
+- Estrebaria original no Blender, construída por $550 a partir do nível 5; entrada aberta, colisões, rotação, mudança de lugar e destino no mapa.
+- Cavalo alterna entre observar, pastar e caminhar perto de onde ficou, com limite de 4,5 m, checagem de obstáculos e pausa quando o jogador se aproxima.
+- Descanso desmontado recupera 7 pontos de fôlego/s, ou 14 perto da entrada da estrebaria. Sem sistema obrigatório de fome.
+- Rédeas acompanham a cabeça ao pastar. Montaria restaura a pose; menus pausam o comportamento.
+- Save 17 aceita versões anteriores; dinheiro infinito mantido. Cuidados manuais e evolução ficam para a próxima etapa.
+
+# Versão 0.24.0 — mapa do vale e Pé de Pano
+
+- Minimapa orientado ao norte, jogador, cavalo, bosques, rio, estradas, terrenos e construções.
+- Mapa completo com destinos, marcação por clique, distância em metros e limpeza do destino. M andando/montado; mover preservado na construção.
+- Cavalo original remodelado no Blender com superfície anatômica contínua e esqueleto de dez ossos; revisão de olhos, focinho e junções.
+- Tela cheia/F11 e HUD centralizado da 0.23.2 integrados. Saves16 e dinheiro infinito preservados.
+
 # Alterações
+
+## 0.23.2 — Tela cheia
+
+- Inicia em tela cheia na resolução do monitor. F11 alterna entre tela cheia e janela, inclusive com menus ou campos de texto em foco; a janela recupera sua posição e tamanho dentro da área disponível.
+- Cenário preenche a tela sem barras de proporção. HUD mantém escala uniforme, centralização, espaçamentos e cliques corretos em monitores largos ou altos.
+- Fundo dos menus cobre toda a tela; retículo continua no centro do disparo. Munição fica abaixo dos alertas da fazenda, sem sobreposição.
+- Tela inicial mostra a versão atual e o atalho F11. Saves, mapa, cavalo e armas mantidos.
+
+## 0.23.1 — Damião, P-8 e cavalo juntos
+
+- Damião, armeiro original modelado no Blender: corpo cheio, pele negra, regata clara e expressão séria; bancada e três alvos de treino na estrada oeste.
+- P-8 comprável, munição, câmera sobre o ombro, recarga, recuo, som, clarão e alvos com reação. P saca/guarda, mouse direito mira, clique esquerdo dispara e R recarrega.
+- Montar guarda a arma imediatamente e cancela a recarga sem perder munição. Disparos e recarga ficam bloqueados durante a montaria.
+- Save 16 mantém cavalo, arma e munição; migra as versões anteriores das duas entregas. Dinheiro infinito e mapa/circuito da 0.23 preservados.
+
+## 0.23.0 — Pé de Pano e o circuito do vale
+
+- Cavalo original Blender com sela, rédeas e animação de pernas, cabeça, cauda e cavaleiro.
+- E monta/desmonta; WASD cavalga a 8 m/s; toque em Shift anima um tapinha e ativa galope a 14 m/s por 3,5 s, custando 25 de fôlego.
+- Fôlego recupera fora do galope; menus pausam movimento e duração do impulso. Desmontagem procura um lugar livre.
+- Mapa explorável de 214 × 290 m, mais de duas vezes a área anterior; circuito montado de aproximadamente 490 m.
+- Pomar do Sossego, Pedras do Eco e Campina das Flores ampliam o passeio, com placas e descobertas.
+- Save 16 migra saves antigos e guarda a posição do cavalo, com validação atômica. Dinheiro infinito mantido.
+
+## 0.22.0 — Caminhos do vale
+
+- Trilhas de terra conectam os terrenos e três paradas, com passagem livre e nove placas de orientação.
+- Mirante dos Ventos com moinho animado, Recanto da Prosa com piquenique e Curva da Abóbora com carroça original Blender.
+- Vegetação respeita caminhos e paradas; colisões dos marcos também orientam os ajudantes.
+- Descobertas exibem uma frase curta ao chegar, uma vez por sessão.
+- Dinheiro infinito, saves e margens corrigidas preservados. Cavalo ainda é a próxima etapa.
+
+## 0.21.1 — Margens do rio
+
+- Corrige a borda exposta da água: a superfície agora termina enterrada nas duas margens.
+- Refina a malha do leito e das margens, com colisão acompanhando o terreno.
+- Mantém correnteza, dinheiro infinito e compatibilidade dos saves.
+
+## 0.21.0 — Terrenos vivos
+
+- Dinheiro infinito permanente no jogo normal, HUD ∞ e regra registrada no AGENTS.md.
+- Três lotes de 24 × 24 m compráveis pelo menu T; mapa explorável de 142 × 190 m.
+- Aquisição e expansão limpam apenas natureza que interfere na propriedade. Saves antigos preservados no formato 15.
+- Capim fino e curvo, distribuição mais densa e renderização por setores.
+- Árvores maiores com pássaros originais Blender pousados e animados.
+- Correnteza com camadas que se deslocam ao longo das curvas do rio.
+- Construção, grade, colisões e rotinas ajustadas aos novos terrenos.
 
 ## 0.20.0 — Um vale para explorar
 

@@ -1,8 +1,8 @@
 class_name FarmLandscape
 extends Node3D
 ## Scenery never changes farm coordinates or saved item footprints.
-const WALK_MIN:=Vector2(-34,-62)
-const WALK_MAX:=Vector2(70,66)
+const WALK_MIN:=Vector2(-34,-145)
+const WALK_MAX:=Vector2(180,145)
 const CLEAR:=Rect2(-33,-42,79,86) # Every legal plot plus worker clearance.
 var rng:=RandomNumberGenerator.new()
 var meshes:Dictionary={}
@@ -11,13 +11,32 @@ var decoration_points:Array[Vector2]=[]
 var trunk_points:Array[Vector2]=[]
 var solid_bounds:Array[Rect2]=[]
 var ground:MeshInstance3D
+var nature:=Node3D.new()
+var scenery:Array[Dictionary]=[]
+var birds:Array[Dictionary]=[]
+var runtime_obstacles:Array[Rect2]=[]
+var property_stamp:="unset"
+var lot_labels:Dictionary={}
+var water_material:ShaderMaterial
+var flow_clock:=0.0
+var trail_rotor:Node3D
+var trail_signs:Array[Node3D]=[]
 
 static func base_height(p:Vector2) -> float:
+	# Banks share the river's longitudinal elevation. Cross-slope noise must not
+	# lower one bank beneath the water in the northern/southern hills.
+	var center:float=-42+sin(p.y*.065)*2.6
+	p.x=lerpf(center,p.x,smoothstep(6,12,absf(p.x-center)))
 	var edge:=maxf(p.x-46,maxf(p.y-44,-42-p.y))
 	var near_height:=smoothstep(0,22,edge)*(1.4+sin(p.x*.075)*cos(p.y*.065)*1.2)
-	var distant:=smoothstep(0,44,maxf(absf(p.x)-78,absf(p.y)-78))
+	var distant:=smoothstep(0,44,maxf(absf(p.x)-182,absf(p.y)-148))
 	var river_x:=-42+sin(p.y*.065)*2.6
-	return near_height+distant*smoothstep(7,25,absf(p.x-river_x))*(13+6*sin(p.x*.039+p.y*.032)+4*cos(p.y*.083-p.x*.017))
+	var result:=near_height+distant*smoothstep(7,25,absf(p.x-river_x))*(13+6*sin(p.x*.039+p.y*.032)+4*cos(p.y*.083-p.x*.017))
+	for key in FarmParcels.LOTS:
+		var lot:Rect2=FarmParcels.area(key)
+		var offset:Vector2=(p-lot.get_center()).abs()-lot.size/2-Vector2.ONE*3
+		result*=smoothstep(0,8,maxf(offset.x,offset.y))
+	return result
 
 static func height_at(p:Vector2) -> float:
 	var river_x:=-42+sin(p.y*.065)*2.6
@@ -27,11 +46,11 @@ static func height_at(p:Vector2) -> float:
 static func road_distance(p:Vector2) -> float:
 	var trunk:=-27+sin(p.y*.07)*smoothstep(42,66,absf(p.y))*3
 	var lane:=30+sin(p.x*.09)*smoothstep(44,75,p.x)*3
-	return minf(absf(p.x-trunk),absf(p.y-lane))
+	return minf(minf(absf(p.x-trunk),absf(p.y-lane)),FarmTrails.distance_to_path(p))
 
 func setup(world:FarmWorld) -> void:
 	name="ValleyLandscape";rng.seed=202020
-	for key in ["oak","poplar","shrub","grass","daisy","lavender","stone"]:
+	for key in ["oak","poplar","shrub","grass","daisy","lavender","stone","bird"]:
 		var scene:PackedScene=load("res://assets/models/valley_%s.glb"%key)
 		var root:=scene.instantiate()
 		var mesh_node:=_find_mesh(root)
@@ -40,15 +59,16 @@ func setup(world:FarmWorld) -> void:
 		root.free()
 	_terrain()
 	_river()
+	add_child(nature)
 	_bosques()
 	_horizon(world)
 	_landmarks(world)
 	add_child(meadow)
-	for i in range(7200):
-		var p:=Vector2(rng.randf_range(-34,76),rng.randf_range(-66,72))
-		if road_distance(p)<3.15 or Rect2(-27,10,7,9).has_point(p): continue
+	for i in range(65000):
+		var p:=Vector2(rng.randf_range(-34,184),rng.randf_range(-149,149))
+		if road_distance(p)<3.15 or FarmTrails.reserved(p) or Rect2(-27,10,7,9).has_point(p): continue
 		# Islands of vegetation rather than evenly scattered dots.
-		if sin(p.x*.24+cos(p.y*.18))*cos(p.y*.27)<-.05: continue
+		if rng.randf()<.15:continue
 		decoration_points.append(p)
 	refresh(FarmState.new())
 
@@ -61,28 +81,46 @@ func _find_mesh(node:Node) -> MeshInstance3D:
 
 func _terrain() -> void:
 	var surface:=SurfaceTool.new();surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-	for z in range(-140,140,2):
-		for x in range(-140,140,2):
-			for p in [Vector2(x,z),Vector2(x+2,z),Vector2(x,z+2),Vector2(x+2,z),Vector2(x+2,z+2),Vector2(x,z+2)]:
+	# Resolve the narrow banks without coarse triangles cutting across the channel.
+	# Shared rows keep the fine river strip connected to the surrounding terrain.
+	var columns:Array[float]=[]
+	var column:float=-280
+	while column<280:
+		columns.append(column)
+		column+=.5 if column>=-50 and column<-34 else (4.0 if column<-52 or column>=184 else 2.0)
+	columns.append(280)
+	var rows:Array[float]=[]
+	var row:float=-280
+	while row<280:
+		rows.append(row);row+=4 if absf(row)>150 else 1
+	rows.append(280)
+	for j in range(rows.size()-1):
+		var z:float=rows[j];var nz:float=rows[j+1]
+		for i in range(columns.size()-1):
+			var x:float=columns[i];var nx:float=columns[i+1]
+			for p in [Vector2(x,z),Vector2(nx,z),Vector2(x,nz),Vector2(nx,z),Vector2(nx,nz),Vector2(x,nz)]:
 				surface.add_vertex(Vector3(p.x,height_at(p),p.y))
 	surface.generate_normals();surface.index()
 	ground=MeshInstance3D.new();ground.name="ContinuousMeadow";ground.mesh=surface.commit()
 	var mat:=ShaderMaterial.new();mat.shader=load("res://assets/shaders/valley_ground.gdshader")
+	var segments:=FarmTrails.shader_segments()
+	mat.set_shader_parameter("trail_count",segments.size())
+	segments.resize(64);mat.set_shader_parameter("trails",segments)
 	ground.material_override=mat;add_child(ground)
 	ground.create_trimesh_collision()
 
 func _river() -> void:
 	var surface:=SurfaceTool.new();surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-	for i in range(140):
-		var z:float=-140+i*2;var nz:=z+2
+	for i in range(560):
+		var z:float=-280+i;var nz:=z+1
 		var x:=-42+sin(z*.065)*2.6;var nx:=-42+sin(nz*.065)*2.6
-		for p in [Vector2(x-3.3,z),Vector2(x+3.3,z),Vector2(nx-3.3,nz),Vector2(x+3.3,z),Vector2(nx+3.3,nz),Vector2(nx-3.3,nz)]:
-			# Water sits inside the carved channel, outside the walking bank.
+		for p in [Vector2(x-5,z),Vector2(x+5,z),Vector2(nx-5,nz),Vector2(x+5,z),Vector2(nx+5,nz),Vector2(nx-5,nz)]:
+			# Bury mesh edges under both banks; terrain defines the visible shoreline.
 			surface.add_vertex(Vector3(p.x,-.10+base_height(Vector2(-42,p.y)),p.y))
 	surface.generate_normals()
 	var water:=MeshInstance3D.new();water.name="LivingRiver";water.mesh=surface.commit()
-	var mat:=ShaderMaterial.new();mat.shader=load("res://assets/shaders/valley_water.gdshader")
-	water.material_override=mat;add_child(water)
+	water_material=ShaderMaterial.new();water_material.shader=load("res://assets/shaders/valley_water.gdshader")
+	water.material_override=water_material;add_child(water)
 
 func _instance_batch(key:String,transforms:Array[Transform3D],parent:Node3D,far:float=0) -> void:
 	if transforms.is_empty():return
@@ -99,41 +137,86 @@ func _transform(p:Vector2,s:float,angle:float) -> Transform3D:
 	return Transform3D(Basis(Vector3.UP,angle).scaled(Vector3.ONE*s),Vector3(p.x,height_at(p),p.y))
 
 func _bosques() -> void:
-	var groups:Dictionary={"oak":[],"poplar":[],"shrub":[],"stone":[]}
-	# Woodland clearings, orchard edge and riverside groves.
-	var centers:=[Vector2(54,-36),Vector2(63,8),Vector2(39,-54),Vector2(-9,-55),Vector2(20,56),Vector2(60,56),Vector2(-12,59),Vector2(-53,-30),Vector2(-54,40)]
+	var occupied:Array[Vector2]=[]
+	var centers:=[Vector2(54,-36),Vector2(63,8),Vector2(39,-54),Vector2(-9,-55),Vector2(20,56),Vector2(60,56),Vector2(-12,59),Vector2(-53,-30),Vector2(-54,40),Vector2(-12,-22),Vector2(22,-18),Vector2(26,16),Vector2(-12,10),Vector2(6,3),Vector2(90,-40),Vector2(88,62),Vector2(30,86),Vector2(16,-80),Vector2(75,-92),Vector2(119,-116),Vector2(154,-66),Vector2(170,20),Vector2(129,90),Vector2(58,132),Vector2(1,122)]
 	for center in centers:
-		for i in range(25):
+		for i in range(22):
 			var p:Vector2=center+Vector2(rng.randfn(0,7),rng.randfn(0,6))
-			if CLEAR.grow(1.5).has_point(p) or road_distance(p)<4.5 or p.distance_to(Vector2(57,38))<5:continue
+			if road_distance(p)<4.8 or FarmTrails.reserved(p,3) or p.distance_to(Vector2(57,38))<5 or Rect2(-28,9,9,12).has_point(p):continue
+			if p.distance_to(Vector2(4,-2))<4:continue
 			if absf(p.x-(-42+sin(p.y*.065)*2.6))<6:continue
-			var occupied:=false
-			for other in trunk_points:
-				if other.distance_to(p)<2.8:occupied=true;break
-			if occupied:continue
-			trunk_points.append(p)
+			var blocked:=false
+			for other in occupied:
+				if other.distance_to(p)<4.5:blocked=true;break
+			if blocked:continue
+			occupied.append(p)
 			var key:="poplar" if i%4==0 else "oak"
-			var s:=rng.randf_range(.8,1.4)
-			groups[key].append(_transform(p,s,rng.randf()*TAU))
-			_trunk_collision(p,.34*s)
-			groups.shrub.append(_transform(p+Vector2(1.1,.7),rng.randf_range(.7,1.3),rng.randf()*TAU))
+			var scale_value:=rng.randf_range(1.5,2.1) if i%3==0 else rng.randf_range(.9,1.3)
+			scenery.append({"key":key,"p":p,"scale":scale_value,"angle":rng.randf()*TAU,"radius":2.8*scale_value,"bird":key=="oak" and scale_value>1.4})
+			scenery.append({"key":"shrub","p":p+Vector2(1.1,.7),"scale":1.0,"angle":rng.randf()*TAU,"radius":1.1,"bird":false})
 	for i in range(85):
 		var z:=rng.randf_range(-73,75);var x:=-42+sin(z*.065)*2.6
 		var p:=Vector2(x+(1 if i%2==0 else -1)*rng.randf_range(4.4,6.3),z)
-		var stone_scale:=rng.randf_range(.3,1.1)
-		groups.stone.append(_transform(p,stone_scale,rng.randf()*TAU))
-		if p.x>=WALK_MIN.x-1 and stone_scale>.6:
-			var body:=StaticBody3D.new();body.position=Vector3(p.x,height_at(p)+stone_scale*.3,p.y)
-			var collision:=CollisionShape3D.new();var shape:=SphereShape3D.new();shape.radius=stone_scale*.65
-			collision.shape=shape;body.add_child(collision);add_child(body)
-			solid_bounds.append(Rect2(p-Vector2.ONE*stone_scale*.7,Vector2.ONE*stone_scale*1.4))
-	for key in groups:
-		var batch:Array[Transform3D]=[];batch.assign(groups[key]);_instance_batch(key,batch,self)
+		var scale_value:=rng.randf_range(.3,1.1)
+		scenery.append({"key":"stone","p":p,"scale":scale_value,"angle":rng.randf()*TAU,"radius":scale_value,"bird":false})
 
-func _trunk_collision(p:Vector2,radius:float) -> void:
-	var body:=StaticBody3D.new();body.name="TreeTrunk";body.position=Vector3(p.x,height_at(p)+1.2,p.y)
-	var collision:=CollisionShape3D.new();var shape:=CylinderShape3D.new();shape.radius=radius;shape.height=2.4
-	collision.shape=shape;body.add_child(collision);add_child(body)
+static func cleared(record:Dictionary,state:FarmState) -> bool:
+	for land in state.owned_areas():
+		if land.grow(float(record.radius)+.65).has_point(record.p):return true
+	return false
+
+func _refresh_nature(state:FarmState) -> void:
+	var stamp:="%s:%s:%s:%s"%[state.claimed,state.center,state.land_size,state.owned_parcels]
+	if stamp!=property_stamp:
+		property_stamp=stamp
+		for child in nature.get_children():child.free()
+		birds.clear();trunk_points.clear();runtime_obstacles.clear()
+		var groups:Dictionary={"oak":[],"poplar":[],"shrub":[],"stone":[]}
+		for record in scenery:
+			if cleared(record,state):continue
+			var p:Vector2=record.p;var scale_value:float=record.scale
+			groups[record.key].append(_transform(p,scale_value,record.angle))
+			if record.key in ["oak","poplar"]:
+				trunk_points.append(p)
+				var body:=StaticBody3D.new();body.name="TreeTrunk";body.position=Vector3(p.x,height_at(p),p.y)
+				var collision:=CollisionShape3D.new();var shape:=CylinderShape3D.new();shape.radius=.34*scale_value;shape.height=2.4*scale_value
+				collision.position.y=shape.height/2;collision.shape=shape;body.add_child(collision);nature.add_child(body)
+				if WALK_MIN.x<=p.x and p.x<=WALK_MAX.x and WALK_MIN.y<=p.y and p.y<=WALK_MAX.y:runtime_obstacles.append(Rect2(p-Vector2.ONE*(shape.radius+.4),Vector2.ONE*(shape.radius+.4)*2))
+				if record.bird:_perch(record)
+			elif record.key=="stone" and scale_value>.6:
+				var body:=StaticBody3D.new();body.position=Vector3(p.x,height_at(p)+scale_value*.3,p.y)
+				var collision:=CollisionShape3D.new();var shape:=SphereShape3D.new();shape.radius=scale_value*.65
+				collision.shape=shape;body.add_child(collision);nature.add_child(body)
+		for key in groups:
+			var batch:Array[Transform3D]=[];batch.assign(groups[key]);_instance_batch(key,batch,nature)
+	state.scenery_obstacles=runtime_obstacles.duplicate()
+	for area in solid_bounds:state.scenery_obstacles.append(area.grow(.4))
+
+func _perch(record:Dictionary) -> void:
+	var scale_value:float=record.scale;var p:Vector2=record.p
+	var root:=Node3D.new();root.position=Vector3(p.x,height_at(p),p.y);root.rotation.y=record.angle;nature.add_child(root)
+	# Exposed branch, lower than the crown so the bird is visible from the ground.
+	var branch:=MeshInstance3D.new();var wood:=CylinderMesh.new();wood.top_radius=.045;wood.bottom_radius=.09;wood.height=2.7*scale_value
+	branch.mesh=wood;branch.position=Vector3(1.25*scale_value,2.75*scale_value,0);branch.rotation.z=-PI/2
+	var mat:=StandardMaterial3D.new();mat.albedo_color=Color("785235");branch.material_override=mat;root.add_child(branch)
+	var bird:=MeshInstance3D.new();bird.mesh=meshes.bird;bird.scale=Vector3.ONE*1.9
+	var home:=Vector3(2.4*scale_value,2.82*scale_value,0)
+	bird.position=home;root.add_child(bird)
+	birds.append({"node":bird,"home":home,"phase":birds.size()*1.73})
+
+func _process(delta:float) -> void:
+	flow_clock+=delta
+	var view:=get_viewport().get_camera_3d()
+	if view!=null:
+		for sign_face in trail_signs:sign_face.look_at(view.global_position,Vector3.UP,true)
+	if is_instance_valid(trail_rotor):trail_rotor.rotation.z=flow_clock*.24
+	if water_material!=null:water_material.set_shader_parameter("flow_time",flow_clock)
+	for bird in birds:
+		var t:=flow_clock+float(bird.phase)
+		var hop:=maxf(0,sin(t*2.1)) if fmod(t,7.0)<1.5 else 0.0
+		bird.node.position=bird.home+Vector3(sin(t*.7)*.04,hop*.10,0)
+		bird.node.rotation.y=sin(t*.65)*.55
+		bird.node.rotation.x=sin(t*3.4)*.10 if fmod(t,9.0)>7 else 0
 
 func clear_for_player(p:Vector2) -> bool:
 	for trunk in trunk_points:
@@ -143,6 +226,8 @@ func clear_for_player(p:Vector2) -> bool:
 	return true
 
 func refresh(state:FarmState) -> void:
+	_refresh_nature(state)
+	for key in lot_labels:lot_labels[key].text=FarmParcels.LOTS[key].name+("\nSEU TERRENO" if key in state.owned_parcels else "\nÀ VENDA · [T]")
 	for child in meadow.get_children():child.free()
 	var groups:Dictionary={"grass":[],"daisy":[],"lavender":[]}
 	# Rasterize footprints once. Avoid testing every blade against every building.
@@ -154,19 +239,30 @@ func refresh(state:FarmState) -> void:
 	for i in range(decoration_points.size()):
 		var p:=decoration_points[i]
 		if occupied.has(Vector2i(floori(p.x),floori(p.y))):continue
-		var key:="grass" if i%7!=0 else ("daisy" if i%2==0 else "lavender")
+		var owned:=false
+		for land in state.owned_areas():
+			if land.grow(.4).has_point(p):owned=true;break
+		if owned:continue
+		var key:="grass" if i%43!=0 else ("daisy" if i%2==0 else "lavender")
 		var scale_value:=.65+fmod(float(i)*.371,.65)
 		if key!="grass":scale_value*=.65
 		groups[key].append(_transform(p,scale_value,fmod(i*2.39,TAU)))
 	for key in groups:
-		var batch:Array[Transform3D]=[];batch.assign(groups[key]);_instance_batch(key,batch,meadow)
+		# Chunk grass for distance culling: the whole meadow need not render at once.
+		var chunks:Dictionary={}
+		for transform in groups[key]:
+			var cell:=Vector2i(floori(transform.origin.x/16),floori(transform.origin.z/16))
+			if not chunks.has(cell):chunks[cell]=[]
+			chunks[cell].append(transform)
+		for chunk in chunks.values():
+			var batch:Array[Transform3D]=[];batch.assign(chunk);_instance_batch(key,batch,meadow,65)
 
 func _horizon(world:FarmWorld) -> void:
 	# Irregular ridgelines instead of a necklace of identical spheres.
 	for ring in range(2):
 		var surface:=SurfaceTool.new();surface.begin(Mesh.PRIMITIVE_TRIANGLES)
 		for i in range(96):
-			var a:=i*TAU/96;var b:=(i+1)*TAU/96;var radius:float=167+ring*48
+			var a:=i*TAU/96;var b:=(i+1)*TAU/96;var radius:float=265+ring*48
 			var h1:=20+ring*8+sin(a*5+ring)*6+cos(a*9)*3
 			var h2:=20+ring*8+sin(b*5+ring)*6+cos(b*9)*3
 			var p1:=Vector3(sin(a)*radius,h1,cos(a)*radius)
@@ -180,6 +276,11 @@ func _horizon(world:FarmWorld) -> void:
 		ridge.material_override=mat;add_child(ridge)
 
 func _landmarks(world:FarmWorld) -> void:
+	for key in FarmParcels.LOTS:
+		var land:=FarmParcels.area(key)
+		var text:=Label3D.new();text.position=Vector3(land.get_center().x,1.8,land.end.y+2)
+		text.font_size=36;text.pixel_size=.018;text.billboard=BaseMaterial3D.BILLBOARD_ENABLED
+		text.modulate=Color("ffedb3");text.outline_modulate=Color("304b32");add_child(text);lot_labels[key]=text
 	# A shaded rest stop at the east trail; no decorative object on buildable land.
 	var root:=Node3D.new();root.name="EastRestStop";root.position=Vector3(57,height_at(Vector2(57,38)),38);add_child(root)
 	var wood:=world.material("92704b");var trim:=world.material("e1c995")
@@ -189,9 +290,79 @@ func _landmarks(world:FarmWorld) -> void:
 	solid_bounds.append(Rect2(55.6,37.6,2.8,.8))
 	var body:=StaticBody3D.new();var collider:=CollisionShape3D.new();var shape:=BoxShape3D.new();shape.size=Vector3(2.8,1.25,.8)
 	collider.shape=shape;collider.position.y=.625;body.add_child(collider);root.add_child(body)
+	_trail_places(world)
+	_riding_regions(world)
 	# Road signs make the expanded playable outskirts understandable.
 	for entry in [[Vector2(-30,46),"ARMAZÉM ↑",0.0],[Vector2(49,26),"BOSQUE →",0.0],[Vector2(-30,-46),"VALE DO IPÊ",0.0]]:
 		var p:Vector2=entry[0];var sign_root:=Node3D.new();sign_root.position=Vector3(p.x,height_at(p),p.y);add_child(sign_root)
 		world.box(sign_root,Vector3(0,.65,0),Vector3(.12,1.3,.12),wood)
 		world.box(sign_root,Vector3(0,1.35,0),Vector3(2.4,.55,.12),wood)
 		var text:=Label3D.new();text.text=entry[1];text.position=Vector3(0,1.35,.07);text.font_size=36;text.pixel_size=.009;text.modulate=Color("fff0cd");text.outline_size=0;sign_root.add_child(text)
+
+func _trail_prop(asset:String,p:Vector2,bounds:Vector2) -> Node3D:
+	var node:Node3D=load("res://assets/models/"+asset+".glb").instantiate()
+	node.position=Vector3(p.x,height_at(p),p.y);add_child(node)
+	var area:=Rect2(p-bounds/2,bounds);solid_bounds.append(area)
+	var body:=StaticBody3D.new();var collision:=CollisionShape3D.new();var shape:=BoxShape3D.new()
+	shape.size=Vector3(bounds.x,2,bounds.y);collision.shape=shape;collision.position.y=1
+	body.add_child(collision);node.add_child(body)
+	return node
+
+func _trail_sign(world:FarmWorld,p:Vector2,title:String,tint:String) -> void:
+	var root:=Node3D.new();root.name="TrailSign";root.position=Vector3(p.x,height_at(p),p.y);add_child(root)
+	world.box(root,Vector3(0,.95,0),Vector3(.14,1.9,.14),world.material("775437"))
+	var face:=Node3D.new();face.position.y=2;root.add_child(face);trail_signs.append(face)
+	var board:=MeshInstance3D.new();var quad:=QuadMesh.new();quad.size=Vector2(3.6,.85);board.mesh=quad
+	var mat:=world.material(tint);mat.cull_mode=BaseMaterial3D.CULL_DISABLED
+	board.material_override=mat;face.add_child(board)
+	var label:=Label3D.new();label.text=title;label.position=Vector3(0,0,.03);label.font_size=40;label.pixel_size=.007
+	label.modulate=Color("fff1cf");label.outline_size=3;label.no_depth_test=false;face.add_child(label)
+
+func _trail_places(world:FarmWorld) -> void:
+	_trail_prop("trail_windmill",FarmTrails.STOPS.mill.at,Vector2(2.8,2.8))
+	var rotor:Node3D=load("res://assets/models/trail_rotor.glb").instantiate()
+	rotor.position=Vector3(-10,height_at(FarmTrails.STOPS.mill.at)+4.8,-83.8);add_child(rotor);trail_rotor=rotor
+	_trail_prop("trail_picnic",FarmTrails.STOPS.picnic.at,Vector2(3.2,2.6))
+	_trail_prop("trail_cart",FarmTrails.STOPS.cart.at,Vector2(3.5,2.4))
+	for entry in [
+		[Vector2(-23,-47),"IPÊS / MIRANTE\nSIGA A TRILHA", "626749"],
+		[Vector2(-5,-54),"IPÊS: LESTE\nMIRANTE: NORTE", "626749"],
+		[Vector2(-15,-80),"MIRANTE DOS VENTOS", "626749"],
+		[Vector2(-22,47),"CAMPINA / ABÓBORAS\nSIGA A TRILHA", "94733e"],
+		[Vector2(-5,56),"CAMPINA: LESTE\nABÓBORAS: SUL", "94733e"],
+		[Vector2(33,78),"CURVA DA ABÓBORA", "94733e"],
+		[Vector2(68,24),"BOSQUE: SIGA AO NORTE", "487768"],
+		[Vector2(76,-16),"CLAREIRA: A OESTE", "487768"],
+		[Vector2(61,30),"RECANTO: SIGA A TRILHA", "487768"]
+	]:_trail_sign(world,entry[0],entry[1],entry[2])
+
+func _riding_regions(world:FarmWorld) -> void:
+	# Small orchard rows beside the long circuit; center of the track stays free.
+	var fruit_mat:=world.material("dca14a")
+	for i in range(9):
+		var p:=Vector2(95+(i%3)*5,-83+(i/3)*5)
+		var tree:=MeshInstance3D.new();tree.mesh=meshes.oak;tree.transform=_transform(p,.65,0);add_child(tree)
+		var area:=Rect2(p-Vector2.ONE*.5,Vector2.ONE);solid_bounds.append(area)
+		var body:=StaticBody3D.new();var collision:=CollisionShape3D.new();var trunk:=CylinderShape3D.new();trunk.radius=.25;trunk.height=2.5
+		collision.shape=trunk;collision.position=Vector3(p.x,height_at(p)+1.25,p.y);body.add_child(collision);add_child(body)
+		for j in range(7):
+			var a:=j*TAU/7;var fruit:=MeshInstance3D.new();var sphere:=SphereMesh.new();sphere.radius=.16;sphere.height=.32;fruit.mesh=sphere;fruit.material_override=fruit_mat
+			fruit.position=Vector3(p.x+cos(a)*1.1,height_at(p)+2.3+sin(a*3)*.2,p.y+sin(a)*1.1);add_child(fruit)
+	for i in range(8):
+		var p:=Vector2(152+cos(i*.9)*5,74+sin(i*.9)*5)
+		if road_distance(p)<4:continue
+		var rock:=MeshInstance3D.new();rock.mesh=meshes.stone;rock.transform=_transform(p,1.3+(i%3)*.45,i*.73);add_child(rock)
+		solid_bounds.append(Rect2(p-Vector2.ONE*1.5,Vector2.ONE*3))
+		var body:=StaticBody3D.new();var collision:=CollisionShape3D.new();var shape:=SphereShape3D.new();shape.radius=1.4;collision.shape=shape;collision.position=Vector3(p.x,height_at(p)+.7,p.y);body.add_child(collision);add_child(body)
+	var flowers:Array[Transform3D]=[]
+	var flower_rng:=RandomNumberGenerator.new();flower_rng.seed=230023
+	for i in range(520):
+		var center:Vector2=[Vector2(68,114),Vector2(84,123),Vector2(68,130),Vector2(84,110)][i%4]
+		var p:=center+Vector2(flower_rng.randfn(0,3.4),flower_rng.randfn(0,3.4))
+		if road_distance(p)>3.2:flowers.append(_transform(p,flower_rng.randf_range(.75,1.1),flower_rng.randf()*TAU))
+	_instance_batch("daisy",flowers,self,100)
+	_trail_sign(world,Vector2(101,-91),"POMAR DO SOSSEGO","94733e")
+	_trail_sign(world,Vector2(146,70),"PEDRAS DO ECO","626749")
+	_trail_sign(world,Vector2(70,114),"CAMPINA DAS FLORES","487768")
+	_trail_sign(world,Vector2(4,-97),"CIRCUITO DO VALE: LESTE","94733e")
+	_trail_sign(world,Vector2(31,107),"CIRCUITO DO VALE: LESTE","94733e")

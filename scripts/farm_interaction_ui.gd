@@ -98,7 +98,7 @@ static func workshop(hud:FarmHUD,state:FarmState,index:int) -> void:
 		b.tooltip_text="Melhoria permanente para sua rega manual. Não altera o alcance do ajudante."
 		if owned: FarmGameUI.icon(c,"check",Rect2(20,226,28,28))
 	FarmGameUI.icon(p,"coins",Rect2(26,489,40,40))
-	hud.label(p,"$%s"%hud._money(state.money),Vector2(79,493),Vector2(330,35),25)
+	hud.label(p,hud.money_text(state),Vector2(79,493),Vector2(330,35),25)
 	evolution(hud,p,state,hud.building_index,Rect2(542,487,252,44))
 
 static func market(hud:FarmHUD,state:FarmState,tab:String) -> void:
@@ -107,7 +107,7 @@ static func market(hud:FarmHUD,state:FarmState,tab:String) -> void:
 	FarmGameUI.action(hud,p,"Vender",Rect2(26,111,208,43),"market_sales",tab=="sales")
 	FarmGameUI.action(hud,p,"Encomendas • %d"%state.active_orders(),Rect2(247,111,254,43),"market_orders",tab=="orders")
 	FarmGameUI.icon(p,"coins",Rect2(698,112,36,36))
-	hud.label(p,"$%s"%hud._money(state.money),Vector2(743,115),Vector2(170,34),24)
+	hud.label(p,hud.money_text(state),Vector2(743,115),Vector2(170,34),24)
 	FarmGameUI.action(hud,p,"Leite e queijo",Rect2(519,111,164,43),"cheese_shop")
 	if tab=="orders":
 		hud._orders(state,p)

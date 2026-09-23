@@ -5,6 +5,7 @@ signal action(value: String)
 const INK := Color("294739")
 const CREAM := Color("fff7e4")
 const MUTED := Color("7b806b")
+const DESIGN_SIZE:=Vector2(1440,900)
 var root := Control.new()
 var world_hud:=Control.new()
 var build_hud:=Control.new()
@@ -60,6 +61,7 @@ var walk_tip: Label
 var buttons: Dictionary = {}
 var crop_buttons: Dictionary = {}
 var overlay: ColorRect
+var modal_shade:ColorRect
 var modal: Panel
 var text_input: LineEdit
 var modal_kind := ""
@@ -70,7 +72,7 @@ var farm_levels:=FarmLevelsHUD.new()
 
 func _ready() -> void:
 	add_child(root)
-	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	root.size=DESIGN_SIZE
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var theme := Theme.new()
 	theme.default_font_size = 18
@@ -92,6 +94,19 @@ func _ready() -> void:
 	build_hud.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_build()
 	walking.setup(self)
+	get_viewport().size_changed.connect(_fit_screen)
+	_fit_screen()
+
+func _fit_screen() -> void:
+	# The world fills any aspect ratio; authored UI keeps its proportions and spacing.
+	var available:=get_viewport().get_visible_rect().size
+	if available.x<=0 or available.y<=0:return
+	var factor:=minf(available.x/DESIGN_SIZE.x,available.y/DESIGN_SIZE.y)
+	scale=Vector2.ONE*factor
+	offset=(available-DESIGN_SIZE*factor)*.5
+	if is_instance_valid(modal_shade):
+		modal_shade.position=-offset/factor
+		modal_shade.size=available/factor
 
 func style(color: Color, radius: int = 14, border_color: Color = Color("e3d9b9")) -> StyleBoxFlat:
 	var s := StyleBoxFlat.new()
@@ -143,6 +158,7 @@ func button(parent: Control, text: String, rect: Rect2, value: String, primary: 
 	return b
 
 func _build() -> void:
+	button(build_hud,"Terrenos [T]",Rect2(24,432,287,42),"parcels")
 	farm_levels.setup(self,build_hud,Rect2(328,88,244,54),true)
 	var brand := panel(build_hud, Rect2(24, 22, 287, 98), Color("294b3c"))
 	label(brand, "DO MATO", Vector2(21,10), Vector2(260,31), 29, CREAM)
@@ -215,13 +231,13 @@ func _build() -> void:
 		var key:String=crops[i]
 		crop_buttons[key]=button(tool_panel,FarmState.CROPS[key].name,Rect2(653+i*117,8,109,33),"crop:"+key)
 	mode_button=button(tool_panel,"Caminhar  [TAB]",Rect2(1150,8,221,34),"mode",true)
-	var tools=["inspect","plot","barn","coop","fence","sign","path","expand","workshop","corral","cheesery"]
-	var names=["Cuidar","Canteiro","Celeiro","Galinheiro","Cerca","Placa","Caminho","Expandir","Oficina","Curral","Queijaria"]
-	var costs=["Selecionar","$20 • semente","$240","$180 • 3 aves","$12","$25 • seu texto","$5","$900 • +8 m","$180","$650 • 1 vaga","$900 • queijos"]
+	var tools=["inspect","plot","barn","coop","fence","sign","path","expand","workshop","corral","cheesery","stable"]
+	var names=["Cuidar","Canteiro","Celeiro","Galinheiro","Cerca","Placa","Caminho","Expandir","Oficina","Curral","Queijaria","Estrebaria"]
+	var costs=["Selecionar","$20","$240","$180","$12","$25","$5","$900 • +8 m","$180","$650","$900","$550"]
 	for i in range(tools.size()):
-		var b:=button(tool_panel,"%s  %s\n%s"%[str((i+1)%10) if i<10 else "G",names[i],costs[i]],Rect2(18+i*124,51,118,83),"tool:"+tools[i])
+		var b:=button(tool_panel,"%s  %s\n%s"%[str((i+1)%10) if i<10 else ("G" if i==10 else "K"),names[i],costs[i]],Rect2(18+i*113,51,107,83),"tool:"+tools[i])
 		b.set_meta("unlocked_text",b.text)
-		b.add_theme_font_size_override("font_size",14)
+		b.add_theme_font_size_override("font_size",13)
 		buttons[tools[i]]=b
 	hint_panel=panel(build_hud,Rect2(330,654,767,46),Color("294b3c"))
 	hint_label=label(hint_panel,"WASD mover  •  Mouse direito girar  •  Scroll zoom",Vector2(14,8),Vector2(738,32),15,CREAM)
@@ -249,7 +265,7 @@ func toast(message: String) -> void:
 func update(state: FarmState, build_mode: bool, selected: int, tool: String, crop: String, hover_hint: String) -> void:
 	build_hud.visible=build_mode or not state.claimed
 	walking.root.visible=not build_mode and state.claimed
-	money_label.text="$ %s" % _money(state.money)
+	money_label.text=money_text(state)
 	var total:=state.milk_stock+state.cheese_stock
 	for value in state.inventory.values():
 		total+=int(value)
@@ -303,8 +319,9 @@ func update(state: FarmState, build_mode: bool, selected: int, tool: String, cro
 		quest_title.text="Seu primeiro império"
 		quest_label.text="Você plantou, cuidou e prosperou.\nContinue criando sua fazenda!\n\nFaturamento: $%d"%state.revenue
 	move_button.disabled=selected<0 or tool=="move"
-	barn_button.visible=selected>=0 and selected<state.items.size() and state.items[selected].kind in ["barn","workshop"]
+	barn_button.visible=selected>=0 and selected<state.items.size() and state.items[selected].kind in ["barn","workshop","stable"]
 	barn_button.text="Estoque do celeiro" if selected<0 or selected>=state.items.size() or state.items[selected].kind!="workshop" else "Bancada de melhorias"
+	if selected>=0 and selected<state.items.size() and state.items[selected].kind=="stable":barn_button.text="Ver estrebaria"
 	coop_button.visible=selected>=0 and selected<state.items.size() and state.items[selected].kind=="coop"
 	var multipart:bool=selected>=0 and selected<state.items.size() and state.items[selected].kind in ["barn","coop","workshop"]
 	paint_selector.set_item_disabled(1,not multipart)
@@ -332,6 +349,8 @@ func update(state: FarmState, build_mode: bool, selected: int, tool: String, cro
 			details_label.text='“%s”\n\nPinte ou escreva sua mensagem.'%item.text
 		elif item.kind=="barn":
 			details_label.text="Estoque e reserva de produtos\nReserva: %d / %d unidades\n\n[E] Conferir estoque pela porta."%[state.reserve_count(),state.reserve_capacity()]
+		elif item.kind=="stable":
+			details_label.text="Descanso para o Pé de Pano\nFôlego recupera 2× mais rápido\nperto da entrada.\n\n[E] Ver estrebaria."
 		elif item.kind=="workshop":
 			details_label.text="Bancada de ferramentas\nRegador em área: $300\n\n[E] Acessar pela entrada."
 		else:
@@ -354,6 +373,9 @@ func _set_active_buttons() -> void:
 	for key in crop_buttons:
 		crop_buttons[key].add_theme_stylebox_override("normal",style(Color("d8e4c5") if key==current_crop else Color("f4edd9"),8))
 
+func money_text(state:FarmState) -> String:
+	return "$ ∞" if state.unlimited_money else "$ "+_money(state.money)
+
 func _money(value: int) -> String:
 	var text:=str(value)
 	var result:=""
@@ -366,6 +388,7 @@ func close_modal() -> void:
 	world_hud.visible=true
 	if is_instance_valid(overlay): overlay.queue_free()
 	overlay=null
+	modal_shade=null
 	modal=null
 	text_input=null
 	modal_kind=""
@@ -375,9 +398,13 @@ func _modal(kind: String, height: float = 530) -> Panel:
 	modal_kind=kind
 	world_hud.visible=false
 	overlay=ColorRect.new()
-	overlay.color=Color(0.025,0.07,0.045,0.68)
+	overlay.color=Color.TRANSPARENT
 	root.add_child(overlay)
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	modal_shade=ColorRect.new()
+	modal_shade.color=Color(0.025,0.07,0.045,0.68)
+	overlay.add_child(modal_shade)
+	_fit_screen()
 	modal=panel(overlay,Rect2(415,(900-height)/2,610,height))
 	return modal
 
@@ -395,7 +422,7 @@ func welcome(state: FarmState, has_save: bool) -> void:
 	text_input.text=state.farm_name
 	p.add_child(text_input)
 	button(p,"Voltar para minha fazenda" if has_save else "Escolher meu pedaço de terra",Rect2(34,494,542,55),"start",true)
-	label(p,"VERSÃO 0.17.0   •   CHICO QUEIJEIRO",Vector2(34,561),Vector2(542,17),11,MUTED)
+	label(p,"VERSÃO %s   •   F11 TELA CHEIA / JANELA"%ProjectSettings.get_setting("application/config/version"),Vector2(34,561),Vector2(542,17),11,MUTED)
 
 func coop(state:FarmState,index:int,selected_hen:int=-1) -> void:
 	FarmInteractionUI.coop(self,state,index,selected_hen)
@@ -472,7 +499,7 @@ func hen_editor(initial: String) -> void:
 func confirm_route(state: FarmState, plan: Array) -> void:
 	var p:=_modal("route",370)
 	label(p,"Conferir o traçado",Vector2(30,28),Vector2(550,44),29)
-	label(p,"%d peças  •  Total: $%d  •  Saldo: $%d"%[plan.size(),state.batch_cost(plan),state.money],Vector2(30,90),Vector2(550,36),20)
+	label(p,"%d peças  •  Total: $%d  •  Saldo: %s"%[plan.size(),state.batch_cost(plan),money_text(state)],Vector2(30,90),Vector2(550,36),20)
 	var error:=state.batch_error(plan)
 	var description:=label(p,"Tudo livre! Confirme para construir.\nNenhuma moeda foi gasta na prévia." if error.is_empty() else error+"\nCancele e tente outro traçado.",Vector2(30,150),Vector2(550,95),18)
 	description.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
@@ -500,7 +527,7 @@ func evolution(state:FarmState,index:int) -> void:
 	label(p,"EVOLUÇÃO DA FAZENDA • NÍVEL 1 → 2",Vector2(30,24),Vector2(550,27),13,MUTED)
 	label(p,offer.title,Vector2(30,65),Vector2(550,43),29)
 	label(p,offer.benefit,Vector2(30,128),Vector2(550,116),16)
-	label(p,"Construção em (%d, %d) • Saldo: $%d\nMantém o lugar, a pintura e o conteúdo da construção.\nA remoção devolve metade do valor investido na estrutura."%[item.x,item.z,state.money],Vector2(30,263),Vector2(550,91),16)
+	label(p,"Construção em (%d, %d) • Saldo: %s\nMantém o lugar, a pintura e o conteúdo da construção.\nA remoção devolve metade do valor investido na estrutura."%[item.x,item.z,money_text(state)],Vector2(30,263),Vector2(550,91),16)
 	var buy:=button(p,"Confirmar evolução • $%d"%offer.cost,Rect2(30,375,550,46),"evolution_buy:%d"%index,true)
 	buy.disabled=state.money<int(offer.cost) or FarmProgression.level(item)==2
 	button(p,"Voltar sem comprar",Rect2(30,440,550,43),"building_back")
@@ -598,14 +625,16 @@ func editor_dialog(kind: String, initial: String) -> void:
 	button(p,"Pronto!",Rect2(204,209,378,45),"apply_text",true)
 
 func menu(state: FarmState) -> void:
-	var p:=_modal("menu",470)
+	var p:=_modal("menu",620)
 	label(p,state.farm_name,Vector2(30,28),Vector2(550,46),28)
 	label(p,"Uma pausa à sombra da árvore.",Vector2(30,85),Vector2(550,34),18,MUTED)
 	button(p,"Continuar jogando",Rect2(30,144,550,47),"close",true)
 	button(p,"Salvar fazenda",Rect2(30,205,550,43),"save")
-	button(p,"Começar outra fazenda…",Rect2(30,264,550,43),"reset_ask")
-	button(p,"Salvar e sair",Rect2(30,323,550,43),"quit")
-	label(p,"TAB câmeras   •   F armazém   •   F5 salvar\nFeito com Godot e Blender. Modelos originais.",Vector2(30,395),Vector2(550,55),15,MUTED)
+	button(p,"Configurações",Rect2(30,263,550,43),"front:settings")
+	button(p,"Controles",Rect2(30,321,550,43),"front:controls")
+	button(p,"Salvar e voltar ao menu inicial",Rect2(30,379,550,43),"front:title")
+	button(p,"Salvar e sair",Rect2(30,437,550,43),"quit")
+	label(p,"F11 tela cheia / janela   •   TAB câmeras   •   F5 salvar",Vector2(30,529),Vector2(550,55),15,MUTED)
 
 func confirm_reset() -> void:
 	var p:=_modal("reset",280)

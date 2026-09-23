@@ -28,11 +28,13 @@ var pointer_valid := false
 var hover_hint := ""
 var field_alerts:=FarmFieldAlerts.new()
 var session_started := false
+var quitting:=false
+var focus_check_pending:=false
 var save_timer := 0.0
 var ui_timer := 0.0
 var silly_timer := 0.0
 var next_silly := 75.0
-var sound := AudioStreamPlayer.new()
+var audio:=FarmAudio.new()
 var qa_mode := false
 var move_index: int = -1
 var action_cooldown := 0.0
@@ -48,24 +50,35 @@ var nearby_hen := -1
 var silly_kind := "inspect"
 var silly_event_index := 0
 var picked_trade_board:=false
+var trail_journey:=FarmTrails.new()
+var weapons:=FarmWeapons.new()
+var horse:=FarmHorse.new()
+var navigator:=FarmNavigation.new()
+var preferences:=FarmSettings.new()
+var front_end:=FarmFrontEnd.new()
+var network:=FarmNetwork.new()
+var windowed_rect:=Rect2i()
+var windowed_mode:=Window.MODE_WINDOWED
 
 func _ready() -> void:
 	qa_mode = OS.is_debug_build() and "--qa" in OS.get_cmdline_user_args()
-	if qa_mode: save_path="user://qa_farm_v020.json"
+	if qa_mode: save_path="user://qa_farm_v025.json"
 	get_tree().auto_accept_quit = false
 	_inputs()
 	world = FarmWorld.new()
 	add_child(world)
 	var loaded := false if qa_mode else _load_game()
+	state.unlimited_money=not qa_mode
 	next_silly=state.elapsed+75
 	world.rebuild(state)
 	add_child(feedback)
 	feedback.setup(world)
 	_player()
+	add_child(horse);horse.restore(state.horse)
 	add_child(camera)
 	camera.current = true
 	camera.fov = 49
-	camera.far = 250
+	camera.far = 600
 	if state.claimed:
 		focus = Vector3(state.center.x,0,state.center.y)
 		player.position = focus + Vector3(0,0.2,8)
@@ -77,11 +90,17 @@ func _ready() -> void:
 	ghost_mat.albedo_color = Color(0.65,0.85,0.35,0.35)
 	ghost_mat.no_depth_test = false
 	ghost_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-	add_child(sound)
 	hud = FarmHUD.new()
 	add_child(hud)
 	hud.action.connect(_action)
-	hud.welcome(state,loaded)
+	navigator.setup(self)
+	add_child(weapons)
+	weapons.setup(self)
+	add_child(audio);audio.setup(self);weapons.sound.bus=FarmAudio.EFFECTS_BUS
+	front_end.setup(self,loaded)
+	add_child(network);network.setup(self)
+	preferences.load_preferences();preferences.apply(self)
+	front_end.show_title()
 	_update_camera(1.0, true)
 	_update_ui()
 	if qa_mode:
@@ -110,7 +129,7 @@ func _player() -> void:
 
 func _try_jump() -> bool:
 	actor.stop_emote()
-	if not session_started or build_mode or not hud.modal_kind.is_empty() or not player.is_on_floor() or actor.action_time>0: return false
+	if horse.mounted or not session_started or build_mode or not hud.modal_kind.is_empty() or not player.is_on_floor() or actor.action_time>0: return false
 	player.velocity.y=6.8
 	actor.airborne=true
 	actor.landing=0.0
@@ -126,11 +145,15 @@ func _physics_process(delta: float) -> void:
 	var right := Vector3(cos(yaw),0,-sin(yaw))
 	var back := Vector3(sin(yaw),0,cos(yaw))
 	var direction := right * movement.x + back * movement.y
+	if horse.mounted:
+		horse.drive(player,avatar,actor,direction,delta,session_started and hud.modal_kind.is_empty())
+		horse.store(state);_update_camera(delta);return
+	if not network.active and horse.is_inside_tree():horse.life.update(horse,delta,session_started and hud.modal_kind.is_empty() and not build_mode,state,world.landscape,player)
 	if actor.action_time>0 and not build_mode: direction=Vector3.ZERO
 	if build_mode:
 		focus += direction * delta * build_distance * 0.45
-		focus.x = clampf(focus.x,-32,68)
-		focus.z = clampf(focus.z,-60,64)
+		focus.x = clampf(focus.x,-32,178)
+		focus.z = clampf(focus.z,-143,143)
 		player.velocity.x = 0
 		player.velocity.z = 0
 	else:
@@ -154,8 +177,13 @@ func _physics_process(delta: float) -> void:
 func _process(delta: float) -> void:
 	if not is_instance_valid(hud):
 		return
+	# Some Windows transitions retain the focus flag while minimizing.
+	if session_started and not qa_mode and DisplayServer.get_name()!="headless" and hud.modal_kind.is_empty() and not focus_check_pending:
+		if get_window().mode==Window.MODE_MINIMIZED or not get_window().has_focus():_check_focus_pause()
 	action_cooldown=maxf(0,action_cooldown-delta)
-	if session_started and not build_mode and hud.modal_kind.is_empty():
+	if session_started and not network.active and not build_mode and hud.modal_kind.is_empty():
+		var discovery:=trail_journey.discover(Vector2(player.position.x,player.position.z))
+		if not discovery.is_empty():hud.toast(discovery)
 		state.tick(delta)
 		if not state.trade_notices.is_empty():
 			hud.toast("Prazo de %s encerrado. Sem multa. Veja novos pedidos em J."%state.trade_notices[0] if state.trade_notices.size()==1 else "%d prazos encerrados. Sem multa; consulte o quadro com J."%state.trade_notices.size())
@@ -194,19 +222,32 @@ func _start_silly() -> void:
 	hud.toast(messages[silly_kind]%name)
 
 func _update_camera(delta: float, immediate: bool = false) -> void:
-	var target := focus if build_mode else player.position + Vector3(0,1.1,0)
-	var distance := build_distance if build_mode else walk_distance
+	var target := focus if build_mode else player.position + Vector3(0,2.0 if horse.mounted else 1.1,0)
+	var distance := build_distance if build_mode else (walk_distance+3.0 if horse.mounted else walk_distance)
 	var angle := pitch if build_mode else clampf(pitch,0.2,1.0)
+	if weapons.armed and not build_mode:
+		target-=Vector3(cos(yaw),0,-sin(yaw))*.85
+		target+=Vector3.UP*.55
+		distance=5.2 if Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT) else 6.5
+		angle=clampf(pitch,-.35,.80)
 	var desired := target + Vector3(sin(yaw)*cos(angle),sin(angle),cos(yaw)*cos(angle))*distance
 	if not build_mode and is_inside_tree():
-		var query := PhysicsRayQueryParameters3D.create(target,desired,1,[player.get_rid()])
-		var hit := get_world_3d().direct_space_state.intersect_ray(query)
-		if not hit.is_empty():
-			desired = hit.position + hit.normal * 0.35
-	camera.position = desired if immediate else camera.position.lerp(desired,1-exp(-delta*10))
+		desired=_camera_clear_position(target,desired)
+	var next_position:=desired if immediate else camera.position.lerp(desired,1-exp(-delta*10))
+	# Smoothing must not leave the camera behind a newly encountered wall.
+	# Contract immediately; the unobstructed return still eases out normally.
+	if not build_mode and is_inside_tree():next_position=_camera_clear_position(target,next_position)
+	camera.position=next_position
 	if camera.position.distance_to(target)>0.01:
 		camera.look_at(target)
 	avatar.visible = build_mode or camera.position.distance_to(target)>1.7
+
+func _camera_clear_position(target:Vector3,candidate:Vector3) -> Vector3:
+	if target.distance_squared_to(candidate)<.000001:return candidate
+	var query:=PhysicsRayQueryParameters3D.create(target,candidate,1,[player.get_rid(),horse.obstacle.get_rid()])
+	query.hit_from_inside=true
+	var hit:=get_world_3d().direct_space_state.intersect_ray(query)
+	return candidate if hit.is_empty() else hit.position+hit.normal*.35
 
 func _ensure_player_space() -> void:
 	var start := Vector2(player.position.x,player.position.z)
@@ -226,7 +267,35 @@ func _ensure_player_space() -> void:
 				player.position=Vector3(candidate.x,FarmLandscape.height_at(candidate)+.2,candidate.y)
 				return
 
+func _toggle_fullscreen(persist:bool=true) -> void:
+	var window:=get_window()
+	if window.mode in [Window.MODE_FULLSCREEN,Window.MODE_EXCLUSIVE_FULLSCREEN]:
+		var usable:=DisplayServer.screen_get_usable_rect(window.current_screen)
+		var target_size:=windowed_rect.size if windowed_rect.has_area() else Vector2i(1280,800)
+		target_size=target_size.min(Vector2i(Vector2(usable.size)*.9))
+		var target_position:=windowed_rect.position if windowed_rect.has_area() else usable.position+(usable.size-target_size)/2
+		target_position=target_position.clamp(usable.position,usable.end-target_size)
+		window.mode=windowed_mode
+		if windowed_mode==Window.MODE_WINDOWED:
+			window.size=target_size
+			window.position=target_position
+	else:
+		windowed_rect=Rect2i(window.position,window.size)
+		windowed_mode=window.mode
+		window.mode=Window.MODE_EXCLUSIVE_FULLSCREEN
+
+	if persist:
+		preferences.data.fullscreen=window.mode in [Window.MODE_FULLSCREEN,Window.MODE_EXCLUSIVE_FULLSCREEN]
+		preferences.save_preferences()
+		if is_instance_valid(hud) and hud.modal_kind=="settings" and front_end.controls.has("fullscreen"):
+			front_end.controls.fullscreen.button_pressed=preferences.data.fullscreen
+
 func _input(event: InputEvent) -> void:
+	# Works even while a menu or text field owns keyboard focus.
+	if event is InputEventKey and event.pressed and (event.physical_keycode==KEY_F11 or event.keycode==KEY_F11):
+		if not event.echo:_toggle_fullscreen()
+		get_viewport().set_input_as_handled()
+		return
 	# Release must be caught even over a HUD panel, where unhandled input is consumed.
 	if dragging and event is InputEventMouseButton and event.button_index==MOUSE_BUTTON_LEFT and not event.pressed:
 		_update_pointer()
@@ -237,8 +306,21 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 func _unhandled_input(event: InputEvent) -> void:
+	if network.active:
+		if event is InputEventKey and event.pressed and not event.echo:
+			if event.keycode==KEY_ESCAPE:
+				if not network.ready_session:network.leave("Conexão cancelada.")
+				elif hud.modal_kind.is_empty():network.session_menu()
+				else:hud.close_modal()
+				get_viewport().set_input_as_handled();return
+			if event.physical_keycode not in [KEY_SPACE,KEY_B,KEY_M]:return
+		if event is InputEventMouseButton and event.button_index==MOUSE_BUTTON_LEFT:return
+	if weapons.game!=null and weapons.handle_input(event):
+		get_viewport().set_input_as_handled()
+		return
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_ESCAPE:
+			if front_end.escape():get_viewport().set_input_as_handled();return
 			if dragging or not route.is_empty():
 				_cancel_route()
 				if hud.modal_kind=="route": hud.close_modal()
@@ -253,18 +335,23 @@ func _unhandled_input(event: InputEvent) -> void:
 				hud.menu(state)
 			get_viewport().set_input_as_handled()
 			return
+		if event.physical_keycode==KEY_M and hud.modal_kind=="valley_map":
+			hud.close_modal();get_viewport().set_input_as_handled();return
 		if not hud.modal_kind.is_empty():
 			return
 		match event.physical_keycode:
+			KEY_SHIFT:
+				if horse.mounted and horse.encourage():hud.toast("Bora, Pé de Pano!")
 			KEY_SPACE: _try_jump()
 			KEY_TAB: _action("mode")
 			KEY_E: _interact_nearest()
 			KEY_F: _action("market")
 			KEY_J: _action("market_orders")
 			KEY_H: _action("staff")
+			KEY_T: _action("parcels")
 			KEY_B: _action("emotes")
 			KEY_F5: _action("save")
-			KEY_M: _action("move")
+			KEY_M: _action("move" if build_mode else "map")
 			KEY_R: turn=posmod(turn+1,4)
 			KEY_Q: turn=posmod(turn-1,4)
 			KEY_1: _action("tool:inspect")
@@ -278,11 +365,12 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_9: _action("tool:workshop")
 			KEY_0: _action("tool:corral")
 			KEY_G: _action("tool:cheesery")
+			KEY_K: _action("tool:stable")
 	if not hud.modal_kind.is_empty():
 		return
 	if event is InputEventMouseMotion and Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT):
-		yaw -= event.relative.x*0.005
-		pitch=clampf(pitch+event.relative.y*0.003,0.2,1.3)
+		yaw -= event.relative.x*0.005*float(preferences.data.sensitivity)
+		pitch=clampf(pitch+event.relative.y*0.003*float(preferences.data.sensitivity),0.2,1.3)
 	if event is InputEventMouseButton and event.pressed:
 		if event.button_index==MOUSE_BUTTON_WHEEL_UP:
 			if build_mode: build_distance=clampf(build_distance-3,20,78)
@@ -333,6 +421,12 @@ func _cancel_route() -> void:
 
 func _update_pointer() -> void:
 	ghost.visible = false
+	if network.active:
+		world.build_grid.visible=false;world.selection.visible=false;pointer_valid=false;return
+	for land in state.owned_areas():
+		if land.has_point(pointer):
+			world.build_grid.position=Vector3(land.get_center().x,.045,land.get_center().y)
+			world.build_grid.scale=Vector3(land.size.x,1,land.size.y)
 	world.build_grid.visible=session_started and state.claimed and build_mode and hud.modal_kind.is_empty() and (FarmState.ITEMS.has(tool) or move_index>=0)
 	world.show_selection(state,selected if build_mode else _nearest())
 	if not hud.modal_kind.is_empty(): world.selection.visible=false
@@ -402,6 +496,7 @@ func _ghost_material(node: Node) -> void:
 	for child in node.get_children(): _ghost_material(child)
 
 func _click_world() -> void:
+	if network.active:return
 	if not pointer_valid:
 		return
 	if move_index>=0:
@@ -491,8 +586,8 @@ func _find_item(at: Vector2) -> int:
 
 func _distance_to_item(i: int) -> float:
 	var item:Dictionary=state.items[i]
-	if item.kind in ["barn","workshop","corral","cheesery"]:
-		var door:=Vector3(item.x,0,item.z)+Vector3(0,0,3.0 if item.kind in ["barn","corral","cheesery"] else 1.9).rotated(Vector3.UP,item.turn*PI/2)
+	if item.kind in ["barn","workshop","corral","cheesery","stable"]:
+		var door:=Vector3(item.x,0,item.z)+Vector3(0,0,3.0 if item.kind in ["barn","corral","cheesery","stable"] else 1.9).rotated(Vector3.UP,item.turn*PI/2)
 		return Vector2(player.position.x-door.x,player.position.z-door.z).length()
 	var area:=state.item_rect(item.kind,Vector2(item.x,item.z),item.turn)
 	var position_2d:=Vector2(player.position.x,player.position.z)
@@ -503,13 +598,13 @@ func _nearest() -> int:
 	nearby_hen=-1
 	var best:=-1
 	var distance:=2.6
-	if selected>=0 and selected<state.items.size() and state.items[selected].kind in ["plot","sign","barn","coop","workshop","corral","cheesery"]:
+	if selected>=0 and selected<state.items.size() and state.items[selected].kind in ["plot","sign","barn","coop","workshop","corral","cheesery","stable"]:
 		var current_distance:=_distance_to_item(selected)
 		if current_distance<distance:
 			best=selected
 			distance=current_distance
 	for i in range(state.items.size()):
-		if state.items[i].kind not in ["plot","sign","barn","coop","workshop","corral","cheesery"]: continue
+		if state.items[i].kind not in ["plot","sign","barn","coop","workshop","corral","cheesery","stable"]: continue
 		var d:=_distance_to_item(i)
 		if d<distance and (best<0 or d+0.05<distance):
 			best=i
@@ -524,6 +619,11 @@ func _nearest() -> int:
 
 func _nearby_context() -> Dictionary:
 	if build_mode or not state.claimed: return {}
+	if horse.mounted:return {"text":"Desmontar · Pé de Pano","action":"horse"}
+	if weapons.shop_has_priority():return {"text":"Conversar com Damião","action":"armory"}
+	if horse.can_mount(player):
+		var nearby:=_nearest()
+		if nearby<0 or state.items[nearby].kind!="stable" or player.position.distance_to(horse.position)<=_distance_to_item(nearby):return {"text":"Montar · Pé de Pano","action":"horse"}
 	if player.position.distance_to(FarmWorld.TRADE_BOARD_AT)<2.8: return {"text":"Ver encomendas","action":"orders"}
 	if player.position.distance_to(Vector3(-24,0,14))<4: return {"text":"Conversar com Lúcia","action":"market"}
 	var index:=_nearest()
@@ -536,6 +636,7 @@ func _nearby_context() -> Dictionary:
 		"cheesery": context.text="Queijo pronto · Recolher" if item.cheese.ready>0 else ("Queijo · faltam %ds"%ceili(item.cheese.remaining) if item.cheese.batch>0 else "Fazer queijo")
 		"corral": context.text="Cuidar da vaca"
 		"workshop": context.text="Abrir oficina"
+		"stable": context.text="Ver estrebaria"
 		"sign": context.text="Editar placa"
 		"plot":
 			if not item.planted:
@@ -550,11 +651,14 @@ func _nearby_context() -> Dictionary:
 	return context
 
 func _interact_nearest() -> void:
+	if network.active:return
 	actor.stop_emote()
 	if not hud.modal_kind.is_empty(): return
 	var context:=_nearby_context()
 	if context.is_empty(): return
 	match context.action:
+		"armory": weapons.holster();weapons.show_shop()
+		"horse": _horse_interact()
 		"orders": hud.market(state,"orders")
 		"market": hud.market(state)
 		"item":
@@ -563,6 +667,7 @@ func _interact_nearest() -> void:
 			_tend_selected()
 
 func _tend_selected() -> void:
+	if horse.mounted:return
 	actor.stop_emote()
 	if not build_mode and actor.airborne: return
 	if selected<0 or selected>=state.items.size(): return
@@ -612,8 +717,26 @@ func _tend_selected() -> void:
 	elif item.kind=="coop": hud.coop(state,selected,selected_hen)
 	elif item.kind=="cheesery": FarmCheeseHUD.show(hud,state,selected)
 	elif item.kind=="corral": FarmDairyHUD.show(hud,state,selected)
+	elif item.kind=="stable": FarmStable.show(hud,state,horse,selected)
 
 func _action(value: String) -> void:
+	if network.handle(value):return
+	if quitting:return
+	if value=="close" and front_end.escape():return
+	if value.begins_with("front:"):
+		front_end.handle(value);return
+	if value=="map" or value.begins_with("map:"):
+		navigator.handle(value);return
+	if horse.mounted and (value=="emotes" or value.begins_with("emote:") or value.begins_with("tool:") or value=="move"):
+		hud.toast("Desmonte com E para fazer isso.");return
+	if value=="parcels":
+		actor.stop_emote();FarmParcels.show(hud,state);return
+	if value.begins_with("parcel_buy:"):
+		var error:=FarmParcels.buy(state,value.get_slice(":",1))
+		if error.is_empty():
+			world.update_border(state);_save_game(false);hud.toast("Terreno comprado! A clareira está pronta para construir.")
+		else:hud.toast(error)
+		FarmParcels.show(hud,state);return
 	if value=="farm_levels":
 		actor.stop_emote();FarmLevelsHUD.show(hud,state);return
 	if value=="emotes":
@@ -624,6 +747,7 @@ func _action(value: String) -> void:
 		if hud.modal_kind!="emotes" or build_mode or not session_started: return
 		var key:=value.get_slice(":",1)
 		hud.close_modal(); actor.emote(key)
+		network.send_emote(key)
 		return
 	actor.stop_emote()
 	if value=="raul": FarmDairyWorkerHUD.show(hud,state);return
@@ -867,7 +991,7 @@ func _action(value: String) -> void:
 	if value.begins_with("accept_order:") or value.begins_with("deliver_order:") or value.begins_with("cancel_order:"):
 		var key:=value.get_slice(":",1)
 		if not state.trade.has(key): return
-		var before_money:=state.money
+		var before_money:=state.revenue
 		var error:=""
 		var message:=""
 		if value.begins_with("accept_order:"):
@@ -875,7 +999,7 @@ func _action(value: String) -> void:
 			message="Encomenda aceita! O prazo avança só enquanto você joga."
 		elif value.begins_with("deliver_order:"):
 			error=state.deliver_order(key)
-			message="Entrega concluída! +$%d e +1 reputação com %s."%[state.money-before_money,FarmTrade.NEIGHBORS[key].name]
+			message="Entrega concluída! +$%d e +1 reputação com %s."%[state.revenue-before_money,FarmTrade.NEIGHBORS[key].name]
 			if error.is_empty(): _chime("harvest")
 		else:
 			error=state.cancel_order(key)
@@ -980,6 +1104,7 @@ func _action(value: String) -> void:
 		"route_cancel": hud.close_modal()
 		"barn":
 			if selected>=0 and selected<state.items.size() and state.items[selected].kind=="workshop": hud.workshop(state,selected)
+			elif selected>=0 and selected<state.items.size() and state.items[selected].kind=="stable":FarmStable.show(hud,state,horse,selected)
 			elif state.count_items("barn")>0: hud.barn(state,selected)
 		"upgrade":
 			var error:=state.buy_watering_upgrade()
@@ -999,12 +1124,14 @@ func _action(value: String) -> void:
 			hud.toast("Escolha o novo lugar. R gira • Esc cancela • Sem custo.")
 		"journey": _journey_action()
 		"start":
-			var farm_name:=hud.text_input.text.strip_edges()
+			var farm_name:String=hud.text_input.text.strip_edges() if hud.modal_kind=="welcome" and is_instance_valid(hud.text_input) else state.farm_name
 			state.farm_name=farm_name if not farm_name.is_empty() else "Meu pedacinho de mundo"
 			session_started=true
 			hud.close_modal()
 			if state.claimed: hud.toast("Bem-vindo de volta! A fazenda estava esperando.")
 		"mode":
+			if horse.mounted and not horse.dismount(player,avatar,actor,state,world.landscape):
+				hud.toast("Procure um espaço livre para desmontar.");return
 			if not state.claimed:
 				hud.toast("Primeiro, escolha seu pedacinho de terra.")
 				return
@@ -1053,29 +1180,20 @@ func _action(value: String) -> void:
 				hud.toast("Espaço livre. Metade do custo voltou para você.")
 		"reset_ask": hud.confirm_reset()
 		"reset_confirm":
-			field_alerts=FarmFieldAlerts.new()
-			state=FarmState.new()
-			world.rebuild(state)
-			selected=-1
-			journey_seen=-1
-			build_mode=true
-			tool="inspect"
-			focus=Vector3(4,0,-2)
-			player.position=Vector3(4,0.2,10)
-			next_silly=75
-			silly_timer=0
-			silly_event_index=0
-			selected_hen=-1
-			session_started=false
+			_reset_farm()
 			hud.welcome(state,false)
 			_save_game(false,true)
-		"quit":
-			if _save_game(false): get_tree().quit()
+		"quit":_request_quit()
 	_update_ui()
 
 func _update_ui() -> void:
 	hud.update(state,build_mode,selected,tool,crop,hover_hint)
 	hud.walking.update(hud,state,_nearby_context(),crop)
+	hud.walking.mount_status(horse.mounted,horse.stamina,horse.burst)
+	hud.walking.visit_mode(network.active)
+	if network.active:hud.build_hud.visible=false
+	navigator.refresh()
+	if not network.active and horse.is_inside_tree():horse.ensure_parking(state,world.landscape)
 	var step:=state.journey_step()
 	if session_started and journey_seen>=0 and step>journey_seen:
 		hud.toast("Etapa concluída: "+FarmState.JOURNEY[journey_seen].title+"!")
@@ -1113,6 +1231,7 @@ func _journey_action() -> void:
 		elif key=="expand": hud.toast("Use Expandir na barra quando tiver $900.")
 
 func _save_game(notify: bool, force: bool = false) -> bool:
+	if network.active:return true
 	if not session_started and not force: return true
 	var temporary:=save_path+".tmp"
 	var file:=FileAccess.open(temporary,FileAccess.WRITE)
@@ -1141,34 +1260,65 @@ func _load_game() -> bool:
 		if FileAccess.file_exists(path):
 			var parser:=JSON.new()
 			if parser.parse(FileAccess.get_file_as_string(path))==OK and state.restore(parser.data):
+				if not qa_mode:state.unlimited_money=true
+				if is_instance_valid(horse) and horse.is_inside_tree() and not horse.mounted:horse.restore(state.horse)
 				return true
 	return false
 
+func _request_quit() -> void:
+	if quitting or not _save_game(false):return
+	quitting=true;session_started=false;audio.stop_all()
+	if network.active and network.peer:network.peer.close()
+	# Let the audio mixer release loop playbacks before destroying the engine.
+	await get_tree().create_timer(.15).timeout
+	get_tree().quit()
+
 func _notification(what: int) -> void:
 	if what==NOTIFICATION_WM_CLOSE_REQUEST:
-		if _save_game(false): get_tree().quit()
+		_request_quit()
+	elif what==NOTIFICATION_APPLICATION_FOCUS_OUT and session_started and not qa_mode and DisplayServer.get_name()!="headless" and not focus_check_pending:
+		_check_focus_pause()
+
+func _check_focus_pause() -> void:
+	focus_check_pending=true
+	# Fullscreen switches can briefly change focus without the player leaving the game.
+	await get_tree().create_timer(.2).timeout
+	focus_check_pending=false
+	if get_window().mode==Window.MODE_MINIMIZED or not get_window().has_focus():_pause_for_focus_loss()
+
+func _pause_for_focus_loss() -> void:
+	if not session_started or not is_instance_valid(hud) or not hud.modal_kind.is_empty():return
+	_cancel_route()
+	move_index=-1
+	if tool=="move":tool="inspect"
+	player.velocity=Vector3.ZERO
+	for action_name in ["forward","back","left","right","run"]:Input.action_release(action_name)
+	weapons.holster()
+	if network.active:network.session_menu()
+	else:
+		hud.menu(state)
+		hud.toast("Jogo pausado enquanto você estava fora da janela.")
 
 func _chime(kind: String = "build") -> void:
-	var stream:=AudioStreamWAV.new()
-	stream.format=AudioStreamWAV.FORMAT_16_BITS
-	stream.mix_rate=22050
-	var bytes:=PackedByteArray()
-	bytes.resize(4410*2)
-	for i in range(4410):
-		var t:=float(i)/22050
-		var frequency:=660.0 if t<0.1 else 880.0
-		if kind=="harvest": frequency=[523.25,659.25,783.99][mini(2,int(t/0.066))]
-		if kind=="plant": frequency=360+t*400
-		var wave:=sin(t*TAU*frequency)
-		if kind=="water": wave=(sin(t*TAU*(900-t*2500))*0.35+sin(i*1.719)*sin(i*0.827)*0.3)
-		var sample:=int(wave*exp(-t*15)*6500)
-		bytes.encode_s16(i*2,sample)
-	stream.data=bytes
-	sound.stream=stream
-	sound.volume_db=-15
-	sound.play()
+	audio.play_effect(kind if kind in ["build","harvest","plant","water"] else "build")
 
 func _qa() -> void:
+	if "--qa-v026" in OS.get_cmdline_user_args():
+		await _qa_v026();get_tree().quit();return
+	if "--qa-title-photo" in OS.get_cmdline_user_args():
+		await _qa_title_photo();get_tree().quit();return
+	if "--qa-v025" in OS.get_cmdline_user_args():
+		_action("start");await _qa_v025();get_tree().quit();return
+	if "--qa-v024" in OS.get_cmdline_user_args():
+		_action("start");await _qa_v024();get_tree().quit();return
+	if "--qa-horse-preview" in OS.get_cmdline_user_args():
+		_action("start");await _qa_horse_preview();get_tree().quit();return
+	if "--qa-v023" in OS.get_cmdline_user_args():
+		_action("start");await _qa_v023();get_tree().quit();return
+	if "--qa-v022" in OS.get_cmdline_user_args():
+		_action("start");await _qa_v022();get_tree().quit();return
+	if "--qa-v021" in OS.get_cmdline_user_args():
+		_action("start");await _qa_v021();get_tree().quit();return
 	if "--qa-v020" in OS.get_cmdline_user_args():
 		_action("start");await _qa_v020();get_tree().quit();return
 	if "--qa-v019" in OS.get_cmdline_user_args():
@@ -2720,7 +2870,7 @@ func _qa_v020() -> void:
 	await _qa_ui_capture("valley-v020-overview")
 	var meadow_started:=Time.get_ticks_msec()
 	for repetition in range(10):world.landscape.refresh(state)
-	assert(world.landscape.meadow.get_child_count()==3)
+	assert(world.landscape.meadow.get_child_count()>=3)
 	print("V020_MEADOW_REFRESH: ten rebuilds ms=",Time.get_ticks_msec()-meadow_started)
 	# Explicit triangle-floor checks in the larger walking area.
 	await get_tree().physics_frame
@@ -2728,7 +2878,7 @@ func _qa_v020() -> void:
 		var query:=PhysicsRayQueryParameters3D.create(Vector3(p.x,8,p.y),Vector3(p.x,-2,p.y))
 		var hit:=get_world_3d().direct_space_state.intersect_ray(query)
 		assert(not hit.is_empty() and absf(hit.position.y-FarmLandscape.height_at(p))<.1)
-	for p in world.landscape.trunk_points:assert(not FarmLandscape.CLEAR.has_point(p))
+	for p in world.landscape.trunk_points:assert(not state.bounds().grow(.6).has_point(p))
 	for patch in world.landscape.meadow.get_children():
 		for i in range(patch.multimesh.instance_count):
 			var pos:Vector3=patch.multimesh.get_instance_transform(i).origin
@@ -2750,3 +2900,350 @@ func _qa_v020() -> void:
 	print("V020_RENDER_SAMPLE: 90 frames ms=",Time.get_ticks_msec()-started," draw_calls=",Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME))
 	assert(state.restore(previous));world.rebuild(state);build_mode=true;_update_ui()
 	print("V020_LANDSCAPE_OK: continuous floor, expanded walking, protected land, vegetation clearance, four rendered views")
+
+func _qa_v021() -> void:
+	var previous:=state.serialize()
+	hud.close_modal();state=FarmState.new();state.farm_xp=950;state.unlimited_money=true;world.rebuild(state)
+	var wild:=world.landscape.nature.get_child_count()
+	state.claim(Vector2(4,-2));world.update_border(state)
+	assert(world.landscape.nature.get_child_count()<wild)
+	var trees:=world.landscape.trunk_points.size()
+	assert(state.expand().is_empty());world.update_border(state)
+	assert(world.landscape.trunk_points.size()<trees)
+	for p in world.landscape.trunk_points:assert(not state.bounds().grow(.65).has_point(p))
+	build_mode=false;player.position=Vector3(22,.1,17);yaw=.6;pitch=.28;walk_distance=10;_update_camera(0,true);_update_ui()
+	assert(hud.walking.wallet.text=="$ ∞")
+	await _qa_ui_capture("valley-v021-clearing")
+	_action("parcels");assert(hud.modal_kind=="parcels")
+	await _qa_ui_capture("valley-v021-parcels")
+	_action("parcel_buy:east");assert("east" in state.owned_parcels)
+	_action("close")
+	assert(state.place("coop",FarmParcels.LOTS.east.center,0).is_empty())
+	world.rebuild(state);state.hire_staff(0);state.items[0].flock.nest=4;world.rebuild(state)
+	for i in range(600):state.tick(.1);world.update_staff(state,.1);world.animate(.1,player.position,state)
+	assert(state.staff.eggs>=4 and state.inventory.egg>=4)
+	player.position=Vector3(58,.1,4);yaw=.3;pitch=.35;walk_distance=12;_update_camera(0,true);_update_ui()
+	await _qa_ui_capture("valley-v021-owned")
+	assert(_save_game(false));state=FarmState.new();assert(_load_game())
+	assert(state.unlimited_money and "east" in state.owned_parcels and state.items.size()==1)
+	world.rebuild(state)
+	assert(not world.landscape.birds.is_empty())
+	build_mode=true;_update_ui();hud.world_hud.visible=false;set_physics_process(false)
+	var bird:Dictionary=world.landscape.birds[0]
+	var outward:Vector3=bird.node.global_position-bird.node.get_parent().global_position;outward.y=0
+	camera.position=bird.node.global_position+outward.normalized()*3.2+Vector3.UP*.8;camera.look_at(bird.node.global_position)
+	await _qa_ui_capture("valley-v021-bird")
+	camera.position=Vector3(-34,1.6,8);camera.look_at(Vector3(-41,-.15,2))
+	await _qa_ui_capture("valley-v0211-bank-close")
+	camera.position=Vector3(-49,1.6,-25);camera.look_at(Vector3(-42,-.15,-30))
+	await _qa_ui_capture("valley-v0211-bank-opposite")
+	# Fixed camera and deterministic advection times show downstream flow clearly.
+	camera.position=Vector3(-31,7,8);camera.look_at(Vector3(-42,0,0));world.landscape.set_process(false)
+	for i in range(16):
+		world.landscape.water_material.set_shader_parameter("flow_time",i*.18)
+		await _qa_ui_capture("valley-v021-flow-%02d"%i)
+	world.landscape.set_process(true);hud.world_hud.visible=true;set_physics_process(true)
+	assert(state.restore(previous));world.rebuild(state);build_mode=true;_update_ui()
+	print("V021_INTEGRATION_OK: claim/expansion clearing, parcels UI, remote coop worker, infinite money, reload, birds and flowing river")
+
+func _qa_v022() -> void:
+	state=FarmState.new();state.claim(Vector2(4,-2));state.unlimited_money=true
+	world.rebuild(state);hud.close_modal();build_mode=false;set_physics_process(false)
+	assert(world.landscape.trail_signs.size()>=9)
+	var journey:=FarmTrails.new()
+	for key in FarmTrails.STOPS:
+		var stop:Dictionary=FarmTrails.STOPS[key]
+		assert(not journey.discover(stop.at).is_empty())
+		assert(journey.discover(stop.at).is_empty())
+		for p in world.landscape.trunk_points:assert(p.distance_to(stop.at)>float(stop.radius))
+	# Walk every route using the player's actual collision shape and terrain.
+	for route_points in FarmTrails.ROUTES:
+		var start:Vector2=route_points[0]
+		player.position=Vector3(start.x,FarmLandscape.height_at(start)+.1,start.y)
+		for i in range(1,route_points.size()):
+			var finish:Vector2=route_points[i]
+			for step in range(1200):
+				var delta_2d:=finish-Vector2(player.position.x,player.position.z)
+				if delta_2d.length()<.18:break
+				var speed:=minf(7.5,delta_2d.length()*60)
+				player.velocity=Vector3(delta_2d.normalized().x*speed,player.velocity.y-18.0/60,delta_2d.normalized().y*speed)
+				player.move_and_slide()
+				await get_tree().physics_frame
+			assert(Vector2(player.position.x,player.position.z).distance_to(finish)<.25,"Trail blocked")
+	assert(_save_game(false));assert(_load_game());assert(state.unlimited_money)
+	hud.world_hud.visible=false;avatar.visible=false
+	var views:=[
+		[Vector3(-19,10,-68),Vector3(-10,3,-84),"mill"],
+		[Vector3(66,6,47),Vector3(59,1,38),"picnic"],
+		[Vector3(32,5,78),Vector3(39,1,84),"cart"],
+		[Vector3(-18,4,-58),Vector3(-3,1,-55),"junction"]
+	]
+	for view in views:
+		var at:Vector3=view[0];at.y+=FarmLandscape.height_at(Vector2(at.x,at.z))
+		var target:Vector3=view[1];target.y+=FarmLandscape.height_at(Vector2(target.x,target.z))
+		camera.position=at;camera.look_at(target)
+		await _qa_ui_capture("valley-v022-"+view[2])
+	var before:float=world.landscape.trail_rotor.rotation.z
+	await get_tree().create_timer(.2).timeout
+	assert(absf(world.landscape.trail_rotor.rotation.z-before)>.01)
+	print("V022_INTEGRATION_OK: 6 routes walked with player collision; 9 signs, 3 discoveries, animated mill, infinite wallet and isolated save reload")
+
+func _horse_interact() -> void:
+	if not session_started or build_mode or not hud.modal_kind.is_empty():return
+	if horse.mounted:
+		if not horse.dismount(player,avatar,actor,state,world.landscape):hud.toast("Procure espaço livre ao lado do cavalo.")
+	elif horse.can_mount(player) and actor.action_time<=0:
+		weapons.holster()
+		horse.mount(player,avatar,actor);hud.toast("WASD cavalgar · Shift dá um tapinha para galopar · E desmontar")
+	_update_ui()
+
+func _qa_v023() -> void:
+	state=FarmState.new();state.claim(Vector2(4,-2));state.unlimited_money=true
+	world.rebuild(state);hud.close_modal();build_mode=false
+	horse.restore(FarmHorse.defaults());player.position=horse.position+Vector3(1.8,.1,0)
+	for i in range(60):await get_tree().physics_frame
+	assert(horse.can_mount(player));_horse_interact();assert(horse.mounted)
+	set_physics_process(false)
+	assert(not _try_jump());_action("emotes");assert(hud.modal_kind.is_empty())
+	assert(horse.encourage());assert(horse.stamina==75 and horse.pat_time>0)
+	assert(not horse.encourage())
+	for i in range(12):
+		horse.drive(player,avatar,actor,Vector3.FORWARD*-1,1.0/60,true)
+		await get_tree().physics_frame
+	hud.world_hud.visible=false
+	camera.position=horse.position+Vector3(5,3.8,6);camera.look_at(horse.position+Vector3(0,1.8,0))
+	await _qa_ui_capture("horse-v023-mounted")
+	var paused_pos:=player.position;var paused_stamina:=horse.stamina;var paused_burst:=horse.burst
+	for i in range(10):horse.drive(player,avatar,actor,Vector3.ZERO,1.0/60,false);await get_tree().physics_frame
+	assert(player.position.distance_to(paused_pos)<.1 and horse.stamina==paused_stamina and horse.burst==paused_burst)
+	# Full circuit with the real mounted collision shape, including long curves.
+	var route_points:Array=FarmTrails.ROUTES[6]
+	var start:Vector2=route_points[0];player.position=Vector3(start.x,FarmLandscape.height_at(start)+.08,start.y)
+	var travelled:=0.0
+	for i in range(1,route_points.size()):
+		var finish:Vector2=route_points[i]
+		horse.heading=atan2(finish.x-player.position.x,finish.y-player.position.z)
+		for step in range(2400):
+			var offset:=finish-Vector2(player.position.x,player.position.z)
+			if offset.length()<.6:break
+			if offset.length()<3:horse.burst=0;horse.speed=minf(horse.speed,3)
+			elif horse.burst<=0 and horse.stamina>=25:horse.encourage()
+			var old:=player.position
+			horse.drive(player,avatar,actor,Vector3(offset.x,0,offset.y).normalized(),1.0/60,true)
+			travelled+=player.position.distance_to(old)
+			await get_tree().physics_frame
+		assert(Vector2(player.position.x,player.position.z).distance_to(finish)<.7,"Mounted route blocked at "+str(finish))
+	horse.store(state);assert(_save_game(false))
+	var saved_horse:=state.horse.duplicate();assert(_load_game())
+	for key in saved_horse:assert(is_equal_approx(float(state.horse[key]),float(saved_horse[key])))
+	assert(horse.dismount(player,avatar,actor,state,world.landscape))
+	assert(not horse.mounted and avatar.position==Vector3.ZERO)
+	camera.position=horse.position+Vector3(5,3,6);camera.look_at(horse.position+Vector3(0,1.5,0))
+	await _qa_ui_capture("horse-v023-parked")
+	# A blocked exit must keep the rider mounted rather than teleport through walls.
+	horse.mount(player,avatar,actor)
+	var cage:=StaticBody3D.new();var collision:=CollisionShape3D.new();var box:=BoxShape3D.new();box.size=Vector3(12,5,12);collision.shape=box;cage.add_child(collision);cage.position=horse.position+Vector3.UP*2;add_child(cage)
+	await get_tree().physics_frame
+	assert(not horse.dismount(player,avatar,actor,state,world.landscape) and horse.mounted)
+	cage.free();await get_tree().physics_frame
+	assert(horse.dismount(player,avatar,actor,state,world.landscape))
+	avatar.visible=false
+	for view in [[Vector3(111,8,-98),Vector3(100,1,-77),"orchard"],[Vector3(139,8,63),Vector3(153,1,75),"stones"],[Vector3(75,8,105),Vector3(77,1,122),"flowers"]]:
+		var from:Vector3=view[0];from.y+=FarmLandscape.height_at(Vector2(from.x,from.z))
+		var target:Vector3=view[1];target.y+=FarmLandscape.height_at(Vector2(target.x,target.z))
+		camera.position=from;camera.look_at(target);await _qa_ui_capture("horse-v023-"+view[2])
+	print("V023_INTEGRATION_OK: mount, tap boost, stamina, pause, blocked dismount, real circuit riding, save reload and expanded environments; distance=",travelled)
+
+func _qa_horse_preview() -> void:
+	state=FarmState.new();state.claim(Vector2(4,-2));state.unlimited_money=true;world.rebuild(state)
+	horse.restore(FarmHorse.defaults());hud.close_modal();build_mode=false;player.position=horse.position+Vector3(1.8,.1,0)
+	for i in range(60):await get_tree().physics_frame
+	_horse_interact();assert(horse.mounted);set_physics_process(false)
+	player.position=Vector3(0,FarmLandscape.height_at(Vector2(0,30))+.05,30);horse.position=player.position;horse.heading=PI/2
+	for i in range(24):
+		if i==4:assert(horse.encourage())
+		horse.drive(player,avatar,actor,Vector3(1,0,0),.07,true)
+		camera.position=horse.position+Vector3(5,2.8,6);camera.look_at(horse.position+Vector3(0,1.8,0))
+		hud.world_hud.visible=i==0;_update_ui()
+		await _qa_ui_capture("horse-v023-ride-%02d"%i)
+	assert(hud.walking.horse_panel.visible and hud.walking.horse_stamina.value<100)
+	print("HORSE_PREVIEW_OK")
+
+func _qa_v024() -> void:
+	state=FarmState.new();state.claim(Vector2(4,-2));state.unlimited_money=true;state.farm_xp=950
+	world.rebuild(state);hud.close_modal();build_mode=false
+	horse.restore(FarmHorse.defaults());player.position=horse.position+Vector3(1.8,.1,0)
+	for i in range(60):await get_tree().physics_frame
+	_update_ui();_action("map");assert(hud.modal_kind=="valley_map")
+	var saved:=state.serialize()
+	_action("map:go:orchard");assert(navigator.waypoint==FarmTrails.STOPS.orchard.at)
+	assert(navigator.status.text.contains("m"))
+	await _qa_ui_capture("map-v024-full")
+	_action("map:clear");assert(navigator.waypoint_name.is_empty())
+	navigator.large.picked.emit(Vector2(50,90));assert(navigator.waypoint==Vector2(50,90))
+	assert(state.serialize()==saved)
+	_action("map:go:horse");horse.position.x+=1;navigator.refresh();assert(navigator.waypoint.x==horse.position.x)
+	_action("close");_horse_interact();assert(horse.mounted)
+	_action("map");assert(hud.modal_kind=="valley_map")
+	var mounted_at:=player.position
+	horse.drive(player,avatar,actor,Vector3.FORWARD,.1,false)
+	assert(Vector2(player.position.x,player.position.z).distance_to(Vector2(mounted_at.x,mounted_at.z))<.01)
+	_action("close");navigator.select(FarmTrails.STOPS.mill.at,"Mirante dos Ventos")
+	set_physics_process(false)
+	player.position=Vector3(0,FarmLandscape.height_at(Vector2(0,30))+.05,30);horse.position=player.position;horse.heading=PI/2
+	for i in range(24):
+		if i==4:assert(horse.encourage())
+		horse.drive(player,avatar,actor,Vector3(1,0,0),.07,true)
+		camera.position=horse.position+Vector3(5,2.8,6);camera.look_at(horse.position+Vector3(0,1.8,0))
+		_update_ui()
+		await _qa_ui_capture("map-v024-ride-%02d"%i)
+	assert(horse.skin!=null and horse.skin_bones.size()==10)
+	assert(horse.dismount(player,avatar,actor,state,world.landscape))
+	_update_ui()
+	for angle in [0.0,1.57,3.14]:
+		horse.animate(.1,0,false)
+		camera.position=horse.position+Vector3(sin(angle)*6,2.7,cos(angle)*6);camera.look_at(horse.position+Vector3(0,1.4,0))
+		await _qa_ui_capture("horse-v024-angle-%d"%int(angle*100))
+	print("V024_INTEGRATION_OK: destinations, map pause while mounted, no state mutation, horse tracking, continuous skin, riding and dismount")
+
+func _qa_v025() -> void:
+	state=FarmState.new();state.claim(Vector2(4,-2));state.unlimited_money=true;state.farm_xp=950
+	assert(state.place("stable",Vector2(2,-4),0).is_empty());world.rebuild(state)
+	hud.close_modal();build_mode=false;set_physics_process(false)
+	horse.restore({"x":2.0,"z":2.0,"angle":0.0});horse.life.reset(horse);player.position=Vector3(10,.1,9)
+	for i in range(5):await get_tree().physics_frame
+	horse.stamina=30
+	horse.life.mode="graze";horse.life.remaining=30
+	for i in range(24):horse.life.update(horse,.07,true,state,world.landscape,player)
+	assert(horse.life.graze>.9 and horse.stamina>50)
+	camera.position=Vector3(11,6,13);camera.look_at(Vector3(2,1.3,-1));_update_ui()
+	await _qa_ui_capture("stable-v025-graze")
+	var pose:Transform3D=horse.parts.HorseNeck.transform;var snapshot:=state.serialize();var stamina:=horse.stamina
+	horse.life.update(horse,5,false,state,world.landscape,player)
+	assert(horse.parts.HorseNeck.transform==pose and horse.stamina==stamina and state.serialize()==snapshot)
+	selected=0;_tend_selected();assert(hud.modal_kind=="stable");await _qa_ui_capture("stable-v025-menu");hud.close_modal()
+	_action("map");_action("map:go:stable:0");assert(navigator.waypoint.distance_to(FarmStable.entrance(state.items[0]))<.001)
+	await _qa_ui_capture("stable-v025-map");hud.close_modal()
+	# Bounded walking on a clear public lane, no manual teleport during the simulation.
+	horse.restore({"x":20.0,"z":30.0,"angle":PI/2});player.position=Vector3(10,.1,40)
+	horse.life.mode="walk";horse.life.remaining=30;horse.life.goal=Vector2(23,30)
+	var origin:=horse.position
+	for i in range(24):
+		horse.life.update(horse,.1,true,state,world.landscape,player)
+		assert(Vector2(horse.position.x,horse.position.z).distance_to(horse.life.anchor)<=4.51)
+		camera.position=horse.position+Vector3(6,3.1,5);camera.look_at(horse.position+Vector3(0,1.5,0));_update_ui()
+		await _qa_ui_capture("stable-v025-walk-%02d"%i)
+	assert(horse.position.distance_to(origin)>1)
+	# A real obstacle blocks the full swept body, not only its feet.
+	var blocker:=StaticBody3D.new();var collision:=CollisionShape3D.new();var box:=BoxShape3D.new();box.size=Vector3(.25,3,7);collision.shape=box;blocker.add_child(collision);add_child(blocker);blocker.position=horse.position+Vector3(2,1.5,0)
+	for i in range(3):await get_tree().physics_frame
+	assert(not horse.life.safe_step(horse,Vector2(horse.position.x+3,horse.position.z),PI/2,state,world.landscape))
+	blocker.queue_free()
+	horse.stamina=30;horse.life.mode="look";horse.life.remaining=30
+	horse.life.update(horse,1,true,state,world.landscape,player);assert(is_equal_approx(horse.stamina,37))
+	# Approaching stops walking, then mounting clears the grazing pose.
+	player.position=horse.position+Vector3(1.7,.1,0)
+	horse.life.mode="walk";horse.life.remaining=10;horse.life.update(horse,.1,true,state,world.landscape,player)
+	assert(horse.life.mode=="look")
+	horse.mount(player,avatar,actor);assert(horse.mounted and horse.parts.HorseNeck.position==horse.part_home.HorseNeck)
+	horse.drive(player,avatar,actor,Vector3.ZERO,.1,true)
+	assert(horse.dismount(player,avatar,actor,state,world.landscape))
+	assert(state.items[0].kind=="stable")
+	print("V025_INTEGRATION_OK: stable render/menu/map, graze, bounded walking, obstacle sweep, pause, recovery, approach/mount/dismount")
+
+func _reset_farm() -> void:
+	actor.stop_emote();weapons.holster();player.velocity=Vector3.ZERO
+	navigator.waypoint_name="";navigator.target_key="";navigator.stable_target={}
+	field_alerts=FarmFieldAlerts.new()
+	if horse.mounted:horse.reset_rider(player,avatar,actor)
+	state=FarmState.new();state.unlimited_money=not qa_mode
+	horse.restore(state.horse)
+	world.rebuild(state)
+	selected=-1
+	journey_seen=-1
+	build_mode=true
+	tool="inspect"
+	focus=Vector3(4,0,-2)
+	player.position=Vector3(4,0.2,10)
+	next_silly=75
+	silly_timer=0
+	silly_event_index=0
+	selected_hen=-1
+	session_started=false
+
+func _qa_title_photo() -> void:
+	state=FarmState.new();state.claim(Vector2(4,-2));state.farm_xp=950;state.unlimited_money=true;state.land_size=40
+	for entry in [["barn",Vector2(8,-10)],["coop",Vector2(18,-6)],["stable",Vector2(-6,-8)],["corral",Vector2(18,8)]]:
+		assert(state.place(entry[0],entry[1],0).is_empty())
+	state.items[-1].dairy.owned=true
+	for i in range(9):
+		assert(state.place("plot",Vector2(4+(i%3)*2,2+(i/3)*2),0,["carrot","wheat","corn"][i%3]).is_empty())
+		state.items[-1].growth=1;state.items[-1].watered=true
+	world.rebuild(state);set_physics_process(false);set_process(false);hud.visible=false
+	world.border.visible=false;world.build_grid.visible=false;world.selection.visible=false;ghost.visible=false
+	player.position=Vector3(9,.15,9);avatar.rotation.y=-.8;actor.animate(.1,false,false)
+	horse.restore({"x":12.0,"z":7.0,"angle":-.8});horse.animate(.1,0,false)
+	for node in world.find_children("*","Label3D",true,false):node.visible=false
+	horse.label.visible=false
+	camera.position=Vector3(-10,8,22);camera.look_at(Vector3(6,1,-2));camera.fov=46
+	await _qa_ui_capture("title-v026-photo")
+	print("TITLE_PHOTO_OK")
+
+func _qa_v026() -> void:
+	assert(OS.get_user_data_dir().contains("test-results"))
+	assert(hud.modal_kind=="title" and not session_started and not front_end.has_save)
+	var before:=state.serialize()
+	for i in range(6):await get_tree().process_frame
+	assert(state.serialize()==before)
+	await _qa_ui_capture("menu-v026-new")
+	_action("front:settings");assert(hud.modal_kind=="settings")
+	var previous:=preferences.data.duplicate()
+	front_end.controls.volume.value=.25;_action("front:back")
+	assert(hud.modal_kind=="title" and preferences.data==previous)
+	_action("front:settings");front_end.controls.volume.value=.45;front_end.controls.sensitivity.value=1.5
+	front_end.controls.quality.select(0);front_end.controls.quality.item_selected.emit(0)
+	front_end.controls.fps.select(2);front_end.controls.fps.item_selected.emit(2)
+	await _qa_ui_capture("menu-v026-settings")
+	_action("front:apply");assert(preferences.data.volume==.45 and preferences.data.sensitivity==1.5)
+	assert(get_viewport().msaa_3d==Viewport.MSAA_DISABLED and Engine.max_fps==120)
+	var loaded:=FarmSettings.new();loaded.path=preferences.path;loaded.load_preferences();assert(loaded.data==preferences.data)
+	_action("front:settings");_action("front:defaults");_action("front:apply")
+	_action("front:controls");assert(hud.modal_kind=="controls");await _qa_ui_capture("menu-v026-controls");_action("close");assert(hud.modal_kind=="title")
+	_action("front:new");hud.text_input.text="Fazenda Horizonte";await _qa_ui_capture("menu-v026-name")
+	_action("front:new_review");assert(session_started and state.farm_name=="Fazenda Horizonte" and not state.claimed)
+	assert(FileAccess.file_exists(save_path))
+	state.claim(Vector2(4,-2));state.unlimited_money=true;state.farm_xp=550;world.rebuild(state)
+	state.armory.pistol=true;state.armory.magazine=7
+	assert(_save_game(false))
+	_action("front:title");assert(not session_started and front_end.has_save and hud.modal_kind=="title")
+	await _qa_ui_capture("menu-v026-continue")
+	var saved:=FileAccess.get_file_as_string(save_path)
+	_action("front:new");hud.text_input.text="Fazenda Outra";_action("front:new_review")
+	assert(hud.modal_kind=="new_confirm" and FileAccess.get_file_as_string(save_path)==saved)
+	await _qa_ui_capture("menu-v026-confirm")
+	# Force a write failure using an isolated directory where the temporary file should be.
+	var original_path:=save_path
+	var failed_path:="res://test-results/qa_new_failure.json"
+	DirAccess.make_dir_recursive_absolute(failed_path+".tmp")
+	save_path=failed_path
+	var retained:=state
+	_action("front:new_commit")
+	assert(state==retained and hud.modal_kind=="new_confirm" and FileAccess.get_file_as_string(original_path)==saved)
+	DirAccess.remove_absolute(failed_path+".tmp");save_path=original_path
+	_action("front:cancel_new");assert(hud.modal_kind=="title" and FileAccess.get_file_as_string(save_path)==saved)
+	# Simulate startup loading from disk rather than continuing only the in-memory state.
+	state=FarmState.new();assert(_load_game())
+	front_end.setup(self,true);front_end.resume_session=false;front_end.show_title()
+	_action("front:continue");assert(session_started and state.armory.magazine==7 and state.farm_name=="Fazenda Horizonte")
+	_action("menu");_action("front:settings");_action("front:back");assert(hud.modal_kind=="menu" and session_started)
+	_action("front:title");_action("front:new");hud.text_input.text="Fazenda Renovada";_action("front:new_review");_action("front:new_commit")
+	assert(session_started and state.farm_name=="Fazenda Renovada" and not state.claimed and not state.armory.pistol)
+	var archive:=save_path.get_base_dir().path_join("farms_archive")
+	var found:=false
+	for name in DirAccess.get_files_at(archive):
+		var data:Variant=JSON.parse_string(FileAccess.get_file_as_string(archive.path_join(name)))
+		if data is Dictionary and data.get("farm_name")=="Fazenda Horizonte" and data.armory.magazine==7:found=true
+	assert(found,"Previous farm archived before replacement")
+	assert(JSON.parse_string(FileAccess.get_file_as_string(save_path)).farm_name=="Fazenda Renovada")
+	session_started=false
+	print("V026_INTEGRATION_OK: startup pause, title, continue, cancel new, archived old farm, new save, settings apply/cancel/persist, controls and pause menu")

@@ -8,6 +8,7 @@ const CROPS = {
 	"corn": {"name": "Milho", "seconds": 62.0, "seed": 8, "price": 24, "yield": 3}
 }
 const ITEMS = {
+	"stable": {"name":"Estrebaria", "cost":550, "size":Vector2(6,6)},
 	"cheesery": {"name":"Queijaria","cost":900,"size":Vector2(6,6)},
 	"corral": {"name":"Curral","cost":650,"size":Vector2(8,6)},
 	"plot": {"name": "Canteiro", "cost": 20, "size": Vector2(2, 2)},
@@ -29,9 +30,18 @@ const JOURNEY = [
 	{"key":"coop", "title":"Companhia no quintal", "body":"Construa seu primeiro\ngalinheiro por $180.\nA Maricota vem de brinde!", "button":"Construir galinheiro", "action":"coop"},
 	{"key":"expand", "title":"Um sonho maior", "body":"Junte $900 para expandir.\nMais espaço para construir\na fazenda do seu jeito.", "button":"Planejar expansão", "action":"expand"}
 ]
+var scenery_obstacles:Array[Rect2]=[] # Runtime scenery, reconstructed from property bounds.
 var farm_xp:int=0
 var level_notice:="" # Runtime-only; loaded games do not replay celebrations.
-var money: int = 1600
+var owned_parcels:Array=[]
+var armory:Dictionary=FarmArmory.fresh()
+var horse:Dictionary=FarmHorse.defaults()
+var unlimited_money:=false
+var _money:int=1600
+var money:int:
+	get:return 1000000000 if unlimited_money else _money
+	set(value):
+		if not unlimited_money:_money=value
 var claimed: bool = false
 var center: Vector2 = Vector2(4, -2)
 var land_size: float = 24.0
@@ -420,7 +430,7 @@ func rename_hen(index: int, hen: int, value: String) -> String:
 	return ""
 
 func paint_item(index: int, part: String, color: int) -> String:
-	if index<0 or index>=items.size() or items[index].kind not in ["barn","coop","workshop","fence","sign"]:
+	if index<0 or index>=items.size() or items[index].kind not in ["barn","coop","workshop","fence","sign","stable"]:
 		return "Selecione uma construção para pintar."
 	if part not in ["walls","roof","door"] or color<0 or color>=PALETTE.size(): return "Pintura inválida."
 	if part=="door" and items[index].kind=="workshop": return "A oficina tem entrada aberta."
@@ -447,6 +457,17 @@ func claim(at: Vector2) -> String:
 func bounds() -> Rect2:
 	return Rect2(center - Vector2.ONE * land_size / 2, Vector2.ONE * land_size)
 
+func owned_areas() -> Array[Rect2]:
+	var areas:Array[Rect2]=[]
+	if claimed:areas.append(bounds())
+	for key in owned_parcels:areas.append(FarmParcels.area(key))
+	return areas
+
+func owns_area(area:Rect2) -> bool:
+	for land in owned_areas():
+		if land.encloses(area):return true
+	return false
+
 func item_rect(kind: String, at: Vector2, turn: int) -> Rect2:
 	var size: Vector2 = ITEMS[kind].size
 	if turn % 2 != 0:
@@ -461,7 +482,7 @@ func can_place(kind: String, at: Vector2, turn: int, ignore_index: int = -1) -> 
 	if ignore_index<0 and not FarmLevels.unlocked(self,kind):
 		return "%s libera no nível %d da fazenda."%[ITEMS[kind].name,FarmLevels.required(kind)]
 	var area := item_rect(kind, at, turn)
-	if not bounds().encloses(area):
+	if not owns_area(area):
 		return "Fora da sua propriedade."
 	if _reserved(area):
 		return "Mantenha a estrada e o armazém do vizinho livres."
@@ -521,6 +542,7 @@ func place(kind: String, at: Vector2, turn: int, crop: String = "carrot") -> Str
 	items.append({"kind": kind, "x": at.x, "z": at.y, "turn": posmod(turn, 4),
 		"level":1, "paint": 0, "text": "Aqui o fiado só amanhã", "crop": crop,
 		"growth": 0.0, "watered": false, "planted": kind == "plot", "egg_time": 0.0})
+	if kind=="stable":items[-1].paint=6
 	if kind=="coop": items[-1].flock=FarmAnimals.fresh()
 	if kind=="cheesery": items[-1].cheese=FarmCheese.fresh()
 	if kind=="corral": items[-1].dairy=FarmDairy.fresh()
@@ -630,7 +652,7 @@ func expand() -> String:
 	return ""
 
 func serialize() -> Dictionary:
-	return {"version": 14, "farm_xp":farm_xp, "dairy_worker":dairy_worker.duplicate(), "cheese_worker":cheese_worker.duplicate(), "cheese_stock":cheese_stock, "cheese_order":cheese_order.duplicate(), "milk_stock":milk_stock, "cultivation":cultivation.duplicate(true), "field_staff":field_staff.duplicate(true), "professional_watering":professional_watering, "irrigation":irrigation.duplicate(true), "money": money, "claimed": claimed,
+	return {"version": 17, "horse":horse.duplicate(), "armory":armory.duplicate(), "owned_parcels":owned_parcels.duplicate(), "unlimited_money":unlimited_money, "farm_xp":farm_xp, "dairy_worker":dairy_worker.duplicate(), "cheese_worker":cheese_worker.duplicate(), "cheese_stock":cheese_stock, "cheese_order":cheese_order.duplicate(), "milk_stock":milk_stock, "cultivation":cultivation.duplicate(true), "field_staff":field_staff.duplicate(true), "professional_watering":professional_watering, "irrigation":irrigation.duplicate(true), "money": _money, "claimed": claimed,
 		"center": [center.x, center.y], "land_size": land_size,
 		"items": items.duplicate(true), "inventory": inventory.duplicate(),
 		"elapsed": elapsed, "revenue": revenue, "harvests": harvests,
@@ -639,8 +661,15 @@ func serialize() -> Dictionary:
 
 func restore(data: Variant) -> bool:
 	# Validate before mutating live state. Invalid files never partially replace it.
-	if not data is Dictionary or not _number(data.get("version")) or data.version<1 or data.version>14 or float(data.version)!=floorf(float(data.version)):
+	if data is Dictionary and data.has("armory") and not FarmArmory.valid(data.armory):return false
+	if not data is Dictionary or not _number(data.get("version")) or data.version<1 or data.version>17 or float(data.version)!=floorf(float(data.version)):
 		return false
+	if data.version>=16 and not FarmHorse.valid(data.get("horse")):return false
+	if data.has("horse") and not FarmHorse.valid(data.horse):return false
+	if data.version>=15 and (not data.get("unlimited_money") is bool or not FarmParcels.valid(data.get("owned_parcels"))):return false
+	if data.has("unlimited_money") and not data.unlimited_money is bool:return false
+	if data.has("owned_parcels") and not FarmParcels.valid(data.owned_parcels):return false
+	if not data.get("claimed",false) and not data.get("owned_parcels",[]).is_empty():return false
 	if data.version>=14 and (not FarmCultivation.integer(data.get("farm_xp")) or data.farm_xp>1000000000): return false
 	if data.version>=11 and (not data.has("cheese_stock") or not data.has("cheese_order")): return false
 	if not FarmCultivation.integer(data.get("cheese_stock",0)) or not FarmCheese.valid_order(data.get("cheese_order",{"active":false,"cycle":0})): return false
@@ -710,8 +739,10 @@ func restore(data: Variant) -> bool:
 			if item.has("flock") and not FarmAnimals.valid(item.flock,int(level)): return false
 		var area := item_rect(item.kind, Vector2(item.x, item.z), int(item.turn))
 		var land := Rect2(Vector2(data.center[0], data.center[1]) - Vector2.ONE * float(data.land_size) / 2, Vector2.ONE * float(data.land_size))
-		if not land.encloses(area):
-			return false
+		var inside:=land.encloses(area)
+		for key in data.get("owned_parcels",[]):
+			if FarmParcels.area(key).encloses(area):inside=true
+		if not inside:return false
 	if stored_total>barn_count: return false
 	for i in range(data.items.size()):
 		var first: Dictionary = data.items[i]
@@ -749,7 +780,11 @@ func restore(data: Variant) -> bool:
 		var selected_plans:Array=[]
 		for plan in saved_cultivation.plans: selected_plans.append(int(plan.index))
 		if selected_plans!=unique_plots: return false
-	money = int(data.money)
+	_money = int(data.money)
+	armory=FarmArmory.normalized(data.get("armory",FarmArmory.fresh()))
+	unlimited_money=data.get("unlimited_money",false)
+	horse=data.get("horse",FarmHorse.defaults()).duplicate()
+	owned_parcels=data.get("owned_parcels",[]).duplicate()
 	claimed = data.claimed
 	center = Vector2(data.center[0], data.center[1])
 	land_size = float(data.land_size)

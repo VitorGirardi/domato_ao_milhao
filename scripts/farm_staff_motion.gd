@@ -19,7 +19,9 @@ func reset(eggs:int) -> void:
 	last_eggs=eggs
 
 func walkable(at:Vector3,state:FarmState) -> bool:
-	if at.x< -30 or at.x>43 or at.z< -38 or at.z>42: return false
+	if at.x<FarmLandscape.WALK_MIN.x or at.x>FarmLandscape.WALK_MAX.x or at.z<FarmLandscape.WALK_MIN.y or at.z>FarmLandscape.WALK_MAX.y:return false
+	for area in state.scenery_obstacles:
+		if area.has_point(Vector2(at.x,at.z)):return false
 	for item in state.items:
 		if item.kind in ["plot","path"]: continue
 		if state.item_rect(item.kind,Vector2(item.x,item.z),item.turn).grow(0.48).has_point(Vector2(at.x,at.z)): return false
@@ -44,7 +46,7 @@ func plan(start:Vector3,finish:Vector3,state:FarmState) -> void:
 	if grid.is_point_solid(from) or grid.is_point_solid(to):
 		blocked=true
 		return
-	for point in grid.get_point_path(from,to): path.append(Vector3(point.x,0,point.y))
+	for point in grid.get_point_path(from,to): path.append(Vector3(point.x,FarmLandscape.height_at(point),point.y))
 	blocked=path.is_empty()
 	if not blocked and walkable(finish,state): path.append(finish)
 
@@ -82,6 +84,7 @@ func update(world:FarmWorld,state:FarmState,delta:float) -> void:
 			path.clear(); blocked=true
 			break
 		node.position=candidate
+		node.position.y=FarmLandscape.height_at(Vector2(node.position.x,node.position.z))
 		node.rotation.y=lerp_angle(node.rotation.y,atan2(direction.x,direction.z),minf(delta*8,1))
 		remaining-=step
 		moving=true

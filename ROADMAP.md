@@ -1,4 +1,29 @@
+# Bloco 0.29 — Visita multiplayer concluída
+
+Dois PCs: hospedar/entrar, snapshot em memória, movimento/pulo/emotes, reconexão e isolamento de saves. Próximo: ações de plantio e colheita autorizadas pelo host, inventário sincronizado e save cooperativo separado. Veja MULTIPLAYER.md.
+
 # Prioridades — Do Mato ao Milhão
+
+## Entregue — 0.28.0
+
+- [x] Pose montada e rédeas conectadas às mãos, inclusive no tapinha.
+- [x] Sons próprios do cavalo ao montar e sprintar.
+- [x] Chamados dos animais com intervalos por espécie.
+
+
+## Entregue — 0.27.0
+
+- [x] Música original e paisagem sonora com controles independentes.
+- [x] Passos, cascos e efeitos de ações com vozes limitadas.
+- [x] Câmera sem atraso ao encontrar paredes, sensibilidade da mira e pausa por perda de foco.
+- [x] Verificação de áudio e preservação dos saves em ambiente isolado.
+
+
+## Entregue — 0.26.0
+
+- [x] Menu inicial com foto real do jogo.
+- [x] Continuar, novo jogo protegido, configurações persistentes e controles.
+
 
 Este é o plano de evolução do jogo. A ordem pode mudar depois de jogar e ouvir o autor.
 Cada etapa termina com uma versão jogável, testes e uma atualização no GitHub.
@@ -236,3 +261,27 @@ A feira fica para depois. Prioridade definida pelo autor: um mapa menos artifici
 - [x] Bosques, flores, pedras, água animada e colinas contínuas.
 - [x] Mais espaço para explorar, preservando a fazenda atual.
 - [ ] Próximo bloco de mapa: pontos de interesse próprios e ambientação sonora, após avaliação visual desta base.
+
+## Entrega — 0.21 e direção futura
+
+- [x] Grama mais fina, correnteza visível e pássaros em árvores maiores.
+- [x] Terrenos próximos compráveis e limpeza da natureza conforme aquisição/expansão.
+- [x] Dinheiro infinito permanente na partida do autor.
+- [ ] Cavalo como primeiro transporte, com interação e montaria.
+- [ ] Evoluir posteriormente para carros e outros veículos; manter vias largas.
+
+
+## Exploração — 0.22 entregue
+
+- [x] Trilhas, placas e três paradas fora das áreas de construção.
+- [x] Moinho animado e adereços originais Blender; caminhos desobstruídos.
+- [x] 0.23: cavalo, montar/desmontar, câmera, tapinha/galope com fôlego e circuito ampliado.
+- [ ] Depois: aquisição, cuidados e progressão da montaria; veículos em etapa posterior.
+
+## Bloco 0.24 — orientação no vale
+
+Entregue: minimapa, mapa completo, destinos e revisão do cavalo. Estrebaria, cuidados e evolução do cavalo ficam para um próximo bloco conforme prioridade do autor.
+
+## Bloco 0.25 — estrebaria e vida do cavalo
+
+Entregue: construção, descanso reforçado, pastar/observar/passear, colisões e destino no mapa. Próxima etapa sugerida: alimentação, escovação e evolução permanente do fôlego.

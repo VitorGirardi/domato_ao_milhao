@@ -47,16 +47,18 @@ for i in range(5):
  a=i*2.4;ico('Hedgerow',(math.cos(a)*.45,math.sin(a)*.35,.48),(.6,.58,.57),1+i%2)
 export('valley_shrub')
 clear()
-# Curved solid ribbons, deliberately broad silhouettes at gameplay distance.
+# Fine curved blades, several segments per blade; no wide triangular spikes.
 verts=[];faces=[]
-for i in range(9):
- a=i*2.399;x=random.uniform(-.25,.25);y=random.uniform(-.25,.25);h=random.uniform(.22,.48);w=.045
+for i in range(28):
+ a=i*2.399;x=random.uniform(-.40,.40);y=random.uniform(-.40,.40);h=random.uniform(.10,.27);w=random.uniform(.009,.018)
  base=len(verts)
- for z,bend,width in [(0,0,w),(.55*h,.06,w*.7),(h,.16,0)]:
+ for j in range(5):
+  t=j/4;bend=.11*t*t;width=w*(1-t*.92)
   cx=x+math.cos(a)*bend;cy=y+math.sin(a)*bend
-  verts.extend([(cx-math.sin(a)*width,cy+math.cos(a)*width,z),(cx+math.sin(a)*width,cy-math.cos(a)*width,z)])
- faces.extend([(base,base+1,base+3,base+2),(base+2,base+3,base+5,base+4)])
-mesh=bpy.data.meshes.new('Bent blades');mesh.from_pydata(verts,[],faces);mesh.materials.append(M[1]);o=bpy.data.objects.new('Meadow blades',mesh);bpy.context.collection.objects.link(o)
+  verts.extend([(cx-math.sin(a)*width,cy+math.cos(a)*width,h*t),(cx+math.sin(a)*width,cy-math.cos(a)*width,h*t)])
+ for j in range(4):
+  k=base+j*2;faces.append((k,k+1,k+3,k+2))
+mesh=bpy.data.meshes.new('Fine curved blades');mesh.from_pydata(verts,[],faces);mesh.materials.append(M[1]);o=bpy.data.objects.new('Meadow blades',mesh);bpy.context.collection.objects.link(o)
 export('valley_grass')
 for name,petal in [('valley_daisy',4),('valley_lavender',5)]:
  clear()
@@ -70,4 +72,14 @@ for name,petal in [('valley_daisy',4),('valley_lavender',5)]:
 clear()
 for p,s in [((0,0,.38),(1.05,.7,.6)),((.6,.3,.2),(.65,.6,.35))]:ico('River granite',p,s,7,1)
 export('valley_stone')
+clear()
+ico('Body',(0,0,.11),(.10,.16,.105),3,2)
+ico('Breast',(0,-.08,.12),(.082,.10,.08),4,2)
+ico('Head',(0,-.12,.22),(.085,.085,.08),0,2)
+ico('Beak',(0,-.21,.21),(.027,.065,.028),6,1)
+for x in [-.072,.072]:ico('Eye',(x,-.15,.245),(.013,.013,.013),3,1)
+for x in [-.10,.10]:ico('Folded wing',(x,.015,.12),(.035,.13,.065),0,1)
+ico('Tail',(0,.19,.09),(.065,.13,.024),0,1)
+for x in [-.035,.035]:branch((x,0,.025),(x,0,.085),.009,.007)
+export('valley_bird')
 print('LANDSCAPE_KIT_OK')

@@ -3,21 +3,53 @@
 **Comece com um terreno. Termine comprando a vizinhança.**
 
 Protótipo jogável de um tycoon de fazenda 3D estilizado para Windows, em português.
-Godot 4.7.2 + modelos originais feitos no Blender 5.2.1. Campanha solo e offline.
+Godot 4.7.2 + modelos originais feitos no Blender 5.2.1. Campanha solo offline e visita multiplayer para dois PCs.
 
-**Versão atual: 0.20.0.** Veja [as prioridades](ROADMAP.md) e [as novidades](CHANGELOG.md).
+**Versão atual: 0.29.0.** Veja [as prioridades](ROADMAP.md) e [as novidades](CHANGELOG.md).
 
 Veja o [roteiro de teste manual](COMO_TESTAR.md), incluindo encomendas e vendas da 0.5.
 
 ## Jogar
 
-O executável local fica em `exports/windows-v0.20.0/DoMatoAoMilhao.exe` depois da exportação.
+O executável local fica em `exports/windows-v0.29.0/DoMatoAoMilhao.exe` depois da exportação.
 Ele abre diretamente, sem instalar Godot ou Blender. Os binários não são enviados ao Git.
 
 Para executar a partir do código:
 1. Abra o Godot 4.7.2, escolha **Importar** e selecione `project.godot`.
 2. Aguarde a importação dos modelos.
 3. Pressione **F5** para jogar. O cenário é montado pelos scripts durante a execução.
+
+## Visita multiplayer — 0.29.0
+
+Menu **Jogar junto**, hospedar/entrar por IP, dois personagens, movimento, pulo e emotes. A fazenda compartilhada é uma cópia em memória; produção/construções pausadas nesta etapa. [Conexão, limites e testes](MULTIPLAYER.md).
+
+## Correção 0.28.1
+
+Cavalo com relincho e respiração gravados, pitch natural e volume moderado. [Créditos CC0](AUDIO_CREDITS.md). [Visita multiplayer gratuita](MULTIPLAYER.md), implementada no bloco 0.29.
+
+## Novidades da 0.28.0
+
+Mãos seguram as rédeas durante a montaria; no tapinha a esquerda mantém ambas e a direita alcança o pescoço. Relincho ao montar, reação ao sprint e chamados mais presentes dos animais próximos, com intervalos por espécie.
+
+## Som e conforto — 0.27.0
+
+Trilha instrumental original, vento, rio, animais próximos, passos e cascos. Configurações separa Som de Jogo e vídeo, com volume independente para música, ambiente e efeitos. [Áudio e composição](AUDIO.md). Câmera corrigida junto a paredes, sensibilidade consistente na mira e pausa automática ao sair da janela.
+
+## Menu inicial — 0.26.0
+
+Menu inicial com foto do vale, Continuar, Novo jogo, Configurações e Controles. Preferências de volume, câmera, qualidade, FPS e tela cheia ficam salvas. Novo jogo pede confirmação e arquiva a fazenda anterior. Esc permite salvar e voltar ao menu.
+
+## Tela cheia
+
+O jogo abre em tela cheia; **F11** alterna para janela e volta, inclusive nos menus. O cenário preenche diferentes proporções de monitor sem faixas pretas, enquanto menus e HUD mantêm tamanho proporcional e espaçamento. [Detalhes e QA](TELA_CHEIA.md).
+
+## Novidades da 0.23.1
+
+Damião vende a P-8 e munição na estrada oeste, perto do armazém. **E** abre a loja; **P** saca/guarda, **mouse direito** mira, **clique esquerdo** dispara e **R** recarrega. Três alvos permitem treinar. Montar guarda a arma automaticamente; save 16 preserva cavalo e inventário. [Guia do armeiro](ARMEIRO.md).
+
+## Novidades da 0.23.0
+
+Pé de Pano é uma montaria jogável: **E** monta/desmonta, **WASD** cavalga e um toque em **Shift** dá um tapinha para galopar, consumindo fôlego. Mapa de 214 × 290 m com circuito longo, pomar, pedras e campina florida. Save 16 preserva a posição do cavalo; dinheiro infinito mantido. [Como testar](COMO_TESTAR.md). Cuidados e progressão da montaria, depois veículos, ficam para próximas etapas.
 
 ## Novidades da 0.20.0
 
@@ -373,7 +405,7 @@ Os três vizinhos aparecem como perfis e encomendas; ainda não têm ranchos exp
 O personagem tem animações procedurais de caminhada e ações. As galinhas tentam
 desviar localmente de construções e cercas, mas ainda não planejam rotas longas
 nem entendem portões; podem parar quando não encontram uma passagem.
-A equipe tem duas vagas fixas. Sem multiplayer, vagas livres, tratores dirigíveis, indústrias, clima, estações ou continente.
+A equipe tem duas vagas fixas. Visita multiplayer disponível; cooperativo de produção, vagas livres, tratores dirigíveis, indústrias, clima, estações e continente ainda não implementados.
 O jogo não cresce enquanto está fechado. O relógio representa dias de trabalho simplificados.
 
 ## Salvamento
@@ -464,7 +496,7 @@ New-Item -ItemType Directory -Force exports/windows-v0.17
 godot --headless --path . --export-release 'Windows Desktop'
 ```
 
-O teste de integração usa apenas `qa_farm_v020.json`, nunca o salvamento real.
+O teste de integração usa apenas `qa_farm_v021.json`, nunca o salvamento real.
 Valida compra, colocação via controles do jogo, colheita, venda, pintura, texto,
 movimento, câmeras, gravação real, leitura e recuperação de backup.
 Também verifica movimento/cancelamento de construções, poses do personagem,
