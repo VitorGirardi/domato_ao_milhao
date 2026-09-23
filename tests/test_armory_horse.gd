@@ -68,4 +68,5 @@ func run() -> void:
 	game._interact_nearest();assert(game.hud.modal_kind=="armory","HUD button must match the keyboard interaction")
 	game.hud.close_modal()
 	print("ARMORY_HORSE_OK: holster on mount, blocked mounted inputs, interrupted reload, dismount, both inventories on disk, v15 migration, atomic rejection and nearest E interaction")
-	game.session_started=false;game.queue_free();await process_frame;quit()
+	game.session_started=false;game.audio.stop_all();await create_timer(.15).timeout
+	game.queue_free();await process_frame;quit()

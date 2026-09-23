@@ -2,7 +2,7 @@
 
 ## Montaria e animais — 0.28.0
 
-1. Continue sua fazenda e monte com E: ouça o relincho.
+1. Continue sua fazenda e monte com E: ouça o relincho e gire a câmera para conferir as mãos segurando as rédeas. Parado, andando e galopando, elas acompanham as palmas.
 2. Cavalgue com WASD e aperte Shift: o sprint aceito tem reação do cavalo e som do tapinha. Sem fôlego ou durante o tapinha, o comando recusado não repete o áudio.
 3. Fique perto das galinhas e da vaca por 10–20 segundos: cada espécie tem seus chamados. Afaste-se para conferir a distância. Menus pausam os chamados.
 4. Configurações → Som → Ambiente e animais controla esses sons; Efeitos e passos controla cascos e tapinha.

@@ -2,6 +2,7 @@
 
 ## 0.28.0 — Montaria e vozes dos animais
 
+- Rédeas chegam às palmas e acompanham a pose montada. Durante o tapinha, a mão esquerda mantém as duas rédeas e a direita alcança o pescoço.
 - Relincho ao montar e vocalização no sprint aceito, com fonte acompanhando o cavalo.
 - Chamados de galinhas, vacas, pássaros e cavalo com intervalos independentes, proximidade e volume revistos.
 

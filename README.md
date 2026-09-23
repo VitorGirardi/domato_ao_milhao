@@ -21,7 +21,7 @@ Para executar a partir do código:
 
 ## Novidades da 0.28.0
 
-Relincho ao montar, reação ao sprint e chamados mais presentes dos animais próximos, com intervalos por espécie.
+Mãos seguram as rédeas durante a montaria; no tapinha a esquerda mantém ambas e a direita alcança o pescoço. Relincho ao montar, reação ao sprint e chamados mais presentes dos animais próximos, com intervalos por espécie.
 
 ## Som e conforto — 0.27.0
 

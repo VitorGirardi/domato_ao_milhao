@@ -2,6 +2,7 @@
 
 ## Entregue — 0.28.0
 
+- [x] Pose montada e rédeas conectadas às mãos, inclusive no tapinha.
 - [x] Sons próprios do cavalo ao montar e sprintar.
 - [x] Chamados dos animais com intervalos por espécie.
 

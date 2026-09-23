@@ -66,7 +66,7 @@ func setup(owner_game:Node3D) -> void:
 		game.add_child(voice);animals.append(voice)
 	horse_voice=AudioStreamPlayer3D.new();horse_voice.bus=AMBIENCE_BUS;horse_voice.unit_size=6;horse_voice.max_distance=32
 	game.horse.add_child(horse_voice);horse_voice.position=Vector3(0,2,1.1)
-	game.horse.connect("encouraged",_horse_sprint)
+	if game.horse.has_signal("encouraged"):game.horse.connect("encouraged",_horse_sprint)
 	game.player.add_child(listener);listener.position=Vector3(0,1.5,0)
 	last_position=game.player.position
 	game.hud.action.connect(ui_action)
