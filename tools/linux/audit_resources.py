@@ -6,6 +6,10 @@ import subprocess
 root = Path(__file__).resolve().parents[2]
 tracked = subprocess.check_output(["git", "ls-files"], cwd=root, text=True).splitlines()
 exact = set(tracked)
+# Match Godot's resource boundary: the launcher is a separate project under
+# a .gdignore directory, with its own CI and generated platform updater.
+ignored = [str(Path(name).parent).replace("\\", "/") + "/"
+           for name in tracked if Path(name).name == ".gdignore"]
 folded = {}
 errors = []
 for name in tracked:
@@ -13,6 +17,8 @@ for name in tracked:
     if previous != name:
         errors.append(f"Case collision: {previous} / {name}")
 for name in tracked:
+    if any(name.startswith(prefix) for prefix in ignored):
+        continue
     if not name.endswith((".gd", ".tscn", ".tres", ".godot")) or name.startswith("tests/"):
         continue
     for value in re.findall(r'"res://([^"\n]+)"', (root / name).read_text(encoding="utf-8")):

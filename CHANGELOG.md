@@ -1,5 +1,14 @@
 # 0.34.0 — Porcos e companheiros na fazenda
 
+## 0.35.0 — Encontre seu caminho
+
+- Mapa e minimapa com ícones de gato, cavalo, prédios e amigo conectado.
+- Filtros Fazenda, Companhia e Locais; lista por proximidade e zoom no cursor.
+- Destinos acompanham personagens em movimento, com distância e direção cardinal.
+- Avisos locais de ovos, leite, queijo e pouca água/ração; detalhes ao selecionar ou passar o mouse.
+- Preserva saves, noite, construção, cooperativo e dinheiro infinito. A linha é direção direta, sem cálculo de rota.
+
+
 - Integra chiqueiro, até três porcos, compra, água, ração e animações, incluindo cooperativo.
 - Chiqueiro aparece em TAB → Animais, com miniatura própria e desbloqueio no nível 3.
 - Gato companheiro: E faz carinho com gesto humano e ronronar; V alterna acompanhar/ficar.

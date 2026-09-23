@@ -145,7 +145,7 @@ func run() -> void:
 		game._action("map");await settle();modal_bounds(tag+" valley map")
 		var point:=Vector2(100,-80)
 		await click_at(game.navigator.large.get_global_transform_with_canvas()*game.navigator.large.project(point))
-		check(game.navigator.waypoint.distance_to(point)<1,tag+" map click transform incorrect")
+		check(game.navigator.waypoint.distance_to(point)<1,tag+" map click transform incorrect: "+str(game.navigator.waypoint)+" target="+game.navigator.target_key)
 		await screenshot(tag+"-map")
 		var map_key:=InputEventKey.new();map_key.physical_keycode=KEY_M;map_key.keycode=KEY_M;map_key.pressed=true
 		root.push_input(map_key,true);await settle()
