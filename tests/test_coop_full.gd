@@ -40,11 +40,13 @@ func run() -> void:
 		n.sequence+=1;n.apply_command(1,n.sequence,old,{"action":"remove","index":0})
 		assert(game.state.items.size()==before);flag("stale_checked")
 		await until(func():return n.mounts.rider==n.accepted)
+		n.mounts.request("mount");assert(n.mounts.rider==n.accepted)
 		var horse_at:Vector3=game.horse.position
 		await until(func():return game.horse.position.distance_to(horse_at)>1)
 		assert(game.horse.stamina<100);flag("ride_checked")
 		await until(func():return n.mounts.rider==0 and exists("dismounted"))
-		await until(func():return exists("client_done"))
+		await until(func():return exists("client_done") and n.accepted==0)
+		assert(n.mounts.rider==0 and not game.horse.mounted)
 		n.leave("Fim");assert(FileAccess.get_file_as_string(game.save_path)==solo)
 		var persisted:=FarmCoop.load_farm(n.coop_path);assert(persisted!=null and persisted.inventory.carrot==8 and persisted.staff.hired)
 	else:
@@ -82,7 +84,10 @@ func run() -> void:
 		if DisplayServer.get_name()!="headless":
 			game._action("market");await process_frame;await RenderingServer.frame_post_draw
 			root.get_texture().get_image().save_png(flags.path_join("coop-market.png"))
-		flag("client_done");await until(func():return not n.active)
+		game.hud.close_modal();game.player.position=game.horse.position+Vector3(1.8,.2,0)
+		await create_timer(.7).timeout
+		n.mounts.request("mount");await until(func():return n.mounts.local_rider())
+		flag("client_done");n.leave("Visitante saiu montado")
 		assert(FileAccess.get_file_as_string(game.save_path)==solo)
 	game.audio.stop_all();await create_timer(.2).timeout;game.queue_free();await process_frame;await create_timer(.2).timeout
 	print("COOP_QA_OK: ",mode," full commands, shared economy, workers, visual replication, female handshake, mount/sprint/dismount and persistence")

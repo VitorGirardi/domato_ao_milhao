@@ -518,7 +518,13 @@ func refresh_panel() -> void:
 		"cheese_stock":FarmCheeseHUD.stock(h,s)
 		"cheese_orders":FarmCheeseHUD.orders(h,s)
 		"coop_stock":show_stock()
-		_:
+		"irrigation":
+			if s.field_staff.hired:FarmCrewHUD.show(h,s)
+			else:h.staff_panel(s)
+		"barn":h.barn(s,h.building_index)
+		"workshop":
+			if i>=0 and i<s.items.size():h.workshop(s,i)
+		"coop","dairy","dairy_confirm","cheesery","cheese_confirm":
 			if i>=0 and i<s.items.size():game._tend_selected()
 
 @rpc("authority","call_remote","reliable",3)
