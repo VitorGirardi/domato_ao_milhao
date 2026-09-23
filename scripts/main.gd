@@ -313,7 +313,8 @@ func _unhandled_input(event: InputEvent) -> void:
 				elif hud.modal_kind.is_empty():network.session_menu()
 				else:hud.close_modal()
 				get_viewport().set_input_as_handled();return
-			if event.physical_keycode not in [KEY_SPACE,KEY_B,KEY_M]:return
+			if event.physical_keycode==KEY_I:network.show_stock();return
+			if event.physical_keycode not in [KEY_SPACE,KEY_B,KEY_M,KEY_E,KEY_F5]:return
 		if event is InputEventMouseButton and event.button_index==MOUSE_BUTTON_LEFT:return
 	if weapons.game!=null and weapons.handle_input(event):
 		get_viewport().set_input_as_handled()
@@ -618,6 +619,7 @@ func _nearest() -> int:
 	return best
 
 func _nearby_context() -> Dictionary:
+	if network.active:return network.context()
 	if build_mode or not state.claimed: return {}
 	if horse.mounted:return {"text":"Desmontar · Pé de Pano","action":"horse"}
 	if weapons.shop_has_priority():return {"text":"Conversar com Damião","action":"armory"}
@@ -651,7 +653,7 @@ func _nearby_context() -> Dictionary:
 	return context
 
 func _interact_nearest() -> void:
-	if network.active:return
+	if network.active:network.interact();return
 	actor.stop_emote()
 	if not hud.modal_kind.is_empty(): return
 	var context:=_nearby_context()
@@ -1231,7 +1233,7 @@ func _journey_action() -> void:
 		elif key=="expand": hud.toast("Use Expandir na barra quando tiver $900.")
 
 func _save_game(notify: bool, force: bool = false) -> bool:
-	if network.active:return true
+	if network.active:return network.save_coop()
 	if not session_started and not force: return true
 	var temporary:=save_path+".tmp"
 	var file:=FileAccess.open(temporary,FileAccess.WRITE)
