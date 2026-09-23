@@ -1,5 +1,11 @@
 # Alterações
 
+## 0.21.1 — Margens do rio
+
+- Corrige a borda exposta da água: a superfície agora termina enterrada nas duas margens.
+- Refina a malha do leito e das margens, com colisão acompanhando o terreno.
+- Mantém correnteza, dinheiro infinito e compatibilidade dos saves.
+
 ## 0.21.0 — Terrenos vivos
 
 - Dinheiro infinito permanente no jogo normal, HUD ∞ e regra registrada no AGENTS.md.

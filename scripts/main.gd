@@ -2800,6 +2800,10 @@ func _qa_v021() -> void:
 	var outward:Vector3=bird.node.global_position-bird.node.get_parent().global_position;outward.y=0
 	camera.position=bird.node.global_position+outward.normalized()*3.2+Vector3.UP*.8;camera.look_at(bird.node.global_position)
 	await _qa_ui_capture("valley-v021-bird")
+	camera.position=Vector3(-34,1.6,8);camera.look_at(Vector3(-41,-.15,2))
+	await _qa_ui_capture("valley-v0211-bank-close")
+	camera.position=Vector3(-49,1.6,-25);camera.look_at(Vector3(-42,-.15,-30))
+	await _qa_ui_capture("valley-v0211-bank-opposite")
 	# Fixed camera and deterministic advection times show downstream flow clearly.
 	camera.position=Vector3(-31,7,8);camera.look_at(Vector3(-42,0,0));world.landscape.set_process(false)
 	for i in range(16):

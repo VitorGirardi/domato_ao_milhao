@@ -21,6 +21,10 @@ var water_material:ShaderMaterial
 var flow_clock:=0.0
 
 static func base_height(p:Vector2) -> float:
+	# Banks share the river's longitudinal elevation. Cross-slope noise must not
+	# lower one bank beneath the water in the northern/southern hills.
+	var center:float=-42+sin(p.y*.065)*2.6
+	p.x=lerpf(center,p.x,smoothstep(6,12,absf(p.x-center)))
 	var edge:=maxf(p.x-46,maxf(p.y-44,-42-p.y))
 	var near_height:=smoothstep(0,22,edge)*(1.4+sin(p.x*.075)*cos(p.y*.065)*1.2)
 	var distant:=smoothstep(0,44,maxf(absf(p.x)-78,absf(p.y)-78))
@@ -75,9 +79,18 @@ func _find_mesh(node:Node) -> MeshInstance3D:
 
 func _terrain() -> void:
 	var surface:=SurfaceTool.new();surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-	for z in range(-140,140,2):
-		for x in range(-140,140,2):
-			for p in [Vector2(x,z),Vector2(x+2,z),Vector2(x,z+2),Vector2(x+2,z),Vector2(x+2,z+2),Vector2(x,z+2)]:
+	# Resolve the narrow banks without coarse triangles cutting across the channel.
+	# Shared rows keep the fine river strip connected to the surrounding terrain.
+	var columns:Array[float]=[]
+	var column:float=-140
+	while column<140:
+		columns.append(column)
+		column+=.5 if column>=-50 and column<-34 else 2.0
+	columns.append(140)
+	for z in range(-140,140):
+		for i in range(columns.size()-1):
+			var x:float=columns[i];var nx:float=columns[i+1]
+			for p in [Vector2(x,z),Vector2(nx,z),Vector2(x,z+1),Vector2(nx,z),Vector2(nx,z+1),Vector2(x,z+1)]:
 				surface.add_vertex(Vector3(p.x,height_at(p),p.y))
 	surface.generate_normals();surface.index()
 	ground=MeshInstance3D.new();ground.name="ContinuousMeadow";ground.mesh=surface.commit()
@@ -87,11 +100,11 @@ func _terrain() -> void:
 
 func _river() -> void:
 	var surface:=SurfaceTool.new();surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-	for i in range(140):
-		var z:float=-140+i*2;var nz:=z+2
+	for i in range(280):
+		var z:float=-140+i;var nz:=z+1
 		var x:=-42+sin(z*.065)*2.6;var nx:=-42+sin(nz*.065)*2.6
-		for p in [Vector2(x-3.3,z),Vector2(x+3.3,z),Vector2(nx-3.3,nz),Vector2(x+3.3,z),Vector2(nx+3.3,nz),Vector2(nx-3.3,nz)]:
-			# Water sits inside the carved channel, outside the walking bank.
+		for p in [Vector2(x-5,z),Vector2(x+5,z),Vector2(nx-5,nz),Vector2(x+5,z),Vector2(nx+5,nz),Vector2(nx-5,nz)]:
+			# Bury mesh edges under both banks; terrain defines the visible shoreline.
 			surface.add_vertex(Vector3(p.x,-.10+base_height(Vector2(-42,p.y)),p.y))
 	surface.generate_normals()
 	var water:=MeshInstance3D.new();water.name="LivingRiver";water.mesh=surface.commit()
