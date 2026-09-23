@@ -28,6 +28,7 @@ var pointer_valid := false
 var hover_hint := ""
 var field_alerts:=FarmFieldAlerts.new()
 var session_started := false
+var focus_check_pending:=false
 var save_timer := 0.0
 var ui_timer := 0.0
 var silly_timer := 0.0
@@ -173,6 +174,9 @@ func _physics_process(delta: float) -> void:
 func _process(delta: float) -> void:
 	if not is_instance_valid(hud):
 		return
+	# Some Windows transitions retain the focus flag while minimizing.
+	if session_started and not qa_mode and DisplayServer.get_name()!="headless" and hud.modal_kind.is_empty() and not focus_check_pending:
+		if get_window().mode==Window.MODE_MINIMIZED or not get_window().has_focus():_check_focus_pause()
 	action_cooldown=maxf(0,action_cooldown-delta)
 	if session_started and not build_mode and hud.modal_kind.is_empty():
 		var discovery:=trail_journey.discover(Vector2(player.position.x,player.position.z))
@@ -225,14 +229,22 @@ func _update_camera(delta: float, immediate: bool = false) -> void:
 		angle=clampf(pitch,-.35,.80)
 	var desired := target + Vector3(sin(yaw)*cos(angle),sin(angle),cos(yaw)*cos(angle))*distance
 	if not build_mode and is_inside_tree():
-		var query := PhysicsRayQueryParameters3D.create(target,desired,1,[player.get_rid(),horse.obstacle.get_rid()])
-		var hit := get_world_3d().direct_space_state.intersect_ray(query)
-		if not hit.is_empty():
-			desired = hit.position + hit.normal * 0.35
-	camera.position = desired if immediate else camera.position.lerp(desired,1-exp(-delta*10))
+		desired=_camera_clear_position(target,desired)
+	var next_position:=desired if immediate else camera.position.lerp(desired,1-exp(-delta*10))
+	# Smoothing must not leave the camera behind a newly encountered wall.
+	# Contract immediately; the unobstructed return still eases out normally.
+	if not build_mode and is_inside_tree():next_position=_camera_clear_position(target,next_position)
+	camera.position=next_position
 	if camera.position.distance_to(target)>0.01:
 		camera.look_at(target)
 	avatar.visible = build_mode or camera.position.distance_to(target)>1.7
+
+func _camera_clear_position(target:Vector3,candidate:Vector3) -> Vector3:
+	if target.distance_squared_to(candidate)<.000001:return candidate
+	var query:=PhysicsRayQueryParameters3D.create(target,candidate,1,[player.get_rid(),horse.obstacle.get_rid()])
+	query.hit_from_inside=true
+	var hit:=get_world_3d().direct_space_state.intersect_ray(query)
+	return candidate if hit.is_empty() else hit.position+hit.normal*.35
 
 func _ensure_player_space() -> void:
 	var start := Vector2(player.position.x,player.position.z)
@@ -1235,6 +1247,26 @@ func _load_game() -> bool:
 func _notification(what: int) -> void:
 	if what==NOTIFICATION_WM_CLOSE_REQUEST:
 		if _save_game(false): get_tree().quit()
+	elif what==NOTIFICATION_APPLICATION_FOCUS_OUT and session_started and not qa_mode and DisplayServer.get_name()!="headless" and not focus_check_pending:
+		_check_focus_pause()
+
+func _check_focus_pause() -> void:
+	focus_check_pending=true
+	# Fullscreen switches can briefly change focus without the player leaving the game.
+	await get_tree().create_timer(.2).timeout
+	focus_check_pending=false
+	if get_window().mode==Window.MODE_MINIMIZED or not get_window().has_focus():_pause_for_focus_loss()
+
+func _pause_for_focus_loss() -> void:
+	if not session_started or not is_instance_valid(hud) or not hud.modal_kind.is_empty():return
+	_cancel_route()
+	move_index=-1
+	if tool=="move":tool="inspect"
+	player.velocity=Vector3.ZERO
+	for action_name in ["forward","back","left","right","run"]:Input.action_release(action_name)
+	weapons.holster()
+	hud.menu(state)
+	hud.toast("Jogo pausado enquanto você estava fora da janela.")
 
 func _chime(kind: String = "build") -> void:
 	var stream:=AudioStreamWAV.new()

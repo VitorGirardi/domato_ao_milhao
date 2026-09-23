@@ -117,8 +117,9 @@ func holster() -> void:
 func handle_input(event:InputEvent) -> bool:
 	if not active():return false
 	if event is InputEventMouseMotion and armed and Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT):
-		game.yaw-=event.relative.x*.004
-		game.pitch=clampf(game.pitch+event.relative.y*.003,-.35,.80)
+		var sensitivity:=float(game.preferences.data.sensitivity)
+		game.yaw-=event.relative.x*.004*sensitivity
+		game.pitch=clampf(game.pitch+event.relative.y*.003*sensitivity,-.35,.80)
 		return true
 	if event is InputEventKey and event.pressed and not event.echo:
 		match event.physical_keycode:
