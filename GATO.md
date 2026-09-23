@@ -1,6 +1,6 @@
 # Companheiro felino
 
-Um gato aparece gratuitamente depois que a fazenda é criada, tanto em partidas novas quanto em saves existentes. A primeira aparência é caramelo com peito/patas claros e olhos verdes. O modelo e a fonte Blender são originais; `tools/build_cat.py` reproduz `art/source/cat.blend` e `assets/models/cat.glb`.
+Um gato aparece gratuitamente depois que a fazenda é criada, tanto em partidas novas quanto em saves existentes. A primeira aparência é caramelo com peito/patas claros e olhos verdes e coleira vermelha com medalhinha dourada. A revisão visual reduz pernas e corpo, assenta as orelhas dentro da cabeça, remove marcas salientes do rosto e embute o peito claro na superfície. O modelo e a fonte Blender são originais; `tools/build_cat.py` reproduz `art/source/cat.blend` e `assets/models/cat.glb`.
 
 O gato circula perto de um ponto livre da propriedade, para quando o jogador chega perto e alterna descanso sentado com observação. Cabeça, orelhas, olhos e patas têm articulações; a cauda usa uma malha contínua com sete ossos. `FarmCatPose` controla respiração, piscadas, marcha de quatro fases, transição para sentar e reação ao carinho. A escala de gameplay é 72% da fonte.
 

@@ -21,7 +21,11 @@ static func pose(cat:Node3D,time:float,walk:float=0.0,sit:float=0.0,affection:fl
 	var head:=node(cat,"CatHead")
 	head.rotation=Vector3(.42*sit-.18*affection,.07*sin(time*.8)*(1-walk),.14*sin(time*2.0)*affection)
 	var blink:=pow(maxf(0,cos(fposmod(time+1.3,4.7)*TAU/4.7)),48)
-	for key in ["CatEyeL","CatEyeR"]:node(cat,key).scale.y=maxf(.08,1-.92*maxf(blink,affection*.8))
+	for side in ["L","R"]:
+		var closed:=blink>.65 or affection>.55
+		node(cat,"CatEye"+side).visible=not closed
+		node(cat,"CatClosedEye"+side).visible=closed
+		node(cat,"CatEye"+side).scale.y=maxf(.35,1-.65*blink)
 	node(cat,"CatEarL").rotation.z=.10*sin(time*3)*pow(maxf(0,sin(time*.65)),10)-.12*affection
 	node(cat,"CatEarR").rotation.z=.08*sin(time*3+1)*pow(maxf(0,sin(time*.65+2)),10)+.12*affection
 	for key in ["FL","FR","BL","BR"]:

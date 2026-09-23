@@ -21,6 +21,7 @@ M = {k: material(k, c) for k, c in {
     'CatCoat': (.48,.26,.105), 'CatCream': (.88,.79,.62),
     'CatStripe': (.20,.095,.036), 'CatNose': (.48,.20,.19),
     'CatEar': (.55,.31,.28), 'CatEye': (.38,.61,.23),
+    'CatCollar': (.62,.025,.035), 'CatGold': (.85,.48,.075),
     'CatPupil': (.018,.025,.018), 'CatGlint': (1,.97,.88),
 }.items()}
 
@@ -62,25 +63,29 @@ def tube(name, points, radius, mat, parent):
     return obj
 
 def ear(name, side, parent):
-    p = pivot(name, (side*.145,0,.16), parent)
-    verts = [(-.09,-.055,0),(.09,-.055,0),(side*.045,.002,.185),
-             (-.07,.055,.012),(.07,.055,.012),(side*.042,.045,.175)]
+    p = pivot(name, (side*.125,-.015,.115), parent)
+    verts = [(-.09,-.055,-.025),(.09,-.055,-.025),(side*.045,.002,.165),
+             (-.07,.055,.012),(.07,.055,.012),(side*.042,.045,.155)]
     mesh = bpy.data.meshes.new(name+'Mesh')
     mesh.from_pydata(verts,[],[(0,1,2),(3,5,4),(0,3,4,1),(0,2,5,3),(1,4,5,2)])
     mesh.materials.append(M['CatCoat'])
     obj = bpy.data.objects.new(name+'Shape',mesh)
     bpy.context.collection.objects.link(obj);obj.parent=p
+    bevel=obj.modifiers.new('Soft ear edge','BEVEL');bevel.width=.012;bevel.segments=3
+    bpy.context.view_layer.objects.active=obj
+    bpy.ops.object.modifier_apply(modifier=bevel.name)
+    for face in obj.data.polygons:face.use_smooth=True
     inner = bpy.data.meshes.new(name+'Inner')
-    inner.from_pydata([(-.055,-.057,.027),(.055,-.057,.027),(side*.04,-.008,.151)],[],[(0,1,2)])
+    inner.from_pydata([(-.055,-.057,.027),(.055,-.057,.027),(side*.04,-.008,.132)],[],[(0,1,2)])
     inner.materials.append(M['CatEar'])
     obj = bpy.data.objects.new(name+'Inner',inner)
     bpy.context.collection.objects.link(obj);obj.parent=p
 
 # Blender forward -Y becomes Godot +Z. Meter scale, paws rest at ground.
 root = pivot('Cat', (0,0,0))
-body = pivot('CatBody', (0,0,.47), root)
-ellipsoid('Torso',(0,.05,0),(.205,.37,.215),'CatCoat',body)
-ellipsoid('Chest',(0,-.225,.015),(.175,.18,.215),'CatCoat',body)
+body = pivot('CatBody', (0,0,.40), root)
+ellipsoid('Torso',(0,.05,0),(.195,.315,.195),'CatCoat',body)
+ellipsoid('Chest',(0,-.20,.025),(.167,.17,.195),'CatCoat',body)
 # Weld torso and chest into one soft silhouette.
 bpy.ops.object.select_all(action='DESELECT')
 for part in ['Torso','Chest']:bpy.data.objects[part].select_set(True)
@@ -92,47 +97,56 @@ bpy.ops.object.modifier_apply(modifier=remesh.name)
 smooth=coat.modifiers.new('Soft coat','SMOOTH');smooth.factor=.7;smooth.iterations=3
 bpy.ops.object.modifier_apply(modifier=smooth.name)
 for face in coat.data.polygons:face.use_smooth=True
-ellipsoid('Bib',(0,-.335,-.022),(.122,.052,.158),'CatCream',body)
-head = pivot('CatHead',(0,-.31,.19),body)
-ellipsoid('Head',(0,-.02,.04),(.222,.185,.19),'CatCoat',head)
-ellipsoid('Chin',(0,-.168,-.053),(.105,.07,.055),'CatCream',head)
+# Cream bib belongs to the surface instead of floating above it.
+coat.data.materials.append(M['CatCream'])
+for face in coat.data.polygons:
+    center=face.center+coat.location
+    if center.y<-.325 and abs(center.x)<.105 and center.z<.10:face.material_index=len(coat.data.materials)-1
+head = pivot('CatHead',(0,-.275,.17),body)
+ellipsoid('Head',(0,-.02,.04),(.233,.19,.205),'CatCoat',head)
+ellipsoid('Chin',(0,-.168,-.053),(.085,.048,.040),'CatCream',head)
 for side in [-1,1]:
-    ellipsoid('Muzzle'+str(side),(side*.057,-.191,-.018),(.073,.052,.054),'CatCream',head)
-    eye = pivot('CatEyeL' if side<0 else 'CatEyeR',(side*.105,-.171,.076),head)
-    ellipsoid('EyeRim',(0,0,0),(.063,.012,.049),'CatStripe',eye)
-    ellipsoid('Iris',(0,-.008,0),(.050,.009,.038),'CatEye',eye)
-    ellipsoid('Pupil',(0,-.017,0),(.015,.008,.038),'CatPupil',eye)
+    ellipsoid('Muzzle'+str(side),(side*.045,-.196,-.025),(.055,.035,.038),'CatCream',head)
+    eye = pivot('CatEyeL' if side<0 else 'CatEyeR',(side*.095,-.194,.083),head)
+    ellipsoid('EyeRim',(0,0,0),(.068,.011,.056),'CatStripe',eye)
+    ellipsoid('Iris',(0,-.008,0),(.054,.009,.047),'CatEye',eye)
+    ellipsoid('Pupil',(0,-.017,0),(.018,.008,.041),'CatPupil',eye)
     ellipsoid('Glint',(-.015,-.025,.016),(.011,.004,.012),'CatGlint',eye,12,8)
+    lid=pivot('CatClosedEyeL' if side<0 else 'CatClosedEyeR',(side*.095,-.194,.083),head)
+    tube('ClosedLid',[(-.052,-.025,0),(-.026,-.029,-.012),(0,-.031,-.016),(.026,-.029,-.012),(.052,-.025,0)],.0035,'CatStripe',lid)
     ear('CatEarL' if side<0 else 'CatEarR',side,head)
     for j in range(3):
         tube('Whisker',[(side*.071,-.230,-.027+j*.014),(side*.155,-.237,-.037+j*.024),(side*.25,-.225,-.065+j*.04)],.0022,'CatCream',head)
-    for j in range(2):
-        tube('CheekMark',[(side*.15,-.153,-.025+j*.032),(side*.20,-.10,-.02+j*.04)],.008,'CatStripe',head)
-ellipsoid('Nose',(0,-.239,.009),(.034,.018,.025),'CatNose',head,12,8)
+ellipsoid('Nose',(0,-.239,.009),(.025,.014,.018),'CatNose',head,12,8)
 tube('Mouth',[(0,-.234,-.010),(0,-.237,-.044),(-.025,-.229,-.055)],.003,'CatStripe',head)
 tube('Mouth',[(0,-.237,-.044),(.025,-.229,-.055)],.003,'CatStripe',head)
-for x in [-.05,0,.05]:
-    tube('BrowStripe',[(x,-.151,.16),(x*.85,-.075,.214)],.009,'CatStripe',head)
 
-for name, x, y in [('FL',-.135,-.23),('FR',.135,-.23),('BL',-.15,.27),('BR',.15,.27)]:
-    leg = pivot('CatLeg'+name,(x,y,-.055),body)
+for name, x, y in [('FL',-.118,-.21),('FR',.118,-.21),('BL',-.115,.22),('BR',.115,.22)]:
+    leg = pivot('CatLeg'+name,(x,y,-.045),body)
     back = name[0]=='B'
-    ellipsoid('Haunch' if back else 'Shoulder',(0,0,-.055),(.108,.132,.172) if back else (.068,.078,.15),'CatCoat',leg)
-    shin = pivot('CatShin'+name,(0,.025 if back else 0,-.19),leg)
-    ellipsoid('Shin',(0,-.006,-.082),(.054,.062,.129),'CatCoat',shin)
-    ellipsoid('Paw',(0,-.029,-.176),(.068,.097,.047),'CatCream',shin)
+    ellipsoid('Haunch' if back else 'Shoulder',(0,0,-.055),(.090,.115,.150) if back else (.063,.075,.135),'CatCoat',leg)
+    shin = pivot('CatShin'+name,(0,.025 if back else 0,-.145),leg)
+    ellipsoid('Shin',(0,-.006,-.065),(.057,.065,.110),'CatCoat',shin)
+    ellipsoid('Paw',(0,-.025,-.155),(.068,.097,.047),'CatCream',shin)
     for dx in [-.019,.019]:
-        tube('Toe',[(dx,-.115,-.167),(dx,-.113,-.188)],.002,'CatStripe',shin)
+        tube('Toe',[(dx,-.115,-.148),(dx,-.113,-.169)],.002,'CatStripe',shin)
+
+# Red collar follows the neck/body, with a small rounded brass tag.
+bpy.ops.mesh.primitive_torus_add(major_radius=.168,minor_radius=.016,major_segments=48,minor_segments=12)
+collar=bpy.context.object;collar.name='RedCollar';collar.parent=body;collar.location=(0,-.245,-.012)
+collar.scale=(1,.87,1.4);collar.data.materials.append(M['CatCollar'])
+for face in collar.data.polygons:face.use_smooth=True
+ellipsoid('CollarTag',(0,-.402,-.051),(.024,.010,.028),'CatGold',body)
 
 # One continuous skinned tail, so bends never expose bead-like joints.
-tail = pivot('CatTail0',(0,.345,.065),body)
+tail = pivot('CatTail0',(0,.285,.055),body)
 arm = bpy.data.armatures.new('CatTailRig')
 rig = bpy.data.objects.new('CatTailRig',arm)
 bpy.context.collection.objects.link(rig);rig.parent=tail
 bpy.ops.object.select_all(action='DESELECT');rig.select_set(True)
 bpy.context.view_layer.objects.active=rig
 bpy.ops.object.mode_set(mode='EDIT')
-centers=[Vector((0, .09*i-.012*max(0,i-4)**2, .08*i)) for i in range(8)]
+centers=[Vector((0, .066*i-.040*max(0,i-4)**2, .061*i-.013*max(0,i-5)**2)) for i in range(8)]
 for i in range(7):
     bone=arm.edit_bones.new('TailBone%d'%i)
     bone.head=centers[i];bone.tail=centers[i+1]
@@ -141,10 +155,12 @@ bpy.ops.object.mode_set(mode='OBJECT')
 verts=[];faces=[];weights=[]
 for r in range(29):
     t=r/4;seg=min(6,int(t));fraction=t-seg
-    center=centers[seg].lerp(centers[seg+1],fraction)
+    p0=centers[max(0,seg-1)];p1=centers[seg];p2=centers[seg+1];p3=centers[min(7,seg+2)]
+    u=fraction
+    center=.5*((2*p1)+(-p0+p2)*u+(2*p0-5*p1+4*p2-p3)*u*u+(-p0+3*p1-3*p2+p3)*u*u*u)
     direction=(centers[seg+1]-centers[seg]).normalized()
     across=Vector((1,0,0));other=direction.cross(across).normalized()
-    radius=.044*(1-.72*(r/28)**1.7)
+    radius=.048*(1-.72*(r/28)**1.7)
     if r==28:radius=.002
     for j in range(12):
         angle=j*math.tau/12

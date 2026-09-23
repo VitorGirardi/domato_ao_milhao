@@ -12,6 +12,8 @@ func run() -> void:
 	var ground:=MeshInstance3D.new();var plane:=PlaneMesh.new();plane.size=Vector2(200,200);ground.mesh=plane
 	var mat:=StandardMaterial3D.new();mat.albedo_color=Color("83936e");ground.material_override=mat;stage.add_child(ground)
 	var cat:Node3D=load("res://assets/models/cat.glb").instantiate();stage.add_child(cat)
+	assert(cat.find_child("RedCollar",true,false)!=null)
+	assert(cat.find_child("CollarTag",true,false)!=null)
 	var camera:=Camera3D.new();stage.add_child(camera);camera.position=Vector3(1.5,1.05,2.2);camera.look_at(Vector3(0,.50,0))
 	camera.projection=Camera3D.PROJECTION_ORTHOGONAL;camera.size=2.1
 	for mode in ["idle","walk","sit","pet"]:
