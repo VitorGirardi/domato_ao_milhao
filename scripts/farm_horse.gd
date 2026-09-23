@@ -50,7 +50,7 @@ func _ready() -> void:
 	for side in [-1.0,1.0]:
 		var original:=model.find_child("ReinL" if side<0 else "ReinR",true,false) as Node3D
 		assert(original!=null);original.visible=false
-		rein_ends.append([parts.HorseNeck.to_local(to_global(Vector3(side*.2075,2.22,1.55))),parts.HorseBody.to_local(to_global(Vector3(side*.25,2.06,.32)))])
+		rein_ends.append([parts.HorseNeck.to_local(to_global(Vector3(side*.1725,2.18,1.62))),parts.HorseBody.to_local(to_global(Vector3(side*.25,2.06,.32)))])
 	var shape:=BoxShape3D.new();shape.size=Vector3(1.05,2.4,2.8);shape_node.shape=shape;shape_node.position=Vector3(0,1.2,.15)
 	obstacle.add_child(shape_node);add_child(obstacle)
 	label.text="PÉ DE PANO";label.position=Vector3(0,3.1,0);label.font_size=32;label.pixel_size=.012;label.billboard=BaseMaterial3D.BILLBOARD_ENABLED;add_child(label)
@@ -140,12 +140,13 @@ func drive(player:CharacterBody3D,avatar:Node3D,actor:FarmAvatar,direction:Vecto
 func animate(delta:float,velocity:float,running:bool) -> void:
 	gait+=delta*(12 if running else lerpf(2.5,7,clampf(velocity/6,0,1)))
 	var moving:=velocity>.3;var amount:=minf(1,velocity)
-	parts.HorseBody.position=body_home+Vector3(0,absf(sin(gait))*.045*amount,0)
+	parts.HorseBody.position=body_home+Vector3(0,absf(sin(gait if running else gait*2))*(.045 if running else .015)*amount,0)
 	parts.HorseNeck.rotation.x=sin(gait*(.65 if not moving else 1))*(.045 if not moving else .025)
 	parts.HorseTail.rotation.z=sin(gait*.45)*.16
 	for i in range(4):
 		var key:String=["FrontL","FrontR","HindL","HindR"][i]
-		var phase:float=gait+([0.0,.45,PI,PI+.45][i] if running else [0.0,PI,PI,0.0][i])
+		# Four separate footfalls at a walk; paired gathered/extended phases at a gallop.
+		var phase:float=gait+([0.0,.45,PI,PI+.45][i] if running else [0.0,PI,PI*.5,PI*1.5][i])
 		parts[key].rotation.x=sin(phase)*(.58 if running else .37)*amount
 		parts[key+"Lower"].rotation.x=maxf(0,-sin(phase))*.65*amount
 

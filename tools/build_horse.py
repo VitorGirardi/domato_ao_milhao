@@ -44,29 +44,53 @@ def oval(name,p,s,m,parent=None):
  for f in o.data.polygons:f.use_smooth=True
  if parent:attach(o,parent)
  return o
+def loft(name,rings,m,parent,axis='z'):
+ # Cross-sections define the silhouette directly, instead of piling up spheres.
+ # Each ring is (axis position, center on the other axis, half width, half depth).
+ vertices=[];faces=[];steps=24
+ for along,center,width,depth in rings:
+  for i in range(steps):
+   a=2*math.pi*i/steps;x=width*math.cos(a);r=depth*math.sin(a)
+   vertices.append((x,center+r,along) if axis=='z' else (x,along,center+r))
+ for j in range(len(rings)-1):
+  for i in range(steps):
+   a=j*steps+i;b=j*steps+(i+1)%steps
+   faces.append((a,b,b+steps,a+steps))
+ faces.extend([tuple(reversed(range(steps))),tuple((len(rings)-1)*steps+i for i in range(steps))])
+ mesh=bpy.data.meshes.new(name);mesh.from_pydata(vertices,[],faces);mesh.update()
+ o=bpy.data.objects.new(name,mesh);bpy.context.collection.objects.link(o);o.data.materials.append(m)
+ # Correct winding for both cross-section orientations before voxel fusion.
+ bpy.context.view_layer.objects.active=o;o.select_set(True)
+ bpy.ops.object.mode_set(mode='EDIT');bpy.ops.mesh.select_all(action='SELECT');bpy.ops.mesh.normals_make_consistent(inside=False);bpy.ops.object.mode_set(mode='OBJECT')
+ for f in mesh.polygons:f.use_smooth=True
+ o.select_set(False)
+ return attach(o,parent)
 body=pivot('HorseBody',(0,0,1.45))
-oval('Barrel',(0,.05,1.48),(.48,.87,.43),coat,body)
-oval('Chest',(0,-.56,1.53),(.40,.36,.46),coat,body)
+oval('Barrel',(0,.02,1.48),(.46,.93,.44),coat,body)
 oval('Rump',(0,.57,1.49),(.47,.42,.46),coat,body)
-neck=pivot('HorseNeck',(0,-.56,1.78),body)
-o=oval('Neck',(0,-.79,1.97),(.235,.30,.55),coat,neck);o.rotation_euler.x=-.45
-oval('Head',(0,-1.15,2.43),(.235,.33,.27),coat,neck)
-o=oval('Long face',(0,-1.40,2.25),(.205,.35,.245),coat,neck);o.rotation_euler.x=-.45
-oval('Muzzle',(0,-1.66,2.12),(.215,.205,.16),dark,neck)
+neck=pivot('HorseNeck',(0,-.50,1.53),body)
+loft('Tapered neck',[(1.40,-.46,.18,.18),(1.60,-.59,.29,.29),(1.70,-.67,.28,.28),
+ (1.83,-.75,.25,.265),(2.00,-.85,.215,.235),(2.16,-.95,.18,.205),
+ (2.32,-1.03,.16,.18),(2.47,-1.075,.15,.14),(2.55,-1.10,.10,.08)],coat,neck)
+loft('Equine head',[(-.99,2.43,.12,.15),(-1.10,2.45,.19,.22),(-1.23,2.41,.195,.215),
+ (-1.36,2.32,.165,.19),(-1.51,2.23,.155,.15),(-1.64,2.17,.17,.13),(-1.73,2.15,.14,.105)],coat,neck,'y')
+muzzle_mat=mat('Soft chestnut muzzle',(.19,.12,.075))
+oval('Muzzle',(0,-1.715,2.145),(.175,.115,.105),muzzle_mat,neck)
 # Chestnut face: no protruding white patch; facial markings must follow the skin.
-for x in [-.225,.225]:
- oval('Eye',(x*.93,-1.25,2.50),(.040,.058,.054),eye,neck)
- oval('Eye glint',(x*.99,-1.27,2.515),(.011,.012,.014),cream,neck)
- o=oval('Ear',(x*.72,-1.00,2.76),(.063,.08,.15),coat,neck);o.rotation_euler.y=-x*.7
- oval('Inner ear',(x*.72,-1.08,2.78),(.032,.022,.085),dark,neck)
- oval('Nostril',(x*.55,-1.818,2.14),(.032,.018,.026),eye,neck)
-for i in range(7):oval('Mane',(0,-.49-i*.09,1.88+i*.135),(.16,.13,.20),dark,neck)
+for x in [-.185,.185]:
+ oval('Eye',(x,-1.20,2.50),(.028,.044,.039),eye,neck)
+ oval('Eye glint',(x*1.17,-1.215,2.51),(.007,.008,.009),cream,neck)
+ o=oval('Ear',(x*.70,-1.06,2.67),(.055,.065,.11),coat,neck);o.rotation_euler.y=-x*.8
+ oval('Inner ear',(x*.70,-1.115,2.685),(.026,.017,.060),dark,neck)
+ oval('Nostril',(x*.86,-1.76,2.17),(.020,.036,.020),eye,neck)
+loft('Mane crest',[(1.73,-.46,.065,.07),(1.93,-.57,.065,.075),(2.12,-.70,.062,.07),
+ (2.30,-.84,.055,.065),(2.47,-.94,.06,.065),(2.57,-1.025,.075,.07)],dark,neck)
 for x in [-.35,.35]:
  for y in [-.58,.58]:
   name=('Front' if y<0 else 'Hind')+('L' if x<0 else 'R')
   upper=pivot(name,(x,y,1.34))
   oval(name+' thigh',(x,y,1.09),(.12 if y<0 else .175,.145 if y<0 else .20,.40),coat,upper)
-  oval(name+' knee',(x,y,.70),(.105,.115,.12),coat,upper)
+  oval(name+' knee',(x,y,.70),(.09,.10,.105),coat,upper)
   lower=pivot(name+'Lower',(x,y,.69),upper)
   oval(name+' shank',(x,y,.43),(.082,.09,.35),coat,lower)
   oval(name+' sock',(x,y,.21),(.10,.115,.15),sock,lower)
@@ -81,8 +105,8 @@ for x in [-.49,.49]:
  attach(cube('Stirrup',(x,-.10,1.20),(.08,.22,.05),metal,.01),body)
 # Bridle and reins remain attached to the head/body instead of floating props.
 for x in [-.25,.25]:
- attach(beam((x*.83,-1.60,2.17),(x*.88,-1.01,2.59),.025,leather),neck)
- rein=attach(beam((x*.83,-1.55,2.22),(x,-.32,2.06),.025,leather),body);rein.name='ReinL' if x<0 else 'ReinR'
+ attach(beam((x*.69,-1.64,2.19),(x*.71,-1.09,2.59),.018,leather),neck)
+ rein=attach(beam((x*.69,-1.62,2.18),(x,-.32,2.06),.018,leather),body);rein.name='ReinL' if x<0 else 'ReinR'
 # Continuous anatomical surface. Rigid pivots above keep tack and facial details attached.
 coat_objects=[o for o in bpy.context.scene.objects if o.type=='MESH' and len(o.data.materials) and o.data.materials[0]==coat and not o.name.startswith('Ear')]
 bpy.ops.object.select_all(action='DESELECT')
@@ -90,14 +114,14 @@ for o in coat_objects:
  matrix=o.matrix_world.copy();o.parent=None;o.matrix_world=matrix;o.select_set(True)
 bpy.context.view_layer.objects.active=coat_objects[0];bpy.ops.object.join();skin=bpy.context.object;skin.name='HorseContinuousSkin'
 bpy.ops.object.transform_apply(location=True,rotation=True,scale=True)
-remesh=skin.modifiers.new('Continuous anatomy','REMESH');remesh.mode='VOXEL';remesh.voxel_size=.028;remesh.use_smooth_shade=True
+remesh=skin.modifiers.new('Continuous anatomy','REMESH');remesh.mode='VOXEL';remesh.voxel_size=.021;remesh.use_smooth_shade=True
 bpy.ops.object.modifier_apply(modifier=remesh.name)
-smooth=skin.modifiers.new('Relax surface','SMOOTH');smooth.factor=.65;smooth.iterations=5;bpy.ops.object.modifier_apply(modifier=smooth.name)
+smooth=skin.modifiers.new('Relax surface','SMOOTH');smooth.factor=.65;smooth.iterations=14;bpy.ops.object.modifier_apply(modifier=smooth.name)
 decimate=skin.modifiers.new('Game topology','DECIMATE');decimate.ratio=.38;bpy.ops.object.modifier_apply(modifier=decimate.name)
 for poly in skin.data.polygons:poly.use_smooth=True
 arm_data=bpy.data.armatures.new('HorseAnatomy');rig=bpy.data.objects.new('HorseRig',arm_data);bpy.context.collection.objects.link(rig)
 bpy.context.view_layer.objects.active=rig;rig.select_set(True);skin.select_set(False);bpy.ops.object.mode_set(mode='EDIT')
-positions={'HorseBody':(0,0,1.45),'HorseNeck':(0,-.56,1.78)}
+positions={'HorseBody':(0,0,1.45),'HorseNeck':(0,-.50,1.53)}
 for x in [-.35,.35]:
  for y in [-.58,.58]:
   key=('Front' if y<0 else 'Hind')+('L' if x<0 else 'R');positions[key]=(x,y,1.34);positions[key+'Lower']=(x,y,.69)
@@ -117,10 +141,11 @@ for v in skin.data.vertices:
  leg_w=(1-smoothstep(1.16,1.48,z))*smoothstep(.14,.28,abs(x))*smoothstep(.25,.42,abs(y))
  low=1-smoothstep(.55,.84,z)
  weights[leg]=leg_w*(1-low);weights[leg+'Lower']=leg_w*low
- neck_w=smoothstep(1.63,2.03,z)*(1-smoothstep(-.83,-.44,y))
+ neck_w=smoothstep(1.40,1.88,z)*(1-smoothstep(-.80,-.30,y))
  weights['HorseNeck']=(1-leg_w)*neck_w;weights['HorseBody']=(1-leg_w)*(1-neck_w)
  for key,w in weights.items():
   if w>0:groups[key].add([v.index],w,'REPLACE')
+ assert abs(sum(weights.values())-1)<1e-6,'Every skin vertex must follow the rig with normalized weights'
 mod=skin.modifiers.new('Horse deformation','ARMATURE');mod.object=rig;skin.parent=rig
 bpy.ops.object.select_all(action='SELECT')
 bpy.ops.wm.save_as_mainfile(filepath=str(R/'art/source/horse.blend'))
