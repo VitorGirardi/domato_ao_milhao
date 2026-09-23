@@ -100,7 +100,7 @@ def group(name,objects,pivot):
     bpy.ops.object.origin_set(type='ORIGIN_CURSOR')
     return obj
 
-def build(name,zeca=False,vendor=False):
+def build(name,zeca=False,vendor=False,female=False):
     bpy.ops.object.select_all(action='SELECT'); bpy.ops.object.delete(use_global=False)
     palette={'Skin':'E5A36D' if zeca else 'F1B381','Cheek':'DF9364','Shirt':'C86A43' if zeca else 'FFF3DA',
              'Denim':'647044' if zeca else '287CC0','Seam':'879365' if zeca else '63A5D3',
@@ -115,13 +115,17 @@ def build(name,zeca=False,vendor=False):
         palette.update({'Shirt':'7698BB','Denim':'4A586A','Seam':'8497AC','Hat':'CFAB72','Band':'70533D','Hair':'705044','Brow':'705044','Boot':'72513B'})
     if name=='cheesemaker':
         palette.update({'Shirt':'D9B04C','Denim':'E8DEC5','Seam':'BFAF90','Hat':'F2E7CE','Band':'B78042','Hair':'584638','Brow':'584638','Boot':'6F5340'})
+    if female:
+        palette.update({'Skin':'C88B63','Cheek':'C77459','Shirt':'AB574D','Denim':'386E61',
+                        'Seam':'73A28C','Hair':'392B25','Brow':'493125','Iris':'567C58',
+                        'Glove':'C88B63','Hat':'E3C17D','Band':'A65440','Boot':'78513C'})
     M={key:material(name+'_'+key,value) for key,value in palette.items()}
     import runpy
     body_builder=runpy.run_path(str(ROOT/'tools'/'character_body.py'))
     api={'M':M,'mesh':mesh,'box':box,'ellipsoid':ellipsoid,'tube':tube}
     body,details=body_builder['build_body'](api,zeca)
     # A curved rounded-square head; facial features hug its real surface.
-    hx=.55 if zeca else .495
+    hx=.55 if zeca else (.47 if female else .495)
     hy=.37; hz=.47; cz=1.655; power=.85
     def face(x,z,offset=0):
         surface=max(.005,1-(abs(x)/hx)**(2/power)-(abs(z-cz)/hz)**(2/power))
@@ -147,7 +151,13 @@ def build(name,zeca=False,vendor=False):
                 (sign*.19,face(sign*.19,1.963,.025),1.963),
                 (sign*.295,face(sign*.295,1.925,.025),1.925)]
         if zeca and sign==1: points=[(x,y,z+.018) for x,y,z in points]
-        objs.append(tube('Expressive eyebrow',points,.037,'Brow',[.6,1,.5]))
+        objs.append(tube('Expressive eyebrow',points,.024 if female else .037,'Brow',[.4,1,.25]))
+        if female:
+            # A restrained upper lash silhouette follows the eye, not a floating strip.
+            for dz,dx in [(.070,.086),(.044,.098)]:
+                lx=x+sign*dx
+                eye_parts.append(tube('Outer eyelash',[(lx,face(x,z,.033),z+dz),
+                    (lx+sign*.028,face(x,z,.034),z+dz+.017)],.009,'Brow',[1,.15]))
     # Smile is a curved ribbon of ivory within a dark lip silhouette.
     def smile_patch(name,width,top,bottom,color,offset):
         verts=[]; segments=32
@@ -163,11 +173,11 @@ def build(name,zeca=False,vendor=False):
             for i in range(segments):
                 a=row*(segments+1)+i; faces.append((a,a+segments+1,a+segments+2,a+1))
         return mesh(name,verts,faces,color)
-    objs.append(smile_patch('Broad smile outline',.235 if zeca or vendor else .324,(1.445,.067),(1.285,.227),'Dark',.014))
-    objs.append(smile_patch('Single cartoon smile',.211 if zeca or vendor else .299,(1.434,.066),(1.315,.185),'White',.019))
+    objs.append(smile_patch('Broad smile outline',.235 if zeca or vendor or female else .324,(1.445,.067),(1.285,.227),'Dark',.014))
+    objs.append(smile_patch('Single cartoon smile',.211 if zeca or vendor or female else .299,(1.434,.066),(1.315,.185),'White',.019))
     for sign in [-1,1]:
         x=sign*.322; z=1.51
-        if not zeca and not vendor: objs.append(tube('Smile corner',[(x-sign*.012,face(x,z,.022),z-.012),(x,face(x,z,.018),z+.013)],.010,'Brow',[1,.1]))
+        if not zeca and not vendor and not female: objs.append(tube('Smile corner',[(x-sign*.012,face(x,z,.022),z-.012),(x,face(x,z,.018),z+.013)],.010,'Brow',[1,.1]))
     objs.append(ellipsoid('Button nose',(0,face(0,1.572,.031),1.572),(.105 if zeca else .069,.073,.070 if zeca else .049),'Skin',rings=16,segments=24))
     # Clean sculpted hair tufts; no individual strands or photoreal skin texture.
     for x,z,angle in [(-.30,2.085,-.35),(-.12,2.09,-.20),(.07,2.095,.18),(.27,2.08,.5)]:
@@ -217,6 +227,28 @@ def build(name,zeca=False,vendor=False):
             objs.remove(obj); bpy.data.objects.remove(obj,do_unlink=True)
     hair_api={'mesh':mesh,'tube':tube,'ellipsoid':ellipsoid,'signed':signed}
     objs.extend(runpy.run_path(str(ROOT/'tools/character_hair.py'))['build'](hair_api,hx,hy,hz,cz,power,vendor))
+    if female:
+        # Two compact braids frame the face and end above the shoulders.
+        # Their silhouette stays legible from the full-body character cards.
+        for sign in [-1,1]:
+            points=[(sign*.42,.085,1.77),(sign*.49,.07,1.56),(sign*.49,.02,1.34),(sign*.44,-.025,1.14)]
+            objs.append(tube('Gathered braid core',points,.086,'Hair',[.90,1,.82,.40]))
+            for strand in range(2):
+                path=[]
+                for step in range(17):
+                    t=step/16
+                    z=1.64-t*.47
+                    x=sign*(.49-.045*t)+.035*math.sin(t*math.tau*2+strand*math.pi)
+                    y=.035-.062*t-.047*math.cos(t*math.tau*2+strand*math.pi)
+                    path.append((x,y,z))
+                objs.append(tube('Woven braid',path,.033,'Brow',[.8]*(len(path)-1)+[.3]))
+            objs.append(ellipsoid('Braid ribbon',(sign*.448,-.02,1.19),(.073,.062,.025),'Band'))
+            objs.append(tube('Temple curl',[(sign*.405,-.14,1.91),(sign*.445,-.14,1.79),
+                (sign*.445,-.09,1.66)],.040,'Hair',[1,.8,.12]))
+        # A small tied band at the back of the straw hat, authored as actual geometry.
+        objs.append(ellipsoid('Hat ribbon knot',(0,.338,2.08),(.055,.038,.048),'Band'))
+        for sign in [-1,1]:
+            objs.append(ellipsoid('Hat ribbon loop',(sign*.079,.341,2.09),(.077,.022,.047),'Band'))
     for parts,label in [(eye_parts,'BlinkEyes'),(closed_parts,'BlinkCrease')]:
         for obj in parts:
             vg=obj.vertex_groups.new(name=label)
@@ -238,6 +270,7 @@ def build(name,zeca=False,vendor=False):
 
 if __name__=='__main__':
     wanted=sys.argv[sys.argv.index('--')+1:] if '--' in sys.argv else []
+    if not wanted or 'farmer_woman' in wanted: build('farmer_woman',female=True)
     if not wanted or 'farmer' in wanted: build('farmer')
     if not wanted or 'helper' in wanted: build('helper',True)
     if not wanted or 'vendor' in wanted: build('vendor',vendor=True)
