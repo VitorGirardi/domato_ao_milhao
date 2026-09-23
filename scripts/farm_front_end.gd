@@ -86,24 +86,41 @@ func commit_new() -> void:
 	game.state=previous;game._reset_farm();game.state.farm_name=pending_name
 	has_save=true;resume_session=false;game._action("start");game._update_ui()
 
+func _slider(parent:Control,key:String,title:String,y:float) -> void:
+	var hud:FarmHUD=game.hud
+	hud.label(parent,title,Vector2(32,y),Vector2(380,32),21)
+	var slider:=HSlider.new();slider.position=Vector2(422,y+5);slider.size=Vector2(300,30)
+	slider.min_value=.25 if key=="sensitivity" else 0;slider.max_value=2.5 if key=="sensitivity" else 1
+	slider.step=.05;slider.value=pending[key];parent.add_child(slider)
+	var value:=hud.label(parent,"%d%%"%roundi(slider.value*100),Vector2(744,y+2),Vector2(75,30),18)
+	slider.value_changed.connect(func(n:float):pending[key]=n;value.text="%d%%"%roundi(n*100))
+	controls[key]=slider
+
+func settings_tab(audio_tab:bool) -> void:
+	controls.audio_page.visible=audio_tab;controls.video_page.visible=not audio_tab
+	controls.audio_tab.button_pressed=audio_tab;controls.video_tab.button_pressed=not audio_tab
+
 func show_settings() -> void:
 	var hud:FarmHUD=game.hud
-	var p:=FarmGameUI.open(hud,"settings","Configurações","workshop",850,665)
+	var p:=FarmGameUI.open(hud,"settings","Configurações","workshop",850,710)
 	pending=game.preferences.data.duplicate();controls.clear()
-	for i in range(2):
-		var key:String=["volume","sensitivity"][i]
-		hud.label(p,["Volume geral","Sensibilidade da câmera"][i],Vector2(32,130+i*78),Vector2(400,32),21)
-		var slider:=HSlider.new();slider.position=Vector2(422,135+i*78);slider.size=Vector2(300,30)
-		slider.min_value=0 if i==0 else .25;slider.max_value=1 if i==0 else 2.5;slider.step=.05;slider.value=pending[key];p.add_child(slider)
-		var value:=hud.label(p,"%d%%"%roundi(slider.value*100),Vector2(744,132+i*78),Vector2(75,30),18)
-		slider.value_changed.connect(func(n:float):pending[key]=n;value.text="%d%%"%roundi(n*100))
-		controls[key]=slider
-	var fullscreen:=CheckButton.new();fullscreen.text="Tela cheia";fullscreen.position=Vector2(32,293);fullscreen.size=Vector2(340,40);fullscreen.button_pressed=pending.fullscreen;p.add_child(fullscreen)
+	controls.audio_tab=FarmGameUI.action(hud,p,"Som",Rect2(32,111,380,47),"front:audio_tab")
+	controls.video_tab=FarmGameUI.action(hud,p,"Jogo e vídeo",Rect2(432,111,386,47),"front:video_tab")
+	for button in [controls.audio_tab,controls.video_tab]:
+		button.toggle_mode=true
+		button.add_theme_stylebox_override("pressed",hud.style(Color("a38443"),6,Color("36533f")))
+	for key in ["audio_page","video_page"]:
+		var page:=Control.new();page.size=Vector2(850,575);page.mouse_filter=Control.MOUSE_FILTER_IGNORE;p.add_child(page);controls[key]=page
+	for i in range(4):
+		_slider(controls.audio_page,["volume","music","ambience","effects"][i],["Volume geral","Música","Ambiente e animais","Efeitos e passos"][i],202+i*75)
+	hud.label(controls.audio_page,"A música continua suave nos menus. Zero silencia a categoria.",Vector2(32,524),Vector2(786,32),17)
+	_slider(controls.video_page,"sensitivity","Sensibilidade da câmera",202)
+	var fullscreen:=CheckButton.new();fullscreen.text="Tela cheia";fullscreen.position=Vector2(32,290);fullscreen.size=Vector2(340,40);fullscreen.button_pressed=pending.fullscreen;controls.video_page.add_child(fullscreen)
 	fullscreen.toggled.connect(func(value:bool):pending.fullscreen=value);controls.fullscreen=fullscreen
-	hud.label(p,"F11 alterna a qualquer momento",Vector2(422,300),Vector2(385,32),17)
+	hud.label(controls.video_page,"F11 alterna a qualquer momento",Vector2(422,297),Vector2(385,32),17)
 	for i in range(2):
-		hud.label(p,["Qualidade gráfica","Limite de FPS"][i],Vector2(32,366+i*76),Vector2(350,34),21)
-		var options:=OptionButton.new();options.position=Vector2(422,360+i*76);options.size=Vector2(380,45);p.add_child(options)
+		hud.label(controls.video_page,["Qualidade gráfica","Limite de FPS"][i],Vector2(32,368+i*76),Vector2(350,34),21)
+		var options:=OptionButton.new();options.position=Vector2(422,362+i*76);options.size=Vector2(380,45);controls.video_page.add_child(options)
 		for state in ["normal","hover","pressed"]:
 			options.add_theme_stylebox_override(state,hud.style(Color("faf0d5"),6,Color("9c875f")))
 		options.add_theme_color_override("font_color",FarmHUD.INK)
@@ -113,10 +130,11 @@ func show_settings() -> void:
 			options.select(int(pending.quality));options.item_selected.connect(func(index:int):pending.quality=index);controls.quality=options
 		else:
 			options.select([30,60,120,0].find(int(pending.fps)));options.item_selected.connect(func(index:int):pending.fps=[30,60,120,0][index]);controls.fps=options
-	hud.label(p,"As alterações entram em vigor ao aplicar.",Vector2(32,524),Vector2(780,28),17)
-	FarmGameUI.action(hud,p,"Cancelar",Rect2(32,586,225,47),"front:back")
-	FarmGameUI.action(hud,p,"Padrões",Rect2(273,586,225,47),"front:defaults")
-	FarmGameUI.action(hud,p,"Aplicar e voltar",Rect2(514,586,304,47),"front:apply",true)
+	hud.label(p,"As alterações entram em vigor ao aplicar.",Vector2(32,577),Vector2(780,28),17)
+	FarmGameUI.action(hud,p,"Cancelar",Rect2(32,636,225,47),"front:back")
+	FarmGameUI.action(hud,p,"Padrões",Rect2(273,636,225,47),"front:defaults")
+	FarmGameUI.action(hud,p,"Aplicar e voltar",Rect2(514,636,304,47),"front:apply",true)
+	settings_tab(true)
 
 func show_controls() -> void:
 	var hud:FarmHUD=game.hud
@@ -150,8 +168,11 @@ func handle(action:String) -> void:
 			if action=="front:settings":show_settings()
 			else:show_controls()
 		"front:back":back()
+		"front:audio_tab":settings_tab(true)
+		"front:video_tab":settings_tab(false)
 		"front:defaults":
-			controls.volume.value=.8;controls.sensitivity.value=1;controls.fullscreen.button_pressed=true
+			for key in ["volume","music","ambience","effects","sensitivity"]:controls[key].value=FarmSettings.DEFAULTS[key]
+			controls.fullscreen.button_pressed=true
 			controls.quality.select(1);controls.fps.select(1);pending=FarmSettings.DEFAULTS.duplicate()
 		"front:apply":
 			var previous:Dictionary=game.preferences.data
