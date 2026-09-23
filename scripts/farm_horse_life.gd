@@ -9,6 +9,9 @@ var goal:=Vector2.ZERO
 var graze:=0.0
 var look:=0.0
 var cycles:=0
+var calling:=false
+var call_path:Array[Vector2]=[]
+var call_remaining:=0.0
 
 func reset(horse:FarmHorse) -> void:
 	anchor=Vector2(horse.position.x,horse.position.z);anchored=true
@@ -29,6 +32,21 @@ func safe_step(horse:FarmHorse,point:Vector2,heading:float,state:FarmState,lands
 func update(horse:FarmHorse,delta:float,active:bool,state:FarmState,landscape:FarmLandscape,player:CharacterBody3D) -> void:
 	if not anchored:reset(horse)
 	if not active:return
+	if calling:
+		call_remaining=maxf(0,call_remaining-delta)
+		var speed:=0.0
+		if not call_path.is_empty():
+			var at:=Vector2(horse.position.x,horse.position.z)
+			var direction:=call_path[0]-at
+			if direction.length()<.25:call_path.pop_front()
+			else:
+				var heading:=rotate_toward(horse.heading,atan2(direction.x,direction.y),delta*2.5)
+				var point:=at+Vector2(sin(heading),cos(heading))*minf(minf(delta,.1)*2.5,direction.length())
+				if safe_step(horse,point,heading,state,landscape):
+					horse.position=Vector3(point.x,FarmLandscape.height_at(point),point.y);horse.heading=heading;horse.rotation.y=heading;speed=2.5
+				else:call_path.clear()
+		horse.speed=speed;horse.animate(delta,speed,false);horse.store(state)
+		return
 	var at:=Vector2(horse.position.x,horse.position.z)
 	if at.distance_to(anchor)>7:reset(horse)
 	var stable:=FarmStable.nearby(state,at)

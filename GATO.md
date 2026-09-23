@@ -4,16 +4,16 @@ Um gato aparece gratuitamente depois que a fazenda é criada, tanto em partidas 
 
 O gato circula perto de um ponto livre da propriedade, para quando o jogador chega perto e alterna descanso sentado com observação. Cabeça, orelhas, olhos e patas têm articulações; a cauda usa uma malha contínua com sete ossos. `FarmCatPose` controla respiração, piscadas, marcha de quatro fases, transição para sentar e reação ao carinho. A escala de gameplay é 72% da fonte.
 
-Chegue perto e use **E — Fazer carinho no gato**. Ele se volta para o jogador, inclina a cabeça, fecha os olhos e movimenta as orelhas e a cauda durante aproximadamente três segundos. A interação não prende o jogador nem interfere na montaria, ferramentas ou diálogos. Nesta etapa a reação é do gato; não há animação nova de agachar/tocar com a mão do personagem. Não há fome, compra, produção, morte ou punição.
+Chegue perto e use **E — Fazer carinho no gato**. Ele reage com os olhos fechados e ronrona enquanto o personagem se agacha e toca sua cabeça. **V** alterna acompanhar/ficar; veja controles, alcance e contrato em [COMPANHEIROS.md](COMPANHEIROS.md). Não há fome, compra, produção, morte ou punição.
 
 ## Mundo e rede
 
 - Uma instância por fazenda, criada por `FarmWorld`. Comportamento local em solo; só o host decide movimento/reação no cooperativo.
 - Pontos e passos evitam construções e colisões do cenário. Se uma construção ocupar seu ponto, o gato procura outro espaço. Quando não há espaço livre, aguarda uma reconstrução/mudança do mundo; não remove objetos para aparecer.
-- Não tem colisão sólida: não bloqueia jogador ou portas. Não segue jogadores pelo mapa nem usa navegação de longa distância.
+- Não tem colisão sólida: não bloqueia jogador ou portas. Pode acompanhar pelo vale usando rotas limitadas e ficar no local indicado.
 - Proximidade e intervalo entre carinhos são validados pelo host. Posição do visitante deve ter atualização recente. A apresentação é replicada pelo contrato existente `FarmCoopVisuals`, incluindo os ossos da cauda.
-- Protocolo **5**, pois há uma nova RPC. Os dois jogadores devem atualizar. Save permanece **18**; posição e reações são transitórias e não modificam economia ou o arquivo da fazenda.
-- Reconstruções/sessões recriam o ponto de descanso. Nome personalizado, pelagens selecionáveis, sons, seguir, dormir e animação de carinho do humano ficam fora desta primeira entrega.
+- Protocolo **6**, pois há uma nova RPC. Os dois jogadores devem atualizar. Save permanece **18**; posição e reações são transitórias e não modificam economia ou o arquivo da fazenda.
+- Reconstruções/sessões recriam o ponto de descanso. Nome personalizado, pelagens selecionáveis e dormir ficam fora desta entrega.
 
 ## QA isolado
 
