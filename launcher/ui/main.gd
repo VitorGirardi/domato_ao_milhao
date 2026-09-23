@@ -10,6 +10,11 @@ var install_root := ""
 var current := ""
 var latest := ""
 var previous := ""
+var can_play := false
+var update_available := false
+var needs_repair := false
+var checked := false
+var last_check := 0
 var busy := false
 var playing := false
 var operation := ""
@@ -150,7 +155,7 @@ func _build_ui() -> void:
 	back_button = _button("Voltar à versão anterior", Color("a9c09b"), _confirm_rollback)
 	actions.add_child(back_button)
 	var hint := Label.new()
-	hint.text = "Jogar funciona sem internet.\nAtualizações precisam de conexão.\n\nLauncher 1.0.1 · Windows / Linux"
+	hint.text = "Jogar funciona sem internet.\nAtualizações precisam de conexão.\n\nLauncher 1.0.2 · Windows / Linux"
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	hint.add_theme_color_override("font_color", Color("c4d1bb"))
 	actions.add_child(hint)
@@ -179,17 +184,20 @@ func _confirm_rollback() -> void:
 func _refresh() -> void:
 	if play_button == null:
 		return
-	play_button.disabled = busy or current.is_empty()
-	update_button.disabled = busy
+	play_button.disabled = busy or not can_play
+	play_button.text = "JOGAR " + current if can_play else "JOGAR"
+	update_button.disabled = busy or not checked or not (update_available or needs_repair)
 	check_button.disabled = busy
 	back_button.disabled = busy or previous.is_empty()
 	progress.visible = busy
 	versions.text = "Instalada: " + (current if current != "" else "nenhuma") + "     •     Disponível: " + (latest if latest != "" else "verificando")
-	update_button.text = "INSTALAR" if current.is_empty() else "ATUALIZAR"
+	update_button.text = "INSTALAR" if current.is_empty() else ("REPARAR" if needs_repair else ("ATUALIZAR" if update_available else "ATUALIZADO"))
 
 func _start(action: String) -> void:
 	if busy or helper.is_empty():
 		return
+	if action == "update" and (not checked or not (update_available or needs_repair)):return
+	if action == "check":checked=false;update_available=false;latest=""
 	busy = true
 	operation = action
 	playing = action == "play"
@@ -207,12 +215,21 @@ func _execute(action: String) -> Dictionary:
 	return {"OK": false, "Message": "Não foi possível executar o atualizador (" + str(code) + "). Verifique a permissão de escrita desta pasta."}
 
 func _process(_delta: float) -> void:
-	if worker == null or worker.is_alive():
+	if worker == null:
+		if not busy and not helper.is_empty() and DisplayServer.window_is_focused() and Time.get_ticks_msec()-last_check>60000:_start("check")
 		return
+	if worker.is_alive():return
 	result = worker.wait_to_finish()
 	worker = null
 	busy = false
 	playing = false
+	if result.has("CanPlay"):
+		can_play=result.CanPlay;needs_repair=result.get("NeedsRepair",false)
+		current=result.get("Current",current);previous=result.get("Previous",previous)
+		play_button.tooltip_text=result.get("GamePath","")
+	if operation in ["check","update"]:
+		last_check=Time.get_ticks_msec();checked=result.get("OK",false)
+		update_available=result.get("UpdateAvailable",false) if checked else false
 	if result.get("OK", false):
 		current = result.get("Current", current)
 		previous = result.get("Previous", previous)
@@ -221,15 +238,15 @@ func _process(_delta: float) -> void:
 		if result.get("Notes", "") != "":
 			notes.text = _plain_notes(result.Notes)
 		status.text = result.get("Message", "")
-		if operation == "status":
+		if operation in ["status","rollback","play"]:
 			_start("check")
 			return
 		if operation == "update":
 			status.text = "Atualização concluída. Clique em Jogar quando quiser começar."
 		if operation == "check":
-			status.text = "Tudo pronto para jogar." if current == latest else "Tem novidade! Use Atualizar."
+			status.text = "Instalação incompleta. Use Reparar." if needs_repair else ("Tem novidade! Use Atualizar." if update_available else "Você já está atualizado. Clique em Jogar.")
 	else:
-		status.text = result.get("Message", "Ocorreu um erro. Tente novamente.")
+		status.text = result.get("Message", "Ocorreu um erro. Tente novamente.") + (" Jogar continua disponível sem internet." if can_play else "")
 	_refresh()
 
 func _plain_notes(text: String) -> String:
@@ -241,6 +258,7 @@ func _plain_notes(text: String) -> String:
 	return "\n".join(lines)
 
 func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_FOCUS_IN and not busy and worker==null and Time.get_ticks_msec()-last_check>30000 and not helper.is_empty():_start("check")
 	if what == NOTIFICATION_WM_CLOSE_REQUEST:
 		if busy:
 			status.text = "Feche o jogo antes de sair do launcher." if playing else "Aguarde a operação terminar antes de fechar."

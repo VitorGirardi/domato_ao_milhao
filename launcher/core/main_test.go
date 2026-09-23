@@ -243,7 +243,7 @@ func TestUpdateNoopAndFailure(t *testing.T) {
 	data, _ := json.Marshal(rel)
 	client.Transport = fakeTransport{data, 200}
 	r, e := run(root, "update")
-	if e != nil || !strings.Contains(r.Message, "última") {
+	if e != nil || !strings.Contains(r.Message, "atualizada") {
 		t.Fatalf("%+v %v", r, e)
 	}
 }
@@ -260,5 +260,59 @@ func TestReplyEncoding(t *testing.T) {
 	var got Reply
 	if e := json.Unmarshal(out.Bytes(), &got); e != nil || got.Message != want.Message {
 		t.Fatalf("%+v %v", got, e)
+	}
+}
+
+func TestVersionOrdering(t *testing.T) {
+	for _, c := range []struct {
+		a, b string
+		want bool
+	}{{"v0.34.0", "v0.33.0", true}, {"v0.34.0", "v0.34.0", false}, {"v0.9.0", "v0.10.0", false}, {"v1.0.0", "v0.99.0", true}, {"v0.34.0", "", true}, {"bad", "v0.34.0", false}} {
+		if newer(c.a, c.b) != c.want {
+			t.Fatalf("%+v", c)
+		}
+	}
+}
+func TestFreshCheckAndInstallHealth(t *testing.T) {
+	b := fixture(t, runtime.GOOS)
+	mockDownload(t, b)
+	root := t.TempDir()
+	rel := release(t, runtime.GOOS, b)
+	i, e := installRelease(root, rel, runtime.GOOS)
+	if e != nil {
+		t.Fatal(e)
+	}
+	writeState(root, State{Current: i})
+	data, _ := json.Marshal(rel)
+	client.Transport = fakeTransport{data, 200}
+	r, e := run(root, "check")
+	if e != nil || !r.CanPlay || r.UpdateAvailable || r.NeedsRepair || r.GamePath == "" {
+		t.Fatalf("%+v %v", r, e)
+	}
+	i.Version = "v0.32.0"
+	writeState(root, State{Current: i})
+	r, e = run(root, "update")
+	if e != nil || r.Current != "v0.32.0" || r.UpdateAvailable {
+		t.Fatalf("downgrade: %+v %v", r, e)
+	}
+	rel.Tag = "v0.33.0"
+	for j := range rel.Assets {
+		rel.Assets[j].Name = strings.ReplaceAll(rel.Assets[j].Name, "v0.31.0", "v0.33.0")
+	}
+	data, _ = json.Marshal(rel)
+	client.Transport = fakeTransport{data, 200}
+	r, e = run(root, "check")
+	if e != nil || !r.UpdateAvailable {
+		t.Fatalf("new release: %+v %v", r, e)
+	}
+	os.Remove(filepath.Join(root, i.Dir, i.Executable))
+	r, e = run(root, "status")
+	if e != nil || r.CanPlay || !r.NeedsRepair {
+		t.Fatalf("missing exe: %+v %v", r, e)
+	}
+	client.Transport = fakeTransport{[]byte("offline"), 503}
+	r, e = run(root, "check")
+	if e == nil || r.UpdateAvailable || r.Latest != "" {
+		t.Fatalf("stale check: %+v %v", r, e)
 	}
 }

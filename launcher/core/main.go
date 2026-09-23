@@ -17,6 +17,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 	"unicode/utf16"
@@ -52,13 +53,17 @@ type State struct {
 	Previous Install
 }
 type Reply struct {
-	OK       bool
-	Message  string
-	Current  string
-	Previous string
-	Latest   string
-	Notes    string
-	Running  bool
+	OK              bool
+	Message         string
+	Current         string
+	Previous        string
+	Latest          string
+	Notes           string
+	Running         bool
+	CanPlay         bool
+	UpdateAvailable bool
+	NeedsRepair     bool
+	GamePath        string
 }
 
 func main() {
@@ -104,7 +109,7 @@ func run(root, action string) (Reply, error) {
 	if err != nil {
 		return Reply{}, err
 	}
-	r := Reply{OK: true, Current: s.Current.Version, Previous: s.Previous.Version}
+	r := localReply(root, s)
 	if action == "status" {
 		unlock, e := lock(root)
 		if e != nil {
@@ -119,8 +124,12 @@ func run(root, action string) (Reply, error) {
 		if e != nil {
 			return r, e
 		}
+		if _, e = assetFor(rel, runtime.GOOS); e != nil {
+			return r, e
+		}
 		r.Latest = rel.Tag
 		r.Notes = rel.Body
+		r.UpdateAvailable = newer(rel.Tag, s.Current.Version)
 		return r, nil
 	}
 	unlock, err := lock(root)
@@ -133,6 +142,7 @@ func run(root, action string) (Reply, error) {
 	if err != nil {
 		return r, err
 	}
+	r = localReply(root, s)
 	switch action {
 	case "update":
 		rel, e := latest()
@@ -141,9 +151,9 @@ func run(root, action string) (Reply, error) {
 		}
 		r.Latest = rel.Tag
 		r.Notes = rel.Body
-		if rel.Tag == s.Current.Version {
+		if !newer(rel.Tag, s.Current.Version) {
 			if _, e = validInstall(root, s.Current); e == nil {
-				r.Message = "Você já está na última versão."
+				r.Message = "Sua versão já está atualizada. Use Jogar."
 				return r, nil
 			}
 		}
@@ -191,7 +201,49 @@ func run(root, action string) (Reply, error) {
 	default:
 		return r, errors.New("Ação desconhecida.")
 	}
+	local := localReply(root, s)
+	if action == "update" {
+		if fresh, e := readState(root); e == nil {
+			local = localReply(root, fresh)
+		}
+	}
+	r.Current = local.Current
+	r.Previous = local.Previous
+	r.CanPlay = local.CanPlay
+	r.NeedsRepair = local.NeedsRepair
+	r.GamePath = local.GamePath
+	r.UpdateAvailable = r.Latest != "" && newer(r.Latest, r.Current)
 	return r, nil
+}
+
+// Compare numeric release components so v0.9 never replaces v0.10.
+func newer(candidate, installed string) bool {
+	if !tagPattern.MatchString(candidate) {
+		return false
+	}
+	if installed == "" {
+		return true
+	}
+	if !tagPattern.MatchString(installed) {
+		return false
+	}
+	a := strings.Split(strings.TrimPrefix(candidate, "v"), ".")
+	b := strings.Split(strings.TrimPrefix(installed, "v"), ".")
+	for i := 0; i < 3; i++ {
+		x, ex := strconv.ParseUint(a[i], 10, 64)
+		y, ey := strconv.ParseUint(b[i], 10, 64)
+		if ex != nil || ey != nil {
+			return false
+		}
+		if x != y {
+			return x > y
+		}
+	}
+	return false
+}
+func localReply(root string, s State) Reply {
+	p, e := validInstall(root, s.Current)
+	return Reply{OK: true, Current: s.Current.Version, Previous: s.Previous.Version, CanPlay: e == nil, NeedsRepair: s.Current.Version != "" && e != nil, GamePath: p}
 }
 
 func readState(root string) (State, error) {
@@ -295,8 +347,9 @@ func requestTimeout(raw string, timeout time.Duration) (*http.Response, error) {
 	if e != nil {
 		return nil, e
 	}
-	req.Header.Set("User-Agent", "DoMatoAoMilhao-Launcher/1.0")
+	req.Header.Set("User-Agent", "DoMatoAoMilhao-Launcher/1.0.2")
 	req.Header.Set("Accept", "application/vnd.github+json")
+	req.Header.Set("Cache-Control", "no-cache")
 	bounded := *client
 	bounded.Timeout = timeout
 	response, e := bounded.Do(req)
