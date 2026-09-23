@@ -53,7 +53,12 @@ func run() -> void:
 	assert(game.hud.text_input.text=="Fazenda Aurora")
 	assert(FarmCharacters.load_choice()=="farmer","Preview must not change saved identity")
 	await create_timer(.4).timeout;await frame("selection")
+	var original_state:FarmState=game.state
+	var good_path:String=game.save_path
+	game.save_path="user://missing-directory/farm.json"
 	game.front_end.review_new()
+	assert(game.state==original_state and FarmCharacters.load_choice()=="farmer","Failed farm creation must roll back identity")
+	game.save_path=good_path;game.front_end.review_new()
 	assert(game.avatar.get_meta("character_id")=="farmer_woman")
 	assert(FarmCharacters.load_choice()=="farmer_woman" and game.state.farm_name=="Fazenda Aurora")
 	assert(game.weapons.pistol.get_parent()==game.actor.hand_socket)

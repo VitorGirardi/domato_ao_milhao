@@ -270,7 +270,7 @@ def build(name,zeca=False,vendor=False,female=False):
 
 if __name__=='__main__':
     wanted=sys.argv[sys.argv.index('--')+1:] if '--' in sys.argv else []
-    if 'farmer_woman' in wanted: build('farmer_woman',female=True)
+    if not wanted or 'farmer_woman' in wanted: build('farmer_woman',female=True)
     if not wanted or 'farmer' in wanted: build('farmer')
     if not wanted or 'helper' in wanted: build('helper',True)
     if not wanted or 'vendor' in wanted: build('vendor',vendor=True)
