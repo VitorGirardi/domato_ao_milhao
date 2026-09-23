@@ -86,9 +86,9 @@ func _build_hud() -> void:
 	layer.layer=12;add_child(layer)
 	var ui:=Control.new();ui.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);ui.mouse_filter=Control.MOUSE_FILTER_IGNORE;layer.add_child(ui)
 	status=Label.new();status.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-	status.position=Vector2(-368,102);status.size=Vector2(344,96);status.horizontal_alignment=HORIZONTAL_ALIGNMENT_RIGHT
+	status.position=Vector2(-368,145);status.size=Vector2(344,96);status.horizontal_alignment=HORIZONTAL_ALIGNMENT_RIGHT
 	status.add_theme_font_size_override("font_size",19);status.add_theme_color_override("font_color",Color("fff7df"));status.add_theme_color_override("font_shadow_color",Color("183024"));status.add_theme_constant_override("shadow_offset_x",2);status.add_theme_constant_override("shadow_offset_y",2)
-	status.mouse_filter=Control.MOUSE_FILTER_IGNORE;ui.add_child(status)
+	status.mouse_filter=Control.MOUSE_FILTER_IGNORE;game.hud.root.add_child(status)
 	reticle=Label.new();reticle.set_anchors_and_offsets_preset(Control.PRESET_CENTER);reticle.position=Vector2(-24,-24);reticle.size=Vector2(48,48);reticle.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;reticle.vertical_alignment=VERTICAL_ALIGNMENT_CENTER;reticle.add_theme_font_size_override("font_size",30);reticle.mouse_filter=Control.MOUSE_FILTER_IGNORE;ui.add_child(reticle)
 
 func active() -> bool:

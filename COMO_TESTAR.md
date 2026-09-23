@@ -1,4 +1,8 @@
-# Como testar a versão 0.23.1 integrada
+# Como testar a versão 0.23.2
+
+O jogo inicia em **tela cheia**. Use **F11** para alternar entre janela e tela cheia. Experimente também no menu e ao digitar o nome da fazenda. A imagem deve ocupar toda a tela, com botões clicáveis, menus centralizados e sem faixas pretas.
+
+## Conteúdo integrado
 
 Extraia todo o ZIP para uma pasta e abra **DoMatoAoMilhao.exe**. Retome sua fazenda existente.
 

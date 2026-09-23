@@ -52,6 +52,8 @@ var trail_journey:=FarmTrails.new()
 var weapons:=FarmWeapons.new()
 var horse:=FarmHorse.new()
 var navigator:=FarmNavigation.new()
+var windowed_rect:=Rect2i()
+var windowed_mode:=Window.MODE_WINDOWED
 
 func _ready() -> void:
 	qa_mode = OS.is_debug_build() and "--qa" in OS.get_cmdline_user_args()
@@ -246,7 +248,29 @@ func _ensure_player_space() -> void:
 				player.position=Vector3(candidate.x,FarmLandscape.height_at(candidate)+.2,candidate.y)
 				return
 
+func _toggle_fullscreen() -> void:
+	var window:=get_window()
+	if window.mode in [Window.MODE_FULLSCREEN,Window.MODE_EXCLUSIVE_FULLSCREEN]:
+		var usable:=DisplayServer.screen_get_usable_rect(window.current_screen)
+		var target_size:=windowed_rect.size if windowed_rect.has_area() else Vector2i(1280,800)
+		target_size=target_size.min(Vector2i(Vector2(usable.size)*.9))
+		var target_position:=windowed_rect.position if windowed_rect.has_area() else usable.position+(usable.size-target_size)/2
+		target_position=target_position.clamp(usable.position,usable.end-target_size)
+		window.mode=windowed_mode
+		if windowed_mode==Window.MODE_WINDOWED:
+			window.size=target_size
+			window.position=target_position
+	else:
+		windowed_rect=Rect2i(window.position,window.size)
+		windowed_mode=window.mode
+		window.mode=Window.MODE_EXCLUSIVE_FULLSCREEN
+
 func _input(event: InputEvent) -> void:
+	# Works even while a menu or text field owns keyboard focus.
+	if event is InputEventKey and event.pressed and (event.physical_keycode==KEY_F11 or event.keycode==KEY_F11):
+		if not event.echo:_toggle_fullscreen()
+		get_viewport().set_input_as_handled()
+		return
 	# Release must be caught even over a HUD panel, where unhandled input is consumed.
 	if dragging and event is InputEventMouseButton and event.button_index==MOUSE_BUTTON_LEFT and not event.pressed:
 		_update_pointer()
