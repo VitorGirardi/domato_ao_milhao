@@ -248,9 +248,6 @@ func _build() -> void:
 		b.set_meta("unlocked_text",b.text)
 		b.add_theme_font_size_override("font_size",13)
 		buttons[tools[i]]=b
-	var pig_button:=button(tool_panel,"Chiqueiro · $500",Rect2(340,8,195,34),"tool:pigsty")
-	pig_button.set_meta("unlocked_text",pig_button.text)
-	buttons["pigsty"]=pig_button
 	hint_panel=panel(build_hud,Rect2(330,654,767,46),Color("294b3c"))
 	hint_label=label(hint_panel,"WASD mover  •  Mouse direito girar  •  Scroll zoom",Vector2(14,8),Vector2(738,32),15,CREAM)
 	hint_label.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER

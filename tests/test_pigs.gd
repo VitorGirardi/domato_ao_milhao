@@ -35,8 +35,9 @@ func run() -> void:
 	await process_frame;game.set_process(false);game.set_physics_process(false);game.audio.set_process(false)
 	game.state=restored;game.world.rebuild(restored);game.hud.close_modal();game.selected=0;game.session_started=true
 	game._tend_selected();assert(game.hud.modal_kind=="pigsty")
-	assert(game.hud.buttons.has("pigsty"))
-	game._action("tool:pigsty");assert(game.tool=="pigsty")
+	game.hud.construction._choose_category("Animais")
+	assert(game.hud.construction.cards.has("pigsty"))
+	game.selected=0;game._action("tool:pigsty");assert(game.tool=="pigsty")
 	game._action("pigsty");assert(game.hud.modal_kind=="pigsty")
 	assert(game.world.pigsties.size()==1 and game.world.pigsties[0].pigs.size()==3)
 	for i in range(180):game.world.animate(1.0/60,Vector3(99,0,99),game.state)

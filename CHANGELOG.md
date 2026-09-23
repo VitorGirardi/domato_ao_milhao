@@ -1,3 +1,12 @@
+# 0.34.0 — Porcos e companheiros na fazenda
+
+- Integra chiqueiro, até três porcos, compra, água, ração e animações, incluindo cooperativo.
+- Chiqueiro aparece em TAB → Animais, com miniatura própria e desbloqueio no nível 3.
+- Gato companheiro: E faz carinho com gesto humano e ronronar; V alterna acompanhar/ficar.
+- C a pé assobia e chama o cavalo livre próximo; respeita obstáculos e outro jogador montado.
+- Preserva catálogo da 0.33, noite, iluminação e dinheiro infinito. Saves anteriores carregam; protocolo 6 exige atualizar ambos os PCs.
+- Porcos ainda não geram produtos nesta etapa.
+
 # 0.33.0 — Construção sem bagunça
 
 - Catálogo em cinco categorias: Lavoura, Animais, Estruturas, Decoração e Terrenos.

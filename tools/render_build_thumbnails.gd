@@ -14,7 +14,7 @@ func run() -> void:
 	var env:=WorldEnvironment.new();env.environment=Environment.new();env.environment.ambient_light_source=Environment.AMBIENT_SOURCE_COLOR;env.environment.ambient_light_color=Color("ffefd2");env.environment.ambient_light_energy=0.8;world.add_child(env)
 	var sun:=DirectionalLight3D.new();sun.rotation_degrees=Vector3(-40,-30,0);sun.light_energy=1.1;world.add_child(sun)
 	var camera:=Camera3D.new();camera.projection=Camera3D.PROJECTION_ORTHOGONAL;world.add_child(camera);camera.current=true
-	for key in ["barn","coop","workshop","corral","cheesery","stable","fence","sign"]:
+	for key in ["pigsty","barn","coop","workshop","corral","cheesery","stable","fence","sign"]:
 		var model:Node3D=load("res://assets/models/%s.glb"%key).instantiate();world.add_child(model)
 		await process_frame
 		var box:=bounds(model);var center:=box.get_center()

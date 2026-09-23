@@ -26,7 +26,7 @@ func run() -> void:
 	assert(menu.cards["barn"].get_meta("picture").size==Vector2(90,90))
 	await capture("catalog")
 	menu.tabs["Animais"].pressed.emit()
-	assert(menu.cards.has("coop") and menu.cards.has("corral") and menu.cards.has("stable"))
+	assert(menu.cards.has("coop") and menu.cards.has("corral") and menu.cards.has("stable") and menu.cards.has("pigsty"))
 	assert(not menu.cards.has("barn"))
 	await capture("animals")
 	game.state.elapsed=280;game.world.day_night.update_cycle(280,game.player.position);game._update_ui();await capture("night")

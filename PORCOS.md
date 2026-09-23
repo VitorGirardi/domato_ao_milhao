@@ -1,6 +1,6 @@
 # Porcos na fazenda
 
-O chiqueiro fica disponível no nível 3 por $500. O botão aparece na faixa superior do catálogo de construção. Cada chiqueiro recebe até três porcos: Bolota, Paçoca e Jujuba, comprados por $240 cada com confirmação. Use Cuidar ou E próximo à entrada para abrir o painel.
+O chiqueiro fica disponível no nível 3 por $500. No catálogo de construção, abra TAB → Animais → Chiqueiro. Cada chiqueiro recebe até três porcos: Bolota, Paçoca e Jujuba, comprados por $240 cada com confirmação. Use Cuidar ou E próximo à entrada para abrir o painel.
 
 Os porcos compartilham ração e água. Cada porco consome um reservatório de ração em 600 segundos e de água em 480 segundos de simulação ativa; dois ou três consomem proporcionalmente mais. Repor água é grátis e completar a ração custa até $12. O modo de dinheiro infinito permanece ativo no jogo normal. Construção, menus solo e pausas seguem o controle de tempo existente; no cooperativo o host continua a simulação compartilhada.
 
@@ -11,7 +11,7 @@ O cercado tem colisões, assim como os recipientes, abrigo e porcos visíveis. O
 ## Persistência e cooperativo
 
 - Save de fazenda **18**: novo `item.pigs = {count, food, water}`. Saves anteriores continuam sendo aceitos sem reiniciar a fazenda. Saves 18 não são compatíveis com versões antigas do jogo.
-- Protocolo de rede **4**: ambos os jogadores precisam desta atualização. A mudança impede que um cliente antigo ignore silenciosamente a nova construção.
+- Protocolo de rede **6**: ambos os jogadores precisam desta atualização. A mudança impede que um cliente antigo ignore silenciosamente a nova construção.
 - `FarmPigs` valida estado e executa compra/cuidados. `FarmPigPen` controla apresentação e colisões. `FarmPigHUD` mostra compra/estado/cuidados.
 - Comandos `pigs:buy`, `pigs:food`, `pigs:water` passam pela validação, ordenação, limite de repetição e salvamento do host. Falha ao salvar desfaz a compra antes da replicação.
 - As três instâncias visuais existem desde a criação do cercado. A compra habilita a correspondente, sem reconstruir a fazenda. `FarmCoopVisuals` transmite transforms e poses sob `pig_<item>_<slot>`; níveis/visibilidade dos suprimentos derivam do snapshot autoritativo.

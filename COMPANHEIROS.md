@@ -16,4 +16,4 @@ Os sons são sínteses originais reproduzíveis por `tools/build_companion_audio
 
 `tests/test_companions.gd` cobre desvio de obstáculos, contato da mão nos dois personagens, ronronar, acompanhar/parar, aproximação do cavalo e recusa quando montado. Salva vistas das poses em `test-results/companions`. `tests/run_network.py --test test_coop_companions` executa dois peers reais, com carinho, seguir/parar e chamado feitos pelo visitante e saves isolados. Ambos integram a CI Linux.
 
-Entrega empilhada sobre PR21. Sem alterações no launcher, catálogo de construção ou iluminação; sem publicação de release.
+Integrado na versão 0.34 com o chiqueiro, o catálogo contextual e a iluminação da 0.33. Atualizem os dois computadores pelo launcher.
