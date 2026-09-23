@@ -51,7 +51,7 @@ var picked_trade_board:=false
 
 func _ready() -> void:
 	qa_mode = OS.is_debug_build() and "--qa" in OS.get_cmdline_user_args()
-	if qa_mode: save_path="user://qa_farm_v019.json"
+	if qa_mode: save_path="user://qa_farm_v020.json"
 	get_tree().auto_accept_quit = false
 	_inputs()
 	world = FarmWorld.new()
@@ -129,8 +129,8 @@ func _physics_process(delta: float) -> void:
 	if actor.action_time>0 and not build_mode: direction=Vector3.ZERO
 	if build_mode:
 		focus += direction * delta * build_distance * 0.45
-		focus.x = clampf(focus.x,-25,38)
-		focus.z = clampf(focus.z,-30,35)
+		focus.x = clampf(focus.x,-32,68)
+		focus.z = clampf(focus.z,-60,64)
 		player.velocity.x = 0
 		player.velocity.z = 0
 	else:
@@ -145,8 +145,8 @@ func _physics_process(delta: float) -> void:
 	actor.airborne=not player.is_on_floor() and not build_mode
 	if was_airborne and player.is_on_floor(): actor.landing=0.22
 	actor.animate(delta,not build_mode and Vector2(player.velocity.x,player.velocity.z).length()>0.2,Input.is_action_pressed("run"))
-	player.position.x = clampf(player.position.x,-31,44)
-	player.position.z = clampf(player.position.z,-39,43)
+	player.position.x = clampf(player.position.x,FarmLandscape.WALK_MIN.x,FarmLandscape.WALK_MAX.x)
+	player.position.z = clampf(player.position.z,FarmLandscape.WALK_MIN.y,FarmLandscape.WALK_MAX.y)
 	if player.position.y < -3:
 		player.position.y = 1
 	_update_camera(delta)
@@ -214,16 +214,16 @@ func _ensure_player_space() -> void:
 		for step in range(16):
 			var angle := float(step)/16*TAU
 			var candidate := start+Vector2(sin(angle),cos(angle))*radius
-			if candidate.x < -31 or candidate.x > 44 or candidate.y < -39 or candidate.y > 43:
+			if candidate.x<FarmLandscape.WALK_MIN.x or candidate.x>FarmLandscape.WALK_MAX.x or candidate.y<FarmLandscape.WALK_MIN.y or candidate.y>FarmLandscape.WALK_MAX.y:
 				continue
-			var valid := true
+			var valid := world.landscape.clear_for_player(candidate)
 			for item in state.items:
 				if item.kind in ["plot","path"]: continue
 				if state.item_rect(item.kind,Vector2(item.x,item.z),item.turn).grow(0.5).has_point(candidate):
 					valid=false
 					break
 			if valid:
-				player.position=Vector3(candidate.x,0.2,candidate.y)
+				player.position=Vector3(candidate.x,FarmLandscape.height_at(candidate)+.2,candidate.y)
 				return
 
 func _input(event: InputEvent) -> void:
@@ -1169,6 +1169,8 @@ func _chime(kind: String = "build") -> void:
 	sound.play()
 
 func _qa() -> void:
+	if "--qa-v020" in OS.get_cmdline_user_args():
+		_action("start");await _qa_v020();get_tree().quit();return
 	if "--qa-v019" in OS.get_cmdline_user_args():
 		_action("start");await _qa_v019();get_tree().quit();return
 	if "--qa-v018" in OS.get_cmdline_user_args():
@@ -2702,3 +2704,49 @@ func _qa_v019() -> void:
 	assert(state.level_notice.is_empty())
 	assert(state.restore(previous));world.rebuild(state);build_mode=true;_update_ui()
 	print("V019_INTEGRATION_OK: new farm, locked action, first unlock, HUD, progression screen and disk XP persistence")
+
+func _qa_v020() -> void:
+	var previous:=state.serialize()
+	hud.close_modal();state=FarmState.new();state.claim(Vector2(4,-2));state.money=10000;state.farm_xp=950;state.land_size=40
+	for entry in [["barn",Vector2(-6,-8)],["coop",Vector2(10,-8)],["workshop",Vector2(-6,4)],["corral",Vector2(10,6)],["cheesery",Vector2(-6,12)]]:
+		assert(state.place(entry[0],entry[1],0).is_empty())
+	FarmDairy.care(state,3,"buy")
+	for z in [-2,0,2]:
+		for x in [0,2,4]:
+			assert(state.place("plot",Vector2(x,z),0,["carrot","wheat","corn"][int(x/2)]).is_empty())
+			state.items[-1].growth=.8;state.items[-1].watered=true
+	world.rebuild(state);build_mode=true;selected=-1;tool="inspect"
+	focus=Vector3(4,0,0);yaw=.55;pitch=.67;build_distance=64;_update_camera(0,true);_update_ui()
+	await _qa_ui_capture("valley-v020-overview")
+	var meadow_started:=Time.get_ticks_msec()
+	for repetition in range(10):world.landscape.refresh(state)
+	assert(world.landscape.meadow.get_child_count()==3)
+	print("V020_MEADOW_REFRESH: ten rebuilds ms=",Time.get_ticks_msec()-meadow_started)
+	# Explicit triangle-floor checks in the larger walking area.
+	await get_tree().physics_frame
+	for p in [Vector2(0,0),Vector2(60,30),Vector2(2,-55),Vector2(20,60)]:
+		var query:=PhysicsRayQueryParameters3D.create(Vector3(p.x,8,p.y),Vector3(p.x,-2,p.y))
+		var hit:=get_world_3d().direct_space_state.intersect_ray(query)
+		assert(not hit.is_empty() and absf(hit.position.y-FarmLandscape.height_at(p))<.1)
+	for p in world.landscape.trunk_points:assert(not FarmLandscape.CLEAR.has_point(p))
+	for patch in world.landscape.meadow.get_children():
+		for i in range(patch.multimesh.instance_count):
+			var pos:Vector3=patch.multimesh.get_instance_transform(i).origin
+			for item in state.items:assert(not state.item_rect(item.kind,Vector2(item.x,item.z),item.turn).grow(.64).has_point(Vector2(pos.x,pos.z)))
+	build_mode=false;player.position=Vector3(7,.1,17);yaw=.25;pitch=.27;walk_distance=9;_update_camera(0,true);_update_ui()
+	await _qa_ui_capture("valley-v020-farm")
+	player.position=Vector3(-33,.1,1);yaw=1.5;pitch=.32;walk_distance=8;_update_camera(0,true)
+	await _qa_ui_capture("valley-v020-river")
+	player.position=Vector3(57,FarmLandscape.height_at(Vector2(57,30))+.1,30);yaw=.45;pitch=.25;walk_distance=8;_update_camera(0,true)
+	await _qa_ui_capture("valley-v020-grove")
+	_ensure_player_space()
+	assert(player.position.x>44 and player.position.y>=FarmLandscape.height_at(Vector2(player.position.x,player.position.z)))
+	var start:=player.position;Input.action_press("forward")
+	for frame in range(45):await get_tree().physics_frame
+	Input.action_release("forward")
+	assert(player.position.distance_to(start)>1 and player.position.x>44 and player.position.y>-.1)
+	var started:=Time.get_ticks_msec()
+	for frame in range(90):await get_tree().process_frame
+	print("V020_RENDER_SAMPLE: 90 frames ms=",Time.get_ticks_msec()-started," draw_calls=",Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME))
+	assert(state.restore(previous));world.rebuild(state);build_mode=true;_update_ui()
+	print("V020_LANDSCAPE_OK: continuous floor, expanded walking, protected land, vegetation clearance, four rendered views")

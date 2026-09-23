@@ -227,3 +227,12 @@ Próxima decisão: testar o ritmo dessa cadeia antes de ampliar máquinas, preç
 - [x] Seis níveis, catálogo bloqueado e próximos desbloqueios claros.
 - [x] Migração e preservação da fazenda existente.
 - [ ] Próximo bloco sugerido: balancear duração dos níveis com partidas reais e preparar a feira do vale.
+
+## Direção atual — cenário e exploração (0.20)
+
+A feira fica para depois. Prioridade definida pelo autor: um mapa menos artificial e mais coerente com os personagens.
+
+- [x] Materiais de chão naturais e vegetação original Blender.
+- [x] Bosques, flores, pedras, água animada e colinas contínuas.
+- [x] Mais espaço para explorar, preservando a fazenda atual.
+- [ ] Próximo bloco de mapa: pontos de interesse próprios e ambientação sonora, após avaliação visual desta base.

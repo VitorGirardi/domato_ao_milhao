@@ -3,6 +3,7 @@ extends Node3D
 
 const TRADE_BOARD_AT:=Vector3(-22.1,0,15.4)
 
+var landscape:=FarmLandscape.new()
 var models: Dictionary = {}
 var cows:Array[Dictionary]=[]
 var raul_motion:=FarmDairyWorkerMotion.new()
@@ -139,6 +140,10 @@ func _environment() -> void:
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = Color("dee7d4")
 	env.ambient_light_energy = 0.4
+	env.fog_enabled=true
+	env.fog_density=0.0022
+	env.fog_light_color=Color("c9dacc")
+	env.fog_sky_affect=0.18
 	env.reflected_light_source = Environment.REFLECTION_SOURCE_DISABLED
 	env.tonemap_mode = Environment.TONE_MAPPER_LINEAR
 	environment.environment = env
@@ -153,61 +158,8 @@ func _environment() -> void:
 	add_child(sun)
 
 func _landscape() -> void:
-	var ground_shader := Shader.new()
-	ground_shader.code = """shader_type spatial;
-render_mode specular_disabled;
-varying vec3 world_pos;
-void vertex(){ world_pos = (MODEL_MATRIX * vec4(VERTEX,1.0)).xyz; }
-void fragment(){
- float n = sin(world_pos.x * 0.13) * cos(world_pos.z * 0.17) * 0.5 + 0.5;
- float f = fract(sin(dot(floor(world_pos.xz*2.0), vec2(12.9898,78.233)))*43758.5453);
- ALBEDO = mix(vec3(0.28,0.46,0.12), vec3(0.39,0.56,0.18), n) + (f-0.5)*0.022;
- ROUGHNESS = 1.0;
-}"""
-	var ground_mat := ShaderMaterial.new()
-	ground_mat.shader = ground_shader
-	box(self, Vector3(0, -0.2, 0), Vector3(180, 0.4, 180), ground_mat)
-	var body := StaticBody3D.new()
-	var collision := CollisionShape3D.new()
-	var shape := BoxShape3D.new()
-	shape.size = Vector3(180, 0.4, 180)
-	collision.shape = shape
-	body.position.y = -0.2
-	body.add_child(collision)
-	add_child(body)
-	var dirt := material("b99a68")
-	box(self, Vector3(-27, 0.01, 0), Vector3(4.2, 0.07, 82), dirt)
-	box(self, Vector3(0, 0.011, 30), Vector3(72, 0.075, 3.5), dirt)
-	_river()
-	for i in range(105):
-		var pos := Vector3(rng.randf_range(-60, 65), 0, rng.randf_range(-62, 58))
-		if pos.x > -31 and pos.x < 45 and pos.z > -40 and pos.z < 43:
-			continue
-		if pos.x < -35 and pos.x > -46:
-			continue
-		var tree := model("tree", self, pos)
-		tree.scale = Vector3.ONE * rng.randf_range(0.8, 1.8)
-		tree.rotation.y = rng.randf() * TAU
-	for i in range(20):
-		var angle := float(i) / 20 * TAU
-		var hill := MeshInstance3D.new()
-		var sphere := SphereMesh.new()
-		sphere.radial_segments = 12
-		sphere.rings = 6
-		sphere.radius = 1
-		sphere.height = 2
-		hill.mesh = sphere
-		hill.position = Vector3(sin(angle) * 81, -2, cos(angle) * 81)
-		hill.scale = Vector3(rng.randf_range(19, 32), rng.randf_range(9, 17), rng.randf_range(19, 27))
-		hill.material_override = material("71944f" if i % 2 == 0 else "638746")
-		add_child(hill)
-	for i in range(28):
-		var pos := Vector3(rng.randf_range(-25, 40), 0, rng.randf_range(-37, 40))
-		if pos.x > -21 and pos.x < 32 and pos.z > -32 and pos.z < 32:
-			continue
-		model("flower", self, pos).scale *= rng.randf_range(0.8, 1.4)
-	for pos in [Vector3(-34,0,-20), Vector3(42,0,-35), Vector3(39,0,39), Vector3(-34,0,24)]:
-		model("rock", self, pos).scale *= 1.6
+	add_child(landscape)
+	landscape.setup(self)
 	model("market", self, Vector3(-24, 0, 14)).rotation.y = PI / 2
 	var vendor := model("vendor", self, Vector3(-24.5, 0, 14))
 	vendor_actor=FarmAvatar.new()
@@ -264,28 +216,6 @@ func _trade_board() -> void:
 		text.outline_size=0
 		root.add_child(text)
 
-func _river() -> void:
-	var surface := SurfaceTool.new()
-	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-	for i in range(64):
-		var z: float = -80 + i * 2.5
-		var next_z: float = z + 2.5
-		var x: float = -42 + sin(z * 0.065) * 2.6
-		var nx: float = -42 + sin(next_z * 0.065) * 2.6
-		var a := Vector3(x - 3.2, 0.04, z)
-		var b := Vector3(x + 3.2, 0.04, z)
-		var c := Vector3(nx - 3.2, 0.04, next_z)
-		var d := Vector3(nx + 3.2, 0.04, next_z)
-		for point in [a,b,c,b,d,c]:
-			surface.add_vertex(point)
-	surface.generate_normals()
-	var river := MeshInstance3D.new()
-	river.mesh = surface.commit()
-	var water := material("4caaa9", 0.2)
-	water.cull_mode = BaseMaterial3D.CULL_DISABLED
-	river.material_override = water
-	add_child(river)
-
 func update_border(state: FarmState) -> void:
 	for child in border.get_children():
 		child.free()
@@ -303,6 +233,7 @@ func update_border(state: FarmState) -> void:
 			box(border, Vector3(state.center.x + side * half,0.065,state.center.y+t), Vector3(0.09,0.055,1.25), edge)
 
 func rebuild(state: FarmState) -> void:
+	landscape.refresh(state)
 	for node in structures.get_children():
 		node.free()
 	item_nodes.clear()

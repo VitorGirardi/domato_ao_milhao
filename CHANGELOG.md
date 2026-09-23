@@ -1,5 +1,15 @@
 # Alterações
 
+## 0.20.0 — Um vale para explorar
+
+- Substitui o chão quadriculado por gramado, terra e margens com mistura procedural.
+- Sete assets originais Blender: duas árvores, arbusto, capim, duas flores e pedras.
+- Bosques agrupados, capim com vento, rio animado em leito rebaixado e colinas contínuas.
+- Caminhada ampliada para 104 × 128 m, placas de orientação e ponto de descanso.
+- Vegetação respeita as construções; piso original permanece plano em toda posição legal de fazenda.
+- Retorno da câmera de construção respeita altura e obstáculos do cenário ampliado.
+- Save 14 mantido; testes de terreno, colisões, movimento e regressão das rotinas.
+
 ## 0.19.0 — A fazenda sobe de nível
 
 - Seis níveis com XP de colheitas, coletas manuais/automáticas e encomendas.

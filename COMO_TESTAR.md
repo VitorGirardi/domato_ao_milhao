@@ -1,9 +1,25 @@
-# Como testar a versão 0.19.0
+# Como testar a versão 0.20.0
 
 Extraia o ZIP e abra `DoMatoAoMilhao.exe`. Escolha **Voltar para minha fazenda**.
 A versão aceita a partida anterior. Não precisa começar outra.
 
-## Níveis da fazenda — novidade
+## Vale renovado — novidade
+
+1. Continue sua fazenda. O cenário novo aparece sem reiniciar nem mover suas construções.
+2. Caminhe com **WASD** e gire com **mouse direito**: confira as manchas naturais no gramado, flores menores e capim com movimento suave.
+3. Siga a estrada que passa ao sul da fazenda em direção ao **BOSQUE** (leste). Há árvores, arbustos e um banco junto à trilha. Agora é possível caminhar além do antigo limite.
+4. Vá até o armazém de Dona Lúcia e siga para o lado do rio. Observe a margem, pedras e água em movimento. A margem é explorável; atravessar o rio ainda não faz parte deste bloco.
+5. Em **TAB**, construa ou mova um canteiro, caminho ou prédio sobre o gramado. O capim deve desaparecer do espaço ocupado e reaparecer no local liberado.
+6. Caminhe no bosque, abra **TAB** e volte: o personagem deve continuar no local, sobre o terreno, sem ser puxado para o limite antigo.
+7. Confira seus ajudantes, animais, colheitas e **F5**. O cenário usa o mesmo save 14; as regras e a área máxima da propriedade permanecem.
+
+A área de caminhada passou de aproximadamente 75 × 82 m para 104 × 128 m (2,16 vezes a área). A câmera de construção acompanha essa ampliação. A ampliação é do vale explorável; não aumenta gratuitamente seu terreno.
+
+Sete novos modelos originais têm fontes Blender em `art/source/valley_*.blend`. Gramado, terra, margens e água usam materiais procedurais; o mapa tem colinas contínuas e relevo suave apenas fora da região construível.
+
+**Teste isolado no Godot:** `-- --qa --qa-v020`, somente em desenvolvimento. Valida o piso, caminhada ampliada e vegetação fora das construções; captura quatro vistas em `test-results/valley-v020-*.png`. Usa o arquivo de teste, sem gravar sua fazenda real.
+
+## Níveis da fazenda
 
 1. Continue sua partida. Clique em **FAZENDA · NÍVEL** no alto da tela para ver os seis desbloqueios.
 2. Colha um canteiro: **+10 XP**. Colete ovos: **+2 por ovo**; leite: **+3 por litro**; queijo: **+8 por unidade**.
@@ -24,7 +40,7 @@ A versão aceita a partida anterior. Não precisa começar outra.
 O limite deste bloco é nível 6; XP continua registrado. Melhorias dos prédios e treinamento dos funcionários são independentes.
 Partidas antigas recebem XP de reconhecimento por colheitas/encomendas registradas e um nível mínimo pelas construções, funcionários e equipamentos existentes. Dinheiro, estoque e construções permanecem. Não resete sua fazenda para testar.
 
-**Teste automático do começo, sem tocar na partida real:** execute o projeto no Godot com `-- --qa --qa-v019` (somente versão de desenvolvimento). Usa `qa_farm_v019.json`. Três canteiros colhidos liberam o galinheiro; o teste também confere bloqueios, tela e recarga do XP. A versão exportada ignora esse modo.
+**Teste automático do começo, sem tocar na partida real:** execute o projeto no Godot com `-- --qa --qa-v019` (somente versão de desenvolvimento). Usa `qa_farm_v020.json`. Três canteiros colhidos liberam o galinheiro; o teste também confere bloqueios, tela e recarga do XP. A versão exportada ignora esse modo.
 
 ## Conferir as mãos corrigidas
 
