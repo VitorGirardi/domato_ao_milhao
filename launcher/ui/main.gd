@@ -12,7 +12,6 @@ var latest := ""
 var previous := ""
 var busy := false
 var playing := false
-var play_after_update := false
 var operation := ""
 var status: Label
 var versions: Label
@@ -144,14 +143,14 @@ func _build_ui() -> void:
 	row.add_child(actions)
 	play_button = _button("JOGAR", GOLD, func(): _start("play"))
 	actions.add_child(play_button)
-	update_button = _button("ATUALIZAR E JOGAR", CREAM, func(): play_after_update = true; _start("update"))
+	update_button = _button("ATUALIZAR", CREAM, func(): _start("update"))
 	actions.add_child(update_button)
 	check_button = _button("Verificar novidades", Color("a9c09b"), func(): _start("check"))
 	actions.add_child(check_button)
 	back_button = _button("Voltar à versão anterior", Color("a9c09b"), _confirm_rollback)
 	actions.add_child(back_button)
 	var hint := Label.new()
-	hint.text = "Jogar funciona sem internet.\nAtualizações precisam de conexão.\n\nLauncher 1.0 · Windows / Linux"
+	hint.text = "Jogar funciona sem internet.\nAtualizações precisam de conexão.\n\nLauncher 1.0.1 · Windows / Linux"
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	hint.add_theme_color_override("font_color", Color("c4d1bb"))
 	actions.add_child(hint)
@@ -186,7 +185,7 @@ func _refresh() -> void:
 	back_button.disabled = busy or previous.is_empty()
 	progress.visible = busy
 	versions.text = "Instalada: " + (current if current != "" else "nenhuma") + "     •     Disponível: " + (latest if latest != "" else "verificando")
-	update_button.text = "INSTALAR E JOGAR" if current.is_empty() else "ATUALIZAR E JOGAR"
+	update_button.text = "INSTALAR" if current.is_empty() else "ATUALIZAR"
 
 func _start(action: String) -> void:
 	if busy or helper.is_empty():
@@ -225,14 +224,11 @@ func _process(_delta: float) -> void:
 		if operation == "status":
 			_start("check")
 			return
-		if operation == "update" and play_after_update:
-			play_after_update = false
-			_start("play")
-			return
+		if operation == "update":
+			status.text = "Atualização concluída. Clique em Jogar quando quiser começar."
 		if operation == "check":
-			status.text = "Tudo pronto para jogar." if current == latest else "Tem novidade! Use Atualizar e jogar."
+			status.text = "Tudo pronto para jogar." if current == latest else "Tem novidade! Use Atualizar."
 	else:
-		play_after_update = false
 		status.text = result.get("Message", "Ocorreu um erro. Tente novamente.")
 	_refresh()
 

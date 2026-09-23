@@ -59,8 +59,8 @@ jobs:
           cp LAUNCHER.md exports/launcher/LEIA-ME.md
           cp GODOT_LICENSE.txt exports/launcher/
           cp "$(go env GOROOT)/LICENSE" exports/launcher/GO_LICENSE.txt
-          tar -czf exports/DoMato-Launcher-Linux-v1.0.0.tar.gz -C exports/launcher .
-          sha256sum exports/DoMato-Launcher-Linux-v1.0.0.tar.gz > exports/LAUNCHER-SHA256SUMS.txt
+          tar -czf exports/DoMato-Launcher-Linux-v1.0.1.tar.gz -C exports/launcher .
+          sha256sum exports/DoMato-Launcher-Linux-v1.0.1.tar.gz > exports/LAUNCHER-SHA256SUMS.txt
       - uses: actions/upload-artifact@v5
         if: always()
         with:
@@ -70,5 +70,5 @@ jobs:
         with:
           name: launcher-linux
           path: |
-            exports/DoMato-Launcher-Linux-v1.0.0.tar.gz
+            exports/DoMato-Launcher-Linux-v1.0.1.tar.gz
             exports/LAUNCHER-SHA256SUMS.txt

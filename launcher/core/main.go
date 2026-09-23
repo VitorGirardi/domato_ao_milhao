@@ -232,7 +232,7 @@ func writeState(root string, s State) error {
 }
 func validInstall(root string, i Install) (string, error) {
 	if i.Version == "" || !tagPattern.MatchString(i.Version) || !safeName(i.Dir) || !safeName(i.Executable) {
-		return "", errors.New("Instale o jogo usando Atualizar e jogar.")
+		return "", errors.New("Instale o jogo usando Atualizar.")
 	}
 	if !strings.HasPrefix(filepath.ToSlash(i.Dir), "versions/") {
 		return "", errors.New("Pasta de instalação inválida.")
@@ -240,7 +240,7 @@ func validInstall(root string, i Install) (string, error) {
 	p := filepath.Join(root, i.Dir, i.Executable)
 	real, e := filepath.EvalSymlinks(p)
 	if e != nil {
-		return "", errors.New("Jogo não encontrado. Use Atualizar e jogar.")
+		return "", errors.New("Jogo não encontrado. Use Atualizar.")
 	}
 	base, e := filepath.EvalSymlinks(filepath.Join(root, "versions"))
 	if e != nil {

@@ -1,13 +1,13 @@
-# Do Mato ao Milhão — Launcher 1.0
+# Do Mato ao Milhão — Launcher 1.0.1
 
 Extraia o launcher uma única vez em uma pasta sua, com permissão de escrita.
 Windows: abra **DoMato-Launcher.exe**. Linux/Omarchy: dê permissão de execução
 e abra **DoMato-Launcher.x86_64** (`chmod +x DoMato-Launcher.x86_64`).
 Não precisa instalar Godot, Go ou Python.
 
-**Instalar e jogar** baixa a última versão estável pública do jogo no GitHub.
+**Instalar** baixa a última versão estável pública do jogo no GitHub.
 Depois use **Jogar** para abrir a versão instalada, inclusive sem internet,
-ou **Atualizar e jogar** quando houver novidades. O primeiro uso baixa o jogo;
+ou **Atualizar** quando houver novidades. A atualização termina no launcher; clique em **Jogar** quando quiser abrir o jogo. O primeiro uso baixa o jogo;
 não reaproveita automaticamente as pastas antigas extraídas manualmente.
 Vitor e Ian precisam estar na mesma versão para o multiplayer.
 
@@ -34,7 +34,7 @@ O auxiliar embutido é extraído na pasta de dados própria do launcher.
 Não há login, token embutido, servidor pago ou telemetria. O launcher consulta
 somente a release estável pública de `VitorGirardi/domato_ao_milhao` no GitHub.
 Limites temporários do GitHub podem impedir consulta/download; jogar instalado
-continua disponível. A versão 1.0 atualiza o **jogo**, não o próprio launcher.
+continua disponível. A versão 1.0.1 atualiza o **jogo**, não o próprio launcher.
 
 ## Publicar próximas versões
 
