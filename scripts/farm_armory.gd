@@ -44,7 +44,7 @@ static func buy_ammo(state:FarmState,bag:Dictionary) -> String:
 static func can_reload(bag:Dictionary) -> bool:
 	return bag.pistol and bag.magazine<CAPACITY and bag.reserve>0
 
-static func reload(bag:Dictionary) -> int:
+static func reload_magazine(bag:Dictionary) -> int:
 	if not can_reload(bag):return 0
 	var amount:=mini(CAPACITY-int(bag.magazine),int(bag.reserve))
 	bag.magazine+=amount;bag.reserve-=amount

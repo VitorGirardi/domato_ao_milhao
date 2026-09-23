@@ -49,6 +49,7 @@ var silly_kind := "inspect"
 var silly_event_index := 0
 var picked_trade_board:=false
 var trail_journey:=FarmTrails.new()
+var weapons:=FarmWeapons.new()
 
 func _ready() -> void:
 	qa_mode = OS.is_debug_build() and "--qa" in OS.get_cmdline_user_args()
@@ -83,6 +84,8 @@ func _ready() -> void:
 	hud = FarmHUD.new()
 	add_child(hud)
 	hud.action.connect(_action)
+	add_child(weapons)
+	weapons.setup(self)
 	hud.welcome(state,loaded)
 	_update_camera(1.0, true)
 	_update_ui()
@@ -201,6 +204,11 @@ func _update_camera(delta: float, immediate: bool = false) -> void:
 	var target := focus if build_mode else player.position + Vector3(0,1.1,0)
 	var distance := build_distance if build_mode else walk_distance
 	var angle := pitch if build_mode else clampf(pitch,0.2,1.0)
+	if weapons.armed and not build_mode:
+		target-=Vector3(cos(yaw),0,-sin(yaw))*.85
+		target+=Vector3.UP*.55
+		distance=5.2 if Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT) else 6.5
+		angle=clampf(pitch,-.35,.80)
 	var desired := target + Vector3(sin(yaw)*cos(angle),sin(angle),cos(yaw)*cos(angle))*distance
 	if not build_mode and is_inside_tree():
 		var query := PhysicsRayQueryParameters3D.create(target,desired,1,[player.get_rid()])
@@ -241,6 +249,9 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 func _unhandled_input(event: InputEvent) -> void:
+	if weapons.game!=null and weapons.handle_input(event):
+		get_viewport().set_input_as_handled()
+		return
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_ESCAPE:
 			if dragging or not route.is_empty():
