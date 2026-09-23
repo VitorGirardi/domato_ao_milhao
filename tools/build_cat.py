@@ -131,12 +131,38 @@ for name, x, y in [('FL',-.118,-.21),('FR',.118,-.21),('BL',-.115,.22),('BR',.11
     for dx in [-.019,.019]:
         tube('Toe',[(dx,-.115,-.148),(dx,-.113,-.169)],.002,'CatStripe',shin)
 
-# Red collar follows the neck/body, with a small rounded brass tag.
-bpy.ops.mesh.primitive_torus_add(major_radius=.168,minor_radius=.016,major_segments=48,minor_segments=12)
-collar=bpy.context.object;collar.name='RedCollar';collar.parent=body;collar.location=(0,-.245,-.012)
-collar.scale=(1,.87,1.4);collar.data.materials.append(M['CatCollar'])
-for face in collar.data.polygons:face.use_smooth=True
-ellipsoid('CollarTag',(0,-.402,-.051),(.024,.010,.028),'CatGold',body)
+# Fit a flat strap to the actual welded neck surface, rather than an ellipse.
+# Every ring vertex is projected onto the coat, with only 2 mm clearance.
+bpy.context.view_layer.update()
+axis=Vector((0,0,1))
+right=Vector((1,0,0));around=axis.cross(right).normalized()
+center=Vector((0,-.235,.015))
+vertices=[];quads=[];samples=96
+for row in range(3):
+    origin=center+axis*((row-1)*.022)
+    for j in range(samples):
+        angle=j*math.tau/samples
+        direction=right*math.cos(angle)+around*math.sin(angle)
+        world_origin=body.matrix_world@origin
+        world_direction=body.matrix_world.to_3x3()@direction
+        inv=coat.matrix_world.inverted()
+        hit,point,normal,_=coat.ray_cast(inv@world_origin,inv.to_3x3()@world_direction)
+        assert hit, 'Collar must contact the neck at every sample'
+        contact=body.matrix_world.inverted()@(coat.matrix_world@point)
+        distance=(contact-origin).length
+        # The rear half lies beneath the mane/body; never wrap over the back.
+        radius=min(distance,.170)
+        vertices.append(origin+direction*(radius+.002))
+        if row<2:quads.append((row*samples+j,row*samples+(j+1)%samples,(row+1)*samples+(j+1)%samples,(row+1)*samples+j))
+mesh=bpy.data.meshes.new('FittedCollar');mesh.from_pydata(vertices,[],quads);mesh.materials.append(M['CatCollar'])
+collar=bpy.data.objects.new('RedCollar',mesh);bpy.context.collection.objects.link(collar);collar.parent=body
+for face in mesh.polygons:face.use_smooth=True
+# Give the strap a thin edge; its inner face remains against the fur.
+solid=collar.modifiers.new('Strap thickness','SOLIDIFY');solid.thickness=.003;solid.offset=1
+bpy.context.view_layer.objects.active=collar
+bpy.ops.object.modifier_apply(modifier=solid.name)
+front=Vector(vertices[3*samples//4])
+ellipsoid('CollarTag',front+Vector((0,-.008,-.020)),(.024,.010,.028),'CatGold',body)
 
 # One continuous skinned tail, so bends never expose bead-like joints.
 tail = pivot('CatTail0',(0,.285,.055),body)

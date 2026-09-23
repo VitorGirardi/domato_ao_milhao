@@ -24,6 +24,12 @@ func run() -> void:
 				await RenderingServer.frame_post_draw;root.get_texture().get_image().save_png("res://test-results/cat/%s-%03d.png"%[mode,frame])
 		if DisplayServer.get_name()!="headless":
 			await RenderingServer.frame_post_draw;root.get_texture().get_image().save_png("res://test-results/cat/%s.png"%mode)
+	if DisplayServer.get_name()!="headless":
+		FarmCatPose.pose(cat,2.9)
+		for view in ["front","side"]:
+			camera.position=Vector3(0,.65,2) if view=="front" else Vector3(2,.65,0)
+			camera.look_at(Vector3(0,.45,0));camera.size=1.25
+			await RenderingServer.frame_post_draw;root.get_texture().get_image().save_png("res://test-results/cat/"+view+".png")
 	stage.queue_free();await process_frame
 	assert(OS.get_user_data_dir().contains("test-results"))
 	var game:Node3D=load("res://scenes/main.tscn").instantiate();game.save_path="user://cat_game.json";root.add_child(game)
