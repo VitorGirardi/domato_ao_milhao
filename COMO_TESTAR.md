@@ -1,3 +1,7 @@
+# Testar 0.30 — Trabalhar juntos
+
+Atualizem os dois PCs para 0.30. No anfitrião: Jogar junto → Criar/Continuar cooperativo. Ian entra pelo IP. Perto dos canteiros, E planta/rega/colhe; escolha sementes nos botões quando o canteiro estiver vazio. I mostra o estoque dos dois; F5 salva no anfitrião. Saiam e hospedem novamente: Continuar cooperativo deve manter a colheita. Continuar no menu principal ainda abre sua fazenda solo, intacta. Construções, animais, vendas e montaria seguem para próximos blocos. Guia completo em MULTIPLAYER.md.
+
 # Teste 0.29.0 — Jogar junto
 
 Nos dois PCs use a versão 0.29.0. Vitor: Jogar junto → nome → Hospedar minha fazenda. Ian: Jogar junto → nome → IP exibido por Vitor → Entrar na fazenda. Mesma rede local ou IP Tailscale entre PCs autorizados. Porta UDP 28729. WASD anda, Shift corre, Espaço pula, B emotes; Esc abre opções/sair. A visita pausa produção e bloqueia mudanças na fazenda. [Guia e limites completos](MULTIPLAYER.md).
@@ -485,3 +489,4 @@ T continua abrindo os terrenos; F5 salva. O cavalo ainda não foi implementado.
 7. Abra um menu durante a montaria: o deslocamento e o impulso devem pausar. Feche para continuar.
 
 O cavalo ainda não tem compra, alimentação ou evolução; este bloco entrega montaria e exploração. Seu dinheiro infinito continua ativo.
+

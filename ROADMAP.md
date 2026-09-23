@@ -1,3 +1,7 @@
+# Bloco 0.30 — Cultivo cooperativo
+
+Plantio, rega, crescimento, colheita e estoque sincronizados, com persistência separada. Próximos blocos: construção e economia; depois animais, funcionários e montaria.
+
 # Bloco 0.29 — Visita multiplayer concluída
 
 Dois PCs: hospedar/entrar, snapshot em memória, movimento/pulo/emotes, reconexão e isolamento de saves. Próximo: ações de plantio e colheita autorizadas pelo host, inventário sincronizado e save cooperativo separado. Veja MULTIPLAYER.md.
@@ -285,3 +289,4 @@ Entregue: minimapa, mapa completo, destinos e revisão do cavalo. Estrebaria, cu
 ## Bloco 0.25 — estrebaria e vida do cavalo
 
 Entregue: construção, descanso reforçado, pastar/observar/passear, colisões e destino no mapa. Próxima etapa sugerida: alimentação, escovação e evolução permanente do fôlego.
+

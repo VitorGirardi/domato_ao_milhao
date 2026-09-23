@@ -1,3 +1,10 @@
+# 0.30.0 — Cultivo cooperativo
+
+- Plantio, rega, crescimento e colheita autoritativos no anfitrião; estoque compartilhado.
+- Revisões por canteiro e sequências por jogador impedem colheitas duplicadas e pedidos repetidos.
+- Save cooperativo separado, backup, retomada e rollback se a gravação falhar.
+- E cultivar, I estoque e F5 salvar; protocolo 2, ambos precisam da 0.30.
+
 # 0.29.0 — Visita multiplayer
 
 - Jogar junto: hospedar ou entrar por IP, para dois jogadores.
@@ -334,3 +341,4 @@
 
 Primeiro protótipo: vale 3D, escolha do terreno, câmeras, construção, plantação,
 galinhas, comércio, placas, pintura e salvamento.
+
