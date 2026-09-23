@@ -55,6 +55,13 @@ for i in range(5):
     tilt(feather,(x,.34+abs(i-2)*.016,.67-abs(i-2)*.025),-.65)
     details.append(feather)
 body=group('HenBody',details,(0,0,0))
+# The glTF morph importer generates tangents, even for palette-only materials.
+# Supply a real UV atlas so clean Linux imports do not depend on editor caches.
+bpy.context.view_layer.objects.active=body
+bpy.ops.object.mode_set(mode='EDIT')
+bpy.ops.mesh.select_all(action='SELECT')
+bpy.ops.uv.smart_project(angle_limit=1.15,island_margin=.02)
+bpy.ops.object.mode_set(mode='OBJECT')
 # Deform the continuous neck together with every facial detail. Feet and tail
 # stay planted: the hen reaches the soil without pitching its entire body.
 from mathutils import Vector, Matrix
