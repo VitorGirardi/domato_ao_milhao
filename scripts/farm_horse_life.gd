@@ -22,9 +22,10 @@ func safe_step(horse:FarmHorse,point:Vector2,heading:float,state:FarmState,lands
 	var shape:=BoxShape3D.new();shape.size=Vector3(1.22,2.6,3.65)
 	var query:=PhysicsShapeQueryParameters3D.new();query.shape=shape;query.collision_mask=1
 	query.exclude=[horse.obstacle.get_rid()]
-	var start:=horse.position+Vector3(0,1.45,.35).rotated(Vector3.UP,heading)
-	query.transform=Transform3D(Basis(Vector3.UP,heading),start)
-	query.motion=Vector3(point.x,FarmLandscape.height_at(point),point.y)-horse.position
+	var slope:=Basis(Vector3.UP,heading)*horse.model.basis
+	var start:=horse.position+slope*Vector3(0,1.45,.35)+Vector3(0,horse.model.position.y,0)
+	query.transform=Transform3D(slope,start)
+	query.motion=Vector3(point.x,horse.ground_at(point),point.y)-horse.position
 	var space:=horse.get_world_3d().direct_space_state
 	if not space.intersect_shape(query,1).is_empty():return false
 	return space.cast_motion(query)[0]>=.999
@@ -43,7 +44,7 @@ func update(horse:FarmHorse,delta:float,active:bool,state:FarmState,landscape:Fa
 				var heading:=rotate_toward(horse.heading,atan2(direction.x,direction.y),delta*2.5)
 				var point:=at+Vector2(sin(heading),cos(heading))*minf(minf(delta,.1)*2.5,direction.length())
 				if safe_step(horse,point,heading,state,landscape):
-					horse.position=Vector3(point.x,FarmLandscape.height_at(point),point.y);horse.heading=heading;horse.rotation.y=heading;speed=2.5
+					horse.position=Vector3(point.x,horse.ground_at(point),point.y);horse.heading=heading;horse.rotation.y=heading;speed=2.5
 				else:call_path.clear()
 		horse.speed=speed;horse.animate(delta,speed,false);horse.store(state)
 		return
@@ -72,7 +73,7 @@ func update(horse:FarmHorse,delta:float,active:bool,state:FarmState,landscape:Fa
 		if point.distance_to(anchor)>4.5 or direction.length()<.25 or not safe_step(horse,point,next_heading,state,landscape):mode="look";remaining=3
 		else:
 			horse.heading=next_heading;horse.rotation.y=next_heading
-			horse.position=Vector3(point.x,FarmLandscape.height_at(point),point.y);speed=.8
+			horse.position=Vector3(point.x,horse.ground_at(point),point.y);speed=.8
 	horse.animate(delta,speed,false)
 	horse.parts.HorseNeck.rotation.x+=graze*1.48
 	horse.parts.HorseNeck.rotation.y=look
