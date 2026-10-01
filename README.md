@@ -1,3 +1,15 @@
+# O Vale e a Serra ? 0.36.0
+
+Um vale de 1.084 ? 900 m, cerca de 16 vezes a ?rea anterior, com estradas de terra,
+Rio Azul, dois lagos e mirante na serra. Mina, ponte e mirante originais feitos no
+Blender. C?u azul com nuvens em movimento, sol, lua e estrelas. Abra **M ? Locais**
+para marcar os novos destinos; siga para leste pelo circuito da fazenda.
+
+Esta entrega ? de explora??o e visual. **Pesca, compra de minas e minera??o ainda
+n?o est?o dispon?veis.** Fazenda, constru??es, saves e dinheiro infinito preservados.
+Cooperativo exige os dois PCs na 0.36 (protocolo 7).
+[Guia da regi?o e valida??o](VALE_SERRA.md).
+
 # Multiplayer da fazenda — 0.31
 
 Construam, negociem, cuidem dos animais, contratem a equipe e usem o cavalo juntos. Personagem masculino/feminino por jogador. [Como jogar e limites](MULTIPLAYER.md).
@@ -15,7 +27,7 @@ Veja o [roteiro de teste manual](COMO_TESTAR.md), incluindo encomendas e vendas 
 
 ## Jogar
 
-O executável local fica em `exports/windows-v0.35.0/DoMatoAoMilhao.exe` depois da exportação.
+O executável local fica em `exports/windows-v0.36.0/DoMatoAoMilhao.exe` depois da exportação.
 Ele abre diretamente, sem instalar Godot ou Blender. Os binários não são enviados ao Git.
 
 Para executar a partir do código:

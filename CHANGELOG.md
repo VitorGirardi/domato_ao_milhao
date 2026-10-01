@@ -1,3 +1,14 @@
+# 0.36.0 ? O Vale e a Serra
+
+- Regi?o desenhada ? m?o, com 1.084 ? 900 m de limites explor?veis; n?cleo antigo preservado.
+- Estradas de terra, subida ? serra, mirante, Rio Azul atravess?vel por ponte e dois lagos.
+- Mina da Pedra Clara com entrada natural e faixas amarelas. Mina, ponte e mirante modelados no Blender; fontes e geradores inclu?dos.
+- C?u azul com nuvens, sol, lua e estrelas sincronizados ao rel?gio existente; ?gua azul animada.
+- Mapa ampliado com destinos, zoom at? 16? e trajetos regionais.
+- Margens impedem entrada na ?gua profunda a p?, montado e com companheiros; nata??o n?o faz parte desta etapa.
+- Rede aceita posi??es e altitudes da serra, com protocolo 7 para impedir clientes com o mundo antigo.
+- Sem altera??o no formato de save, nas propriedades ou no dinheiro infinito. Pesca e economia da mina s?o pr?ximas etapas.
+
 # 0.34.0 — Porcos e companheiros na fazenda
 
 ## 0.35.0 — Encontre seu caminho
