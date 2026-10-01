@@ -9,6 +9,22 @@ func capture(label: String, from: Vector3, target: Vector3) -> void:
 	await RenderingServer.frame_post_draw
 	root.get_texture().get_image().save_png("res://test-results/region-"+label+".png")
 
+func ride_between(start: Vector2, finish: Vector2) -> void:
+	game.horse.position=Vector3(start.x,FarmLandscape.height_at(start)+.1,start.y)
+	var heading:Vector2=(finish-start).normalized()
+	game.horse.heading=atan2(heading.x,heading.y)
+	game.horse.mount(game.player,game.avatar,game.actor)
+	var arrived:=false
+	for step in range(1100):
+		await physics_frame
+		var at:=Vector2(game.player.position.x,game.player.position.z)
+		if at.distance_to(finish)<1.5: arrived=true; break
+		var direction:Vector2=(finish-at).normalized()
+		game.horse.drive(game.player,game.avatar,game.actor,Vector3(direction.x,0,direction.y),1.0/60,true)
+		assert(game.player.position.y>FarmLandscape.height_at(at)-1.0,"Rider fell through terrain")
+	assert(arrived,"Horse blocked on route %s -> %s, at %s"%[start,finish,game.player.position])
+	game.horse.reset_rider(game.player,game.avatar,game.actor)
+
 func run() -> void:
 	assert(OS.get_user_data_dir().contains("test-results"))
 	# The original playable valley and every purchasable parcel keep their elevations.
@@ -48,6 +64,10 @@ func run() -> void:
 		var hit:Dictionary=game.world.get_world_3d().direct_space_state.intersect_ray(query)
 		assert(not hit.is_empty(),"No floor at %s"%entry.name)
 		assert(absf(hit.position.y-h)<1.5,"Floor does not match walking height at %s"%entry.name)
+	await ride_between(Vector2(388,0),Vector2(452,0))
+	await ride_between(Vector2(452,0),Vector2(388,0))
+	await ride_between(Vector2(618,-261.5),Vector2(662,-283.5))
+	game.horse.restore(game.state.horse)
 	await capture("mirante",Vector3(700,124,-326),Vector3(365,8,30))
 	await capture("estrada",Vector3(307,13,27),Vector3(480,16,-30))
 	await capture("lago",Vector3(239,13,306),Vector3(305,6,249))

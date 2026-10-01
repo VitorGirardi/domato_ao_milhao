@@ -52,7 +52,10 @@ static func highland_height(p: Vector2) -> float:
 	var road := road_sample(p)
 	var result := lerpf(road.y, h, smoothstep(7, 50, road.x))
 	var cave_back := exp(-pow((p.x-900)/45.0,2)-pow((p.y+252)/45.0,2)) * smoothstep(0,16,-220-p.y)
-	return result + cave_back*24.0
+	result += cave_back*24.0
+	# Clear the ground beneath the Blender tunnel; its mesh supplies the roof.
+	if Rect2(894,-232,12,13).has_point(p): result = 81.0
+	return result
 
 static func water_level(p: Vector2) -> float:
 	if weight(p) < .99: return -INF
