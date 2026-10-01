@@ -61,6 +61,7 @@ func _can(kind:String,index:int) -> String:
 	return FarmResources.can_catch(game.state,index) if kind=="fish" else FarmResources.can_extract(game.state,index)
 
 func apply(id:int,action:String) -> String:
+	if session_key!=_key() or (authority() and state_id!=game.state.get_instance_id()):reset()
 	if not authority() or not game.session_started or (game.network.active and not game.network.ready_session):return "Aguarde a fazenda carregar."
 	if id!=own_id() and (not game.network.active or id!=game.network.accepted):return "Jogador desconectado."
 	if action=="gather:cancel":
@@ -106,6 +107,7 @@ func _send_event(id:int,job:Dictionary,message:String) -> void:
 	if game.network.active and game.network.hosting and game.network.accepted!=0:_event.rpc_id(game.network.accepted,id,job,message)
 @rpc("authority","call_remote","reliable",0)
 func _event(id:int,job:Dictionary,message:String) -> void:
+	if not authority() and session_key!=_key():reset()
 	if job.is_empty():jobs.erase(id)
 	else:jobs[id]=job.duplicate(true)
 	if id==own_id():
@@ -141,4 +143,5 @@ func _process(delta:float) -> void:
 		else:FarmResources.extract(game.state,job.index)
 		var saved:=_commit(before)
 		_stop(id,"Recurso guardado no estoque." if saved else "Falha ao salvar. Nenhum recurso foi alterado.")
+
 
