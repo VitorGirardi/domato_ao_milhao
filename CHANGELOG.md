@@ -1,13 +1,25 @@
-# 0.36.0 ? O Vale e a Serra
+# 0.37.0 — Pesca e mineração
 
-- Regi?o desenhada ? m?o, com 1.084 ? 900 m de limites explor?veis; n?cleo antigo preservado.
-- Estradas de terra, subida ? serra, mirante, Rio Azul atravess?vel por ponte e dois lagos.
-- Mina da Pedra Clara com entrada natural e faixas amarelas. Mina, ponte e mirante modelados no Blender; fontes e geradores inclu?dos.
-- C?u azul com nuvens, sol, lua e estrelas sincronizados ao rel?gio existente; ?gua azul animada.
-- Mapa ampliado com destinos, zoom at? 16? e trajetos regionais.
-- Margens impedem entrada na ?gua profunda a p?, montado e com companheiros; nata??o n?o faz parte desta etapa.
-- Rede aceita posi??es e altitudes da serra, com protocolo 7 para impedir clientes com o mundo antigo.
-- Sem altera??o no formato de save, nas propriedades ou no dinheiro infinito. Pesca e economia da mina s?o pr?ximas etapas.
+- Três pontos de pesca nos lagos e no Rio Azul, com tilápia, truta e dourado; E inicia uma captura de 8 segundos.
+- Vara por $150 e picareta por $180; novo painel de ferramentas e venda por tipo de recurso.
+- Mina da Pedra Clara comprável por $1.500 na entrada; barreira e faixas saem após a compra.
+- Cobre, ferro e quartzo no túnel atual: extração de 5 segundos e renovação por veio a cada 120 segundos de tempo ativo da fazenda.
+- Coleta cancela ao mover-se, pular ou abrir menus. Recompensas só chegam ao concluir; falha ao salvar desfaz a operação.
+- Ferramentas, mina, estoque e renovação compartilhados no cooperativo; anfitrião controla as atividades e impede extração simultânea do mesmo veio.
+- Vara, picareta, peixe e três veios modelados no Blender, com fontes e gerador incluídos.
+- Save 19 migra os anteriores sem apagar a fazenda; dinheiro infinito preservado. Protocolo 8 exige atualizar os dois PCs.
+- Veja [controles, preços e limites](PESCA_MINERACAO.md).
+
+# 0.36.0 — O Vale e a Serra
+
+- Região desenhada à mão, com 1.084 × 900 m de limites exploráveis; núcleo antigo preservado.
+- Estradas de terra, subida à serra, mirante, Rio Azul atravessável por ponte e dois lagos.
+- Mina da Pedra Clara com entrada natural e faixas amarelas. Mina, ponte e mirante modelados no Blender; fontes e geradores incluídos.
+- Céu azul com nuvens, sol, lua e estrelas sincronizados ao relógio existente; água azul animada.
+- Mapa ampliado com destinos, zoom até 16× e trajetos regionais.
+- Margens impedem entrada na água profunda a pé, montado e com companheiros; natação não faz parte desta etapa.
+- Rede aceita posições e altitudes da serra, com protocolo 7 para impedir clientes com o mundo antigo.
+- Sem alteração no formato de save, nas propriedades ou no dinheiro infinito. Pesca e economia da mina eram próximas etapas desta versão.
 
 # 0.34.0 — Porcos e companheiros na fazenda
 
