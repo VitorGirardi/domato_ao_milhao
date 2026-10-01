@@ -16,7 +16,7 @@ func setup() -> void:
 	# Increasing V runs down the fall; animated streaks move toward the lake.
 	for row in range(33):
 		var t:=float(row)/32.0
-		var y:=16.0*(1.0-t);var z:=-6.0+9.0*pow(t,.84)
+		var y:=16.0-16.38*t;var z:=-6.0+9.0*pow(t,.84)
 		var width:=3.0+1.3*t
 		for col in range(17):
 			var u:=float(col)/16.0
@@ -28,8 +28,10 @@ func setup() -> void:
 	arrays[Mesh.ARRAY_VERTEX]=vertices;arrays[Mesh.ARRAY_TEX_UV]=uv;arrays[Mesh.ARRAY_INDEX]=indices
 	var mesh:=ArrayMesh.new();mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,arrays)
 	var sheet:=MeshInstance3D.new();sheet.name="MovingWater";sheet.mesh=mesh;sheet.material_override=_material(0);sheet.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF;add_child(sheet)
+	var spring:=MeshInstance3D.new();spring.name="SpringRunoff"
+	var source:=PlaneMesh.new();source.size=Vector2(6,5);spring.mesh=source;spring.position=Vector3(0,16.06,-8.5);spring.material_override=_material(0);spring.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF;add_child(spring)
 	var foam:=MeshInstance3D.new();foam.name="PlungeRipples"
-	var plane:=PlaneMesh.new();plane.size=Vector2(17,13);foam.mesh=plane;foam.position=Vector3(0,.12,5);foam.material_override=_material(1);foam.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF;add_child(foam)
+	var plane:=PlaneMesh.new();plane.size=Vector2(18,14);foam.mesh=plane;foam.position=Vector3(0,.035,4.3);foam.material_override=_material(1);foam.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF;add_child(foam)
 	for i in range(7):
 		var plume:=MeshInstance3D.new();var quad:=QuadMesh.new();quad.size=Vector2(3.8,2.6)
 		plume.mesh=quad;plume.material_override=_material(2);plume.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
@@ -38,7 +40,12 @@ func setup() -> void:
 func _material(kind:int) -> ShaderMaterial:
 	var material:=ShaderMaterial.new();material.shader=FLOW;material.set_shader_parameter("surface_kind",kind);return material
 func _rock_collision(node:Node) -> void:
-	if node is MeshInstance3D:node.create_trimesh_collision()
+	# Each authored boulder is a closed convex volume. A concave/trimesh shell
+	# could admit the capsule through backfaces or seams and trap it inside.
+	if node is MeshInstance3D and String(node.name).begins_with("SolidRock_"):
+		var body:=StaticBody3D.new();body.name="SolidStone"
+		var collision:=CollisionShape3D.new();collision.shape=node.mesh.create_convex_shape(true,true)
+		body.add_child(collision);node.add_child(body)
 	for child in node.get_children():
 		if not child is StaticBody3D:_rock_collision(child)
 func _process(delta:float) -> void:

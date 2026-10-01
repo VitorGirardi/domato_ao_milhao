@@ -19,9 +19,24 @@ stone=[mat('Granite warm gray',(.33,.36,.32)),mat('Granite light',(.43,.46,.39))
 moss=mat('Velvet moss',(.18,.31,.075));leaf=mat('Fern green',(.20,.39,.11))
 def rock(name,p,s,material):
  bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=2,radius=1,location=(p[0],-p[2],p[1]))
- o=bpy.context.object;o.name=name;o.scale=(s[0],s[2],s[1]);o.rotation_euler[2]=random.uniform(-.3,.3)
+ o=bpy.context.object;o.name=('SolidRock_' if material in stone else 'Vegetation_')+name;o.scale=(s[0],s[2],s[1]);o.rotation_euler[2]=random.uniform(-.3,.3)
  for v in o.data.vertices:v.co*=random.uniform(.87,1.13)
  o.data.materials.append(material);return o
+# A closed rock core backs the whole water curtain; it has no hidden cavern.
+# The curved face is set behind the water by .5m, descending below the pool.
+profile=[(-3.6,2.5),(0,2.5),(4,.15),(8,-2.55),(12,-4.65),(15.7,-6.4)]
+vs=[]
+for y,z in profile:vs.extend([(-5.3,-z,y),(5.3,-z,y),(-5.3,14,y),(5.3,14,y)])
+fs=[]
+for k in range(len(profile)-1):
+ i=k*4;j=i+4
+ fs.extend([(i,i+1,j+1,j),(i+2,j+2,j+3,i+3),(i,j,i+2+4,i+2),(i+1,i+3,j+3,j+1)])
+fs.extend([(0,2,3,1),(len(vs)-4,len(vs)-3,len(vs)-1,len(vs)-2)])
+me=bpy.data.meshes.new('Closed wet cliff');me.from_pydata(vs,[],fs);me.materials.append(stone[2])
+o=bpy.data.objects.new('SolidRock_ContinuousBackdrop',me);bpy.context.collection.objects.link(o)
+# Recalculate outward normals for the exported closed solid.
+bpy.context.view_layer.objects.active=o;o.select_set(True);bpy.ops.object.mode_set(mode='EDIT');bpy.ops.mesh.select_all(action='SELECT');bpy.ops.mesh.normals_make_consistent(inside=False);bpy.ops.object.mode_set(mode='OBJECT');o.select_set(False)
+# Overlapping solid boulders, submerged feet, and a narrower crown source.
 # An embedded asymmetric amphitheatre: open middle leaves moving water exposed.
 for side in [-1,1]:
  for k in range(4):
@@ -40,16 +55,16 @@ for x,y,z in [(-7,4,0),(7,8,-4),(-6,12,-5),(5,17,-9),(-9,1,2)]:
   a=i*math.tau/7;tip=(x+math.cos(a)*1.3,y+.5,z+math.sin(a)*.8)
   vs=[(x,-z,y),(tip[0],-tip[2],tip[1]),(x+math.cos(a+.4)*.7,-z-math.sin(a+.4)*.5,y+.7)]
   me=bpy.data.meshes.new('Fern');me.from_pydata(vs,[],[(0,1,2)]);me.materials.append(leaf)
-  o=bpy.data.objects.new('Fern frond',me);bpy.context.collection.objects.link(o)
-# Join rock and vegetation into one efficient original asset.
-bpy.ops.object.select_all(action='SELECT');bpy.context.view_layer.objects.active=next(o for o in bpy.context.scene.objects if o.type=='MESH');bpy.ops.object.join();bpy.context.object.name='WaterfallCliff'
+  o=bpy.data.objects.new('Vegetation_Fern',me);bpy.context.collection.objects.link(o)
+# Keep boulders separate: runtime uses their convex volumes, never hollow shells.
+bpy.ops.object.select_all(action='SELECT')
 (R/'art/source').mkdir(exist_ok=True,parents=True);(R/'assets/models').mkdir(exist_ok=True,parents=True)
 bpy.ops.wm.save_as_mainfile(filepath=str(R/'art/source/region_waterfall.blend'))
 bpy.ops.export_scene.gltf(filepath=str(R/'assets/models/region_waterfall.glb'),export_format='GLB',use_selection=True,export_apply=True)
 # Static water is preview-only; runtime sheet has animated foam and ripples.
 water=mat('Preview flowing blue',(.25,.69,.83))
 vs=[]
-for y,z,w in [(16,-6,3),(13,-4.8,3.2),(8,-2.3,3.5),(3,1,3.7),(.05,3,4.3)]:
+for y,z,w in [(16,-6,3),(13,-4.8,3.2),(8,-2.3,3.5),(3,1,3.7),(-.35,3.3,4.5)]:
  vs += [(-w,-z,y),(w,-z,y)]
 me=bpy.data.meshes.new('PreviewWater');me.from_pydata(vs,[],[(i,i+1,i+3,i+2) for i in range(0,8,2)]);me.materials.append(water)
 o=bpy.data.objects.new('PreviewWater',me);bpy.context.collection.objects.link(o)
