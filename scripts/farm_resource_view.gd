@@ -63,7 +63,7 @@ func _new_prop(id:int,kind:String) -> Dictionary:
 	var bobber:=MeshInstance3D.new();var sphere:=SphereMesh.new();sphere.radius=.09;sphere.height=.18;bobber.mesh=sphere
 	var material:=StandardMaterial3D.new();material.albedo_color=Color("f5ba55");bobber.material_override=material;add_child(bobber)
 	var line:=MeshInstance3D.new();line.mesh=ImmediateMesh.new();var thread:=StandardMaterial3D.new();thread.albedo_color=Color("efe5c7");thread.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED;line.material_override=thread;add_child(line)
-	var entry:Dictionary={"kind":kind,"tool":tool,"bobber":bobber,"line":line};props[id]=entry;return entry
+	var entry:Dictionary={"kind":kind,"tool":tool,"bobber":bobber,"line":line,"last_time":-1.0,"actor":null};props[id]=entry;return entry
 
 func _process(delta:float) -> void:
 	if game==null:return
@@ -79,6 +79,8 @@ func _process(delta:float) -> void:
 		meter.value=100*(1-float(job.remaining)/float(job.duration))
 	for id in props.keys():
 		if not jobs.has(id) or props[id].kind!=jobs[id].kind:
+			var previous:FarmAvatar=props[id].actor
+			if previous!=null and is_instance_valid(previous.root):previous.animate(1,false,false,false)
 			for key in ["tool","bobber","line"]:props[id][key].queue_free()
 			props.erase(id)
 	for id in jobs:
@@ -91,13 +93,36 @@ func _process(delta:float) -> void:
 		a.stop_emote();a.can.visible=false;a.carried_egg.visible=false
 		var forward:=Vector3(direction.x,0,direction.z).normalized()
 		var anchor:Vector3=a.root.global_position+Vector3.UP*1.25+forward*.6
-		var swing:float=sin((float(job.duration)-float(job.remaining))*TAU*1.2)
-		if job.kind=="mine":anchor+=Vector3.UP*(.35+.25*swing)
-		a.reach_rein_hand("R",anchor,1);a.reach_rein_hand("L",anchor-forward*.14-Vector3.UP*.13,1)
-		entry.tool.global_position=anchor
-		entry.tool.global_basis=Basis(Vector3.UP,a.root.rotation.y)*Basis(Vector3.RIGHT,.85 if job.kind=="fish" else .75+swing*.85)
+		entry.actor=a
+		if job.kind=="mine":
+			var seconds:float=float(job.duration)-float(job.remaining)
+			var pose:=FarmMiningPose.apply(a,entry.tool,seconds,target)
+			var contact_time:=FarmMiningPose.CONTACT*FarmMiningPose.PERIOD
+			var hit:=floori((seconds-contact_time)/FarmMiningPose.PERIOD)
+			var previous_hit:=floori((float(entry.last_time)-contact_time)/FarmMiningPose.PERIOD)
+			if entry.last_time>=0 and hit>previous_hit and seconds-float(entry.last_time)<.35:
+				_impact(pose.world_impact)
+			entry.last_time=seconds
+		else:
+			a.reach_rein_hand("R",anchor,1);a.reach_rein_hand("L",anchor-forward*.14-Vector3.UP*.13,1)
+			entry.tool.global_position=anchor
+			entry.tool.global_basis=Basis(Vector3.UP,a.root.rotation.y)*Basis(Vector3.RIGHT,.85)
 		entry.bobber.visible=job.kind=="fish";entry.line.visible=job.kind=="fish"
 		if job.kind=="fish":
 			entry.bobber.position=target+Vector3.UP*(.07+sin(elapsed*3)*.035)
 			var mesh:ImmediateMesh=entry.line.mesh;mesh.clear_surfaces();mesh.surface_begin(Mesh.PRIMITIVE_LINES)
 			mesh.surface_add_vertex(entry.tool.global_transform*Vector3(0,2,0));mesh.surface_add_vertex(entry.bobber.position);mesh.surface_end()
+
+func _impact(at:Vector3) -> void:
+	# Brief chips at blade contact; no ongoing emitter after a cancelled job.
+	for i in range(5):
+		var chip:=MeshInstance3D.new();var mesh:=BoxMesh.new();mesh.size=Vector3.ONE*.035
+		chip.mesh=mesh;var material:=StandardMaterial3D.new();material.albedo_color=Color("b7a78c")
+		chip.material_override=material;add_child(chip);chip.global_position=at
+		var direction:=Vector3(cos(i*2.4)*.23,.15+float(i%3)*.06,sin(i*2.4)*.23)
+		var tween:=create_tween();tween.set_parallel(true)
+		tween.tween_property(chip,"position",at+direction,.13).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		tween.tween_property(chip,"scale",Vector3.ONE*.05,.3)
+		tween.chain().tween_callback(chip.queue_free)
+	if game.player.global_position.distance_to(at)<12:
+		game.audio.play_effect("step_2",-18,.65)
