@@ -6,6 +6,8 @@ func run() -> void:
 	assert(OS.get_user_data_dir().contains("test-results"))
 	var state:=FarmState.new()
 	var empty:=state.serialize()
+	var empty_copy:=FarmState.new()
+	assert(empty_copy.restore(JSON.parse_string(JSON.stringify(empty))),"Unclaimed save must survive JSON numeric conversion")
 	assert(FarmResources.buy(state,"rod")!="" and FarmResources.catch_fish(state,0)!="" and FarmResources.extract(state,0)!="")
 	assert(state.serialize()==empty)
 	assert(state.claim(Vector2(4,0)).is_empty())

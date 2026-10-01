@@ -672,7 +672,7 @@ func restore(data: Variant) -> bool:
 		return false
 	if data.version>=19 and not data.has("resources"):return false
 	if data.has("resources") and (not _number(data.get("elapsed")) or not FarmResources.valid(data.resources,float(data.elapsed))):return false
-	if data.has("resources") and not data.get("claimed",false) and data.resources!=FarmResources.fresh():return false
+	if data.has("resources") and not data.get("claimed",false) and FarmResources.normalized(data.resources)!=FarmResources.fresh():return false
 	if data.version>=16 and not FarmHorse.valid(data.get("horse")):return false
 	if data.has("horse") and not FarmHorse.valid(data.horse):return false
 	if data.version>=15 and (not data.get("unlimited_money") is bool or not FarmParcels.valid(data.get("owned_parcels"))):return false
