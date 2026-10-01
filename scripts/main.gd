@@ -79,7 +79,7 @@ func _ready() -> void:
 	add_child(camera)
 	camera.current = true
 	camera.fov = 49
-	camera.far = 600
+	camera.far = 2400
 	if state.claimed:
 		focus = Vector3(state.center.x,0,state.center.y)
 		player.position = focus + Vector3(0,0.2,8)
@@ -171,7 +171,10 @@ func _physics_process(delta: float) -> void:
 			avatar.rotation.y = lerp_angle(avatar.rotation.y,atan2(direction.x,direction.z),delta*12)
 	var was_airborne:=actor.airborne
 	player.velocity.y -= 18*delta
+	var before_move := player.position
 	player.move_and_slide()
+	if FarmRegion.water_blocked(Vector2(player.position.x,player.position.z)):
+		player.position = before_move; player.velocity = Vector3.ZERO
 	actor.airborne=not player.is_on_floor() and not build_mode
 	if was_airborne and player.is_on_floor(): actor.landing=0.22
 	actor.animate(delta,not build_mode and Vector2(player.velocity.x,player.velocity.z).length()>0.2,Input.is_action_pressed("run"))

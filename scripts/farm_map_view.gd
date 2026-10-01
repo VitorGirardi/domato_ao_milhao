@@ -6,7 +6,7 @@ signal place_picked(key:String)
 var zoom:=1.0
 var focus:=REGION.get_center()
 var icons:Dictionary={}
-const REGION:=Rect2(-54,-151,240,302)
+const REGION:=Rect2(-54,-470,1124,940)
 var state:FarmState
 var player_at:=Vector2.ZERO
 var horse_at:=Vector2.ZERO
@@ -19,13 +19,13 @@ var trees:Array[Vector2]=[]
 var locations:Array=[]
 
 static func background() -> Texture2D:
-	var img:=Image.create(240,302,false,Image.FORMAT_RGB8)
-	for z in range(302):
-		for x in range(240):
-			var p:=REGION.position+Vector2(x,z)
-			var hill:=clampf(FarmLandscape.base_height(p)/4,0,1)
-			var color:=Color("849860").lerp(Color("607b52"),hill)
-			if absf(p.x-(-42+sin(p.y*.065)*2.6))<5:color=Color("4e959b")
+	var img:=Image.create(562,470,false,Image.FORMAT_RGB8)
+	for z in range(470):
+		for x in range(562):
+			var p:=REGION.position+Vector2(x,z)*2
+			var hill:=clampf(FarmLandscape.base_height(p)/120,0,1)
+			var color:=Color("91ab65").lerp(Color("546e50"),hill)
+			if absf(p.x-(-42+sin(p.y*.065)*2.6))<5 or FarmRegion.water_level(p)>-INF: color=Color("399ac8")
 			img.set_pixel(x,z,color)
 	return ImageTexture.create_from_image(img)
 
@@ -56,7 +56,7 @@ func _gui_input(event:InputEvent) -> void:
 	if full and event is InputEventMouseButton and event.pressed:
 		if event.button_index in [MOUSE_BUTTON_WHEEL_UP,MOUSE_BUTTON_WHEEL_DOWN]:
 			var before:=unproject(event.position)
-			zoom=clampf(zoom*(1.3 if event.button_index==MOUSE_BUTTON_WHEEL_UP else 1/1.3),1,6)
+			zoom=clampf(zoom*(1.3 if event.button_index==MOUSE_BUTTON_WHEEL_UP else 1/1.3),1,16)
 			focus+=before-unproject(event.position)
 			var half:=REGION.size/zoom/2
 			focus=focus.clamp(REGION.position+half,REGION.end-half)
@@ -110,6 +110,10 @@ func _draw() -> void:
 	for x in range(-54,190,3):road.append(Vector2(x,30+sin(x*.09)*smoothstep(44,75,x)*3))
 	line_route(road,maxf(3,5*scale_factor()),Color("d0b98a"))
 	for route in FarmTrails.ROUTES:line_route(route,maxf(2,3*scale_factor()),Color("c5b282"))
+	for route in FarmRegion.ROUTES:
+		var points:Array=[]
+		for p in route: points.append(Vector2(p.x,p.z))
+		line_route(points,maxf(2,7*scale_factor()),Color("ddbf88"))
 	area(Rect2(FarmLandscape.WALK_MIN,FarmLandscape.WALK_MAX-FarmLandscape.WALK_MIN),Color("cbd2ad"))
 	if state.claimed:area(Rect2(state.center-Vector2.ONE*state.land_size/2,Vector2.ONE*state.land_size),Color("f5d774"))
 	for key in FarmParcels.LOTS:area(FarmParcels.area(key),Color("f5d774") if key in state.owned_parcels else Color("e4ead0"))

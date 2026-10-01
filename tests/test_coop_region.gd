@@ -1,6 +1,6 @@
 extends "res://tests/test_coop.gd"
 ## Two real ENet peers must exchange positions beyond the legacy valley bounds.
-const HIGH_AT := Vector3(700, 88, -325)
+const HIGH_AT := Vector3(700, 120, -325)
 const MINE_AT := Vector3(900, 82, -216)
 
 func check_destinations() -> void:
@@ -74,5 +74,5 @@ func run() -> void:
 	assert(FileAccess.get_file_as_string(game.save_path)==solo, "Region coop changed solo save")
 	game.audio.stop_all();game.queue_free();await process_frame
 	await create_timer(.2).timeout
-	print("COOP_REGION_OK: "+mode+" distant/high remote positions, destinations, farm preservation, solo isolation and parked horse resume")
+	print("COOP_QA_OK: COOP_REGION_OK: "+mode+" distant/high remote positions, destinations, farm preservation, solo isolation and parked horse resume")
 	quit()

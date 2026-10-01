@@ -4,7 +4,7 @@ func _initialize() -> void:
 	var restored:=FarmState.new();assert(restored.restore(JSON.parse_string(JSON.stringify(state.serialize()))))
 	assert(restored.horse==state.horse)
 	var before:=restored.serialize()
-	for bad in [null,{}, {"x":"160","z":0,"angle":0}, {"x":999,"z":0,"angle":0}, {"x":0,"z":0,"angle":NAN}]:
+	for bad in [null,{}, {"x":"160","z":0,"angle":0}, {"x":FarmLandscape.WALK_MAX.x+10,"z":0,"angle":0}, {"x":0,"z":0,"angle":NAN}]:
 		var data:=before.duplicate(true);data.horse=bad
 		assert(not restored.restore(data) and restored.serialize()==before)
 	var old:=before.duplicate(true);old.version=15;old.erase("horse")

@@ -53,6 +53,9 @@ func destinations() -> Array:
 	for key in FarmTrails.STOPS:
 		var stop:Dictionary=FarmTrails.STOPS[key]
 		values.append({"key":key,"name":stop.name,"at":stop.at,"group":"Locais"})
+	for key in FarmRegion.PLACES:
+		var place:Dictionary=FarmRegion.PLACES[key]
+		values.append({"key":key,"name":place.name,"at":place.at,"group":"Locais","icon":"book","notice":place.notice})
 	return values
 
 func select(point:Vector2,title:String,key:String="") -> void:
