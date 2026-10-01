@@ -65,6 +65,34 @@ back=[(x*.82,11.6,max(z*.79,6.5) if z>4 else z) for x,y,z in outer]
 mid=[(x*1.025,5.7+math.sin(i*2.1)*.45,z*(.98+.045*math.sin(i*1.9))) for i,(x,y,z) in enumerate(outer)]
 shell=mesh('Cliff crown shell',outer+mid+back,[(d*N+i,(d+1)*N+i,(d+1)*N+i+1,d*N+i+1) for d in range(2) for i in range(N-1)],stone)
 for f in shell.data.polygons:f.material_index=random.choice([0,0,2,3])
+# Exterior mountain shell hides the authored galleries from outdoor viewpoints.
+# Only the exterior skin exists: it never fills or intersects the walkable rooms.
+mountain_rings=[(0,8,9.3),(2,9.5,10.5),(4,11.5,11.5),(8,15,13),(12,22,15),(20,28,16.5),(28,29,17),
+                (40,28,17),(52,28,17),(64,24,16),(74,20,13),(82,12,8),(88,.1,.1)]
+vs=[];segments=20
+for k,(depth,width,height) in enumerate(mountain_rings):
+    for i in range(segments+1):
+        t=math.pi*i/segments
+        jitter=1+.035*math.sin(i*2.7+k*1.9)
+        x=math.cos(t)*width*jitter
+        z=max(0,math.sin(t))**.72*height*jitter
+        y=depth+(0 if k in [0,len(mountain_rings)-1] else .7*math.sin(i*1.3+k))
+        vs.append(outer[i] if k==0 else (x,y,z))
+fs=[]
+for k in range(len(mountain_rings)-1):
+    for i in range(segments):
+        j=k*(segments+1)+i;n=j+segments+1
+        fs.extend([(j,j+1,n+1),(j,n+1,n)])
+mountain=mesh('Organic mountain exterior',vs,fs,stone+green)
+for f in mountain.data.polygons:
+    f.material_index=random.choice([0,0,0,1,2])
+    if sum(mountain.data.vertices[v].co.z for v in f.vertices)/len(f.vertices)>13: f.material_index=4
+# Soft moss pillows break the distant outline, all well above the cave ceiling.
+for depth,width,height in mountain_rings[2:-2]:
+    for j in range(5):
+        t=random.uniform(.55,math.pi-.55)
+        x=math.cos(t)*width;z=math.sin(t)**.72*height
+        rock('Mountain moss ledge',(x,depth,z+.1),(random.uniform(1.2,2.8),random.uniform(1.2,2.4),.4),green[j%2],1)
 # Outward-only faceting means rock never narrows the defined floor footprint.
 BOUNDARIES=[]
 for cx,cy in CELLS:
@@ -174,6 +202,21 @@ for parent,name in [(root,'MineRockAndVegetation'),(barrier,'MineBarrierMesh')]:
         o.select_set(True)
     bpy.context.view_layer.objects.active=parts[0];bpy.ops.object.join()
     bpy.context.object.name=name
+# Geometry-level contract checks: every adjacent cell remains visibly connected,
+# with a flat floor and sufficient headroom. Gameplay owns collision separately.
+bpy.context.view_layer.update()
+depsgraph=bpy.context.evaluated_depsgraph_get()
+for cx,cy in CELLS:
+    origin=Vector((cx,cy,1.5))
+    floor=bpy.context.scene.ray_cast(depsgraph,origin,Vector((0,0,-1)),distance=2)
+    assert floor[0] and abs(floor[1].z-.05)<.001, ('floor',cx,cy,floor[:2])
+    roof=bpy.context.scene.ray_cast(depsgraph,origin,Vector((0,0,1)),distance=10)
+    assert roof[0] and roof[1].z>=5.5, ('headroom',cx,cy,roof[:2])
+    for dx,dy in [(8,0),(0,8)]:
+        if (cx+dx,cy+dy) in cell_set:
+            hit=bpy.context.scene.ray_cast(depsgraph,origin,Vector((dx,dy,0)).normalized(),distance=8)
+            assert not hit[0], ('blocked passage',cx,cy,dx,dy,hit[4].name)
+print('MINE_GEOMETRY_CHECKS: 17 level floors, 17 clear ceilings, connected cell passages passed')
 assets=[o for o in bpy.context.scene.objects]
 for o in assets:o.select_set(True)
 (R/'art/source').mkdir(parents=True,exist_ok=True)
