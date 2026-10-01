@@ -4,6 +4,7 @@ extends Node3D
 const SECONDS_PER_HOUR := 20.0
 const DAY_SECONDS := 24.0 * SECONDS_PER_HOUR
 const MAX_LOCAL_LIGHTS := 6
+var sky_visual := ShaderMaterial.new()
 var environment: Environment
 var sky: ProceduralSkyMaterial
 var sun: DirectionalLight3D
@@ -31,6 +32,8 @@ static func daylight(hour: float) -> float:
 func setup(world: FarmWorld, env: Environment, sky_material: ProceduralSkyMaterial, sunlight: DirectionalLight3D) -> void:
 	name = "DayNight"
 	environment = env; sky = sky_material; sun = sunlight
+	sky_visual.shader=load("res://assets/shaders/valley_sky.gdshader")
+	environment.sky.sky_material=sky_visual
 	moon.name = "Moonlight"
 	moon.rotation_degrees = Vector3(-38, 135, 0)
 	moon.light_color = Color("9db9ee")
@@ -127,18 +130,28 @@ func update_cycle(elapsed: float, observer: Vector3) -> void:
 	var dawn := smoothstep(4.8, 6.0, displayed_hour) * (1.0-smoothstep(6.3, 8.2, displayed_hour))
 	var dusk := smoothstep(16.0, 18.0, displayed_hour) * (1.0-smoothstep(18.5, 20.5, displayed_hour))
 	var warm := maxf(dawn, dusk)
-	sky.sky_top_color = Color("111c39").lerp(Color("70b4cd"), day).lerp(Color("66668b"), warm*0.38)
-	sky.sky_horizon_color = Color("334465").lerp(Color("cbe2d0"), day).lerp(Color("efa773"), warm*0.85)
+	sky.sky_top_color = Color("111c39").lerp(Color("258bdd"), day).lerp(Color("66668b"), warm*0.38)
+	sky.sky_horizon_color = Color("334465").lerp(Color("bfdff4"), day).lerp(Color("efa773"), warm*0.85)
 	sky.ground_bottom_color = Color("1c2931").lerp(Color("78906b"), day)
 	sky.ground_horizon_color = sky.sky_horizon_color
 	sky.sun_angle_max = 8.0
 	environment.ambient_light_color = Color("9cadcf").lerp(Color("dee7d4"), day)
 	environment.ambient_light_energy = lerpf(0.23, 0.4, day)
-	environment.fog_light_color = Color("283957").lerp(Color("c9dacc"), day).lerp(Color("c68e72"), warm*0.5)
+	environment.fog_light_color = Color("283957").lerp(Color("bad6ea"), day).lerp(Color("c68e72"), warm*0.5)
 	sun.light_color = Color("fff2d5").lerp(Color("ffb073"), warm*0.65)
 	sun.light_energy = 0.65 * day
 	sun.rotation_degrees = Vector3(-maxf(1, sin((displayed_hour-6.0)/12.0*PI)*58), displayed_hour*12-176, 0)
 	moon.light_energy = 0.20 * night_amount
+	var angle := (displayed_hour-6.0)/24.0*TAU
+	var sun_dir := Vector3(cos(angle),sin(angle),-.3).normalized()
+	sun.basis=Basis.looking_at(-sun_dir,Vector3.UP)
+	moon.basis=Basis.looking_at(sun_dir,Vector3.UP)
+	sky_visual.set_shader_parameter("zenith",sky.sky_top_color)
+	sky_visual.set_shader_parameter("horizon",sky.sky_horizon_color)
+	sky_visual.set_shader_parameter("daylight",day)
+	sky_visual.set_shader_parameter("sun_direction",sun_dir)
+	sky_visual.set_shader_parameter("moon_direction",-sun_dir)
+	sky_visual.set_shader_parameter("cloud_time",elapsed)
 	lantern_material.emission_energy_multiplier = 2.5 * smoothstep(0.18, 0.75, night_amount)
 	# Fixed pool: distant lanterns glow, only nearby lamps spend real light budget.
 	var ordered := lamps.duplicate()

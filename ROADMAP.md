@@ -1,3 +1,14 @@
+# Dire??o alinhada ? Vale e Serra (outubro/2026)
+
+Manter o estilo estilizado e aconchegante. Regi?es desenhadas ? m?o agora;
+gera??o de novas regi?es no futuro. Prioridade atual: paisagem, relevo e explora??o.
+
+- 0.36: expans?o do vale, estradas de terra, rios/lagos, mirante, c?u e entrada da mina em Blender.
+- Pr?xima etapa: compra da mina e extra??o/venda de min?rios; pesca e venda em rios e lagos.
+- Futuro: novas propriedades/regi?es para cooperativo, gera??o de terrenos adjacentes.
+
+As listas antigas abaixo s?o hist?ricas; o cooperativo de duas pessoas j? existe.
+
 # Bloco 0.31 — Fazenda cooperativa
 
 Construção, comércio, cuidados/produção animal, equipe e montaria compartilhados, além de identidade por jogador. Próximas expansões opcionais: mais jogadores, cavalos adicionais, descoberta de salas e servidor dedicado.

@@ -81,7 +81,7 @@ func mount(player:CharacterBody3D,avatar:Node3D,actor:FarmAvatar) -> void:
 
 func safe_spot(p:Vector2,player:CharacterBody3D,state:FarmState,landscape:FarmLandscape) -> bool:
 	if p.x<FarmLandscape.WALK_MIN.x+.6 or p.x>FarmLandscape.WALK_MAX.x-.6 or p.y<FarmLandscape.WALK_MIN.y+.6 or p.y>FarmLandscape.WALK_MAX.y-.6:return false
-	if not landscape.clear_for_player(p):return false
+	if FarmRegion.water_blocked(p) or not landscape.clear_for_player(p):return false
 	for item in state.items:
 		if item.kind not in ["plot","path"] and state.item_rect(item.kind,Vector2(item.x,item.z),item.turn).grow(.5).has_point(p):return false
 	var query:=PhysicsShapeQueryParameters3D.new();var capsule:=CapsuleShape3D.new();capsule.radius=.39;capsule.height=2.58
@@ -120,7 +120,10 @@ func drive(player:CharacterBody3D,avatar:Node3D,actor:FarmAvatar,direction:Vecto
 	var forward:=Vector3(sin(heading),0,cos(heading))
 	player.velocity.x=forward.x*speed;player.velocity.z=forward.z*speed
 	if not active:player.velocity.x=0;player.velocity.z=0;speed=0
+	var before_move := player.position
 	player.velocity.y-=18*delta;rider_collision.rotation.y=heading;player.move_and_slide()
+	if FarmRegion.water_blocked(Vector2(player.position.x,player.position.z)):
+		player.position=before_move; player.velocity=Vector3.ZERO; speed=0
 	player.position.x=clampf(player.position.x,FarmLandscape.WALK_MIN.x+.8,FarmLandscape.WALK_MAX.x-.8)
 	player.position.z=clampf(player.position.z,FarmLandscape.WALK_MIN.y+.8,FarmLandscape.WALK_MAX.y-.8)
 	position=player.position;rotation.y=heading;avatar.rotation.y=heading
@@ -217,6 +220,7 @@ func reset_rider(player:CharacterBody3D,avatar:Node3D,actor:FarmAvatar) -> void:
 	actor.animate(1,false,false);obstacle.collision_layer=1;label.visible=true
 
 func parking_clear(p:Vector2,state:FarmState,landscape:FarmLandscape) -> bool:
+	if FarmRegion.water_blocked(p):return false
 	if p.x<FarmLandscape.WALK_MIN.x+2 or p.x>FarmLandscape.WALK_MAX.x-2 or p.y<FarmLandscape.WALK_MIN.y+2 or p.y>FarmLandscape.WALK_MAX.y-2:return false
 	for item in state.items:
 		if item.kind not in ["plot","path"] and state.item_rect(item.kind,Vector2(item.x,item.z),item.turn).grow(1.8).has_point(p):return false

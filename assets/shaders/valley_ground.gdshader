@@ -6,6 +6,8 @@ uniform vec4 earth:source_color=vec4(0.64,0.49,0.31,1.0);
 uniform vec4 bank:source_color=vec4(0.56,0.55,0.38,1.0);
 uniform int trail_count=0;
 uniform vec4 trails[64];
+uniform int region_road_count=0;
+uniform vec4 region_roads[64];
 varying vec3 world_pos;
 float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
 float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),f.x),f.y);}
@@ -19,15 +21,26 @@ void fragment(){
  float trunk=-27.0+sin(p.y*.07)*smoothstep(42.0,66.0,abs(p.y))*3.0;
  float lane=30.0+sin(p.x*.09)*smoothstep(44.0,75.0,p.x)*3.0;
  float d1=abs(p.x-trunk),d2=abs(p.y-lane);
- float d=min(d1,d2);
- for(int i=0;i<trail_count;i++){
-  vec2 a=trails[i].xy,b=trails[i].zw,ab=b-a;
+ bool region=p.x>180.0 || abs(p.y)>145.0;
+ float d=region?10000.0:min(d1,d2);
+ for(int i=0;i<64;i++){
+  if(i>=(region?region_road_count:trail_count))break;
+  vec4 segment=region?region_roads[i]:trails[i];
+  vec2 a=segment.xy,b=segment.zw,ab=b-a;
   float t=clamp(dot(p-a,ab)/dot(ab,ab),0.0,1.0);
   d=min(d,length(p-a-ab*t));
  }
+ // Short connectors enter the preserved valley before the regional boundary.
+ if(!region && (p.x>125.0 || p.y>85.0)){
+  for(int i=0;i<region_road_count;i++){
+   vec2 a=region_roads[i].xy,b=region_roads[i].zw,ab=b-a;
+   float t=clamp(dot(p-a,ab)/dot(ab,ab),0.0,1.0);
+   d=min(d,length(p-a-ab*t));
+  }
+ }
  float edge=noise(p*1.8)*.23+noise(p*.4)*.35;
- float road=(1.0-smoothstep(1.5+edge,2.35+edge,d));
- float tracks=exp(-pow((d-.88)*5.0,2.0));
+ float road=(1.0-smoothstep((region?3.0:1.5)+edge,(region?4.3:2.35)+edge,d));
+ float tracks=exp(-pow((d-(region?1.6:.88))*5.0,2.0));
  float verge=noise(p*2.7)*.16;
  vec3 dirt=earth.rgb*(.91+noise(p*6.0)*.12-tracks*.12);
  // Thin grass between worn wheel tracks, with broken earthy edges.
@@ -35,6 +48,15 @@ void fragment(){
  vec3 col=mix(grass,dirt,road);
  float river_x=-42.0+sin(p.y*.065)*2.6;
  float shore=1.0-smoothstep(3.1,5.4+noise(p*.7)*.8,abs(p.x-river_x));
+ if(region){
+  float river=420.0+sin(p.y*.009)*44.0+sin(p.y*.021)*12.0;
+  shore=max(shore,1.0-smoothstep(12.0,18.0,abs(p.x-river)));
+  float lake1=length((p-vec2(285,260))/vec2(48,32));
+  float lake2=length((p-vec2(810,-235))/vec2(56,38));
+  shore=max(shore,1.0-smoothstep(.98,1.12,min(lake1,lake2)));
+  grass=mix(grass,vec3(.37,.43,.31),smoothstep(.32,.70,1.0-(INV_VIEW_MATRIX*vec4(NORMAL,0.0)).y));
+  col=mix(grass,dirt,road);
+ }
  col=mix(col,bank.rgb*(.9+small*.17),shore);
- ALBEDO=col*.73;ROUGHNESS=1.0;
+ ALBEDO=col*.86;ROUGHNESS=1.0;
 }

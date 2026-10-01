@@ -2,7 +2,7 @@ class_name FarmNetwork
 extends Node
 ## Host-authoritative cooperative farm.
 const PORT:=28729
-const PROTOCOL:=6
+const PROTOCOL:=7
 var game:Node3D
 var active:=false
 var ready_session:=false
@@ -225,7 +225,7 @@ func _remove_remote() -> void:
 func _motion(pos:Vector3,angle:float,moving:bool,running:bool,airborne:bool,dance:String,elapsed:float) -> void:
 	if not ready_session or multiplayer.get_remote_sender_id()!=accepted or not is_instance_valid(remote):return
 	if mounts.rider==accepted:return
-	if not pos.is_finite() or not is_finite(angle) or absf(pos.x)>250 or absf(pos.z)>250 or pos.y< -4 or pos.y>30:return
+	if not pos.is_finite() or not is_finite(angle) or pos.x<FarmLandscape.WALK_MIN.x-2 or pos.x>FarmLandscape.WALK_MAX.x+2 or pos.z<FarmLandscape.WALK_MIN.y-2 or pos.z>FarmLandscape.WALK_MAX.y+2 or pos.y< -4 or pos.y>FarmLandscape.height_at(Vector2(pos.x,pos.z))+15:return
 	if not is_finite(elapsed):return
 	if dance.is_empty():remote_actor.stop_emote()
 	elif FarmEmotes.DANCES.has(dance):

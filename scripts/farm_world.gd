@@ -148,7 +148,7 @@ func _environment() -> void:
 	env.ambient_light_color = Color("dee7d4")
 	env.ambient_light_energy = 0.4
 	env.fog_enabled=true
-	env.fog_density=0.0022
+	env.fog_density=0.0004
 	env.fog_light_color=Color("c9dacc")
 	env.fog_sky_affect=0.18
 	env.reflected_light_source = Environment.REFLECTION_SOURCE_DISABLED

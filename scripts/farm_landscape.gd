@@ -1,8 +1,8 @@
 class_name FarmLandscape
 extends Node3D
 ## Scenery never changes farm coordinates or saved item footprints.
-const WALK_MIN:=Vector2(-34,-145)
-const WALK_MAX:=Vector2(180,145)
+const WALK_MIN:=FarmRegion.MIN
+const WALK_MAX:=FarmRegion.MAX
 const CLEAR:=Rect2(-33,-42,79,86) # Every legal plot plus worker clearance.
 var rng:=RandomNumberGenerator.new()
 var meshes:Dictionary={}
@@ -23,6 +23,12 @@ var trail_rotor:Node3D
 var trail_signs:Array[Node3D]=[]
 
 static func base_height(p:Vector2) -> float:
+	var w := FarmRegion.weight(p)
+	var legacy := legacy_height(p)
+	if w <= 0: return legacy
+	return lerpf(legacy, FarmRegion.highland_height(p), w)
+
+static func legacy_height(p:Vector2) -> float:
 	# Banks share the river's longitudinal elevation. Cross-slope noise must not
 	# lower one bank beneath the water in the northern/southern hills.
 	var center:float=-42+sin(p.y*.065)*2.6
@@ -39,14 +45,19 @@ static func base_height(p:Vector2) -> float:
 	return result
 
 static func height_at(p:Vector2) -> float:
+	if FarmRegion.on_bridge(p): return 5.0
+	return terrain_height(p)
+
+static func terrain_height(p:Vector2) -> float:
 	var river_x:=-42+sin(p.y*.065)*2.6
 	var channel:=1-smoothstep(2.9,4.3,absf(p.x-river_x))
-	return base_height(p)-channel*.65
+	return FarmRegion.bed(p, base_height(p)-channel*.65)
 
 static func road_distance(p:Vector2) -> float:
 	var trunk:=-27+sin(p.y*.07)*smoothstep(42,66,absf(p.y))*3
 	var lane:=30+sin(p.x*.09)*smoothstep(44,75,p.x)*3
-	return minf(minf(absf(p.x-trunk),absf(p.y-lane)),FarmTrails.distance_to_path(p))
+	var regional := FarmRegion.road_sample(p).x
+	return regional if FarmRegion.weight(p)>0 else minf(regional,minf(minf(absf(p.x-trunk),absf(p.y-lane)),FarmTrails.distance_to_path(p)))
 
 func setup(world:FarmWorld) -> void:
 	name="ValleyLandscape";rng.seed=202020
@@ -63,6 +74,7 @@ func setup(world:FarmWorld) -> void:
 	_bosques()
 	_horizon(world)
 	_landmarks(world)
+	var region := FarmRegionScenery.new(); add_child(region); region.setup(self,world)
 	add_child(meadow)
 	for i in range(65000):
 		var p:=Vector2(rng.randf_range(-34,184),rng.randf_range(-149,149))
@@ -84,35 +96,50 @@ func _terrain() -> void:
 	# Resolve the narrow banks without coarse triangles cutting across the channel.
 	# Shared rows keep the fine river strip connected to the surrounding terrain.
 	var columns:Array[float]=[]
+	for x in range(-1800,-280,40):columns.append(x)
 	var column:float=-280
-	while column<280:
+	while column<1200:
 		columns.append(column)
-		column+=.5 if column>=-50 and column<-34 else (4.0 if column<-52 or column>=184 else 2.0)
-	columns.append(280)
+		column+=.5 if column>=-50 and column<-34 else (6.0 if column>=184 else (4.0 if column<-52 else 2.0))
+	columns.append(1200)
+	for x in range(1240,2041,40):columns.append(x)
 	var rows:Array[float]=[]
-	var row:float=-280
-	while row<280:
+	for z in range(-1810,-650,40):rows.append(z)
+	var row:float=-650
+	while row<650:
 		rows.append(row);row+=4 if absf(row)>150 else 1
-	rows.append(280)
+	rows.append(650)
+	for z in range(690,1811,40):rows.append(z)
+	var heights: Dictionary = {}
+	for z in rows:
+		for x in columns:
+			heights[Vector2(x,z)] = terrain_height(Vector2(x,z))
 	for j in range(rows.size()-1):
 		var z:float=rows[j];var nz:float=rows[j+1]
 		for i in range(columns.size()-1):
 			var x:float=columns[i];var nx:float=columns[i+1]
 			for p in [Vector2(x,z),Vector2(nx,z),Vector2(x,nz),Vector2(nx,z),Vector2(nx,nz),Vector2(x,nz)]:
-				surface.add_vertex(Vector3(p.x,height_at(p),p.y))
+				surface.add_vertex(Vector3(p.x,heights[p],p.y))
 	surface.generate_normals();surface.index()
 	ground=MeshInstance3D.new();ground.name="ContinuousMeadow";ground.mesh=surface.commit()
 	var mat:=ShaderMaterial.new();mat.shader=load("res://assets/shaders/valley_ground.gdshader")
 	var segments:=FarmTrails.shader_segments()
 	mat.set_shader_parameter("trail_count",segments.size())
 	segments.resize(64);mat.set_shader_parameter("trails",segments)
+	var new_roads := PackedVector4Array()
+	for route in FarmRegion.ROUTES:
+		for i in range(route.size()-1):
+			var a: Vector3=route[i]; var b: Vector3=route[i+1]
+			new_roads.append(Vector4(a.x,a.z,b.x,b.z))
+	mat.set_shader_parameter("region_road_count",new_roads.size())
+	new_roads.resize(64); mat.set_shader_parameter("region_roads",new_roads)
 	ground.material_override=mat;add_child(ground)
 	ground.create_trimesh_collision()
 
 func _river() -> void:
 	var surface:=SurfaceTool.new();surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-	for i in range(560):
-		var z:float=-280+i;var nz:=z+1
+	for i in range(1300):
+		var z:float=-650+i;var nz:=z+1
 		var x:=-42+sin(z*.065)*2.6;var nx:=-42+sin(nz*.065)*2.6
 		for p in [Vector2(x-5,z),Vector2(x+5,z),Vector2(nx-5,nz),Vector2(x+5,z),Vector2(nx+5,nz),Vector2(nx-5,nz)]:
 			# Bury mesh edges under both banks; terrain defines the visible shoreline.
@@ -219,6 +246,7 @@ func _process(delta:float) -> void:
 		bird.node.rotation.x=sin(t*3.4)*.10 if fmod(t,9.0)>7 else 0
 
 func clear_for_player(p:Vector2) -> bool:
+	if FarmRegion.water_blocked(p): return false
 	for trunk in trunk_points:
 		if p.distance_to(trunk)<.95:return false
 	for area in solid_bounds:
@@ -262,9 +290,9 @@ func _horizon(world:FarmWorld) -> void:
 	for ring in range(2):
 		var surface:=SurfaceTool.new();surface.begin(Mesh.PRIMITIVE_TRIANGLES)
 		for i in range(96):
-			var a:=i*TAU/96;var b:=(i+1)*TAU/96;var radius:float=265+ring*48
-			var h1:=20+ring*8+sin(a*5+ring)*6+cos(a*9)*3
-			var h2:=20+ring*8+sin(b*5+ring)*6+cos(b*9)*3
+			var a:=i*TAU/96;var b:=(i+1)*TAU/96;var radius:float=1450+ring*180
+			var h1:=85+ring*25+sin(a*5+ring)*35+cos(a*9)*18
+			var h2:=85+ring*25+sin(b*5+ring)*35+cos(b*9)*18
 			var p1:=Vector3(sin(a)*radius,h1,cos(a)*radius)
 			var p2:=Vector3(sin(b)*radius,h2,cos(b)*radius)
 			var base1:=Vector3(sin(a)*(radius-35),-4,cos(a)*(radius-35))

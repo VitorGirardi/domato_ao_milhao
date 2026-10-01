@@ -143,7 +143,9 @@ func run() -> void:
 		await screenshot(tag+"-walk")
 		fits(game.navigator.mini,tag+" minimap")
 		game._action("map");await settle();modal_bounds(tag+" valley map")
-		var point:=Vector2(100,-80)
+		# Empty terrain outside every marker hit area in the expanded overview.
+		var point:=Vector2(600,120)
+		check(game.navigator.large.nearest(game.navigator.large.project(point)).is_empty(),tag+" free map point overlaps a marker")
 		await click_at(game.navigator.large.get_global_transform_with_canvas()*game.navigator.large.project(point))
 		check(game.navigator.waypoint.distance_to(point)<1,tag+" map click transform incorrect: "+str(game.navigator.waypoint)+" target="+game.navigator.target_key)
 		await screenshot(tag+"-map")
