@@ -2,7 +2,7 @@ class_name FarmNetwork
 extends Node
 ## Host-authoritative cooperative farm.
 const PORT:=28729
-const PROTOCOL:=9
+const PROTOCOL:=10
 var game:Node3D
 var active:=false
 var ready_session:=false
@@ -267,7 +267,8 @@ func _process(delta:float) -> void:
 		_motion.rpc_id(accepted,game.player.position,game.avatar.rotation.y,Vector2(game.player.velocity.x,game.player.velocity.z).length()>.2,Input.is_action_pressed("run"),game.actor.airborne,game.actor.emote_kind,game.actor.emote_elapsed)
 	if is_instance_valid(remote) and mounts.rider!=accepted:
 		remote.position=remote.position.lerp(target,minf(delta*15,1));remote_model.rotation.y=lerp_angle(remote_model.rotation.y,target_yaw,minf(delta*15,1))
-		remote_actor.airborne=remote_airborne;remote_actor.animate(delta,remote_moving,remote_running)
+		remote_actor.swimming=FarmWater.swimming_at(remote.position) and mounts.rider!=accepted
+		remote_actor.airborne=remote_airborne and not remote_actor.swimming;remote_actor.animate(delta,remote_moving,remote_running)
 
 func _disconnected(id:int) -> void:
 	mounts.release(id)

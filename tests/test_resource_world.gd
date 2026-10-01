@@ -43,7 +43,7 @@ func run() -> void:
 	assert(game.gathering.apply(1,"gather:fish:0").is_empty());await process_frame
 	await capture("pesca",game.player.position+Vector3(-6,5,8),game.player.position+Vector3(0,1,-3))
 	game.gathering.handle("gather:cancel")
-	game.player.position=Vector3(900,81,-224);game.gathering.last_request.clear()
+	game.player.position=Vector3(899.5,81.05,-224);game.gathering.last_request.clear()
 	assert(game.gathering.apply(1,"gather:mine:0").is_empty());await process_frame
 	await capture("mineracao",Vector3(900,84,-219),Vector3(898,82,-225))
 	game.gathering.handle("gather:cancel");game._action("resources")

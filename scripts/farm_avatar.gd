@@ -12,6 +12,7 @@ var carried_egg:Node3D
 var time := 0.0
 var action_time := 0.0
 var airborne:=false
+var swimming:=false
 var landing:=0.0
 var action_kind := ""
 var emote_kind:=""
@@ -131,7 +132,7 @@ func play(kind: String) -> void:
 	action_time=2.2 if kind=="collect" else (1.15 if kind=="water" else 0.55)
 
 func animate(delta: float, moving: bool, running: bool, blink:bool=true) -> void:
-	if moving or airborne or action_time>0: stop_emote()
+	if moving or airborne or swimming or action_time>0: stop_emote()
 	emote_time=maxf(0,emote_time-delta)
 	if emote_time<=0 and not emote_kind.is_empty(): stop_emote()
 	emote_elapsed+=delta
@@ -147,6 +148,24 @@ func animate(delta: float, moving: bool, running: bool, blink:bool=true) -> void
 	var phase:=time*(11 if running else 8)
 	var stride:=sin(phase)*(0.60 if running else 0.40) if moving else 0.0
 	var blend:=1-exp(-delta*16)
+	root.rotation.x=lerp_angle(root.rotation.x,.62 if swimming else 0.0,blend)
+	if swimming:
+		root.position.y=0
+		for side in ["L","R"]:
+			var stroke:=sin(time*3.8+(PI if side=="L" else 0))
+			var sign_value:=1.0 if side=="R" else -1.0
+			pose_bone("UpperArm."+side,Vector3(-.8+stroke*.65,0,-sign_value*.55),blend)
+			pose_bone("Forearm."+side,Vector3(-.8-stroke*.4,0,0),blend)
+			pose_bone("Hand."+side,Vector3.ZERO,blend)
+			pose_bone("Thigh."+side,Vector3(stroke*.22,0,0),blend)
+			pose_bone("Shin."+side,Vector3(.28+maxf(0,-stroke)*.35,0,0),blend)
+			pose_bone("Foot."+side,Vector3(.15,0,0),blend)
+		pose_bone("Spine",Vector3(-.12,0,0),blend)
+		pose_bone("Chest",Vector3.ZERO,blend)
+		pose_bone("Neck",Vector3(-.25,0,0),blend)
+		pose_bone("Head",Vector3(-.15,0,0),blend)
+		can.visible=false;carried_egg.visible=false
+		return
 	if emote_time>0:
 		FarmEmotes.pose(self,emote_kind,emote_elapsed,blend)
 		can.visible=false;carried_egg.visible=false

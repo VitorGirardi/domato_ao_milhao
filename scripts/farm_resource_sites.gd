@@ -20,7 +20,7 @@ static func nearby(game:Node3D) -> Dictionary:
 			if at.distance_to(point(FarmMineLayout.GALLERY_AT[i]))<3:
 				return {"text":FarmMineLayout.TITLES[i]+(" · aberta" if game.state.resources.gallery_level>i else " · liberar passagem"),"action":"resource","value":"mine_gallery"}
 		for i in range(ORE_SPOTS.size()):
-			if at.distance_to(point(ORE_SPOTS[i]))<2.8:
+			if Vector2(at.x,at.z).distance_to(ORE_SPOTS[i])<=1.55 and absf(at.y-point(ORE_SPOTS[i]).y)<3:
 				var ready:float=maxf(0,float(game.state.resources.node_ready[i])-game.state.elapsed)
 				var ore:String=FarmResources.NODE_ORES[i]
 				return {"text":("Extrair "+FarmResources.NAMES[ore]) if ready<=0 else "%s · renova em %ds"%[FarmResources.NAMES[ore],ceili(ready)],"action":"resource","value":"gather:mine:%d"%i}
