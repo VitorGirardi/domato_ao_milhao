@@ -11,7 +11,9 @@ permissions:
 jobs:
   linux:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    # Dependency mirrors can take several minutes; keep enough room for the
+    # complete graphical/network suite and the native release smoke test.
+    timeout-minutes: 45
     env:
       GODOT_VERSION: 4.7.2
       LIBGL_ALWAYS_SOFTWARE: '1'
