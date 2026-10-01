@@ -102,6 +102,8 @@ func _cave() -> void:
 	var model:=_model("region_mine",Vector3(p.x,FarmLandscape.height_at(p),p.y))
 	# Keep the tunnel walkable; only the purchase gate is removable.
 	for x in [-6.0,6.0]:_collision(model,Vector3(x,4,-5),Vector3(5,8,12))
+	# Opening the gate must not make cliff walls traversable for companion pathfinding.
+	for wall in [Rect2(892,-231,4.5,12),Rect2(903.5,-231,4.5,12),Rect2(896.5,-231.1,7,.5)]:landscape.solid_bounds.append(wall)
 	_collision(model,Vector3(0,3,-10.8),Vector3(7,6,.5))
 	_collision(model,Vector3(0,5.4,-5),Vector3(7,1,11))
 	var gate:=StaticBody3D.new();model.add_child(gate)
