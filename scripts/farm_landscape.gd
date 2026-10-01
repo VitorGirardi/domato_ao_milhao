@@ -86,7 +86,7 @@ static func ground_height(p:Vector2) -> float:
 
 static func terrain_height(p:Vector2) -> float:
 	var river_x:=-42+sin(p.y*.065)*2.6
-	var channel:=1-smoothstep(1.5,4.3,absf(p.x-river_x))
+	var channel:=1-smoothstep(0.0,5.0,absf(p.x-river_x))
 	return FarmRegion.bed(p, base_height(p)-channel*2.5)
 
 static func road_distance(p:Vector2) -> float:
