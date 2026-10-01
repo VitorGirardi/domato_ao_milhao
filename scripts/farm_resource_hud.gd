@@ -32,3 +32,25 @@ static func show(game:Node3D) -> void:
 	FarmGameUI.action(h,p,"Voltar ao campo",Rect2(28,642,288,34),"close")
 	FarmGameUI.action(h,p,"Encontrar no mapa",Rect2(330,642,288,34),"map")
 	FarmGameUI.action(h,p,"Armazém",Rect2(632,642,288,34),"market")
+
+static func show_galleries(game:Node3D) -> void:
+	var h:FarmHUD=game.hud
+	var s:FarmState=game.state
+	var p:=FarmGameUI.open(h,"mine_gallery","As galerias da Pedra Clara","coins",880,570)
+	h.label(p,"Use os minérios da mina para abrir novos caminhos.",Vector2(28,110),Vector2(824,32),21)
+	for i in range(2):
+		var key:="gallery_%d"%(i+1)
+		var ore:="copper" if i==0 else "iron"
+		var count:=8 if i==0 else 10
+		var opened:bool=s.resources.gallery_level>i
+		var near:bool=game.player.position.distance_to(FarmResourceSites.point(FarmMineLayout.GALLERY_AT[i]))<=3
+		var card:=FarmGameUI.card(h,p,Rect2(28,160+i*150,824,138))
+		h.label(card,FarmMineLayout.TITLES[i],Vector2(18,12),Vector2(450,30),24)
+		h.label(card,"Mais cobre e ferro entre os túneis." if i==0 else "Veios de quartzo no coração da montanha.",Vector2(18,48),Vector2(470,26),17,FarmHUD.MUTED)
+		h.label(card,"$%d + %d %s · estoque: %d"%[FarmResources.PRICES[key],count,FarmResources.NAMES[ore],s.resources.stock[ore]],Vector2(18,88),Vector2(490,28),18)
+		var button:=FarmGameUI.action(h,card,"Passagem aberta" if opened else "Liberar passagem",Rect2(535,43,268,46),"resource:buy:"+key,true)
+		button.disabled=opened or not near or not s.resources.mine_owned or not s.resources.pickaxe or s.resources.gallery_level!=i or s.money<FarmResources.PRICES[key] or s.resources.stock[ore]<count
+		if not opened and not near:button.text="Vá até a passagem"
+	h.label(p,"As passagens abertas e os minérios são compartilhados no cooperativo.",Vector2(28,470),Vector2(824,32),17,FarmHUD.MUTED)
+	FarmGameUI.action(h,p,"Voltar à exploração",Rect2(28,520,396,34),"close")
+	FarmGameUI.action(h,p,"Estoque e ferramentas",Rect2(452,520,400,34),"resources")
