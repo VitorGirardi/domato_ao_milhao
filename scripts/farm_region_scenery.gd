@@ -98,6 +98,6 @@ func _cave() -> void:
 	# Broad closed collision until mining/purchase is delivered; barrier is separate in the GLB.
 	_collision(model,Vector3(0,4,-5),Vector3(16,8,12))
 	landscape.solid_bounds.append(Rect2(p+Vector2(-8,-11),Vector2(16,12)))
-	var label:=Label3D.new(); label.text="N?O ENTRE"; label.font_size=48; label.pixel_size=.009
+	var label:=Label3D.new(); label.text="NÃO ENTRE"; label.font_size=48; label.pixel_size=.009
 	label.position=Vector3(0,1.65,1.10); label.modulate=Color("ffe6a0"); label.outline_size=8
 	model.add_child(label)
