@@ -1,7 +1,7 @@
 class_name FarmRegion
 extends RefCounted
 ## Authored geography. Stable coordinates leave room for future adjacent regions.
-const MIN := Vector2(-34, -450)
+const MIN := Vector2(-65, -450)
 const MAX := Vector2(1050, 450)
 const LAKES := [Vector4(285, 260, 48, 32), Vector4(810, -235, 56, 38)]
 const LAKE_LEVELS := [5.0, 68.0]
@@ -26,6 +26,12 @@ static func weight(p: Vector2) -> float:
 
 static func river_x(z: float) -> float:
 	return 420.0 + sin(z*0.009)*44.0 + sin(z*0.021)*12.0
+
+static func legacy_river_x(z:float) -> float:
+	return -42.0+sin(z*.065)*2.6
+
+static func plunge_distance(p:Vector2) -> float:
+	return ((p-Vector2(810,-263))/Vector2(17,13)).length()
 
 static func river_distance(p: Vector2) -> float:
 	return absf(p.x-river_x(p.y))
@@ -60,6 +66,9 @@ static func highland_height(p: Vector2) -> float:
 	return result
 
 static func water_level(p: Vector2) -> float:
+	if absf(p.x-legacy_river_x(p.y))<5:
+		return FarmLandscape.legacy_height(Vector2(-42,p.y))-.10
+	if plunge_distance(p)<1.15:return 68.0
 	if weight(p) < .99: return -INF
 	if river_distance(p) < 19: return 2.0
 	for i in range(LAKES.size()):
@@ -78,15 +87,21 @@ static func bed(p: Vector2, h: float) -> float:
 	if Rect2(800,-278,20,19).has_point(p):
 		var ceiling:=66.0+clampf((-p.y-262.0)/14.0,0,1)*18.0
 		h=minf(h,ceiling)
+	h=minf(h,lerpf(64.4,70.0,smoothstep(.55,1.15,plunge_distance(p)))) if plunge_distance(p)<1.15 else h
 	return h
 
 static func on_bridge(p: Vector2) -> bool:
-	return Rect2(397, -4, 46, 8).has_point(p)
+	return bridge_height(p)>-INF
+
+static func bridge_height(p:Vector2) -> float:
+	if Rect2(397,-4,46,8).has_point(p):return 5.0
+	if Rect2(legacy_river_x(30)-7,27,14,6).has_point(p):return .05
+	return -INF
 
 static func water_blocked(p: Vector2) -> bool:
 	var level := water_level(p)
 	if level == -INF or on_bridge(p): return false
-	return level > bed(p, highland_height(p))+.3
+	return level > FarmLandscape.ground_height(p)+.3
 
 static func reserved(p: Vector2) -> bool:
 	if Rect2(795,-284,30,27).has_point(p):return true
