@@ -4,6 +4,7 @@ extends Node3D
 var game:Node3D
 var ores:Array[Node3D]=[]
 var ore_labels:Array[Label3D]=[]
+var fish_labels:Array[Label3D]=[]
 var props:Dictionary={}
 var hint:Label
 var meter:ProgressBar
@@ -15,10 +16,12 @@ func setup(g:Node3D) -> void:
 	game=g;name="ResourceView";process_priority=20
 	shop=FarmGameUI.action(game.hud,game.hud.walking.root,"Peixes, minérios e ferramentas",Rect2(24,418,252,34),"resources")
 	shop.add_theme_font_size_override("font_size",13)
-	hint=game.hud.label(game.hud.walking.root,"",Vector2(420,714),Vector2(600,30),21,FarmHUD.CREAM)
+	hint=game.hud.label(game.hud.walking.root,"",Vector2(420,678),Vector2(600,30),21,FarmHUD.CREAM)
 	hint.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
 	hint.add_theme_color_override("font_shadow_color",Color("20392a"));hint.add_theme_constant_override("shadow_offset_y",2)
-	meter=ProgressBar.new();meter.position=Vector2(460,750);meter.size=Vector2(520,14);meter.show_percentage=false
+	meter=ProgressBar.new();meter.position=Vector2(470,713);meter.size=Vector2(500,14);meter.show_percentage=false
+	meter.add_theme_stylebox_override("background",game.hud.style(Color("304c3d"),5,Color("78573b")))
+	meter.add_theme_stylebox_override("fill",game.hud.style(Color("eabc5b"),5,Color("eabc5b")))
 	game.hud.walking.root.add_child(meter)
 	for i in range(3):
 		var ore:=load("res://assets/models/resource_ore_%s.glb"%FarmResources.ORE_KEYS[i]).instantiate() as Node3D
@@ -29,7 +32,7 @@ func setup(g:Node3D) -> void:
 		var label:=_label(FarmResources.NAMES[FarmResources.ORE_KEYS[i]],ore.position+Vector3(0,1.65,0));ore_labels.append(label)
 	for i in range(3):
 		var at:=FarmResourceSites.point(FarmResourceSites.FISH_SPOTS[i])
-		_label("PESCA · E",at+Vector3(0,1.6,0))
+		fish_labels.append(_label("PESCA · E",at+Vector3(0,1.6,0)))
 		var fish:=load("res://assets/models/resource_fish.glb").instantiate() as Node3D
 		fish.position=at+Vector3(0,.9,0);fish.scale=Vector3.ONE*1.5;add_child(fish)
 		var marker:=MeshInstance3D.new();var cylinder:=CylinderMesh.new();cylinder.top_radius=.06;cylinder.bottom_radius=.08;cylinder.height=.85
@@ -65,6 +68,7 @@ func _process(delta:float) -> void:
 	if refresh_timer>.2:refresh_timer=0;refresh_world()
 	shop.visible=game.session_started and not game.build_mode and game.hud.modal_kind.is_empty()
 	var own:int=game.gathering.own_id();var jobs:Dictionary=game.gathering.jobs
+	for i in range(fish_labels.size()):fish_labels[i].visible=game.player.position.distance_to(FarmResourceSites.point(FarmResourceSites.FISH_SPOTS[i]))>2
 	hint.visible=jobs.has(own) and game.hud.modal_kind.is_empty();meter.visible=hint.visible
 	if hint.visible:
 		var job:Dictionary=jobs[own]

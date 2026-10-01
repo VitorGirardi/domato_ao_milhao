@@ -2,12 +2,15 @@ extends SceneTree
 var game:Node3D
 func _initialize() -> void:call_deferred("run")
 func capture(label:String,from:Vector3,target:Vector3) -> void:
+	game._update_ui()
 	game.camera.position=from;game.camera.look_at(target);game.camera.fov=62
 	if DisplayServer.get_name()=="headless":return
 	await create_timer(.25).timeout;await RenderingServer.frame_post_draw
 	root.get_texture().get_image().save_png("res://test-results/resource-"+label+".png")
 func gate_hit() -> Dictionary:
-	return game.world.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(900,82,-215),Vector3(900,82,-222)))
+	var ray:=PhysicsRayQueryParameters3D.create(Vector3(900,82,-215),Vector3(900,82,-222))
+	ray.exclude=[game.player.get_rid()]
+	return game.world.get_world_3d().direct_space_state.intersect_ray(ray)
 func run() -> void:
 	assert(OS.get_user_data_dir().contains("test-results"))
 	game=load("res://scenes/main.tscn").instantiate();game.save_path="user://qa_resource_world.json";root.add_child(game)

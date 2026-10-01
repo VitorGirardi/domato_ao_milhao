@@ -3,7 +3,7 @@ extends RefCounted
 ## Host-side transactions. Activity duration and proximity are enforced by the game.
 const FISH_KEYS := ["tilapia", "trout", "dorado"]
 const ORE_KEYS := ["copper", "iron", "quartz"]
-const NAMES := {"tilapia":"Tilápia", "trout":"Truta", "dorado":"Dourado", "copper":"Cobre", "iron":"Ferro", "quartz":"Quartzo", "rod":"Vara de pesca", "pickaxe":"Picareta", "mine":"Mina da Serra"}
+const NAMES := {"tilapia":"Tilápia", "trout":"Truta", "dorado":"Dourado", "copper":"Cobre", "iron":"Ferro", "quartz":"Quartzo", "rod":"Vara de pesca", "pickaxe":"Picareta", "mine":"Mina da Pedra Clara"}
 const PRICES := {"tilapia":18, "trout":28, "dorado":45, "copper":24, "iron":40, "quartz":65, "rod":150, "pickaxe":180, "mine":1500}
 const STOCK_LIMIT := 10000
 const MAX_COUNTER := 1000000000
@@ -77,7 +77,7 @@ static func catch_fish(state:FarmState, spot:int) -> String:
 static func can_extract(state:FarmState, node:int) -> String:
 	if node<0 or node>=3:return "Veio desconhecido."
 	if not state.claimed:return "Escolha seu terreno primeiro."
-	if not state.resources.mine_owned:return "Compre a Mina da Serra antes de entrar."
+	if not state.resources.mine_owned:return "Compre a Mina da Pedra Clara antes de entrar."
 	if not state.resources.pickaxe:return "Compre uma picareta no armazém."
 	if not is_finite(state.elapsed) or state.elapsed<0:return "Relógio da fazenda inválido."
 	if state.elapsed<float(state.resources.node_ready[node]):return "Este veio está se recuperando."

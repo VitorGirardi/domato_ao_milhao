@@ -60,6 +60,7 @@ var network:=FarmNetwork.new()
 var companions:=FarmCompanions.new()
 var gathering:=FarmGathering.new()
 var resource_view:=FarmResourceView.new()
+var resource_panel_state:Dictionary={}
 var windowed_rect:=Rect2i()
 var windowed_mode:=Window.MODE_WINDOWED
 
@@ -1239,7 +1240,9 @@ func _action(value: String) -> void:
 	_update_ui()
 
 func _resource_refresh() -> void:
-	if hud.modal_kind=="resources":FarmResourceHUD.show(self)
+	var panel_state:Dictionary={"resources":state.resources.duplicate(true),"money":state.money}
+	if hud.modal_kind=="resources" and panel_state!=resource_panel_state:FarmResourceHUD.show(self)
+	resource_panel_state=panel_state
 	if is_instance_valid(resource_view):resource_view.refresh_world()
 
 func _update_ui() -> void:
