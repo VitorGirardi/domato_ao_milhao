@@ -19,6 +19,9 @@ var purr:=AudioStreamPlayer3D.new()
 var whistle:=AudioStreamPlayer3D.new()
 var was_network:=false
 
+func _exit_tree() -> void:
+	horse_route.cancel()
+
 func setup(g:Node3D) -> void:
 	game=g;name="Companions";process_priority=10
 	for data in [[purr,"cat_purr",-15.0],[whistle,"companion_whistle",-12.0]]:
@@ -71,7 +74,7 @@ func apply(id:int,kind:String) -> bool:
 		if game.horse.mounted or (horse_owner!=0 and horse_owner!=id):return false
 		horse_owner=id;horse_wait=0;horse_target=Vector2.INF;horse_avoid.clear();horse_waiting_notice=false
 		horse_message(id,"Pé de Pano ouviu o assobio e vem pelas trilhas até você.")
-		game.horse.life.calling=true;game.horse.life.call_path.clear();horse_route.pending=false
+		game.horse.life.calling=true;game.horse.life.call_path.clear();horse_route.cancel()
 	last_request[key]=now
 	_event(id,kind,cat.position,follow_owner)
 	if game.network.active and game.network.accepted!=0:_event.rpc_id(game.network.accepted,id,kind,cat.position,follow_owner)
@@ -94,7 +97,7 @@ func reset() -> void:
 	for id in gestures:
 		if actor(id)!=null and is_instance_valid(model(id)):actor(id).action_time=0;model(id).position.y=0
 	gestures.clear();follow_owner=0;horse_owner=0;path.clear();last_request.clear()
-	game.world.cat.following=false;game.horse.life.calling=false;game.horse.life.call_path.clear();horse_route.pending=false;horse_avoid.clear()
+	game.world.cat.following=false;game.horse.life.calling=false;game.horse.life.call_path.clear();horse_route.cancel();horse_avoid.clear()
 	purr.stop();whistle.stop()
 
 func _process(delta:float) -> void:
@@ -152,7 +155,7 @@ func horse_message(id:int,message:String) -> void:
 	elif game.network.active:_reply.rpc_id(id,message)
 
 func end_horse_call() -> void:
-	horse_owner=0;horse_route.pending=false
+	horse_owner=0;horse_route.cancel()
 	game.horse.life.calling=false;game.horse.life.call_path.clear();game.horse.speed=0;game.horse.life.reset(game.horse)
 
 func update_horse_call(delta:float) -> void:
@@ -165,9 +168,9 @@ func update_horse_call(delta:float) -> void:
 	if h.life.call_blocked:
 		horse_avoid.append(h.life.call_blocked_at)
 		if horse_avoid.size()>16:horse_avoid.pop_front()
-		h.life.call_blocked=false;horse_route.pending=false;horse_wait=0
+		h.life.call_blocked=false;horse_route.cancel();horse_wait=0
 	if target.distance_to(horse_target)>4:
-		horse_wait=0;horse_route.pending=false;h.life.call_path.clear();horse_avoid.clear();horse_waiting_notice=false
+		horse_wait=0;horse_route.cancel();h.life.call_path.clear();horse_avoid.clear();horse_waiting_notice=false
 	if not horse_route.pending and horse_wait<=0:
 		horse_target=target
 		horse_meeting=FarmHorseRoute.meeting_point(target,at,horse_clear)
