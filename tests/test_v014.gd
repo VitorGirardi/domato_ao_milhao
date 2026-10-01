@@ -46,7 +46,7 @@ func _initialize() -> void:
 	check(not restored.restore(bad),"Negative stock invalid")
 	check(not farm.remove_item(0).is_empty(),"Occupied pen protected from deletion")
 	check(farm.move_item(0,Vector2(4,-4),1).is_empty() and farm.items[0].dairy==data,"Move keeps animal and milk")
-	var old:=FarmState.new().serialize();old.version=9;old.erase("milk_stock")
+	var old:=FarmState.new().serialize();old.version=9;old.erase("resources");old.erase("milk_stock")
 	check(restored.restore(old) and restored.milk_stock==0,"Old save migration")
 	var large:=FarmDairy.fresh();large.owned=true
 	var small:=large.duplicate(); FarmDairy.tick(large,535)

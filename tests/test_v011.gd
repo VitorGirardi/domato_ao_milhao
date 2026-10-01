@@ -69,7 +69,7 @@ func _initialize() -> void:
 	var legacy:=FarmState.new();legacy.farm_xp=950
 	legacy.claim(Vector2.ZERO); legacy.place("barn",Vector2.ZERO,0)
 	var old:=legacy.serialize()
-	old.version=6; old.erase("professional_watering"); old.items[0].erase("level")
+	old.version=6;old.erase("resources"); old.erase("professional_watering"); old.items[0].erase("level")
 	check(restored.restore(old) and restored.items[0].level==1 and not restored.professional_watering,"Version 6 defaults to level one without granting upgrades")
 	farm.transfer_reserve("carrot",false)
 	cash=farm.money

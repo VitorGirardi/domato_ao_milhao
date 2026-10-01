@@ -45,7 +45,7 @@ func _initialize() -> void:
 		var bad:=disk.duplicate(true);bad.items[0].cheese=bad_data
 		check(not copy.restore(bad) and copy.serialize()==baseline,"Invalid batch rejected atomically")
 	var old:=FarmState.new();old.milk_stock=7
-	var old_disk:=old.serialize();old_disk.version=10;old_disk.erase("cheese_stock");old_disk.erase("cheese_order")
+	var old_disk:=old.serialize();old_disk.version=10;old_disk.erase("resources");old_disk.erase("cheese_stock");old_disk.erase("cheese_order")
 	check(copy.restore(old_disk) and copy.cheese_stock==0 and not copy.cheese_order.active and copy.milk_stock==7,"v10 migration preserves milk")
 	var missing:=disk.duplicate(true);missing.erase("cheese_stock")
 	check(not copy.restore(missing),"v11 requires cheese stock")

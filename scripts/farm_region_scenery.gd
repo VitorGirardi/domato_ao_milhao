@@ -7,6 +7,11 @@ var mine_gate:CollisionShape3D
 var mine_barrier:Node3D
 var mine_label:Label3D
 var mine_open:=false
+var gallery_gates:Array[CollisionShape3D]=[]
+var gallery_panels:Array[Node3D]=[]
+var gallery_bounds:Array[Rect2]=[]
+var gallery_level:=-1
+var mine_lights:Array[OmniLight3D]=[]
 const MINE_BOUND:=Rect2(892,-231,16,12)
 
 func setup(owner_landscape: FarmLandscape, owner_world: FarmWorld) -> void:
@@ -100,12 +105,45 @@ func _lookout() -> void:
 func _cave() -> void:
 	var p:=Vector2(900,-220)
 	var model:=_model("region_mine",Vector3(p.x,FarmLandscape.height_at(p),p.y))
-	# Keep the tunnel walkable; only the purchase gate is removable.
-	for x in [-6.0,6.0]:_collision(model,Vector3(x,4,-5),Vector3(5,8,12))
-	# Opening the gate must not make cliff walls traversable for companion pathfinding.
-	for wall in [Rect2(892,-231,4.5,12),Rect2(903.5,-231,4.5,12),Rect2(896.5,-231.1,7,.5)]:landscape.solid_bounds.append(wall)
-	_collision(model,Vector3(0,3,-10.8),Vector3(7,6,.5))
-	_collision(model,Vector3(0,5.4,-5),Vector3(7,1,11))
+	# The Blender mountain also blocks walking/camera rays outside the tunnels.
+	# Keep the purchase tape separate so its collision remains removable.
+	var rock_mesh:=model.find_child("MineRockAndVegetation",true,false) as MeshInstance3D
+	if rock_mesh!=null:
+		rock_mesh.create_trimesh_collision()
+		for body in rock_mesh.get_children():
+			for collision in body.get_children():
+				if collision is CollisionShape3D and collision.shape is ConcavePolygonShape3D:collision.shape.backface_collision=true
+	# Collision follows the authored cell union, leaving every junction open.
+	for cell in FarmMineLayout.CELLS:
+		_collision(model,Vector3(cell.x,-.10,cell.y),Vector3(8,.3,8))
+		_collision(model,Vector3(cell.x,6.5,cell.y),Vector3(8,.6,8))
+		for step in [Vector2(8,0),Vector2(-8,0),Vector2(0,8),Vector2(0,-8)]:
+			if cell+step in FarmMineLayout.CELLS:continue
+			if cell==Vector2(0,-4) and step==Vector2(0,8):continue
+			var center:Vector2=cell+step*.5
+			var size:=Vector3(.4,6.4,8.4) if step.x!=0 else Vector3(8.4,6.4,.4)
+			_collision(model,Vector3(center.x,3.2,center.y),size)
+			landscape.solid_bounds.append(Rect2(Vector2(900+center.x-size.x/2,-220+center.y-size.z/2),Vector2(size.x,size.z)))
+	for i in range(2):
+		var gate_root:=Node3D.new();gate_root.position=FarmMineLayout.GATES[i];model.add_child(gate_root)
+		if i==1:gate_root.rotation.y=PI/2
+		var body:=StaticBody3D.new();gate_root.add_child(body)
+		var collision:=CollisionShape3D.new();var gate_shape:=BoxShape3D.new();gate_shape.size=Vector3(8,6,.4)
+		collision.shape=gate_shape;collision.position.y=3;body.add_child(collision);gallery_gates.append(collision)
+		var panel:=Node3D.new();gate_root.add_child(panel);gallery_panels.append(panel)
+		var material:=StandardMaterial3D.new();material.albedo_color=Color("75523a")
+		for x in [-3.5,-2.5,-1.5,-.5,.5,1.5,2.5,3.5]:
+			var mesh:=MeshInstance3D.new();var beam:=BoxMesh.new();beam.size=Vector3(.35,5.8,.25)
+			mesh.mesh=beam;mesh.position=Vector3(x,2.9,0);mesh.material_override=material;panel.add_child(mesh)
+		for y in [1.0,3.8]:
+			var mesh:=MeshInstance3D.new();var beam:=BoxMesh.new();beam.size=Vector3(8,.28,.35)
+			mesh.mesh=beam;mesh.position.y=y;mesh.material_override=material;panel.add_child(mesh)
+		var label:=Label3D.new();label.text=FarmMineLayout.TITLES[i]+"\nLIBERAR PASSAGEM · E"
+		label.position=Vector3(0,2.4,.3);label.font_size=38;label.pixel_size=.009;label.outline_size=8;panel.add_child(label)
+		var center:Vector3=FarmMineLayout.ORIGIN+FarmMineLayout.GATES[i]
+		var extent:=Vector2(8,.4) if i==0 else Vector2(.4,8)
+		gallery_bounds.append(Rect2(Vector2(center.x,center.z)-extent/2,extent))
+	update_galleries(0)
 	var gate:=StaticBody3D.new();model.add_child(gate)
 	mine_gate=CollisionShape3D.new();var shape:=BoxShape3D.new();shape.size=Vector3(7,3,.45)
 	mine_gate.shape=shape;mine_gate.position=Vector3(0,1.5,.7);gate.add_child(mine_gate)
@@ -114,8 +152,28 @@ func _cave() -> void:
 	mine_label=Label3D.new();mine_label.text="NÃO ENTRE";mine_label.font_size=48;mine_label.pixel_size=.009
 	mine_label.position=Vector3(0,1.65,1.10);mine_label.modulate=Color("ffe6a0");mine_label.outline_size=8
 	model.add_child(mine_label)
-	var light:=OmniLight3D.new();light.position=Vector3(0,3,-5);light.omni_range=12
-	light.light_color=Color("ffdda1");light.light_energy=.8;model.add_child(light)
+	for at in [Vector3(3.4,3.3,-4),Vector3(-3.4,3.3,-12),Vector3(-8,3.3,-23.4),Vector3(-16,3.3,-16.6),Vector3(-19.4,3.3,-36),Vector3(-8,3.3,-32.6),Vector3(8,3.3,-39.4),Vector3(16,3.3,-32.6),Vector3(19.4,3.3,-52),Vector3(8,3.3,-48.6),Vector3(3.4,3.3,-60),Vector3(-3.4,3.3,-68)]:
+		var light:=OmniLight3D.new();light.position=at;light.omni_range=10
+		light.light_color=Color("ffda9e");light.light_energy=1.1;model.add_child(light)
+		light.distance_fade_enabled=true;light.distance_fade_begin=70;light.distance_fade_length=20
+		mine_lights.append(light)
+	update_lights(Vector3.ZERO)
+
+func update_lights(observer:Vector3) -> void:
+	# Compatibility rendering has a small per-mesh light budget. Select nearby
+	# lanterns for each viewer so the deepest rooms receive their own light.
+	var ordered:=mine_lights.duplicate()
+	ordered.sort_custom(func(a:OmniLight3D,b:OmniLight3D):return a.global_position.distance_squared_to(observer)<b.global_position.distance_squared_to(observer))
+	for i in range(ordered.size()):ordered[i].visible=i<4 and ordered[i].global_position.distance_to(observer)<24
+
+func update_galleries(level:int) -> void:
+	if gallery_level==level:return
+	gallery_level=level
+	for i in range(gallery_gates.size()):
+		var opened:=level>i
+		gallery_gates[i].set_deferred("disabled",opened);gallery_panels[i].visible=not opened
+		if opened:landscape.solid_bounds.erase(gallery_bounds[i])
+		elif gallery_bounds[i] not in landscape.solid_bounds:landscape.solid_bounds.append(gallery_bounds[i])
 
 func update_mine(owned:bool) -> void:
 	if mine_open==owned:return

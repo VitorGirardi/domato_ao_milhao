@@ -25,7 +25,7 @@ func _initialize() -> void:
 	assert(loaded.armory==bag and loaded.unlimited_money)
 	var old:=before.duplicate(true);old.erase("armory")
 	assert(loaded.restore(old) and loaded.armory==FarmArmory.fresh())
-	old.version=14;old.erase("owned_parcels");old.erase("unlimited_money")
+	old.version=14;old.erase("resources");old.erase("owned_parcels");old.erase("unlimited_money")
 	assert(loaded.restore(old) and loaded.armory==FarmArmory.fresh())
 	for field in ["magazine","reserve","shots","hits","version"]:
 		for invalid in [-1,1.5,"8",null,INF]:

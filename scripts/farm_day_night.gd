@@ -142,6 +142,10 @@ func update_cycle(elapsed: float, observer: Vector3) -> void:
 	sun.light_energy = 0.65 * day
 	sun.rotation_degrees = Vector3(-maxf(1, sin((displayed_hour-6.0)/12.0*PI)*58), displayed_hour*12-176, 0)
 	moon.light_energy = 0.20 * night_amount
+	var underground:=FarmMineLayout.interior_weight(observer)
+	sun.light_energy*=1-underground;moon.light_energy*=1-underground
+	environment.ambient_light_color=environment.ambient_light_color.lerp(Color("b7ae91"),underground)
+	environment.ambient_light_energy=lerpf(environment.ambient_light_energy,.22,underground)
 	var angle := (displayed_hour-6.0)/24.0*TAU
 	var sun_dir := Vector3(cos(angle),sin(angle),-.3).normalized()
 	sun.basis=Basis.looking_at(-sun_dir,Vector3.UP)

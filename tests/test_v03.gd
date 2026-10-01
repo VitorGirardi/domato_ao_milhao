@@ -84,7 +84,7 @@ func _initialize() -> void:
 	check(not restored.restore(invalid),"Invalid saved upgrade rejected")
 	check(restored.reserve==farm.reserve and restored.watering_upgrade,"Invalid restores preserve live state")
 	var legacy:=farm.serialize()
-	legacy.version=1
+	legacy.version=1;legacy.erase("resources")
 	legacy.erase("reserve")
 	legacy.erase("watering_upgrade")
 	for item in legacy.items:

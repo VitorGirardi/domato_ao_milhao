@@ -93,6 +93,7 @@ func _initialize() -> void:
 	check(journey.journey_step()==3,"Three watered plots complete care objective")
 	var legacy:=journey.serialize()
 	legacy.version=1
+	legacy.erase("resources")
 	legacy.erase("milestones")
 	legacy.erase("reserve")
 	legacy.erase("watering_upgrade")

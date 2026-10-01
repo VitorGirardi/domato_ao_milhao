@@ -77,6 +77,9 @@ func apply(id:int,action:String) -> String:
 		var error:=""
 		if parts[1]=="buy":
 			if parts[2]=="mine" and not _near(id,FarmResourceSites.MINE_AT):return "Aproxime-se da entrada da mina."
+			if parts[2] in ["gallery_1","gallery_2"]:
+				var gate_index:=0 if parts[2]=="gallery_1" else 1
+				if not _near(id,FarmMineLayout.GALLERY_AT[gate_index]):return "Aproxime-se da passagem dentro da mina."
 			error=FarmResources.buy(game.state,parts[2])
 		elif parts[1]=="sell":
 			if FarmResources.sell(game.state,parts[2])<=0:return "Não há esse recurso no estoque."
@@ -84,7 +87,9 @@ func apply(id:int,action:String) -> String:
 		if not error.is_empty():return error
 		if not _commit(before):return "Não foi possível salvar. Nenhum recurso foi alterado."
 		return "Compra concluída." if parts[1]=="buy" else "Venda concluída."
-	if parts[0]!="gather" or parts[1] not in ["fish","mine"] or parts[2] not in ["0","1","2"]:return "Ação inválida."
+	if parts[0]!="gather" or parts[1] not in ["fish","mine"]:return "Ação inválida."
+	var allowed:= ["0","1","2"] if parts[1]=="fish" else ["0","1","2","3","4","5","6","7","8"]
+	if parts[2] not in allowed:return "Ação inválida."
 	var kind:String=parts[1];var index:=int(parts[2])
 	if jobs.has(id):return "Você já está coletando."
 	if not _valid_actor(id) or not _near(id,_site(kind,index)):return "Aproxime-se do ponto de coleta, a pé."
@@ -147,5 +152,4 @@ func _process(delta:float) -> void:
 			if count>0:reward="%s x %d no estoque."%[FarmResources.NAMES[key],count]
 		var saved:=_commit(before)
 		_stop(id,reward if saved else "Falha ao salvar. Nenhum recurso foi alterado.")
-
 

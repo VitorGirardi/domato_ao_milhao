@@ -37,7 +37,7 @@ func _initialize() -> void:
 	invalid=saved.duplicate(true); invalid.irrigation.spent=-2
 	check(not loaded.restore(invalid),"Reject negative totals")
 	var legacy:=saved.duplicate(true)
-	legacy.version=5; legacy.erase("irrigation"); legacy.watering_upgrade=true
+	legacy.version=5;legacy.erase("resources"); legacy.erase("irrigation"); legacy.watering_upgrade=true
 	check(loaded.restore(legacy) and not loaded.irrigation.enabled and loaded.watering_upgrade,"Old save keeps purchased upgrade and starts with irrigation off")
 	check(farm.remove_item(1).is_empty() and farm.irrigation.plots==[1],"Removing plot remaps selection")
 	var removal:=FarmState.new();removal.farm_xp=950

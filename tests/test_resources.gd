@@ -28,7 +28,7 @@ func run() -> void:
 		assert(FarmResources.buy(state,kind)!="" and state.serialize()==before)
 	assert(state.money==1170 and FarmResources.value(state)==0)
 	var before:=state.serialize()
-	assert(FarmResources.buy(state,"quartz")!="" and FarmResources.catch_fish(state,-1)!="" and FarmResources.catch_fish(state,3)!="" and FarmResources.extract(state,3)!="")
+	assert(FarmResources.buy(state,"quartz")!="" and FarmResources.catch_fish(state,-1)!="" and FarmResources.catch_fish(state,3)!="" and FarmResources.extract(state,9)!="")
 	assert(state.serialize()==before)
 	seed(4721)
 	for spot in range(3):
@@ -86,6 +86,63 @@ func run() -> void:
 	for version in range(1,19):
 		var legacy:=empty.duplicate(true);legacy.version=version;legacy.erase("resources")
 		assert(restored.restore(legacy) and restored.resources==FarmResources.fresh())
+	# Version 19 retains stock, tools, counters and its three original cooldowns.
+	var legacy19:=saved.duplicate(true);legacy19.version=19
+	legacy19.resources.erase("gallery_level")
+	legacy19.resources.node_ready=legacy19.resources.node_ready.slice(0,3)
+	var legacy_before:=legacy19.duplicate(true)
+	assert(restored.restore(legacy19) and restored.resources==FarmResources.normalized(saved.resources))
+	assert(legacy19==legacy_before and restored.serialize().version==20)
+	var old_empty:=empty.duplicate(true);old_empty.version=19
+	old_empty.resources.erase("gallery_level");old_empty.resources.node_ready=[0.0,0.0,0.0]
+	assert(empty_copy.restore(JSON.parse_string(JSON.stringify(old_empty))))
+	before=restored.serialize()
+	for variant in range(5):
+		var broken:=legacy19.duplicate(true)
+		match variant:
+			0:broken.resources.node_ready.append(0.0)
+			1:broken.resources.gallery_level=1
+			2:broken.resources.stock.copper=-1
+			3:broken.resources.node_ready[0]=INF
+			4:broken.resources.erase("rod")
+		assert(not restored.restore(broken) and restored.serialize()==before)
+	# Gallery purchases enforce order, ownership, money and materials atomically.
+	var progression:=FarmState.new();progression.claim(Vector2(4,0));progression.money=10000
+	before=progression.serialize()
+	assert(FarmResources.buy(progression,"gallery_1")!="" and progression.serialize()==before)
+	for kind in ["pickaxe","mine"]:assert(FarmResources.buy(progression,kind).is_empty())
+	before=progression.serialize()
+	for kind in ["gallery_1","gallery_2"]:assert(FarmResources.buy(progression,kind)!="" and progression.serialize()==before)
+	for node in range(3,9):assert(FarmResources.extract(progression,node)!="" and progression.serialize()==before)
+	for i in range(8):
+		assert(FarmResources.extract(progression,0).is_empty());progression.elapsed+=120
+	progression.money=1199;before=progression.serialize()
+	assert(FarmResources.buy(progression,"gallery_1")!="" and progression.serialize()==before)
+	progression.money=5000
+	assert(FarmResources.buy(progression,"gallery_1").is_empty())
+	assert(progression.money==3800 and progression.resources.stock.copper==0 and progression.resources.gallery_level==1)
+	before=progression.serialize()
+	assert(FarmResources.buy(progression,"gallery_1")!="" and progression.serialize()==before)
+	for node in range(6,9):assert(FarmResources.extract(progression,node)!="" and progression.serialize()==before)
+	assert(FarmResources.buy(progression,"gallery_2")!="" and progression.serialize()==before)
+	for node in range(3,6):assert(FarmResources.extract(progression,node).is_empty())
+	for i in range(8):
+		progression.elapsed+=120;assert(FarmResources.extract(progression,1).is_empty())
+	assert(progression.resources.stock.iron==10)
+	assert(FarmResources.buy(progression,"gallery_2").is_empty())
+	assert(progression.money==800 and progression.resources.stock.iron==0 and progression.resources.gallery_level==2)
+	before=progression.serialize()
+	assert(FarmResources.buy(progression,"gallery_2")!="" and progression.serialize()==before)
+	for node in range(6,9):assert(FarmResources.extract(progression,node).is_empty())
+	assert(progression.resources.stock.iron==1 and progression.resources.stock.quartz==2)
+	assert(restored.restore(JSON.parse_string(JSON.stringify(progression.serialize()))))
+	assert(restored.resources==progression.resources)
+	before=restored.serialize()
+	for value in [-1,3,1.5,true,NAN]:
+		var broken:=before.duplicate(true);broken.resources.gallery_level=value
+		assert(not restored.restore(broken) and restored.serialize()==before)
+	var locked:=before.duplicate(true);locked.resources.gallery_level=0
+	assert(not restored.restore(locked) and restored.serialize()==before)
 	# Capacity guards never consume cooldown or award XP.
 	assert(restored.restore(saved))
 	restored.resources.stock.tilapia=FarmResources.STOCK_LIMIT
@@ -99,8 +156,14 @@ func run() -> void:
 	assert(author.money==1000000000 and author.unlimited_money)
 	assert(FarmResources.extract(author,2).is_empty())
 	assert(FarmResources.sell(author,"quartz")==65 and author.revenue==65 and author.money==1000000000)
+	before=author.serialize()
+	assert(FarmResources.buy(author,"gallery_1")!="" and author.serialize()==before)
+	for i in range(8):
+		assert(FarmResources.extract(author,0).is_empty());author.elapsed+=120
+	assert(FarmResources.buy(author,"gallery_1").is_empty())
+	assert(author.resources.stock.copper==0 and author.money==1000000000)
 	assert(FarmCoop.save_farm("user://resources_roundtrip.json",author))
 	var loaded:=FarmCoop.load_farm("user://resources_roundtrip.json")
 	assert(loaded.resources==author.resources and loaded.unlimited_money)
-	print("RESOURCES_OK: purchases, fish, ore, sales, cooldown, atomic validation, v1..18 migration and unlimited money")
+	print("RESOURCES_OK: purchases, fish, ore, sales, cooldown, atomic validation, v1..19 migration, galleries and unlimited money")
 	quit()

@@ -44,7 +44,7 @@ func _initialize() -> void:
 		check(not restored.restore(bad) and restored.serialize()==base,"Corrupt worker rejected atomically")
 	var bad:=snapshot.duplicate(true);bad.cheese_worker.spent=99
 	check(not restored.restore(bad),"Overspent save rejected")
-	var old:=snapshot.duplicate(true);old.version=11;old.erase("cheese_worker")
+	var old:=snapshot.duplicate(true);old.version=11;old.erase("resources");old.erase("cheese_worker")
 	check(restored.restore(old) and not restored.cheese_worker.hired and restored.items[0].cheese.batch==2,"Migration keeps batch without auto-hiring")
 	var missing:=snapshot.duplicate(true);missing.erase("cheese_worker")
 	check(not restored.restore(missing),"v12 requires worker")

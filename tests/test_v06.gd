@@ -142,7 +142,7 @@ func _initialize() -> void:
 	check(is_equal_approx(large.items[0].flock.food,small.items[0].flock.food) and is_equal_approx(large.items[0].flock.water,small.items[0].flock.water),"Care boundaries preserve welfare under long ticks")
 	for version in [1,2,3,4]:
 		var old:=large.serialize()
-		old.version=version
+		old.version=version;old.erase("resources")
 		old.erase("staff")
 		check(restored.restore(JSON.parse_string(JSON.stringify(old))),"Legacy schema %d loads"%version)
 		check(not restored.staff.hired and restored.money==large.money and restored.inventory==large.inventory,"Legacy migration never hires or charges")

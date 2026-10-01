@@ -38,8 +38,8 @@ func run() -> void:
 	assert(game.weapons.start_reload());await create_timer(1.4).timeout
 	assert(game.state.armory.magazine==8 and game.state.armory.reserve==23)
 	var modern:Dictionary=game.state.serialize()
-	assert(modern.version==18 and modern.has("horse") and modern.has("armory"))
-	var old:=modern.duplicate(true);old.version=15;old.erase("horse")
+	assert(modern.version==20 and modern.has("horse") and modern.has("armory"))
+	var old:=modern.duplicate(true);old.version=15;old.erase("resources");old.erase("horse")
 	assert(disk.restore(old) and disk.armory==game.state.armory and disk.horse==FarmHorse.defaults())
 	old=modern.duplicate(true);old.erase("armory")
 	assert(disk.restore(old) and disk.armory==FarmArmory.fresh() and disk.horse==game.state.horse)
@@ -47,9 +47,10 @@ func run() -> void:
 		var invalid:=modern.duplicate(true);invalid.merge(damage,true)
 		var snapshot:=disk.serialize();assert(not disk.restore(invalid) and disk.serialize()==snapshot)
 	# Both interactions are in range: the closest physical target owns E.
+	# Park outside the gunsmith bounds so ensure_parking does not relocate the fixture.
 	game.weapons.holster()
-	game.horse.restore({"x":-28.8,"z":22.0,"angle":0.0})
-	game.player.position=Vector3(-30.2,.12,22)
+	game.horse.restore({"x":-28.8,"z":24.0,"angle":0.0})
+	game.player.position=Vector3(-29.8,.12,23)
 	await create_timer(.4).timeout
 	assert(game.weapons.near_shop() and game.horse.can_mount(game.player))
 	game._update_ui()
@@ -57,8 +58,8 @@ func run() -> void:
 	assert(not game.weapons.handle_input(key(KEY_E)),"Closer horse must receive E")
 	game._interact_nearest();assert(game.horse.mounted)
 	assert(game.horse.dismount(game.player,game.avatar,game.actor,game.state,game.world.landscape))
-	game.horse.restore({"x":-28.8,"z":22.0,"angle":0.0})
-	game.player.position=Vector3(-31.4,.12,22)
+	game.horse.restore({"x":-28.8,"z":24.0,"angle":0.0})
+	game.player.position=Vector3(-31.2,.12,23.5)
 	await create_timer(.4).timeout
 	assert(game.weapons.near_shop() and game.horse.can_mount(game.player))
 	game._update_ui()

@@ -753,6 +753,9 @@ func _tend_selected() -> void:
 
 func _action(value: String) -> void:
 	if quitting:return
+	if value=="mine_gallery":
+		gathering.handle("gather:cancel")
+		FarmResourceHUD.show_galleries(self);return
 	if value=="resources":
 		gathering.handle("gather:cancel")
 		FarmResourceHUD.show(self);return
@@ -1242,6 +1245,7 @@ func _action(value: String) -> void:
 func _resource_refresh() -> void:
 	var panel_state:Dictionary={"resources":state.resources.duplicate(true),"money":state.money}
 	if hud.modal_kind=="resources" and panel_state!=resource_panel_state:FarmResourceHUD.show(self)
+	if hud.modal_kind=="mine_gallery" and panel_state!=resource_panel_state:FarmResourceHUD.show_galleries(self)
 	resource_panel_state=panel_state
 	if is_instance_valid(resource_view):resource_view.refresh_world()
 

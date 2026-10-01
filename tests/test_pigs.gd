@@ -4,7 +4,7 @@ func run() -> void:
 	assert(OS.get_user_data_dir().contains("test-results"))
 	var state:=FarmState.new();state.unlimited_money=true;state.farm_xp=120
 	assert(state.claim(Vector2(4,0)).is_empty())
-	var legacy:=state.serialize();legacy.version=17
+	var legacy:=state.serialize();legacy.version=17;legacy.erase("resources")
 	var old:=FarmState.new();assert(old.restore(legacy))
 	assert(state.place("pigsty",Vector2(4,0),0).is_empty())
 	assert(FarmPigs.care(state,0,"food")!="")
@@ -27,7 +27,7 @@ func run() -> void:
 	var saved:=state.serialize();var copy:=FarmState.new();assert(copy.restore(JSON.parse_string(JSON.stringify(saved))))
 	for invalid in [{"count":4,"food":100,"water":100},{"count":true,"food":100,"water":100},{"count":1.5,"food":100,"water":100},{"count":1,"food":NAN,"water":100},{"count":1,"food":100,"water":-1}]:
 		assert(not FarmPigs.valid(invalid));var bad:=saved.duplicate(true);bad.items[0].pigs=invalid;assert(not copy.restore(bad))
-	var bad_legacy:=saved.duplicate(true);bad_legacy.version=17;assert(not copy.restore(bad_legacy))
+	var bad_legacy:=saved.duplicate(true);bad_legacy.version=17;bad_legacy.erase("resources");assert(not copy.restore(bad_legacy))
 	state.unlimited_money=true;assert(FarmPigs.care(state,0,"food").is_empty() and state.unlimited_money)
 	assert(FarmCoop.save_farm("user://pigs_roundtrip.json",state))
 	var restored:=FarmCoop.load_farm("user://pigs_roundtrip.json");assert(restored.items[0].pigs.count==3 and restored.unlimited_money)

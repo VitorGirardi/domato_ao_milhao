@@ -106,7 +106,7 @@ func _initialize() -> void:
 	check(not restored.restore(missing),"Current save cannot silently lose animal data")
 	for version in [1,2]:
 		var legacy:=farm.serialize()
-		legacy.version=version
+		legacy.version=version;legacy.erase("resources")
 		legacy.inventory.egg=17
 		legacy.items[0].egg_time=40
 		legacy.items[0].erase("flock")

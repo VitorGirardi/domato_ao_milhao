@@ -55,7 +55,7 @@ static func highland_height(p: Vector2) -> float:
 	var cave_back := exp(-pow((p.x-900)/45.0,2)-pow((p.y+252)/45.0,2)) * smoothstep(0,16,-220-p.y)
 	result += cave_back*24.0
 	# Clear the ground beneath the Blender tunnel; its mesh supplies the roof.
-	var tunnel_clearance := maxf(absf(p.x-900)-9, absf(p.y+225)-11)
+	var tunnel_clearance := minf(maxf(absf(p.x-900)-9, absf(p.y+225)-11),FarmMineLayout.clearance(p))
 	result = lerpf(81.0,result,smoothstep(0,10,tunnel_clearance))
 	return result
 
@@ -86,6 +86,7 @@ static func water_blocked(p: Vector2) -> bool:
 	return level > bed(p, highland_height(p))+.3
 
 static func reserved(p: Vector2) -> bool:
+	if FarmMineLayout.inside(p,7):return true
 	if road_sample(p).x < 8 or water_level(p) > -INF: return true
 	for place in PLACES.values():
 		if p.distance_to(place.at) < 14: return true

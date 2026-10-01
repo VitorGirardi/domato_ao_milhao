@@ -23,13 +23,13 @@ func setup(g:Node3D) -> void:
 	meter.add_theme_stylebox_override("background",game.hud.style(Color("304c3d"),5,Color("78573b")))
 	meter.add_theme_stylebox_override("fill",game.hud.style(Color("eabc5b"),5,Color("eabc5b")))
 	game.hud.walking.root.add_child(meter)
-	for i in range(3):
-		var ore:=load("res://assets/models/resource_ore_%s.glb"%FarmResources.ORE_KEYS[i]).instantiate() as Node3D
+	for i in range(FarmResources.NODE_COUNT):
+		var ore:=load("res://assets/models/resource_ore_%s.glb"%FarmResources.NODE_ORES[i]).instantiate() as Node3D
 		ore.position=FarmResourceSites.point(FarmResourceSites.ORE_SPOTS[i]);add_child(ore);ores.append(ore)
 		var body:=StaticBody3D.new();var collision:=CollisionShape3D.new();var shape:=CylinderShape3D.new()
 		shape.radius=.6;shape.height=.9;collision.shape=shape;collision.position.y=.45
 		body.add_child(collision);ore.add_child(body)
-		var label:=_label(FarmResources.NAMES[FarmResources.ORE_KEYS[i]],ore.position+Vector3(0,1.65,0));ore_labels.append(label)
+		var label:=_label(FarmResources.NAMES[FarmResources.NODE_ORES[i]],ore.position+Vector3(0,1.65,0));ore_labels.append(label)
 	for i in range(3):
 		var at:=FarmResourceSites.point(FarmResourceSites.FISH_SPOTS[i])
 		fish_labels.append(_label("PESCA · E",at+Vector3(0,1.6,0)))
@@ -47,12 +47,15 @@ func _label(text:String,at:Vector3) -> Label3D:
 func refresh_world() -> void:
 	if game==null:return
 	var region:=game.world.landscape.get_node_or_null("ValeESerra") as FarmRegionScenery
-	if region!=null:region.update_mine(game.state.resources.mine_owned)
+	if region!=null:
+		region.update_mine(game.state.resources.mine_owned)
+		region.update_galleries(game.state.resources.gallery_level)
+		region.update_lights(game.player.position)
 	for i in range(ores.size()):
 		var remaining:float=maxf(0,game.state.resources.node_ready[i]-game.state.elapsed)
 		ores[i].visible=game.state.resources.mine_owned
-		ore_labels[i].visible=game.state.resources.mine_owned
-		ore_labels[i].text=FarmResources.NAMES[FarmResources.ORE_KEYS[i]]+(" · E" if remaining<=0 else " · %ds"%ceili(remaining))
+		ore_labels[i].visible=game.state.resources.mine_owned and game.state.resources.gallery_level>=FarmResources.NODE_LEVELS[i]
+		ore_labels[i].text=FarmResources.NAMES[FarmResources.NODE_ORES[i]]+(" · E" if remaining<=0 else " · %ds"%ceili(remaining))
 
 func _new_prop(id:int,kind:String) -> Dictionary:
 	var tool:=load("res://assets/models/resource_%s.glb"%("fishing_rod" if kind=="fish" else "pickaxe")).instantiate() as Node3D
