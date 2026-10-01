@@ -1,8 +1,8 @@
 class_name FarmHorseRoute
 extends RefCounted
-## Incremental world-scale search. Six-metre cells align both authored bridges;
+## Incremental world-scale search. Three-metre cells align both authored bridges;
 ## every edge is sampled at horse clearance, not just at its endpoints.
-const STEP:=6.0
+const STEP:=3.0
 const NEIGHBORS:=[Vector2i(1,0),Vector2i(-1,0),Vector2i(0,1),Vector2i(0,-1),Vector2i(1,1),Vector2i(1,-1),Vector2i(-1,1),Vector2i(-1,-1)]
 var clear:Callable
 var pending:=false
@@ -53,6 +53,13 @@ func segment(a:Vector2,b:Vector2) -> bool:
 		last_point=p
 	return true
 
+func traversable(start:Vector2,path:Array[Vector2]) -> bool:
+	var previous_point:=start
+	for point in path:
+		if not segment(previous_point,point):return false
+		previous_point=point
+	return true
+
 func connector(at:Vector2) -> Array[Vector2]:
 	var center:=Vector2i(roundi(at.x/STEP),roundi(at.y/STEP))
 	var options:Array[Vector2]=[]
@@ -65,7 +72,7 @@ func connector(at:Vector2) -> Array[Vector2]:
 	for p in options:
 		if not safe(p):continue
 		var local:=FarmCompanionPath.route(at,p,func(v:Vector2):return safe(v),1.2)
-		if not local.is_empty():return local
+		if not local.is_empty() and traversable(at,local):return local
 	return []
 
 func begin(start:Vector2,goal:Vector2,can_stand:Callable) -> void:
@@ -115,7 +122,7 @@ func road_route(start:Vector2,goal:Vector2) -> Array[Vector2]:
 		if not safe(point):return []
 		if not segment(previous_point,point):
 			var detour:=FarmCompanionPath.route(previous_point,point,func(p:Vector2):return safe(p),1.5)
-			if detour.is_empty():return []
+			if detour.is_empty() or not traversable(previous_point,detour):return []
 			path.append_array(detour)
 		else:path.append(point)
 		previous_point=point
