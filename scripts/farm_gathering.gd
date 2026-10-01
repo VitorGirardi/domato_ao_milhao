@@ -19,6 +19,8 @@ func _key() -> String:return "%s:%s:%s"%[game.network.active,game.network.hostin
 func _remember_session() -> void:
 	state_id=game.state.get_instance_id();session_key=_key()
 func reset() -> void:
+	if authority():
+		for id in jobs:_send_event(id,{},"")
 	jobs.clear();last_request.clear();synced_peer=0;cancel_pending=false
 	_remember_session()
 func handle(value:String) -> bool:
@@ -70,7 +72,7 @@ func apply(id:int,action:String) -> String:
 	if parts.size()!=3:return "Ação inválida."
 	if parts[0]=="resource":
 		if jobs.has(id):return "Termine ou cancele a coleta primeiro."
-		var before:Dictionary=game.state.serialize()
+		var before:Dictionary=game.state.serialize().duplicate(true)
 		var error:=""
 		if parts[1]=="buy":
 			if parts[2]=="mine" and not _near(id,FarmResourceSites.MINE_AT):return "Aproxime-se da entrada da mina."
@@ -134,8 +136,9 @@ func _process(delta:float) -> void:
 		if job.remaining>0:continue
 		var error:=_can(job.kind,job.index)
 		if not error.is_empty():_stop(id,error);continue
-		var before:Dictionary=game.state.serialize()
+		var before:Dictionary=game.state.serialize().duplicate(true)
 		if job.kind=="fish":FarmResources.catch_fish(game.state,job.index)
 		else:FarmResources.extract(game.state,job.index)
 		var saved:=_commit(before)
 		_stop(id,"Recurso guardado no estoque." if saved else "Falha ao salvar. Nenhum recurso foi alterado.")
+
