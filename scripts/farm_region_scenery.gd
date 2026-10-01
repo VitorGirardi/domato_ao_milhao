@@ -108,7 +108,11 @@ func _cave() -> void:
 	# The Blender mountain also blocks walking/camera rays outside the tunnels.
 	# Keep the purchase tape separate so its collision remains removable.
 	var rock_mesh:=model.find_child("MineRockAndVegetation",true,false) as MeshInstance3D
-	if rock_mesh!=null:rock_mesh.create_trimesh_collision()
+	if rock_mesh!=null:
+		rock_mesh.create_trimesh_collision()
+		for body in rock_mesh.get_children():
+			for collision in body.get_children():
+				if collision is CollisionShape3D and collision.shape is ConcavePolygonShape3D:collision.shape.backface_collision=true
 	# Collision follows the authored cell union, leaving every junction open.
 	for cell in FarmMineLayout.CELLS:
 		_collision(model,Vector3(cell.x,-.10,cell.y),Vector3(8,.3,8))

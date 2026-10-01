@@ -40,6 +40,13 @@ func run() -> void:
 	game.state.resources.stock.copper=8;game.state.resources.stock.iron=10;game.state.resources.mined=18
 	game.world.rebuild(game.state);game.actor.airborne=false;game.gathering.reset();game.gathering.set_process(false)
 	move_to(STATIONS[0]);await refresh()
+	var rock_mesh:MeshInstance3D=game.world.landscape.get_node("ValeESerra").find_child("MineRockAndVegetation",true,false)
+	var rock_body:StaticBody3D=rock_mesh.get_child(0)
+	assert(rock_body.get_child(0).shape.backface_collision,"Mountain must collide from inside and outside")
+	rock_body.collision_layer=1<<20
+	var outside_ray:=PhysicsRayQueryParameters3D.create(Vector3(935,89,-260),Vector3(900,89,-260),1<<20)
+	assert(not game.world.get_world_3d().direct_space_state.intersect_ray(outside_ray).is_empty(),"Exterior camera rays must hit the mountain")
+	rock_body.collision_layer=1
 	assert(gate_hit(0) and gate_hit(1),"Both unpurchased galleries must be physically closed")
 	await capture("locked",Vector3(900,84,-226),Vector3(900,83,-236))
 	assert(FarmResourceSites.nearby(game).value=="mine_gallery")
