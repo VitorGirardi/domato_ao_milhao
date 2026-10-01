@@ -16,6 +16,7 @@ func refresh() -> void:
 	game.resource_view.refresh_world();await physics_frame;await physics_frame
 func capture(label:String,from:Vector3,target:Vector3) -> void:
 	if DisplayServer.get_name()=="headless":return
+	game._update_ui()
 	game.camera.position=from;game.camera.look_at(target);game.camera.fov=65
 	await create_timer(.25).timeout;await RenderingServer.frame_post_draw
 	root.get_texture().get_image().save_png("res://test-results/mine-"+label+".png")
@@ -39,6 +40,10 @@ func run() -> void:
 	move_to(STATIONS[0]);await refresh()
 	assert(gate_hit(0) and gate_hit(1),"Both unpurchased galleries must be physically closed")
 	await capture("locked",Vector3(900,84,-226),Vector3(900,83,-236))
+	assert(FarmResourceSites.nearby(game).value=="mine_gallery")
+	game._action("mine_gallery");assert(game.hud.modal_kind=="mine_gallery")
+	await capture("upgrades",Vector3(900,84,-226),Vector3(900,83,-236))
+	game.hud.close_modal()
 	move_to(FarmResourceSites.ORE_SPOTS[3]);assert(not action("gather:mine:3").is_empty())
 	var before:Dictionary=game.state.serialize().duplicate(true)
 	move_to(Vector2(900,-224));action("resource:buy:gallery_1")
@@ -69,6 +74,7 @@ func run() -> void:
 	for i in range(FarmMineLayout.CELLS.size()-1,-1,-1):await walk_to(Vector2(900,-220)+FarmMineLayout.CELLS[i])
 	RenderingServer.set_render_loop_enabled(true)
 	await capture("gallery",Vector3(884,84,-247),Vector3(884,83,-256))
+	await capture("exterior",Vector3(942,111,-179),Vector3(900,87,-245))
 	game.state=FarmState.new();game.state.claim(Vector2(4,0));game.state.resources.mine_owned=true
 	await refresh();assert(gate_hit(0) and gate_hit(1),"Changing farms must close galleries")
 	game.session_started=false;game.audio.set_process(false);game.audio.stop_all();game.gathering.reset()
