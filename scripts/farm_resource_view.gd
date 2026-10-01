@@ -50,6 +50,7 @@ func refresh_world() -> void:
 	if region!=null:
 		region.update_mine(game.state.resources.mine_owned)
 		region.update_galleries(game.state.resources.gallery_level)
+		region.update_lights(game.player.position)
 	for i in range(ores.size()):
 		var remaining:float=maxf(0,game.state.resources.node_ready[i]-game.state.elapsed)
 		ores[i].visible=game.state.resources.mine_owned

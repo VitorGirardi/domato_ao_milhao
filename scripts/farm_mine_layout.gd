@@ -18,5 +18,11 @@ static func clearance(p:Vector2) -> float:
 	if p.x<866 or p.x>934 or p.y < -306 or p.y > -206:return 100.0
 	var local:=p-Vector2(ORIGIN.x,ORIGIN.z)
 	var distance:=100.0
-	for cell in CELLS:distance=minf(distance,maxf(absf(local.x-cell.x)-6,absf(local.y-cell.y)-6))
+	# The ground mesh samples columns every 6m; clear those surrounding samples
+	# as well so interpolated grass cannot poke through the gallery floor.
+	for cell in CELLS:distance=minf(distance,maxf(absf(local.x-cell.x)-10,absf(local.y-cell.y)-10))
 	return distance
+
+static func interior_weight(observer:Vector3) -> float:
+	if observer.y<80 or observer.y>87 or not inside(Vector2(observer.x,observer.z)):return 0.0
+	return smoothstep(2,10,-220-observer.z)

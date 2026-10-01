@@ -11,6 +11,7 @@ var gallery_gates:Array[CollisionShape3D]=[]
 var gallery_panels:Array[Node3D]=[]
 var gallery_bounds:Array[Rect2]=[]
 var gallery_level:=-1
+var mine_lights:Array[OmniLight3D]=[]
 const MINE_BOUND:=Rect2(892,-231,16,12)
 
 func setup(owner_landscape: FarmLandscape, owner_world: FarmWorld) -> void:
@@ -104,6 +105,10 @@ func _lookout() -> void:
 func _cave() -> void:
 	var p:=Vector2(900,-220)
 	var model:=_model("region_mine",Vector3(p.x,FarmLandscape.height_at(p),p.y))
+	# The Blender mountain also blocks walking/camera rays outside the tunnels.
+	# Keep the purchase tape separate so its collision remains removable.
+	var rock_mesh:=model.find_child("MineRockAndVegetation",true,false) as MeshInstance3D
+	if rock_mesh!=null:rock_mesh.create_trimesh_collision()
 	# Collision follows the authored cell union, leaving every junction open.
 	for cell in FarmMineLayout.CELLS:
 		_collision(model,Vector3(cell.x,-.10,cell.y),Vector3(8,.3,8))
@@ -147,6 +152,15 @@ func _cave() -> void:
 		var light:=OmniLight3D.new();light.position=at;light.omni_range=10
 		light.light_color=Color("ffda9e");light.light_energy=1.1;model.add_child(light)
 		light.distance_fade_enabled=true;light.distance_fade_begin=70;light.distance_fade_length=20
+		mine_lights.append(light)
+	update_lights(Vector3.ZERO)
+
+func update_lights(observer:Vector3) -> void:
+	# Compatibility rendering has a small per-mesh light budget. Select nearby
+	# lanterns for each viewer so the deepest rooms receive their own light.
+	var ordered:=mine_lights.duplicate()
+	ordered.sort_custom(func(a:OmniLight3D,b:OmniLight3D):return a.global_position.distance_squared_to(observer)<b.global_position.distance_squared_to(observer))
+	for i in range(ordered.size()):ordered[i].visible=i<4 and ordered[i].global_position.distance_to(observer)<24
 
 func update_galleries(level:int) -> void:
 	if gallery_level==level:return

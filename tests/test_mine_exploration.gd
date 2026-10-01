@@ -17,6 +17,8 @@ func refresh() -> void:
 func capture(label:String,from:Vector3,target:Vector3) -> void:
 	if DisplayServer.get_name()=="headless":return
 	game._update_ui()
+	game.world.day_night.update_cycle(game.state.elapsed,from)
+	game.world.landscape.get_node("ValeESerra").update_lights(from)
 	game.camera.position=from;game.camera.look_at(target);game.camera.fov=65
 	await create_timer(.25).timeout;await RenderingServer.frame_post_draw
 	root.get_texture().get_image().save_png("res://test-results/mine-"+label+".png")
@@ -64,10 +66,16 @@ func run() -> void:
 	assert(game.state.resources.mined==20)
 	var restored:=FarmState.new();assert(restored.restore(JSON.parse_string(JSON.stringify(game.state.serialize()))))
 	assert(restored.resources==game.state.resources and restored.resources.node_ready.size()==9)
+	game.world.day_night.update_cycle(80,Vector3(900,82,-280))
+	assert(game.world.day_night.sun.light_energy==0)
+	game.world.day_night.update_cycle(80,Vector3(900,82,-214))
+	assert(game.world.day_night.sun.light_energy>.6,"Leaving the mine restores exterior daylight")
 	# Walk the actual player capsule through every authored bend, in both directions.
 	move_to(Vector2(900,-224));RenderingServer.set_render_loop_enabled(false)
 	for cell in FarmMineLayout.CELLS:await walk_to(Vector2(900,-220)+cell)
 	assert(absf(game.player.position.y-81.05)<.5,"Mine floor must support the capsule")
+	game.yaw=0;game.pitch=.7;game._update_camera(1,true)
+	assert(game.camera.position.y<87.2,"Walking camera must stay below the cave roof")
 	RenderingServer.set_render_loop_enabled(true)
 	await capture("deep",Vector3(900,84,-280),Vector3(900,83,-289))
 	RenderingServer.set_render_loop_enabled(false)
