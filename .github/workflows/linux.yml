@@ -70,6 +70,7 @@ jobs:
           python3 tests/run_network.py --godot godot --test test_coop_map
           python3 tests/run_network.py --godot godot --test test_coop_region
           python3 tests/run_network.py --godot godot --test test_coop_gathering
+          python3 tests/run_network.py --godot godot --test test_coop_swimming
           mkdir -p test-results/linux/network
           for directory in test-results/network-*; do cp -r "$directory" test-results/linux/network/; done
       - name: X11 graphical gameplay and fullscreen
