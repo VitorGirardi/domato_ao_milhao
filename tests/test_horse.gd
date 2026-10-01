@@ -7,7 +7,7 @@ func _initialize() -> void:
 	for bad in [null,{}, {"x":"160","z":0,"angle":0}, {"x":FarmLandscape.WALK_MAX.x+10,"z":0,"angle":0}, {"x":0,"z":0,"angle":NAN}]:
 		var data:=before.duplicate(true);data.horse=bad
 		assert(not restored.restore(data) and restored.serialize()==before)
-	var old:=before.duplicate(true);old.version=15;old.erase("horse")
+	var old:=before.duplicate(true);old.version=15;old.erase("resources");old.erase("horse")
 	assert(restored.restore(old) and restored.horse==FarmHorse.defaults())
 	var extension:=old.duplicate(true);extension.armory=FarmArmory.fresh();extension.armory.pistol=true;extension.armory.magazine=7;extension.armory.reserve=17
 	assert(restored.restore(extension) and restored.serialize().armory==extension.armory)

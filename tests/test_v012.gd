@@ -67,7 +67,7 @@ func _initialize() -> void:
 	check(not restored.restore(bad) and snapshot==restored.serialize(),"Invalid ledger rejects entire save")
 	bad=farm.serialize(); bad.cultivation.tasks.water="true"
 	check(not restored.restore(bad),"Invalid task type")
-	var old:=farm.serialize(); old.version=8; old.erase("cultivation")
+	var old:=farm.serialize(); old.version=8;old.erase("resources"); old.erase("cultivation")
 	check(restored.restore(old) and not restored.cultivation.enabled and restored.irrigation.enabled and restored.field_staff.hired,"V8 migration preserves water routine without enabling planting")
 	check(FarmCultivation.configure(farm,[{"index":1,"crop":"corn"}],tasks,100).is_empty(),"Change plot")
 	var spent:int=farm.cultivation.spent

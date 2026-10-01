@@ -137,7 +137,7 @@ func _initialize() -> void:
 	check(not restored.restore(invalid),"Missing neighbor rejected")
 	for version in [1,2,3]:
 		var old:=farm.serialize()
-		old.version=version
+		old.version=version;old.erase("resources")
 		old.contract_done=true
 		old.erase("trade")
 		check(restored.restore(JSON.parse_string(JSON.stringify(old))),"Older schema %d migrates"%version)

@@ -41,7 +41,7 @@ func _initialize() -> void:
 		check(not other.restore(bad) and other.serialize()==base,"Bad worker rejected atomically")
 	var missing:=saved.duplicate(true);missing.erase("dairy_worker")
 	check(not other.restore(missing),"v13 requires worker")
-	missing.version=12
+	missing.version=12;missing.erase("resources")
 	check(other.restore(missing) and not other.dairy_worker.hired and other.items[0].dairy.milk==4,"Migrate v12 preserving cow")
 	FarmDairyWorker.dismiss(f)
 	check(not f.dairy_worker.hired and d.milk==4,"Dismiss keeps milk")

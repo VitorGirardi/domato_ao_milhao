@@ -30,7 +30,7 @@ func _initialize() -> void:
 		assert(FarmLevels.level(FarmLevels.THRESHOLDS[i])==i+1)
 		var old:=FarmState.new();old.claim(Vector2(4,-2));old.money=5000;old.farm_xp=950
 		assert(old.place(FarmLevels.BUILDINGS[i],Vector2(4,0),0).is_empty())
-		var data:=old.serialize();data.version=13;data.erase("farm_xp")
+		var data:=old.serialize();data.version=13;data.erase("resources");data.erase("farm_xp")
 		var migrated:=FarmState.new();assert(migrated.restore(data))
 		assert(FarmLevels.level(migrated.farm_xp)>=i+1 and migrated.money==old.money)
 		assert(migrated.level_notice.is_empty())

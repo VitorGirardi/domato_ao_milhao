@@ -24,12 +24,12 @@ func _initialize() -> void:
 	assert(restored.items.size()==3 and restored.money==f.money)
 	var good:=restored.serialize()
 	for bad in [null,{},"yes",1]:
-		var data:=good.duplicate(true);data.version=14;data.unlimited_money=bad
+		var data:=good.duplicate(true);data.version=14;data.erase("resources");data.unlimited_money=bad
 		assert(not restored.restore(data) and restored.serialize()==good)
 	for bad in [["east","east"],["missing"],"east",null]:
 		var data:=good.duplicate(true);data.owned_parcels=bad
 		assert(not restored.restore(data) and restored.serialize()==good)
-	var old:=FarmState.new().serialize();old.version=14;old.erase("owned_parcels");old.erase("unlimited_money")
+	var old:=FarmState.new().serialize();old.version=14;old.erase("resources");old.erase("owned_parcels");old.erase("unlimited_money")
 	assert(restored.restore(old) and restored.owned_parcels.is_empty())
 	print("V021_STATE_OK: infinite wallet, atomic purchase, parcel construction, terrain, migration and malformed saves")
 	quit()

@@ -58,7 +58,7 @@ func _initialize() -> void:
 	solo.claim(Vector2.ZERO); solo.place("plot",Vector2.ZERO,0)
 	check(solo.hire_field_staff().is_empty() and solo.configure_irrigation([0]).is_empty() and solo.irrigate(0).is_empty(),"Bento can be hired without a coop")
 	var legacy:=solo.serialize()
-	legacy.version=7; legacy.erase("field_staff"); legacy.irrigation.enabled=false
+	legacy.version=7;legacy.erase("resources"); legacy.erase("field_staff"); legacy.irrigation.enabled=false
 	check(restored.restore(legacy) and not restored.field_staff.hired,"Older saves never silently hire a second worker")
 	print("CREW_STATE_OK: %d checks"%checks)
 	quit()
