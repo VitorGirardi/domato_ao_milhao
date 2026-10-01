@@ -161,9 +161,9 @@ func _river() -> void:
 	for i in range(1300):
 		var z:float=-650+i;var nz:=z+1
 		var x:=-42+sin(z*.065)*2.6;var nx:=-42+sin(nz*.065)*2.6
-		for strip in range(20):
-			var offset:=-5.0+strip*.5
-			for p in [Vector2(x+offset,z),Vector2(x+offset+.5,z),Vector2(nx+offset,nz),Vector2(x+offset+.5,z),Vector2(nx+offset+.5,nz),Vector2(nx+offset,nz)]:
+		for strip in range(10):
+			var offset:=-5.0+strip
+			for p in [Vector2(x+offset,z),Vector2(x+offset+1.0,z),Vector2(nx+offset,nz),Vector2(x+offset+1.0,z),Vector2(nx+offset+1.0,nz),Vector2(nx+offset,nz)]:
 				var level:=FarmLandscape.legacy_height(Vector2(-42,p.y))-.10
 				surface.set_color(Color(clampf((level-ground_height(p))/5.0,0,1),0,0,1))
 				surface.add_vertex(Vector3(p.x,level,p.y))
@@ -208,7 +208,9 @@ func _bosques() -> void:
 		var z:=rng.randf_range(-73,75);var x:=-42+sin(z*.065)*2.6
 		var p:=Vector2(x+(1 if i%2==0 else -1)*rng.randf_range(4.4,6.3),z)
 		var scale_value:=rng.randf_range(.3,1.1)
-		scenery.append({"key":"stone","p":p,"scale":scale_value,"angle":rng.randf()*TAU,"radius":scale_value,"bird":false})
+		var angle:=rng.randf()*TAU
+		if absf(z-30)<5:continue
+		scenery.append({"key":"stone","p":p,"scale":scale_value,"angle":angle,"radius":scale_value,"bird":false})
 
 static func cleared(record:Dictionary,state:FarmState) -> bool:
 	for land in state.owned_areas():
