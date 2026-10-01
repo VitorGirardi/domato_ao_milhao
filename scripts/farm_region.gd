@@ -54,7 +54,8 @@ static func highland_height(p: Vector2) -> float:
 	var cave_back := exp(-pow((p.x-900)/45.0,2)-pow((p.y+252)/45.0,2)) * smoothstep(0,16,-220-p.y)
 	result += cave_back*24.0
 	# Clear the ground beneath the Blender tunnel; its mesh supplies the roof.
-	if Rect2(894,-232,12,13).has_point(p): result = 81.0
+	var tunnel_clearance := maxf(absf(p.x-900)-9, absf(p.y+225)-11)
+	result = lerpf(81.0,result,smoothstep(0,10,tunnel_clearance))
 	return result
 
 static func water_level(p: Vector2) -> float:
