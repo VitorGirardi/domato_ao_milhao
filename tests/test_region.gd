@@ -64,9 +64,13 @@ func run() -> void:
 		var hit:Dictionary=game.world.get_world_3d().direct_space_state.intersect_ray(query)
 		assert(not hit.is_empty(),"No floor at %s"%entry.name)
 		assert(absf(hit.position.y-h)<1.5,"Floor does not match walking height at %s"%entry.name)
+	# Keep real physics coverage without drawing hundreds of identical frames on CI's software GPU.
+	RenderingServer.set_render_loop_enabled(false)
 	await ride_between(Vector2(388,0),Vector2(452,0))
 	await ride_between(Vector2(452,0),Vector2(388,0))
 	await ride_between(Vector2(618,-261.5),Vector2(662,-283.5))
+	RenderingServer.set_render_loop_enabled(true)
+	print("REGION_RIDING_OK: bridge both directions and mountain climb")
 	game.horse.restore(game.state.horse)
 	await capture("mirante",Vector3(700,124,-326),Vector3(365,8,30))
 	await capture("estrada",Vector3(307,13,27),Vector3(480,16,-30))
