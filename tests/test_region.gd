@@ -82,4 +82,6 @@ func run() -> void:
 	assert(game.state.serialize()==saved,"Exploration mutated the farm")
 	var restored:=FarmState.new(); assert(restored.restore(saved) and restored.unlimited_money)
 	print("REGION_OK: old valley preserved, roads dry and walkable, bridge, destination collision, save and visual captures")
-	game.session_started=false; game.queue_free(); await process_frame; quit()
+	game.session_started=false; game.audio.set_process(false); game.audio.stop_all()
+	await create_timer(.2).timeout
+	game.queue_free(); await process_frame; await create_timer(.2).timeout; quit()
