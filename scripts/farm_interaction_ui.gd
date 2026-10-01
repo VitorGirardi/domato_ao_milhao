@@ -138,4 +138,5 @@ static func market(hud:FarmHUD,state:FarmState,tab:String) -> void:
 	contract.disabled=state.contract_done or state.inventory.carrot<6
 	contract.tooltip_text="Entregue 6 cenouras. Sem prazo. Recompensa: $110 e +1 reputação."
 	FarmGameUI.icon(p,"lock",Rect2(26,615,28,28))
-	hud.label(p,"%d produtos protegidos na reserva"%state.reserve_count(),Vector2(67,617),Vector2(570,27),17)
+	hud.label(p,"%d produtos protegidos na reserva"%state.reserve_count(),Vector2(67,617),Vector2(530,27),17)
+	FarmGameUI.action(hud,p,"Pesca e mineração",Rect2(636,608,276,43),"resources")
