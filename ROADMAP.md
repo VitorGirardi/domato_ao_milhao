@@ -5,11 +5,12 @@ Regiões desenhadas à mão agora; geração de novas regiões no futuro.
 
 - 0.36: expansão do vale, estradas de terra, rios/lagos, mirante, céu e entrada da mina.
 - 0.37: pesca e venda nos lagos e no rio; compra da mina e extração/venda de três minérios, ferramentas e atividades compartilhadas no cooperativo.
-- Próximos aprofundamentos possíveis: cavernas mais extensas, progressão da pesca e mineração, novas propriedades e regiões para o cooperativo.
+- 0.38: mina explorável com três setores, nove veios, duas galerias desbloqueadas com dinheiro e minérios, interior original Blender e progressão compartilhada.
+- Possibilidades ainda não implementadas: pesca com fisgada, encomendas de recursos, novas propriedades e regiões para o cooperativo.
 - Futuro: geração de terrenos adjacentes. Não há prazo prometido para essas expansões.
 
-A mina usa seu túnel atual. Natação, iscas, minijogo de fisgada e geração procedural
-não fazem parte da 0.37. [O que já funciona](PESCA_MINERACAO.md).
+A mina agora tem corredores e galerias desenhados à mão. Natação, iscas, minijogo
+de fisgada e geração procedural não fazem parte da 0.38. [O que já funciona](PESCA_MINERACAO.md).
 As listas antigas abaixo são históricas; o cooperativo de duas pessoas já existe.
 
 # Bloco 0.31 — Fazenda cooperativa

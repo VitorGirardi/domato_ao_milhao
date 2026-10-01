@@ -1,3 +1,15 @@
+# 0.38.0 — Mina explorável
+
+- Interior original Blender com 17 células conectadas de 8 m, três setores e nove veios. A caverna se estende 72 m para dentro da montanha; o percurso com curvas até o fundo tem aproximadamente 128 m.
+- Galeria do Ferro desbloqueada por $1.200 + 8 cobres; Salão dos Cristais por $3.000 + 10 ferros, após a primeira galeria. Mina e picareta são obrigatórias; o dinheiro infinito não dispensa os materiais.
+- E junto aos portões internos abre o painel de compra; a passagem é liberada após a transação. Paredes, portões e corredores têm colisão para exploração a pé.
+- Os três veios antigos de cobre, ferro e quartzo continuam no setor de entrada. A primeira galeria acrescenta cobre e ferro; a segunda, ferro e quartzo.
+- Estoque, desbloqueios e renovação dos nove veios compartilhados no cooperativo. Compras que não conseguem salvar são desfeitas.
+- Save 20 migra o 19 preservando ferramentas, propriedade da mina, estoque e os três cooldowns existentes; os seis novos veios começam disponíveis quando sua galeria for aberta. Fazenda e dinheiro infinito preservados.
+- Protocolo 9: atualizar os dois PCs para jogar juntos. Galerias desenhadas à mão, sem geração procedural.
+- Testes ampliados para progressão, migração, percurso físico da caverna, portões, reversão de compras e sincronização cooperativa.
+- Veja [como chegar, desbloquear e minerar](PESCA_MINERACAO.md).
+
 # 0.37.0 — Pesca e mineração
 
 - Três pontos de pesca nos lagos e no Rio Azul, com tilápia, truta e dourado; E inicia uma captura de 8 segundos.

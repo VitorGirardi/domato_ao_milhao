@@ -1,15 +1,22 @@
-# Pesca e mineração — 0.37.0
+# Mina explorável — 0.38.0
 
-Pesque nos dois lagos e no Rio Azul, compre a Mina da Pedra Clara e extraia cobre,
-ferro e quartzo. Vara, picareta, peixe e veios originais feitos no Blender.
-Use **E** nos pontos de coleta e venda pelo painel de pesca e mineração, acessível
-pelo armazém (**F**) e pelo botão durante a caminhada.
+Explore a Mina da Pedra Clara com três setores e nove veios de cobre, ferro e
+quartzo. O interior original feito no Blender tem corredores conectados, iluminação
+e duas passagens que você abre usando dinheiro e minérios.
 
-O vale tem 1.084 × 900 m, cerca de 16 vezes a área anterior, com estradas de terra,
-ponte, mirante, céu azul, nuvens, sol, lua e estrelas. Abra **M → Locais** para
-encontrar os destinos. Fazenda, construções, saves e dinheiro infinito preservados.
-Estoque e mina são compartilhados no cooperativo: atualize os dois PCs para 0.37
-(protocolo 8). Save 19 lê os formatos anteriores.
+Use **M → Locais → Mina da Pedra Clara** para orientar a viagem. Compre a mina
+na entrada e, já a pé, pressione **E** junto aos portões internos para abrir o
+painel de desbloqueio. A Galeria do Ferro custa **$1.200 + 8 cobres**; o Salão dos
+Cristais custa **$3.000 + 10 ferros** e exige a primeira galeria. Os materiais são
+necessários mesmo com dinheiro infinito.
+
+Pesca nos dois lagos e no Rio Azul, fazenda, construções e dinheiro infinito
+continuam preservados. O vale mantém seus 1.084 × 900 m, estradas de terra,
+ponte, mirante, céu azul, nuvens, sol, lua e estrelas.
+
+Ferramentas, estoque, mina e galerias são compartilhados no cooperativo: atualize
+os dois PCs para **0.38.0 (protocolo 9)**. O save **20** migra os formatos anteriores;
+a migração do 19 preserva ferramentas, mina, estoque e renovação dos veios antigos.
 
 [Guia de pesca e mineração](PESCA_MINERACAO.md) · [Guia da região](VALE_SERRA.md).
 
@@ -24,13 +31,13 @@ Construam, negociem, cuidem dos animais, contratem a equipe e usem o cavalo junt
 Protótipo jogável de um tycoon de fazenda 3D estilizado para Windows e Linux, em português.
 Godot 4.7.2 + modelos originais feitos no Blender 5.2.1. Campanha solo offline e fazenda cooperativa para dois PCs.
 
-**Versão atual: 0.37.0.** Veja [as prioridades](ROADMAP.md) e [as novidades](CHANGELOG.md).
+**Versão atual: 0.38.0.** Veja [as prioridades](ROADMAP.md) e [as novidades](CHANGELOG.md).
 
 Veja o [roteiro de teste manual](COMO_TESTAR.md), incluindo encomendas e vendas da 0.5.
 
 ## Jogar
 
-O executável local fica em `exports/windows-v0.37.0/DoMatoAoMilhao.exe` depois da exportação.
+O executável local fica em `exports/windows-v0.38.0/DoMatoAoMilhao.exe` depois da exportação.
 Ele abre diretamente, sem instalar Godot ou Blender. Os binários não são enviados ao Git.
 
 Para executar a partir do código:
