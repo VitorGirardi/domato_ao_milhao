@@ -1,4 +1,4 @@
-﻿class_name FarmGathering
+class_name FarmGathering
 extends Node
 ## Only the host advances work and commits rewards. Clients receive visual jobs.
 var game:Node3D
@@ -141,7 +141,11 @@ func _process(delta:float) -> void:
 		var before:Dictionary=game.state.serialize().duplicate(true)
 		if job.kind=="fish":FarmResources.catch_fish(game.state,job.index)
 		else:FarmResources.extract(game.state,job.index)
+		var reward:=""
+		for key in game.state.resources.stock:
+			var count:int=int(game.state.resources.stock[key])-int(before.resources.stock[key])
+			if count>0:reward="%s x %d no estoque."%[FarmResources.NAMES[key],count]
 		var saved:=_commit(before)
-		_stop(id,"Recurso guardado no estoque." if saved else "Falha ao salvar. Nenhum recurso foi alterado.")
+		_stop(id,reward if saved else "Falha ao salvar. Nenhum recurso foi alterado.")
 
 
