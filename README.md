@@ -1,14 +1,17 @@
-# O Vale e a Serra ? 0.36.0
+# Pesca e mineração — 0.37.0
 
-Um vale de 1.084 ? 900 m, cerca de 16 vezes a ?rea anterior, com estradas de terra,
-Rio Azul, dois lagos e mirante na serra. Mina, ponte e mirante originais feitos no
-Blender. C?u azul com nuvens em movimento, sol, lua e estrelas. Abra **M ? Locais**
-para marcar os novos destinos; siga para leste pelo circuito da fazenda.
+Pesque nos dois lagos e no Rio Azul, compre a Mina da Pedra Clara e extraia cobre,
+ferro e quartzo. Vara, picareta, peixe e veios originais feitos no Blender.
+Use **E** nos pontos de coleta e venda pelo painel de pesca e mineração, acessível
+pelo armazém (**F**) e pelo botão durante a caminhada.
 
-Esta entrega ? de explora??o e visual. **Pesca, compra de minas e minera??o ainda
-n?o est?o dispon?veis.** Fazenda, constru??es, saves e dinheiro infinito preservados.
-Cooperativo exige os dois PCs na 0.36 (protocolo 7).
-[Guia da regi?o e valida??o](VALE_SERRA.md).
+O vale tem 1.084 × 900 m, cerca de 16 vezes a área anterior, com estradas de terra,
+ponte, mirante, céu azul, nuvens, sol, lua e estrelas. Abra **M → Locais** para
+encontrar os destinos. Fazenda, construções, saves e dinheiro infinito preservados.
+Estoque e mina são compartilhados no cooperativo: atualize os dois PCs para 0.37
+(protocolo 8). Save 19 lê os formatos anteriores.
+
+[Guia de pesca e mineração](PESCA_MINERACAO.md) · [Guia da região](VALE_SERRA.md).
 
 # Multiplayer da fazenda — 0.31
 
@@ -21,13 +24,13 @@ Construam, negociem, cuidem dos animais, contratem a equipe e usem o cavalo junt
 Protótipo jogável de um tycoon de fazenda 3D estilizado para Windows e Linux, em português.
 Godot 4.7.2 + modelos originais feitos no Blender 5.2.1. Campanha solo offline e fazenda cooperativa para dois PCs.
 
-**Versão atual: 0.35.0.** Veja [as prioridades](ROADMAP.md) e [as novidades](CHANGELOG.md).
+**Versão atual: 0.37.0.** Veja [as prioridades](ROADMAP.md) e [as novidades](CHANGELOG.md).
 
 Veja o [roteiro de teste manual](COMO_TESTAR.md), incluindo encomendas e vendas da 0.5.
 
 ## Jogar
 
-O executável local fica em `exports/windows-v0.36.0/DoMatoAoMilhao.exe` depois da exportação.
+O executável local fica em `exports/windows-v0.37.0/DoMatoAoMilhao.exe` depois da exportação.
 Ele abre diretamente, sem instalar Godot ou Blender. Os binários não são enviados ao Git.
 
 Para executar a partir do código:

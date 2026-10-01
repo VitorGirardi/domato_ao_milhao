@@ -58,6 +58,9 @@ var preferences:=FarmSettings.new()
 var front_end:=FarmFrontEnd.new()
 var network:=FarmNetwork.new()
 var companions:=FarmCompanions.new()
+var gathering:=FarmGathering.new()
+var resource_view:=FarmResourceView.new()
+var resource_panel_state:Dictionary={}
 var windowed_rect:=Rect2i()
 var windowed_mode:=Window.MODE_WINDOWED
 
@@ -101,6 +104,8 @@ func _ready() -> void:
 	front_end.setup(self,loaded)
 	add_child(network);network.setup(self)
 	add_child(companions);companions.setup(self)
+	add_child(gathering);gathering.setup(self)
+	add_child(resource_view);resource_view.setup(self)
 	preferences.load_preferences();preferences.apply(self)
 	front_end.show_title()
 	_update_camera(1.0, true)
@@ -632,6 +637,8 @@ func _nearest() -> int:
 func _nearby_context() -> Dictionary:
 	if build_mode or not state.claimed: return {}
 	if _mounted():return {"text":"Desmontar · Pé de Pano","action":"horse"}
+	var resource_context:=FarmResourceSites.nearby(self)
+	if not resource_context.is_empty():return resource_context
 	if not network.active and weapons.shop_has_priority():return {"text":"Conversar com Damião","action":"armory"}
 	if horse.can_mount(player):
 		var nearby:=_nearest()
@@ -671,6 +678,11 @@ func _interact_nearest() -> void:
 	var context:=_nearby_context()
 	if context.is_empty(): return
 	match context.action:
+		"resource":
+			weapons.holster()
+			if context.value.begins_with("gather:") and context.value!="gather:cancel" and (not state.resources.rod if context.value.begins_with("gather:fish:") else not state.resources.pickaxe):
+				FarmResourceHUD.show(self)
+			else:_action(context.value)
 		"armory": weapons.holster();weapons.show_shop()
 		"horse": _horse_interact()
 		"cat":
@@ -740,6 +752,11 @@ func _tend_selected() -> void:
 	elif item.kind=="stable": FarmStable.show(hud,state,horse,selected)
 
 func _action(value: String) -> void:
+	if quitting:return
+	if value=="resources":
+		gathering.handle("gather:cancel")
+		FarmResourceHUD.show(self);return
+	if gathering.handle(value):return
 	if network.handle(value):return
 	if quitting:return
 	if value=="close" and front_end.escape():return
@@ -1221,6 +1238,12 @@ func _action(value: String) -> void:
 			_save_game(false,true)
 		"quit":_request_quit()
 	_update_ui()
+
+func _resource_refresh() -> void:
+	var panel_state:Dictionary={"resources":state.resources.duplicate(true),"money":state.money}
+	if hud.modal_kind=="resources" and panel_state!=resource_panel_state:FarmResourceHUD.show(self)
+	resource_panel_state=panel_state
+	if is_instance_valid(resource_view):resource_view.refresh_world()
 
 func _update_ui() -> void:
 	hud.update(state,build_mode,selected,tool,crop,hover_hint)

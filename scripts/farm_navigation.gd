@@ -55,7 +55,9 @@ func destinations() -> Array:
 		values.append({"key":key,"name":stop.name,"at":stop.at,"group":"Locais"})
 	for key in FarmRegion.PLACES:
 		var place:Dictionary=FarmRegion.PLACES[key]
-		values.append({"key":key,"name":place.name,"at":place.at,"group":"Locais","icon":"book","notice":place.notice})
+		var notice:String=place.notice
+		if key=="serra_mine" and game.state.resources.mine_owned:notice="Sua mina · entre a pé com a picareta"
+		values.append({"key":key,"name":place.name,"at":place.at,"group":"Locais","icon":"book","notice":notice})
 	return values
 
 func select(point:Vector2,title:String,key:String="") -> void:

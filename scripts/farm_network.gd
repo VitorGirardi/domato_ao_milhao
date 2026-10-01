@@ -2,7 +2,7 @@ class_name FarmNetwork
 extends Node
 ## Host-authoritative cooperative farm.
 const PORT:=28729
-const PROTOCOL:=7
+const PROTOCOL:=8
 var game:Node3D
 var active:=false
 var ready_session:=false
@@ -410,6 +410,7 @@ func _farm_update(number:int,data:String,versions:Dictionary,topology:int) -> vo
 		structure_version=topology;rebuild_shared()
 	refresh_crops();game.world.update_animals(game.state);game.world.update_staff(game.state,0)
 	update_stock()
+	game._resource_refresh()
 
 func refresh_crops() -> void:
 	for i in range(game.state.items.size()):
@@ -432,7 +433,8 @@ func show_stock() -> void:
 		game.hud.label(p,names[i],Vector2(x+58,y+4),Vector2(210,35),23)
 		stock_labels[key]=game.hud.label(p,str(stock_count(key))+" un.",Vector2(x+275,y+4),Vector2(120,35),24)
 	game.hud.label(p,"Produção e vendas dos dois usam este estoque.",Vector2(32,355),Vector2(836,30),18)
-	FarmGameUI.action(game.hud,p,"Voltar ao campo",Rect2(32,410,836,44),"close",true)
+	FarmGameUI.action(game.hud,p,"Voltar ao campo",Rect2(32,410,408,44),"close",true)
+	FarmGameUI.action(game.hud,p,"Peixes e minérios",Rect2(460,410,408,44),"resources")
 
 func stock_count(key:String) -> int:
 	if key=="milk":return game.state.milk_stock

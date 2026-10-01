@@ -13,9 +13,10 @@ const ROUTES := [
 ]
 const PLACES := {
 	"serra_view": {"name": "Mirante da Serra", "at": Vector2(705, -325), "notice": "Vista do vale e do Rio Azul"},
-	"serra_mine": {"name": "Mina da Pedra Clara", "at": Vector2(900, -220), "notice": "Interditada · compra e mineração em uma próxima etapa"},
-	"valley_lake": {"name": "Lago do Sossego", "at": Vector2(280, 306), "notice": "Futuro ponto de pesca"},
-	"mountain_lake": {"name": "Lago da Serra", "at": Vector2(820, -185), "notice": "Futuro ponto de pesca"},
+	"serra_mine": {"name": "Mina da Pedra Clara", "at": Vector2(900, -216), "notice": "Compre na entrada · cobre, ferro e quartzo"},
+	"valley_lake": {"name": "Lago do Sossego · pesca", "at": Vector2(280, 295), "notice": "Vara de pesca + E na margem"},
+	"mountain_lake": {"name": "Lago da Serra · pesca", "at": Vector2(820, -193), "notice": "Vara de pesca + E na margem"},
+	"river_fishing": {"name": "Rio Azul · pesca", "at": Vector2(430,45), "notice": "Vara de pesca + E na margem"},
 	"blue_bridge": {"name": "Ponte do Rio Azul", "at": Vector2(420, 0), "notice": "Travessia para a serra"},
 	"east_meadow": {"name": "Campos do Horizonte", "at": Vector2(820, 285), "notice": "Pastagens e espaço para futuras propriedades"}
 }

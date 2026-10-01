@@ -3,6 +3,11 @@ extends Node3D
 ## Geometry and vegetation for the authored eastern region; no save ownership.
 var landscape: FarmLandscape
 var world: FarmWorld
+var mine_gate:CollisionShape3D
+var mine_barrier:Node3D
+var mine_label:Label3D
+var mine_open:=false
+const MINE_BOUND:=Rect2(892,-231,16,12)
 
 func setup(owner_landscape: FarmLandscape, owner_world: FarmWorld) -> void:
 	name = "ValeESerra"
@@ -93,11 +98,29 @@ func _lookout() -> void:
 	_collision(model,Vector3(0,.7,-4.9),Vector3(12,1.4,.2))
 
 func _cave() -> void:
-	var p:Vector2=FarmRegion.PLACES.serra_mine.at
+	var p:=Vector2(900,-220)
 	var model:=_model("region_mine",Vector3(p.x,FarmLandscape.height_at(p),p.y))
-	# Broad closed collision until mining/purchase is delivered; barrier is separate in the GLB.
-	_collision(model,Vector3(0,4,-5),Vector3(16,8,12))
-	landscape.solid_bounds.append(Rect2(p+Vector2(-8,-11),Vector2(16,12)))
-	var label:=Label3D.new(); label.text="NÃO ENTRE"; label.font_size=48; label.pixel_size=.009
-	label.position=Vector3(0,1.65,1.10); label.modulate=Color("ffe6a0"); label.outline_size=8
-	model.add_child(label)
+	# Keep the tunnel walkable; only the purchase gate is removable.
+	for x in [-6.0,6.0]:_collision(model,Vector3(x,4,-5),Vector3(5,8,12))
+	# Opening the gate must not make cliff walls traversable for companion pathfinding.
+	for wall in [Rect2(892,-231,4.5,12),Rect2(903.5,-231,4.5,12),Rect2(896.5,-231.1,7,.5)]:landscape.solid_bounds.append(wall)
+	_collision(model,Vector3(0,3,-10.8),Vector3(7,6,.5))
+	_collision(model,Vector3(0,5.4,-5),Vector3(7,1,11))
+	var gate:=StaticBody3D.new();model.add_child(gate)
+	mine_gate=CollisionShape3D.new();var shape:=BoxShape3D.new();shape.size=Vector3(7,3,.45)
+	mine_gate.shape=shape;mine_gate.position=Vector3(0,1.5,.7);gate.add_child(mine_gate)
+	mine_barrier=model.find_child("MineBarrier",true,false)
+	landscape.solid_bounds.append(MINE_BOUND)
+	mine_label=Label3D.new();mine_label.text="NÃO ENTRE";mine_label.font_size=48;mine_label.pixel_size=.009
+	mine_label.position=Vector3(0,1.65,1.10);mine_label.modulate=Color("ffe6a0");mine_label.outline_size=8
+	model.add_child(mine_label)
+	var light:=OmniLight3D.new();light.position=Vector3(0,3,-5);light.omni_range=12
+	light.light_color=Color("ffdda1");light.light_energy=.8;model.add_child(light)
+
+func update_mine(owned:bool) -> void:
+	if mine_open==owned:return
+	mine_open=owned;mine_gate.set_deferred("disabled",owned)
+	if is_instance_valid(mine_barrier):mine_barrier.visible=not owned
+	mine_label.visible=not owned
+	if owned:landscape.solid_bounds.erase(MINE_BOUND)
+	elif MINE_BOUND not in landscape.solid_bounds:landscape.solid_bounds.append(MINE_BOUND)

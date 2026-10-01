@@ -1,13 +1,16 @@
-# Dire??o alinhada ? Vale e Serra (outubro/2026)
+# Direção alinhada — Vale e Serra (outubro/2026)
 
-Manter o estilo estilizado e aconchegante. Regi?es desenhadas ? m?o agora;
-gera??o de novas regi?es no futuro. Prioridade atual: paisagem, relevo e explora??o.
+Manter o estilo estilizado e aconchegante, usando Blender para os modelos originais.
+Regiões desenhadas à mão agora; geração de novas regiões no futuro.
 
-- 0.36: expans?o do vale, estradas de terra, rios/lagos, mirante, c?u e entrada da mina em Blender.
-- Pr?xima etapa: compra da mina e extra??o/venda de min?rios; pesca e venda em rios e lagos.
-- Futuro: novas propriedades/regi?es para cooperativo, gera??o de terrenos adjacentes.
+- 0.36: expansão do vale, estradas de terra, rios/lagos, mirante, céu e entrada da mina.
+- 0.37: pesca e venda nos lagos e no rio; compra da mina e extração/venda de três minérios, ferramentas e atividades compartilhadas no cooperativo.
+- Próximos aprofundamentos possíveis: cavernas mais extensas, progressão da pesca e mineração, novas propriedades e regiões para o cooperativo.
+- Futuro: geração de terrenos adjacentes. Não há prazo prometido para essas expansões.
 
-As listas antigas abaixo s?o hist?ricas; o cooperativo de duas pessoas j? existe.
+A mina usa seu túnel atual. Natação, iscas, minijogo de fisgada e geração procedural
+não fazem parte da 0.37. [O que já funciona](PESCA_MINERACAO.md).
+As listas antigas abaixo são históricas; o cooperativo de duas pessoas já existe.
 
 # Bloco 0.31 — Fazenda cooperativa
 
