@@ -1,4 +1,14 @@
-# Terreno, água e cachoeira — 0.39.0
+# Assobio pelo mapa e águas acessíveis — 0.40.0
+
+Assobie com **C** para chamar o cavalo desocupado mesmo do outro lado do mapa.
+Ele percorre caminhos e pontes até você. Na água, espera em uma margem segura;
+dentro da mina, espera na entrada.
+
+O riacho ao lado da fazenda agora permite entrar, nadar e sair pelas duas margens.
+Uma ponte curta liga as margens perto do armeiro. A cachoeira tem um poço submerso
+contínuo e pedras sólidas nas laterais e atrás da queda.
+
+## Terreno, água e cachoeira
 
 O cavalo apoia os cascos no terreno e inclina corpo e sela nas encostas.
 A pé, entre nos rios e lagos: caminhe no raso e nade nas partes profundas,
@@ -21,11 +31,11 @@ Cristais custa **$3.000 + 10 ferros** e exige a primeira galeria. Os materiais s
 necessários mesmo com dinheiro infinito.
 
 Pesca nos dois lagos e no Rio Azul, fazenda, construções e dinheiro infinito
-continuam preservados. O vale mantém seus 1.084 × 900 m, estradas de terra,
+continuam preservados. O vale mantém seus 1.115 × 900 m, estradas de terra,
 ponte, mirante, céu azul, nuvens, sol, lua e estrelas.
 
 Ferramentas, estoque, mina e galerias são compartilhados no cooperativo: atualize
-os dois PCs para **0.39.0 (protocolo 10)**. O save **20** migra os formatos anteriores;
+os dois PCs para **0.40.0 (protocolo 11)**. O save **20** migra os formatos anteriores;
 a migração do 19 preserva ferramentas, mina, estoque e renovação dos veios antigos.
 
 [Guia de pesca e mineração](PESCA_MINERACAO.md) · [Guia da região](VALE_SERRA.md).
@@ -41,13 +51,13 @@ Construam, negociem, cuidem dos animais, contratem a equipe e usem o cavalo junt
 Protótipo jogável de um tycoon de fazenda 3D estilizado para Windows e Linux, em português.
 Godot 4.7.2 + modelos originais feitos no Blender 5.2.1. Campanha solo offline e fazenda cooperativa para dois PCs.
 
-**Versão atual: 0.39.0.** Veja [as prioridades](ROADMAP.md) e [as novidades](CHANGELOG.md).
+**Versão atual: 0.40.0.** Veja [as prioridades](ROADMAP.md) e [as novidades](CHANGELOG.md).
 
 Veja o [roteiro de teste manual](COMO_TESTAR.md), incluindo encomendas e vendas da 0.5.
 
 ## Jogar
 
-O executável local fica em `exports/windows-v0.39.0/DoMatoAoMilhao.exe` depois da exportação.
+O executável local fica em `exports/windows-v0.40.0/DoMatoAoMilhao.exe` depois da exportação.
 Ele abre diretamente, sem instalar Godot ou Blender. Os binários não são enviados ao Git.
 
 Para executar a partir do código:
@@ -175,7 +185,7 @@ A fazenda tem seis níveis. Produção e encomendas rendem XP, inclusive com aju
 - Leite coletado vai a um estoque próprio, acessível no curral, celeiro e armazém.
   Venda por quantidade a **$18/L**, ou junto com **Vender tudo**. Nesta etapa leite não tem reserva.
 - Mover preserva a vaca e o leite. Remover curral ocupado é bloqueado para evitar perda.
-- Save **10** migra fazendas antigas, mantendo os demais sistemas.
+- Save **11** migra fazendas antigas, mantendo os demais sistemas.
 - O bloco seguinte, 0.15, acrescenta emotes e a rotina visual da vaca.
 
 ## Recursos da 0.13
