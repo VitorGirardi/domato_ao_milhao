@@ -50,8 +50,8 @@ func update(horse:FarmHorse,delta:float,active:bool,state:FarmState,landscape:Fa
 				var wanted:=atan2(direction.x,direction.y)
 				var heading:=rotate_toward(horse.heading,wanted,delta*4.0)
 				var pace:=7.0 if at.distance_to(call_path[-1])>24 else 2.5
-				if absf(angle_difference(heading,wanted))>.45:pace=0
-				var point:=at+Vector2(sin(heading),cos(heading))*minf(minf(delta,.1)*pace,direction.length())
+				if absf(angle_difference(heading,wanted))>.12:pace=0
+				var point:=at+direction.normalized()*minf(minf(delta,.1)*pace,direction.length())
 				if safe_step(horse,point,heading,state,landscape):
 					horse.position=Vector3(point.x,horse.ground_at(point),point.y);horse.heading=heading;horse.rotation.y=heading;speed=pace
 				else:
