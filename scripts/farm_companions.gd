@@ -9,6 +9,7 @@ var path:Array[Vector2]=[]
 var plan_wait:=0.0
 var horse_wait:=0.0
 var horse_route:=FarmHorseRoute.new()
+var horse_clearance:=CylinderShape3D.new()
 var horse_target:=Vector2.INF
 var horse_meeting:=Vector2.INF
 var horse_avoid:Array[Vector2]=[]
@@ -24,6 +25,7 @@ func _exit_tree() -> void:
 
 func setup(g:Node3D) -> void:
 	game=g;name="Companions";process_priority=10
+	horse_clearance.radius=2.1;horse_clearance.height=2.8
 	for data in [[purr,"cat_purr",-15.0],[whistle,"companion_whistle",-12.0]]:
 		var voice:AudioStreamPlayer3D=data[0];game.add_child(voice)
 		voice.stream=load("res://assets/audio/%s.wav"%data[1]);voice.bus=FarmAudio.EFFECTS_BUS
@@ -148,7 +150,21 @@ func horse_clear(p:Vector2) -> bool:
 	if Rect2(Vector2(697,-332),Vector2(16,14)).has_point(p):return false
 	for blocked in horse_avoid:
 		if p.distance_to(blocked)<1.25:return false
-	return game.horse.parking_clear(p,game.state,game.world.landscape)
+	var landscape:FarmLandscape=game.world.landscape
+	if not game.horse.parking_clear(p,game.state,landscape):return false
+	# Include clearance for turning between the route's 1.5 m samples, plus
+	# physical rocks and
+	# props that are absent from the landscape's simplified tree/plot bounds.
+	var query:=PhysicsShapeQueryParameters3D.new()
+	query.shape=horse_clearance;query.collision_mask=1
+	query.transform=Transform3D(Basis.IDENTITY,Vector3(p.x,FarmLandscape.height_at(p)+1.6,p.y))
+	var excluded:Array[RID]=[game.horse.obstacle.get_rid()]
+	# Terrain slope is checked along route segments; a wide upright cylinder
+	# otherwise mistakes ordinary hills for walls. Bridge rails remain solid.
+	for child in landscape.ground.get_children():
+		if child is CollisionObject3D:excluded.append(child.get_rid())
+	query.exclude=excluded
+	return game.get_world_3d().direct_space_state.intersect_shape(query,1).is_empty()
 
 func horse_message(id:int,message:String) -> void:
 	if id==own_id():game.hud.toast(message)
