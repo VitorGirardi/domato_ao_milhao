@@ -8,6 +8,11 @@ var horse_owner:=0
 var path:Array[Vector2]=[]
 var plan_wait:=0.0
 var horse_wait:=0.0
+var horse_route:=FarmHorseRoute.new()
+var horse_target:=Vector2.INF
+var horse_meeting:=Vector2.INF
+var horse_avoid:Array[Vector2]=[]
+var horse_waiting_notice:=false
 var request_wait:=0.0
 var hint:Label
 var purr:=AudioStreamPlayer3D.new()
@@ -34,7 +39,7 @@ func request(kind:String) -> void:
 	if not allowed() or request_wait>0:return
 	request_wait=.3
 	if game.network.active and not game.network.hosting:_request.rpc_id(1,kind)
-	elif not apply(own_id(),kind):game.hud.toast("Aproxime-se do animal e espere a interação terminar.")
+	elif not apply(own_id(),kind):game.hud.toast("Aproxime-se do animal e espere a interaÃ§Ã£o terminar.")
 
 @rpc("any_peer","call_remote","reliable",0)
 func _request(kind:String) -> void:
@@ -63,8 +68,10 @@ func apply(id:int,kind:String) -> bool:
 		follow_owner=0 if follow_owner==id else id;cat.following=follow_owner!=0;cat.roam_valley=true
 		cat.home=Vector2(cat.position.x,cat.position.z);cat.destination=cat.home;path.clear();plan_wait=0
 	else:
-		if game.horse.mounted or at.distance_to(game.horse.position)>60:return false
-		horse_owner=id;horse_wait=0;game.horse.life.call_remaining=25
+		if game.horse.mounted or (horse_owner!=0 and horse_owner!=id):return false
+		horse_owner=id;horse_wait=0;horse_target=Vector2.INF;horse_avoid.clear();horse_waiting_notice=false
+		horse_message(id,"Pé de Pano ouviu o assobio e vem pelas trilhas até você.")
+		game.horse.life.calling=true;game.horse.life.call_path.clear();horse_route.pending=false
 	last_request[key]=now
 	_event(id,kind,cat.position,follow_owner)
 	if game.network.active and game.network.accepted!=0:_event.rpc_id(game.network.accepted,id,kind,cat.position,follow_owner)
@@ -74,7 +81,7 @@ func apply(id:int,kind:String) -> bool:
 func _event(id:int,kind:String,cat_at:Vector3,owner:int) -> void:
 	follow_owner=owner
 	if kind=="follow":
-		if id==own_id():game.hud.toast("O gato vai acompanhar você." if owner!=0 else "O gato vai ficar por aqui.")
+		if id==own_id():game.hud.toast("O gato vai acompanhar vocÃª." if owner!=0 else "O gato vai ficar por aqui.")
 		return
 	if not is_instance_valid(body(id)) or actor(id)==null:return
 	var a:=actor(id);a.stop_emote();a.action_kind=kind;a.action_time=3.2 if kind=="pet" else 1.8
@@ -87,7 +94,7 @@ func reset() -> void:
 	for id in gestures:
 		if actor(id)!=null and is_instance_valid(model(id)):actor(id).action_time=0;model(id).position.y=0
 	gestures.clear();follow_owner=0;horse_owner=0;path.clear();last_request.clear()
-	game.world.cat.following=false;game.horse.life.calling=false
+	game.world.cat.following=false;game.horse.life.calling=false;game.horse.life.call_path.clear();horse_route.pending=false;horse_avoid.clear()
 	purr.stop();whistle.stop()
 
 func _process(delta:float) -> void:
@@ -96,9 +103,9 @@ func _process(delta:float) -> void:
 	if was_network!=game.network.active:reset();was_network=game.network.active
 	if DisplayServer.get_name()!="headless" and not game.get_window().has_focus():purr.stop();whistle.stop()
 	hint.visible=allowed()
-	hint.text="C · Assobiar para o cavalo"
-	if follow_owner==own_id():hint.text+="   •   V · Gato: ficar aqui"
-	elif follow_owner==0 and game.world.cat.visible and game.player.position.distance_to(game.world.cat.position)<2.2:hint.text+="   •   V · Gato: acompanhar"
+	hint.text="C Â· Assobiar para o cavalo"
+	if follow_owner==own_id():hint.text+="   â€¢   V Â· Gato: ficar aqui"
+	elif follow_owner==0 and game.world.cat.visible and game.player.position.distance_to(game.world.cat.position)<2.2:hint.text+="   â€¢   V Â· Gato: acompanhar"
 	var active:bool=game.session_started and (game.network.active or (not game.build_mode and game.hud.modal_kind.is_empty()))
 	if not active:
 		for id in gestures:
@@ -131,19 +138,55 @@ func update_follow(delta:float) -> void:
 			if not path.is_empty():
 				if Vector2(cat.position.x,cat.position.z).distance_to(path[0])<.15:path.pop_front()
 				if not path.is_empty():cat.destination=path[0]
-	if horse_owner!=0:
-		var h:FarmHorse=game.horse
-		if not is_instance_valid(body(horse_owner)) or h.mounted or h.life.call_remaining<=0:
-			horse_owner=0;h.life.calling=false;h.speed=0;return
-		horse_wait-=delta
-		var target:Vector3=body(horse_owner).position
-		if h.position.distance_to(target)<3.5:horse_owner=0;h.life.calling=false;h.speed=0;h.life.reset(h);return
-		if horse_wait<=0:
-			horse_wait=1.5
-			var offset:Vector3=(h.position-target).normalized()*3.2
-			var clear:=func(p:Vector2):return h.parking_clear(p,game.state,game.world.landscape)
-			h.life.call_path=FarmCompanionPath.route(Vector2(h.position.x,h.position.z),Vector2(target.x+offset.x,target.z+offset.z),clear,1.5)
-			h.life.calling=true
+	if horse_owner!=0:update_horse_call(delta)
+
+func horse_clear(p:Vector2) -> bool:
+	# The lookout deck and railing are pedestrian-only; meet outside its steps.
+	if Rect2(Vector2(697,-332),Vector2(16,14)).has_point(p):return false
+	for blocked in horse_avoid:
+		if p.distance_to(blocked)<1.25:return false
+	return game.horse.parking_clear(p,game.state,game.world.landscape)
+
+func horse_message(id:int,message:String) -> void:
+	if id==own_id():game.hud.toast(message)
+	elif game.network.active:_reply.rpc_id(id,message)
+
+func end_horse_call() -> void:
+	horse_owner=0;horse_route.pending=false
+	game.horse.life.calling=false;game.horse.life.call_path.clear();game.horse.speed=0;game.horse.life.reset(game.horse)
+
+func update_horse_call(delta:float) -> void:
+	var h:FarmHorse=game.horse
+	if not is_instance_valid(body(horse_owner)) or h.mounted:end_horse_call();return
+	var target3:Vector3=body(horse_owner).position
+	var target:=Vector2(target3.x,target3.z)
+	var at:=Vector2(h.position.x,h.position.z)
+	horse_wait-=delta
+	if h.life.call_blocked:
+		horse_avoid.append(h.life.call_blocked_at)
+		if horse_avoid.size()>16:horse_avoid.pop_front()
+		h.life.call_blocked=false;horse_route.pending=false;horse_wait=0
+	if target.distance_to(horse_target)>4:
+		horse_wait=0;horse_route.pending=false;h.life.call_path.clear();horse_avoid.clear();horse_waiting_notice=false
+	if not horse_route.pending and horse_wait<=0:
+		horse_target=target
+		horse_meeting=FarmHorseRoute.meeting_point(target,at,horse_clear)
+		horse_route.begin(at,horse_meeting,horse_clear)
+		horse_wait=8
+	if horse_route.pending:horse_route.advance()
+	if not horse_route.pending and not horse_route.result.is_empty():
+		h.life.call_path=horse_route.result.duplicate();horse_route.result.clear()
+		h.life.calling=true
+	if horse_meeting.is_finite() and at.distance_to(horse_meeting)<.8 and not horse_route.pending:
+		# A swimmer or miner is met at a dry, reachable waiting place.
+		if at.distance_to(target)<5:
+			horse_message(horse_owner,"Pé de Pano chegou!");end_horse_call();return
+		h.life.call_path.clear();h.speed=0;horse_wait=INF
+		if not horse_waiting_notice:
+			horse_message(horse_owner,"Pé de Pano está esperando em um lugar seco e seguro perto de você.")
+			horse_waiting_notice=true
+	# Keep a successful route until arrival; only retry failures or moving targets.
+	if not h.life.call_path.is_empty():horse_wait=8
 
 static func pose(a:FarmAvatar,kind:String,time:float,duration:float,target:Vector3) -> void:
 	var weight:=smoothstep(0,.45,time)*(1-smoothstep(duration-.5,duration,time))
