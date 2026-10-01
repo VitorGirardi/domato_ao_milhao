@@ -88,7 +88,7 @@ func _process(delta:float) -> void:
 		if job.kind=="mine":anchor+=Vector3.UP*(.35+.25*swing)
 		a.reach_rein_hand("R",anchor,1);a.reach_rein_hand("L",anchor-forward*.14-Vector3.UP*.13,1)
 		entry.tool.global_position=anchor
-		entry.tool.global_basis=Basis(Vector3.UP,a.root.rotation.y)*Basis(Vector3.RIGHT,-.85 if job.kind=="fish" else -.75+swing*.85)
+		entry.tool.global_basis=Basis(Vector3.UP,a.root.rotation.y)*Basis(Vector3.RIGHT,.85 if job.kind=="fish" else .75+swing*.85)
 		entry.bobber.visible=job.kind=="fish";entry.line.visible=job.kind=="fish"
 		if job.kind=="fish":
 			entry.bobber.position=target+Vector3.UP*(.07+sin(elapsed*3)*.035)
