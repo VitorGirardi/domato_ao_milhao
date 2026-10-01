@@ -1,4 +1,7 @@
-# Pesca e mineração — 0.38.0
+# Pesca e mineração — 0.39.0
+
+Na 0.39, a picareta usa duas mãos, preparação lateral e impacto na face do veio.
+Fique a até 1,55 m da pedra para minerar. A coleta exige estar a pé e fora da natação.
 
 Peixes e minérios são novas fontes de renda, com ferramentas próprias e estoque separado dos produtos agrícolas. Escolha seu terreno antes de começar. A partida normal do autor mantém dinheiro infinito; os preços continuam válidos na economia limitada usada pelos testes.
 
@@ -53,7 +56,7 @@ O limite é de 10.000 unidades por tipo. Venda antes de atingir o limite para co
 
 Ferramentas, propriedade da mina, galerias abertas, estoque, dinheiro e renovação dos veios são compartilhados pela fazenda cooperativa. Cada jogador pode realizar uma atividade por vez; dois jogadores não podem extrair o mesmo veio simultaneamente. O anfitrião controla duração, requisitos, recompensa e gravação. Falhas de salvamento desfazem a compra, venda ou recompensa; não deixam uma operação parcialmente aplicada.
 
-Atualize **os dois PCs para 0.38.0**: o protocolo de rede é **9**. O formato de save passou para **20**, mantendo a leitura das versões anteriores. Na migração do save 19, ferramentas, propriedade da mina, estoque, contadores de coleta e renovação dos três veios antigos são preservados; as duas galerias começam fechadas, com seis novos veios prontos para coleta após o desbloqueio. Saves anteriores à pesca e mineração começam com esses recursos vazios.
+Atualize **os dois PCs para 0.39.0**: o protocolo de rede é **10**. O formato de save passou para **20**, mantendo a leitura das versões anteriores. Na migração do save 19, ferramentas, propriedade da mina, estoque, contadores de coleta e renovação dos três veios antigos são preservados; as duas galerias começam fechadas, com seis novos veios prontos para coleta após o desbloqueio. Saves anteriores à pesca e mineração começam com esses recursos vazios.
 
 Fazenda, construções e dinheiro infinito são preservados. O save cooperativo permanece separado do solo. Depois de salvar na 0.38, continue nesta versão ou posterior; versões antigas não leem o formato 20.
 

@@ -21,6 +21,9 @@ var water_material:ShaderMaterial
 var flow_clock:=0.0
 var trail_rotor:Node3D
 var trail_signs:Array[Node3D]=[]
+static var terrain_columns:Array[float]=[]
+static var terrain_rows:Array[float]=[]
+static var terrain_samples:Dictionary={}
 
 static func base_height(p:Vector2) -> float:
 	var w := FarmRegion.weight(p)
@@ -46,7 +49,40 @@ static func legacy_height(p:Vector2) -> float:
 
 static func height_at(p:Vector2) -> float:
 	if FarmRegion.on_bridge(p): return 5.0
-	return terrain_height(p)
+	return ground_height(p)
+
+static func _grid() -> void:
+	if not terrain_columns.is_empty():return
+	for x in range(-1800,-280,40):terrain_columns.append(x)
+	var column:float=-280
+	while column<1200:
+		terrain_columns.append(column)
+		column+=.5 if column>=-50 and column<-34 else (6.0 if column>=184 else (4.0 if column<-52 else 2.0))
+	terrain_columns.append(1200)
+	for x in range(1240,2041,40):terrain_columns.append(x)
+	for z in range(-1810,-650,40):terrain_rows.append(z)
+	var row:float=-650
+	while row<650:
+		terrain_rows.append(row);row+=4 if absf(row)>150 else 1
+	terrain_rows.append(650)
+	for z in range(690,1811,40):terrain_rows.append(z)
+
+static func _sample(p:Vector2) -> float:
+	if not terrain_samples.has(p):terrain_samples[p]=terrain_height(p)
+	return float(terrain_samples[p])
+
+static func ground_height(p:Vector2) -> float:
+	# The same triangle interpolation used by the rendered mesh and its collider.
+	# Analytical noise between samples is not the surface players stand on.
+	_grid()
+	var ix:=clampi(terrain_columns.bsearch(p.x)-1,0,terrain_columns.size()-2)
+	var iz:=clampi(terrain_rows.bsearch(p.y)-1,0,terrain_rows.size()-2)
+	var x:float=terrain_columns[ix];var nx:float=terrain_columns[ix+1]
+	var z:float=terrain_rows[iz];var nz:float=terrain_rows[iz+1]
+	var u:=clampf((p.x-x)/(nx-x),0,1);var v:=clampf((p.y-z)/(nz-z),0,1)
+	var a:=_sample(Vector2(x,z));var b:=_sample(Vector2(nx,z));var c:=_sample(Vector2(x,nz))
+	if u+v<=1:return a+(b-a)*u+(c-a)*v
+	return b*(1-v)+c*(1-u)+_sample(Vector2(nx,nz))*(u+v-1)
 
 static func terrain_height(p:Vector2) -> float:
 	var river_x:=-42+sin(p.y*.065)*2.6
@@ -93,27 +129,11 @@ func _find_mesh(node:Node) -> MeshInstance3D:
 
 func _terrain() -> void:
 	var surface:=SurfaceTool.new();surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-	# Resolve the narrow banks without coarse triangles cutting across the channel.
-	# Shared rows keep the fine river strip connected to the surrounding terrain.
-	var columns:Array[float]=[]
-	for x in range(-1800,-280,40):columns.append(x)
-	var column:float=-280
-	while column<1200:
-		columns.append(column)
-		column+=.5 if column>=-50 and column<-34 else (6.0 if column>=184 else (4.0 if column<-52 else 2.0))
-	columns.append(1200)
-	for x in range(1240,2041,40):columns.append(x)
-	var rows:Array[float]=[]
-	for z in range(-1810,-650,40):rows.append(z)
-	var row:float=-650
-	while row<650:
-		rows.append(row);row+=4 if absf(row)>150 else 1
-	rows.append(650)
-	for z in range(690,1811,40):rows.append(z)
-	var heights: Dictionary = {}
+	_grid()
+	var columns:=terrain_columns;var rows:=terrain_rows
+	var heights:Dictionary={}
 	for z in rows:
-		for x in columns:
-			heights[Vector2(x,z)] = terrain_height(Vector2(x,z))
+		for x in columns:heights[Vector2(x,z)]=_sample(Vector2(x,z))
 	for j in range(rows.size()-1):
 		var z:float=rows[j];var nz:float=rows[j+1]
 		for i in range(columns.size()-1):

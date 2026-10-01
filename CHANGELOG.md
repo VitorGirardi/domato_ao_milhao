@@ -1,3 +1,14 @@
+# 0.39.0 — Terreno, água e cachoeira
+
+- Cascos do cavalo apoiados por contato físico; corpo, sela e cavaleiro acompanham subidas, descidas e inclinações laterais.
+- Alturas de apoio usam os mesmos triângulos do terreno visível e da colisão. Caminhada acompanha descidas com ajuste ao chão.
+- Entrada a pé nos rios e lagos, caminhada lenta no raso e natação automática no fundo. Flutuação mantém parte do corpo submersa; correnteza leve no Rio Azul.
+- Água azul com transparência, ondas, corrente visível, espuma e ondulações ao redor do jogador.
+- Cachoeira de 16 m na margem norte do Lago da Serra, com pedras originais Blender, queda animada, névoa e som ambiente 3D.
+- Mineração com duas mãos em pontos separados do cabo, preparação lateral, pancada na pedra, recuo, lascas e som. Alcance de 1,55 m.
+- Protocolo cooperativo 10; ambos os PCs devem atualizar. Save 20, fazenda, galerias, estoque e dinheiro infinito preservados.
+- Testes de entrada/saída da água, flutuação, correnteza, apoio em encostas, animação dos dois personagens e integração cooperativa.
+
 # 0.38.0 — Mina explorável
 
 - Interior original Blender com 17 células conectadas de 8 m, três setores e nove veios. A caverna se estende 72 m para dentro da montanha; o percurso com curvas até o fundo tem aproximadamente 128 m.

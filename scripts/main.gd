@@ -121,8 +121,14 @@ func _inputs() -> void:
 			event.physical_keycode = entry[1]
 			InputMap.action_add_event(entry[0],event)
 
+var water_wake:=FarmWaterWake.new()
+
 func _player() -> void:
+	add_child(water_wake)
 	add_child(player)
+	player.floor_snap_length=.65
+	player.floor_constant_speed=true
+	player.floor_stop_on_slope=true
 	player.position = Vector3(4,0.2,10)
 	var collision := CollisionShape3D.new()
 	var capsule := CapsuleShape3D.new()
@@ -139,7 +145,7 @@ func _mounted() -> bool:
 
 func _try_jump() -> bool:
 	actor.stop_emote()
-	if _mounted() or not session_started or build_mode or not hud.modal_kind.is_empty() or not player.is_on_floor() or actor.action_time>0: return false
+	if actor.swimming or _mounted() or not session_started or build_mode or not hud.modal_kind.is_empty() or not player.is_on_floor() or actor.action_time>0: return false
 	player.velocity.y=6.8
 	actor.airborne=true
 	actor.landing=0.0
@@ -156,6 +162,7 @@ func _physics_process(delta: float) -> void:
 	var back := Vector3(sin(yaw),0,cos(yaw))
 	var direction := right * movement.x + back * movement.y
 	if _mounted():
+		actor.swimming=false
 		if network.active and not network.hosting:
 			_update_camera(delta);return
 		horse.drive(player,avatar,actor,direction,delta,session_started and hud.modal_kind.is_empty())
@@ -169,23 +176,19 @@ func _physics_process(delta: float) -> void:
 		player.velocity.x = 0
 		player.velocity.z = 0
 	else:
-		var speed := 7.5 if Input.is_action_pressed("run") else 4.5
-		player.velocity.x = direction.x * speed
-		player.velocity.z = direction.z * speed
 		if direction.length() > 0.1:
 			avatar.rotation.y = lerp_angle(avatar.rotation.y,atan2(direction.x,direction.z),delta*12)
 	var was_airborne:=actor.airborne
-	player.velocity.y -= 18*delta
-	var before_move := player.position
+	player.velocity=FarmWater.velocity(player.position,player.velocity,direction if not build_mode else Vector3.ZERO,delta,Input.is_action_pressed("run"))
 	player.move_and_slide()
-	if FarmRegion.water_blocked(Vector2(player.position.x,player.position.z)):
-		player.position = before_move; player.velocity = Vector3.ZERO
-	actor.airborne=not player.is_on_floor() and not build_mode
+	water_wake.update_at(player.position,FarmRegion.water_level(Vector2(player.position.x,player.position.z)) if FarmWater.immersion(player.position)>.12 else -INF,Vector2(player.velocity.x,player.velocity.z).length()>.2,delta)
+	actor.swimming=FarmWater.swimming_at(player.position)
+	actor.airborne=not player.is_on_floor() and not build_mode and not actor.swimming
 	if was_airborne and player.is_on_floor(): actor.landing=0.22
 	actor.animate(delta,not build_mode and Vector2(player.velocity.x,player.velocity.z).length()>0.2,Input.is_action_pressed("run"))
 	player.position.x = clampf(player.position.x,FarmLandscape.WALK_MIN.x,FarmLandscape.WALK_MAX.x)
 	player.position.z = clampf(player.position.z,FarmLandscape.WALK_MIN.y,FarmLandscape.WALK_MAX.y)
-	if player.position.y < -3:
+	if player.position.y < -12:
 		player.position.y = 1
 	_update_camera(delta)
 

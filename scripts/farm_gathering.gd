@@ -48,13 +48,14 @@ func _reply(message:String) -> void:
 func position_for(id:int) -> Vector3:
 	return game.player.position if id==own_id() else game.network.target
 func _valid_actor(id:int) -> bool:
+	if FarmWater.swimming_at(position_for(id)):return false
 	if not game.session_started:return false
 	if id==own_id():return not game.build_mode and game.hud.modal_kind.is_empty() and not game._mounted() and not game.actor.airborne
 	var n:FarmNetwork=game.network
 	return n.active and n.hosting and n.ready_session and id==n.accepted and Time.get_ticks_msec()-n.motion_received_at<=1500 and not n.remote_airborne and n.mounts.rider!=id
-func _near(id:int,p:Vector2) -> bool:
+func _near(id:int,p:Vector2,reach:float=3.0) -> bool:
 	var at:=position_for(id)
-	return Vector2(at.x,at.z).distance_to(p)<=3.0 and absf(at.y-FarmLandscape.height_at(Vector2(at.x,at.z)))<=3.0
+	return Vector2(at.x,at.z).distance_to(p)<=reach and absf(at.y-FarmLandscape.height_at(Vector2(at.x,at.z)))<=3.0
 func _site(kind:String,index:int) -> Vector2:
 	return FarmResourceSites.FISH_SPOTS[index] if kind=="fish" else FarmResourceSites.ORE_SPOTS[index]
 func _can(kind:String,index:int) -> String:
@@ -92,7 +93,7 @@ func apply(id:int,action:String) -> String:
 	if parts[2] not in allowed:return "Ação inválida."
 	var kind:String=parts[1];var index:=int(parts[2])
 	if jobs.has(id):return "Você já está coletando."
-	if not _valid_actor(id) or not _near(id,_site(kind,index)):return "Aproxime-se do ponto de coleta, a pé."
+	if not _valid_actor(id) or not _near(id,_site(kind,index),1.55 if kind=="mine" else 3.0):return "Aproxime-se do ponto de coleta, a pé."
 	var error:=_can(kind,index)
 	if not error.is_empty():return error
 	if kind=="mine":
@@ -122,7 +123,7 @@ func _stop(id:int,message:String) -> void:
 	if not jobs.has(id):return
 	_event(id,{},message);_send_event(id,{},message)
 func _still_valid(id:int,job:Dictionary) -> bool:
-	return _valid_actor(id) and position_for(id).distance_to(job.origin)<=1.3 and _near(id,_site(job.kind,job.index))
+	return _valid_actor(id) and position_for(id).distance_to(job.origin)<=1.3 and _near(id,_site(job.kind,job.index),1.55 if job.kind=="mine" else 3.0)
 func _process(delta:float) -> void:
 	if game==null:return
 	if session_key!=_key() or (authority() and state_id!=game.state.get_instance_id()):reset()

@@ -18,6 +18,7 @@ func setup(owner_landscape: FarmLandscape, owner_world: FarmWorld) -> void:
 	name = "ValeESerra"
 	landscape = owner_landscape; world = owner_world
 	_water()
+	var waterfall:=FarmWaterfall.new();add_child(waterfall);waterfall.setup()
 	_vegetation()
 	_bridge()
 	_lookout()
@@ -30,20 +31,29 @@ func setup(owner_landscape: FarmLandscape, owner_world: FarmWorld) -> void:
 
 func _water() -> void:
 	var surface := SurfaceTool.new(); surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-	for z in range(-650, 650, 4):
-		var a := FarmRegion.river_x(z); var b := FarmRegion.river_x(z+4)
-		for p in [Vector2(a-19,z),Vector2(a+19,z),Vector2(b-19,z+4),Vector2(a+19,z),Vector2(b+19,z+4),Vector2(b-19,z+4)]:
-			surface.add_vertex(Vector3(p.x, 2, p.y))
+	for z in range(-650,650,4):
+		var a:=FarmRegion.river_x(z);var b:=FarmRegion.river_x(z+4)
+		for x in range(-19,19,2):
+			for p in [Vector2(a+x,z),Vector2(a+x+2,z),Vector2(b+x,z+4),Vector2(a+x+2,z),Vector2(b+x+2,z+4),Vector2(b+x,z+4)]:
+				_water_vertex(surface,p,2)
 	for i in range(FarmRegion.LAKES.size()):
-		var lake: Vector4 = FarmRegion.LAKES[i]
-		for j in range(96):
-			var a := TAU*j/96.0; var b := TAU*(j+1)/96.0
-			for p in [Vector2(lake.x,lake.y),Vector2(lake.x+cos(b)*lake.z*1.13,lake.y+sin(b)*lake.w*1.13),Vector2(lake.x+cos(a)*lake.z*1.13,lake.y+sin(a)*lake.w*1.13)]:
-				surface.add_vertex(Vector3(p.x,FarmRegion.LAKE_LEVELS[i],p.y))
+		var lake:Vector4=FarmRegion.LAKES[i]
+		for ring in range(20):
+			var inner:=ring/20.0*1.13;var outer:=(ring+1)/20.0*1.13
+			for j in range(96):
+				var a:=TAU*j/96.0;var b:=TAU*(j+1)/96.0
+				var center:=Vector2(lake.x,lake.y);var va:=Vector2(cos(a)*lake.z,sin(a)*lake.w);var vb:=Vector2(cos(b)*lake.z,sin(b)*lake.w)
+				for p in [center+va*inner,center+vb*outer,center+va*outer,center+va*inner,center+vb*inner,center+vb*outer]:
+					_water_vertex(surface,p,FarmRegion.LAKE_LEVELS[i])
 	surface.generate_normals()
 	var water := MeshInstance3D.new(); water.name = "RioAzulELagos"; water.mesh = surface.commit()
 	water.material_override = landscape.water_material; water.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(water)
+
+func _water_vertex(surface:SurfaceTool,p:Vector2,level:float) -> void:
+	var depth:=maxf(0,level-FarmLandscape.ground_height(p))
+	surface.set_color(Color(clampf(depth/5.0,0,1),0,0,1))
+	surface.add_vertex(Vector3(p.x,level,p.y))
 
 func _vegetation() -> void:
 	var random := RandomNumberGenerator.new(); random.seed = 360036

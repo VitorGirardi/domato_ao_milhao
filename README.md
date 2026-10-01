@@ -1,4 +1,14 @@
-# Mina explorável — 0.38.0
+# Terreno, água e cachoeira — 0.39.0
+
+O cavalo apoia os cascos no terreno e inclina corpo e sela nas encostas.
+A pé, entre nos rios e lagos: caminhe no raso e nade nas partes profundas,
+com flutuação e correnteza leve no rio. A água tem ondas, transparência e
+espuma. Uma cachoeira original Blender deságua na margem norte do Lago da Serra.
+
+A mineração agora usa duas mãos no cabo, preparação, impacto na pedra e recuo.
+Aproxime-se a até 1,55 m do veio para usar a picareta.
+
+## Mina explorável
 
 Explore a Mina da Pedra Clara com três setores e nove veios de cobre, ferro e
 quartzo. O interior original feito no Blender tem corredores conectados, iluminação
@@ -15,7 +25,7 @@ continuam preservados. O vale mantém seus 1.084 × 900 m, estradas de terra,
 ponte, mirante, céu azul, nuvens, sol, lua e estrelas.
 
 Ferramentas, estoque, mina e galerias são compartilhados no cooperativo: atualize
-os dois PCs para **0.38.0 (protocolo 9)**. O save **20** migra os formatos anteriores;
+os dois PCs para **0.39.0 (protocolo 10)**. O save **20** migra os formatos anteriores;
 a migração do 19 preserva ferramentas, mina, estoque e renovação dos veios antigos.
 
 [Guia de pesca e mineração](PESCA_MINERACAO.md) · [Guia da região](VALE_SERRA.md).
@@ -31,13 +41,13 @@ Construam, negociem, cuidem dos animais, contratem a equipe e usem o cavalo junt
 Protótipo jogável de um tycoon de fazenda 3D estilizado para Windows e Linux, em português.
 Godot 4.7.2 + modelos originais feitos no Blender 5.2.1. Campanha solo offline e fazenda cooperativa para dois PCs.
 
-**Versão atual: 0.38.0.** Veja [as prioridades](ROADMAP.md) e [as novidades](CHANGELOG.md).
+**Versão atual: 0.39.0.** Veja [as prioridades](ROADMAP.md) e [as novidades](CHANGELOG.md).
 
 Veja o [roteiro de teste manual](COMO_TESTAR.md), incluindo encomendas e vendas da 0.5.
 
 ## Jogar
 
-O executável local fica em `exports/windows-v0.38.0/DoMatoAoMilhao.exe` depois da exportação.
+O executável local fica em `exports/windows-v0.39.0/DoMatoAoMilhao.exe` depois da exportação.
 Ele abre diretamente, sem instalar Godot ou Blender. Os binários não são enviados ao Git.
 
 Para executar a partir do código:

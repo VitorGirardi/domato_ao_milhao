@@ -61,20 +61,23 @@ static func highland_height(p: Vector2) -> float:
 
 static func water_level(p: Vector2) -> float:
 	if weight(p) < .99: return -INF
-	if river_distance(p) < 12: return 2.0
+	if river_distance(p) < 19: return 2.0
 	for i in range(LAKES.size()):
 		var lake: Vector4 = LAKES[i]
-		if (Vector2(p.x-lake.x, p.y-lake.y)/Vector2(lake.z, lake.w)).length() < 1:
+		if (Vector2(p.x-lake.x, p.y-lake.y)/Vector2(lake.z, lake.w)).length() < 1.13:
 			return LAKE_LEVELS[i]
 	return -INF
 
 static func bed(p: Vector2, h: float) -> float:
 	if weight(p) < .99: return h
-	h = lerpf(0.6, h, smoothstep(8.5, 15, river_distance(p)))
+	h = lerpf(-1.4, h, smoothstep(6.0, 17.0, river_distance(p)))
 	for i in range(LAKES.size()):
 		var lake: Vector4 = LAKES[i]
 		var d := (Vector2(p.x-lake.x, p.y-lake.y)/Vector2(lake.z, lake.w)).length()
-		h = lerpf(LAKE_LEVELS[i]-2.0, h, smoothstep(.80, 1.08, d))
+		h = lerpf(LAKE_LEVELS[i]-4.2, h, smoothstep(.55, 1.10, d))
+	if Rect2(800,-278,20,19).has_point(p):
+		var ceiling:=66.0+clampf((-p.y-262.0)/14.0,0,1)*18.0
+		h=minf(h,ceiling)
 	return h
 
 static func on_bridge(p: Vector2) -> bool:
@@ -86,6 +89,7 @@ static func water_blocked(p: Vector2) -> bool:
 	return level > bed(p, highland_height(p))+.3
 
 static func reserved(p: Vector2) -> bool:
+	if Rect2(795,-284,30,27).has_point(p):return true
 	if FarmMineLayout.inside(p,7):return true
 	if road_sample(p).x < 8 or water_level(p) > -INF: return true
 	for place in PLACES.values():

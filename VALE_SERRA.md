@@ -1,4 +1,4 @@
-# O Vale e a Serra — 0.38.0
+# O Vale e a Serra — 0.39.0
 
 ## Explorar
 
@@ -29,7 +29,13 @@ exigidos com dinheiro infinito. Veja [controles e regras](PESCA_MINERACAO.md).
 
 ## Limites desta entrega
 
-Água profunda impede entrada: ainda não há natação. As áreas novas não se tornam
+A pé, o personagem entra gradualmente na água e nada automaticamente no fundo.
+Use os controles normais para nadar e voltar à margem; correr aumenta a velocidade.
+O rio tem correnteza leve. Cavalo e gato permanecem nas margens. A cachoeira fica
+ao norte do Lago da Serra, em (810, -266), com queda, espuma e som ambiente.
+O cavalo ajusta cascos, corpo e sela à inclinação do chão.
+
+As áreas novas não se tornam
 automaticamente propriedades construíveis. O mapa continua finito e desenhado à
 mão. Há separação entre dados de região e cenário, mas streaming de terrenos e
 geração infinita não estão implementados. A mina tem nove veios e duas galerias
@@ -41,7 +47,7 @@ Construções, produção, funcionários, animais, cavalo e dinheiro infinito s�
 preservados. O save 20 lê as versões anteriores. Ao migrar o save 19, mantém
 ferramentas, mina, estoque e a renovação dos três veios antigos; as novas galerias
 começam fechadas. Saves mais antigos recebem recursos vazios quando ausentes.
-O protocolo é 9: atualize os dois PCs para 0.38 antes de hospedar/entrar.
+O protocolo é 10: atualize os dois PCs para 0.39 antes de hospedar/entrar.
 As posições remotas aceitam toda a região e suas altitudes. Estoque de recursos,
 mina e galerias abertas são compartilhados; o save cooperativo continua separado
 do solo. Depois de salvar na 0.38, use esta versão ou posterior, pois versões
