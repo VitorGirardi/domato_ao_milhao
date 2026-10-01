@@ -39,40 +39,58 @@ def rock(name,p,s,material,sub=2):
     bevel=o.modifiers.new('Soft stone edges','BEVEL');bevel.width=.065;bevel.segments=1
     return o
 
-# A continuous open horseshoe passage: irregular mouth, shrinking recessed tunnel.
+# Authored 8m gallery cells: exact union is mirrored by the game's collision map.
+# Depth +Y exports as Godot -Z. Flat floor +.05, clear wall width >=7m.
+CELLS = [(0,4),(0,12),(0,20),(-8,20),(-16,20),(-16,28),
+         (-16,36),(-8,36),(0,36),(8,36),(16,36),(16,44),
+         (16,52),(8,52),(0,52),(0,60),(0,68)]
+cell_set=set(CELLS)
+ceiling=mat('Gallery ceiling',(.19,.22,.21))
+wall_mats=[mat('Gallery limestone %d'%i,c) for i,c in enumerate([
+    (.28,.31,.29),(.32,.34,.29),(.24,.28,.28),(.36,.35,.29)])]
+# Opening retains the cliff's soft silhouette but now fits a broad flat passage.
 N=21
-rings=[]
-for depth,rx,h in [(0,3.65,5.25),(2.8,3.55,5.05),(6.2,3.0,4.7),(10.8,2.45,4.1)]:
-    ring=[]
-    for i in range(N):
-        t=math.pi*i/(N-1); jitter=1+.055*math.sin(i*3.7+depth)
-        ring.append((math.cos(t)*rx*jitter,depth+.10*math.sin(i*2.7),max(0,math.sin(t)*h*jitter)))
-    rings.append(ring)
-vs=[v for ring in rings for v in ring];fs=[]
-for d in range(3):
-    for i in range(N-1):
-        a=d*N+i;fs.append((a,a+N,a+N+1,a+1))
-# Explicit inner normals face into passage; glTF materials remain double-sided.
-tunnel=mesh('Continuous carved tunnel',vs,fs,[inner])
-# Front cliff blends into outer contours, leaving a genuine clear arch.
+mouth=[(4,0,0),(4,0,4.6)]
+for i in range(17):
+    t=math.pi*i/16
+    mouth.append((4*math.cos(t),0,4.6+1.4*math.sin(t)))
+mouth += [(-4,0,4.6),(-4,0,0)]
 outer=[]
 for i in range(N):
     t=math.pi*i/(N-1)
     outer.append((math.cos(t)*8.0,.65+math.sin(i*1.7)*.4,math.sin(t)*9.3))
-front=mesh('Irregular cliff facade',rings[0]+outer,[(i,i+1,N+i+1,N+i) for i in range(N-1)],stone)
+front=mesh('Irregular cliff facade',mouth+outer,[(i,i+1,N+i+1,N+i) for i in range(N-1)],stone)
 for p in front.data.polygons:p.material_index=random.randrange(len(stone))
-# Upper/back shell seals top while preserving the tunnel.
-back=[(x*.82,11.6,z*.79) for x,y,z in outer]
+back=[(x*.82,11.6,max(z*.79,6.5) if z>4 else z) for x,y,z in outer]
 mid=[(x*1.025,5.7+math.sin(i*2.1)*.45,z*(.98+.045*math.sin(i*1.9))) for i,(x,y,z) in enumerate(outer)]
 shell=mesh('Cliff crown shell',outer+mid+back,[(d*N+i,(d+1)*N+i,(d+1)*N+i+1,d*N+i+1) for d in range(2) for i in range(N-1)],stone)
 for f in shell.data.polygons:f.material_index=random.choice([0,0,2,3])
-mesh('Deep passage back wall',[(-2.45,11,0),(2.45,11,0),(2.45,11,4.5),(-2.45,11,4.5)],[(0,1,2,3)],[inner])
-mesh('Passage earth floor',[(-3.7,-1,0),(3.7,-1,0),(3.2,6.2,0),(2.45,11.3,0),(-2.45,11.3,0),(-3.2,6.2,0)],[(0,1,2,3,4,5)],[earth])
-for v in bpy.data.objects['Passage earth floor'].data.vertices:v.co.z=.025
+# Outward-only faceting means rock never narrows the defined floor footprint.
+BOUNDARIES=[]
+for cx,cy in CELLS:
+    mesh('Level gallery floor',[(cx-4,cy-4,.05),(cx+4,cy-4,.05),(cx+4,cy+4,.05),(cx-4,cy+4,.05)],[(0,1,2,3)],[earth])
+    mesh('High gallery ceiling',[(cx-4,cy-4,6.2),(cx+4,cy-4,6.2),(cx+4,cy+4,6.2),(cx-4,cy+4,6.2),(cx,cy,6.65)],[(0,4,1),(1,4,2),(2,4,3),(3,4,0)],[ceiling])
+    for dx,dy in [(1,0),(-1,0),(0,1),(0,-1)]:
+        if (cx+dx*8,cy+dy*8) in cell_set or (cx==0 and cy==4 and dy==-1):continue
+        mx,my=cx+dx*4,cy+dy*4
+        tx,ty=-dy,dx
+        vs=[]
+        for z in [0,1.8,3.9,6.2]:
+            for t in [-4,-2,0,2,4]:
+                bump=0 if abs(t)==4 or z in [0,6.2] else random.uniform(0,.38)
+                vs.append((mx+tx*t+dx*bump,my+ty*t+dy*bump,z))
+        faces=[]
+        for row in range(3):
+            for col in range(4):
+                j=row*5+col
+                faces.extend([(j,j+1,j+6),(j,j+6,j+5)])
+        ob=mesh('Carved gallery boundary',vs,faces,wall_mats)
+        for f in ob.data.polygons:f.material_index=random.randrange(len(wall_mats))
+        BOUNDARIES.append((mx,my,dx,dy))
 # Broad asymmetric strata outcrops, kept outside the playable opening.
 for i in range(19):
     t=.05+(math.pi-.1)*i/18
-    x=math.cos(t)*5.7; z=.2+math.sin(t)*7.25
+    x=math.cos(t)*6.9; z=.2+math.sin(t)*8.0
     s=(random.uniform(1.05,1.85),random.uniform(.7,1.3),random.uniform(1.05,1.7))
     rock('Limestone outcrop %02d'%i,(x,random.uniform(.35,1.5),z),s,stone[i%4])
 for side in [-1,1]:
@@ -92,12 +110,12 @@ for side in [-1,1]:
             mesh('Fern blade',[(x-.025,y,.12),(x+.025,y,.12),(x+math.cos(a)*.48,y+math.sin(a)*.48,h)],[(0,1,2)],[green[j%2]])
 for i in range(15):
     side=-1 if i%2 else 1
-    rock('Loose threshold stone',(side*random.uniform(3.65,5.1),random.uniform(-.5,1.8),.15),(.3,.27,.22),stone[i%4],1)
+    rock('Loose threshold stone',(side*random.uniform(4.3,5.1),random.uniform(-.5,1.8),.15),(.3,.27,.22),stone[i%4],1)
 
-def beam(name,a,b,r,material):
+def beam(name,a,b,r,material,parent=barrier):
     delta=Vector(b)-Vector(a)
     bpy.ops.mesh.primitive_cylinder_add(vertices=8,radius=r,depth=delta.length,location=(Vector(a)+Vector(b))*.5)
-    o=bpy.context.object;o.name=name;o.rotation_euler=delta.to_track_quat('Z','Y').to_euler();o.parent=barrier;o.data.materials.append(material)
+    o=bpy.context.object;o.name=name;o.rotation_euler=delta.to_track_quat('Z','Y').to_euler();o.parent=parent;o.data.materials.append(material)
 for x in [-3.35,3.35]:beam('Barrier post',(x,-.4,0),(x,-.4,2.25),.1,wood)
 # Two yellow ribbons with black diagonal bands; all nested under MineBarrier.
 for row in [0,1]:
@@ -108,6 +126,38 @@ for row in [0,1]:
     for j in range(14):
         a=-3.25+j*.48;b=a+.18
         mesh('Black warning stripe',[(a,-.451,ribbon_z(a)),(b,-.451,ribbon_z(b)),(b+.12,-.451,ribbon_z(b+.12)+.17),(a+.12,-.451,ribbon_z(a+.12)+.17)],[(0,1,2,3)],[black],barrier)
+# Sparse timber frames and wall lanterns mark the three connected galleries.
+# Frame posts hug the wall: smallest clear span is 7.24m, lintels above 5.7m.
+for cx,cy,across_x in [(0,3,True),(0,11,True),(-16,27,True),(-8,36,False),(16,43,True),(0,59,True),(0,67,True)]:
+    a=(cx-3.8,cy,0) if across_x else (cx,cy-3.8,0)
+    b=(cx+3.8,cy,0) if across_x else (cx,cy+3.8,0)
+    beam('Gallery timber post',a,(a[0],a[1],5.9),.18,wood,root)
+    beam('Gallery timber post',b,(b[0],b[1],5.9),.18,wood,root)
+    beam('Gallery timber lintel',(a[0],a[1],5.9),(b[0],b[1],5.9),.2,wood,root)
+glow=mat('Warm lantern glass',(1,.55,.17))
+shader=next(n for n in glow.node_tree.nodes if n.type=='BSDF_PRINCIPLED')
+shader.inputs['Emission Color'].default_value=(1,.38,.055,1)
+shader.inputs['Emission Strength'].default_value=2.8
+crystals=[mat('Copper green crystal',(.22,.55,.42)),mat('Iron blue crystal',(.34,.43,.52)),mat('Quartz pale crystal',(.77,.68,.89))]
+LANTERNS=[]
+for i,(mx,my,dx,dy) in enumerate(BOUNDARIES):
+    if i%3==0:
+        lx,ly=mx-dx*.27,my-dy*.27
+        beam('Lantern wall hook',(mx,my,3.6),(lx,ly,3.6),.075,black,root)
+        rock('Amber lantern glass',(lx,ly,3.3),(.13,.13,.26),glow,1)
+        for z in [3.04,3.55]:
+            rock('Lantern iron cap',(lx,ly,z),(.2,.2,.07),black,1)
+        LANTERNS.append((lx,ly,3.3))
+    if i%2==0:
+        # Decorative stones remain inside the outer 0.45m edge strip.
+        rock('Gallery edge stone',(mx-dx*.08,my-dy*.08,.22),(.26,.26,.3),wall_mats[i%4],1)
+        if my>15:
+            for j in range(3):
+                tx,ty=-dy,dx
+                x,y=mx-dx*.12+tx*(j-1)*.25,my-dy*.12+ty*(j-1)*.25
+                bpy.ops.mesh.primitive_cone_add(vertices=5,radius1=.13,radius2=0,depth=.45+j*.12,location=(x,y,.3+j*.06))
+                o=bpy.context.object;o.name='Decorative mineral seam';o.parent=root;o.data.materials.append(crystals[min(2,int(my//25))])
+print('MINE_LANTERNS_BLENDER',LANTERNS)
 # Apply scales before exporting, keep useful hierarchy (especially purchase barrier).
 for o in list(bpy.context.scene.objects):
     if o.type=='MESH':
@@ -141,3 +191,10 @@ bpy.ops.object.light_add(type='SUN',location=(0,0,15));bpy.context.object.rotati
 scene=bpy.context.scene;scene.world.color=(.32,.45,.62);scene.render.engine='CYCLES';scene.cycles.samples=24
 scene.render.resolution_x=1100;scene.render.resolution_y=850;scene.render.resolution_percentage=100
 scene.render.filepath=str(R/'region_mine_preview.png');bpy.ops.render.render(write_still=True)
+
+# Interior preview uses the same exported geometry, with preview-only light.
+cam.data.type='PERSP';cam.data.lens=20;cam.location=(0,1,2.6)
+cam.rotation_euler=(Vector((0,18,2.6))-cam.location).to_track_quat('-Z','Y').to_euler()
+for x,y,z in LANTERNS:
+    bpy.ops.object.light_add(type='POINT',location=(x,y,z));bpy.context.object.data.energy=110;bpy.context.object.data.color=(1,.67,.34);bpy.context.object.data.shadow_soft_size=.8
+scene.render.filepath=str(R/'region_mine_interior_preview.png');bpy.ops.render.render(write_still=True)
