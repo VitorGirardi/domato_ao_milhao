@@ -1,3 +1,7 @@
+# Testar 0.42 — Fazendas e modos
+
+Menu inicial → Minhas fazendas → Criar outra fazenda. Escolha Survival ou Sandbox; a fazenda atual fica preservada. [Modos, saves e roteiro completo](FAZENDAS.md).
+
 # Testar 0.41 — Queda e retorno
 
 Atualize os dois PCs. Compre a P-8 com Damião; P saca, botão direito mira, clique

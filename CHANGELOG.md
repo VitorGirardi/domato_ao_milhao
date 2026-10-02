@@ -1,3 +1,12 @@
+# 0.42.0 — Cada fazenda, seu jeito de jogar
+
+- Escolha Survival ou Sandbox ao criar uma fazenda e mantenha vários saves independentes.
+- Survival conserva saldo limitado e progressão; Sandbox libera catálogo e equipamentos com dinheiro infinito.
+- Saves antigos e backups são preservados; seleção de personagem e modo ficam associados ao save.
+- Botões amarelos de objetivos recolhem o painel antes de executar a ação.
+- Atalhos discretos à esquerda; minimapa no alto à direita com gold compacto abaixo.
+- Cooperativo separado por fazenda, respeitando seu modo; protocolo 13 exige a mesma versão nos dois PCs.
+
 # 0.41.0 — Queda e retorno
 
 - Tiros da pistola derrubam pessoas e animais temporariamente. Após 60 segundos começa a animação de levantar, seguida de três segundos de proteção.

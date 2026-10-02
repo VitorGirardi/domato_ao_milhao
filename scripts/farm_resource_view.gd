@@ -14,8 +14,9 @@ var refresh_timer:=0.0
 
 func setup(g:Node3D) -> void:
 	game=g;name="ResourceView";process_priority=20
-	shop=FarmGameUI.action(game.hud,game.hud.walking.root,"Peixes, minérios e ferramentas",Rect2(24,418,252,34),"resources")
-	shop.add_theme_font_size_override("font_size",13)
+	shop=FarmGameUI.action(game.hud,game.hud.walking.root,"Recursos e ferramentas",Rect2(24,544,190,40),"resources")
+	shop.add_theme_font_size_override("font_size",14);FarmWalkHUD.dim_shortcut(shop)
+	shop.tooltip_text="Peixes, minérios e ferramentas"
 	hint=game.hud.label(game.hud.walking.root,"",Vector2(420,678),Vector2(600,30),21,FarmHUD.CREAM)
 	hint.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
 	hint.add_theme_color_override("font_shadow_color",Color("20392a"));hint.add_theme_constant_override("shadow_offset_y",2)

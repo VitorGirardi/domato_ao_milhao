@@ -20,7 +20,7 @@ static func required(kind:String) -> int:
 	return 3 if kind=="pigsty" else 5 if kind=="stable" else maxi(1,BUILDINGS.find(kind)+1)
 
 static func unlocked(state:FarmState,kind:String) -> bool:
-	return level(state.farm_xp)>=required(kind)
+	return state.game_mode=="sandbox" or level(state.farm_xp)>=required(kind)
 
 static func next_text(xp:int) -> String:
 	var current:=level(xp)
