@@ -4,7 +4,9 @@
 
 A pedido de Vitor, cada nova fazenda escolhe Survival (economia limitada, $1.600 iniciais e progressão) ou Sandbox (dinheiro infinito, exibido como ∞, e catálogo/equipamentos liberados). Preserve o modo escolhido ao salvar e carregar. Saves anteriores à escolha de modos mantêm o dinheiro infinito e seu progresso original. Nunca apague ou reinicie uma fazenda para aplicar essa preferência. Cada fazenda tem seu save; criar outra não substitui as existentes.
 
-Os testes de economia usam FarmState com dinheiro limitado por padrão, em arquivos QA isolados. Nunca sobrescreva farm_v1.json ou seu backup para testar. Preços, requisitos de nível e recursos de produção continuam existindo.
+No Sandbox, todos os produtos e minérios são infinitos, assim como a reserva de munição; preserve isso também em saves Sandbox anteriores. Consulte `FarmState.stock/stock_text/consume_stock` para disponibilidade e consumo. Os contadores físicos continuam finitos na serialização. Survival e saves Original não recebem recursos infinitos apenas por terem dinheiro infinito.
+
+Os testes de economia usam FarmState com dinheiro limitado por padrão, em arquivos QA isolados. Nunca sobrescreva farm_v1.json ou seu backup para testar. Preços, requisitos de nível e recursos de produção continuam existindo no Survival.
 
 ## Direção do mapa
 

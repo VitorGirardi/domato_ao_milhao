@@ -60,6 +60,10 @@ static func _grid() -> void:
 		column+=.5 if column>=-50 and column<-34 else (6.0 if column>=184 else (4.0 if column<-52 else 2.0))
 	terrain_columns.append(1200)
 	for x in range(1240,2041,40):terrain_columns.append(x)
+	# Exact bridge ends prevent coarse terrain triangles crossing its deck.
+	for x in [397.0,397.15,442.85,443.0]:
+		if not terrain_columns.has(x):terrain_columns.append(x)
+	terrain_columns.sort()
 	for z in range(-1810,-650,40):terrain_rows.append(z)
 	var row:float=-650
 	while row<650:

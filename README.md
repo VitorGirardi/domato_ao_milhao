@@ -1,3 +1,7 @@
+# Ponte e Sandbox — 0.45.1
+
+Ponte do Rio Azul sem terreno sobreposto às tábuas e com entradas niveladas para caminhar, cavalgar e dirigir. No Sandbox, todos os produtos, peixes e minérios aparecem como ∞ e não se esgotam; reserva de munição infinita e equipamentos/galerias liberados também nos saves antigos desse modo. Survival preservado. [Modos e saves](FAZENDAS.md).
+
 # Aguas vivas - 0.44.0
 
 Margens com modelos Blender, cardumes e pesca perto da fazenda.

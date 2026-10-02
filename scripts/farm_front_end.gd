@@ -68,7 +68,7 @@ func new_game() -> void:
 	mode_help.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
 	var update_mode:=func(index:int):
 		pending_mode="sandbox" if index==1 else "survival"
-		mode_help.text="Dinheiro infinito, todas as construções e equipamentos liberados." if index==1 else "Fazenda vazia, $1.600 iniciais e desbloqueios pela progressão."
+		mode_help.text="Dinheiro e recursos infinitos. Construções, equipamentos e mina liberados." if index==1 else "Fazenda vazia, $1.600 iniciais e desbloqueios pela progressão."
 	mode_picker.item_selected.connect(update_mode);update_mode.call(mode_picker.selected)
 	hud.label(p,"Quem vai cuidar desse pedacinho de mundo?",Vector2(32,328),Vector2(876,35),23)
 	character_cards.clear()

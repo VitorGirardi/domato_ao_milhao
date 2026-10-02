@@ -26,7 +26,7 @@ static func show(hud:FarmHUD,state:FarmState,index:int) -> void:
 		b.disabled=data.milk==0 if i==0 else (cost==0 or state.money<cost if i==1 else data.water>=100)
 	var status:="Leite cheio · colete para produzir mais" if data.milk==8 else ("Reponha água e ração para produzir" if minf(data.food,data.water)<=0 else "Próximos 2 L em %ds"%ceili(60-data.timer))
 	hud.label(p,status,Vector2(28,449),Vector2(784,30),22)
-	FarmGameUI.action(hud,p,"Estoque de leite · %d L"%state.milk_stock,Rect2(28,511,380,45),"milk_market")
+	FarmGameUI.action(hud,p,"Estoque de leite · %s L"%state.stock_text("milk"),Rect2(28,511,380,45),"milk_market")
 	FarmGameUI.action(hud,p,"Raul · Cuidar do curral",Rect2(430,511,380,45),"raul")
 static func confirm(hud:FarmHUD,state:FarmState,index:int) -> void:
 	var p:=FarmGameUI.open(hud,"dairy_confirm","Comprar Mimosa","cow",740,414)
@@ -37,14 +37,14 @@ static func confirm(hud:FarmHUD,state:FarmState,index:int) -> void:
 static func stock(hud:FarmHUD,state:FarmState) -> void:
 	var p:=FarmGameUI.open(hud,"milk_stock","Leite no estoque","milk",740,422)
 	FarmGameUI.icon(p,"milk",Rect2(30,128,110,110))
-	hud.label(p,"Estoque: %d L"%state.milk_stock,Vector2(163,128),Vector2(546,45),29)
+	hud.label(p,"Estoque: %s L"%state.stock_text("milk"),Vector2(163,128),Vector2(546,45),29)
 	hud.label(p,"Dona Lúcia compra por $18 / L",Vector2(163,184),Vector2(546,30),21)
 	hud.label(p,"Leite coletado · incluído em Vender tudo",Vector2(30,252),Vector2(680,30),18,FarmHUD.MUTED)
 	var q:=SpinBox.new(); q.position=Vector2(28,316); q.size=Vector2(126,48)
-	q.min_value=1; q.max_value=maxi(1,state.milk_stock); q.value=1; q.step=1; q.rounded=true
-	q.update_on_text_changed=true; q.editable=state.milk_stock>0
+	q.min_value=1; q.max_value=maxi(1,state.stock("milk")); q.value=1; q.step=1; q.rounded=true
+	q.update_on_text_changed=true; q.editable=state.stock("milk")>0
 	p.add_child(q); hud.milk_quantity=q
 	var sale:=FarmGameUI.action(hud,p,"Vender 1 L · $18",Rect2(170,316,320,48),"sell_milk",true)
-	sale.disabled=state.milk_stock==0
+	sale.disabled=state.stock("milk")==0
 	q.value_changed.connect(func(n:float): sale.text="Vender %d L · $%d"%[int(n),int(n)*18])
 	FarmGameUI.action(hud,p,"Armazém",Rect2(506,316,206,48),"market")

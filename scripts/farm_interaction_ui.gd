@@ -24,11 +24,11 @@ static func barn(hud:FarmHUD,state:FarmState,index:int) -> void:
 		hud.label(c,FarmTrade.NAMES[key],Vector2(87,11),Vector2(280,27),21)
 		hud.label(c,"Disponível",Vector2(88,47),Vector2(125,21),13,FarmHUD.MUTED)
 		hud.label(c,"Na reserva",Vector2(242,47),Vector2(125,21),13,FarmHUD.MUTED)
-		hud.label(c,str(state.inventory[key]),Vector2(88,68),Vector2(120,35),28)
+		hud.label(c,state.stock_text(key),Vector2(88,68),Vector2(120,35),28)
 		hud.label(c,str(state.reserve[key]),Vector2(242,68),Vector2(120,35),28)
 		var deposit:=FarmGameUI.action(hud,c,"Guardar →",Rect2(12,112,174,39),"deposit:"+key)
 		var withdraw:=FarmGameUI.action(hud,c,"← Retirar",Rect2(198,112,174,39),"withdraw:"+key)
-		deposit.disabled=state.inventory[key]<=0 or state.reserve_count()>=state.reserve_capacity()
+		deposit.disabled=state.stock(key)<=0 or state.reserve_count()>=state.reserve_capacity()
 		withdraw.disabled=state.reserve[key]<=0
 		deposit.tooltip_text="Guarda toda a quantidade que couber. A reserva não é vendida."
 		withdraw.tooltip_text="Devolve a reserva deste produto ao estoque disponível."
@@ -121,21 +121,21 @@ static func market(hud:FarmHUD,state:FarmState,tab:String) -> void:
 		FarmGameUI.icon(c,key,Rect2(14,12,62,62))
 		hud.label(c,FarmTrade.NAMES[key],Vector2(88,12),Vector2(210,30),22)
 		hud.label(c,"$%d / un."%price,Vector2(88,48),Vector2(156,26),17,FarmHUD.MUTED)
-		hud.label(c,"%d un."%state.inventory[key],Vector2(292,25),Vector2(131,39),25)
+		hud.label(c,"%s un."%state.stock_text(key),Vector2(292,25),Vector2(131,39),25)
 		var quantity:=SpinBox.new()
 		quantity.position=Vector2(14,96); quantity.size=Vector2(88,43)
-		quantity.min_value=1; quantity.max_value=maxi(1,int(state.inventory[key])); quantity.step=1; quantity.rounded=true
-		quantity.update_on_text_changed=true; quantity.value=1; quantity.editable=state.inventory[key]>0
+		quantity.min_value=1; quantity.max_value=maxi(1,int(state.stock(key))); quantity.step=1; quantity.rounded=true
+		quantity.update_on_text_changed=true; quantity.value=1; quantity.editable=state.stock(key)>0
 		quantity.get_line_edit().add_theme_stylebox_override("normal",hud.style(Color("ffffff"),5,Color("8ba494")))
 		c.add_child(quantity); hud.sale_quantities[key]=quantity
 		var sale:=FarmGameUI.action(hud,c,"Vender 1 • $%d"%price,Rect2(114,96,308,43),"sell_product:"+key,true)
-		sale.disabled=state.inventory[key]<=0; hud.sale_buttons[key]=sale
+		sale.disabled=state.stock(key)<=0; hud.sale_buttons[key]=sale
 		quantity.value_changed.connect(func(amount:float): sale.text="Vender %d • $%d"%[int(amount),int(amount)*price])
-	var all:=FarmGameUI.action(hud,p,"Vender tudo • $%d"%state.sale_value(),Rect2(26,537,436,48),"sell",true)
+	var all:=FarmGameUI.action(hud,p,("Vender 1 de cada • $%d" if state.infinite_resources() else "Vender tudo • $%d")%state.sale_value(),Rect2(26,537,436,48),"sell",true)
 	all.disabled=state.sale_value()==0
 	all.tooltip_text="Vende apenas o estoque disponível; não inclui reserva nem ovos no ninho."
 	var contract:=FarmGameUI.action(hud,p,"✓ Pedido entregue" if state.contract_done else "Entregar 6 cenouras • $110",Rect2(476,537,436,48),"contract")
-	contract.disabled=state.contract_done or state.inventory.carrot<6
+	contract.disabled=state.contract_done or state.stock("carrot")<6
 	contract.tooltip_text="Entregue 6 cenouras. Sem prazo. Recompensa: $110 e +1 reputação."
 	FarmGameUI.icon(p,"lock",Rect2(26,615,28,28))
 	hud.label(p,"%d produtos protegidos na reserva"%state.reserve_count(),Vector2(67,617),Vector2(530,27),17)

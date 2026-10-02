@@ -36,7 +36,7 @@ static func job(state:FarmState) -> String:
 	var data:Dictionary=state.items[int(w.site)].cheese
 	if data.ready>0: return "collect"
 	if data.batch>0: w.reason="";return ""
-	if state.milk_stock<int(w.batch_size)*2: w.reason="milk";return ""
+	if state.stock("milk")<int(w.batch_size)*2: w.reason="milk";return ""
 	if state.money<FEE: w.paused=true;w.reason="funds";return ""
 	if int(w.spent)+FEE>int(w.budget): w.paused=true;w.reason="budget";return ""
 	w.reason=""

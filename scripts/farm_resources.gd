@@ -63,9 +63,9 @@ static func buy(state:FarmState, kind:String) -> String:
 		var ore:="copper" if level==1 else "iron"
 		var quantity:=8 if level==1 else 10
 		if state.money<int(PRICES[kind]):return "%s custa $%d."%[NAMES[kind],PRICES[kind]]
-		if state.resources.stock[ore]<quantity:return "Você precisa de %d unidades de %s."%[quantity,NAMES[ore]]
+		if state.stock(ore)<quantity:return "Você precisa de %d unidades de %s."%[quantity,NAMES[ore]]
 		state.money-=int(PRICES[kind])
-		state.resources.stock[ore]-=quantity
+		state.consume_stock(ore,quantity)
 		state.resources.gallery_level=level
 		return ""
 	var field:="mine_owned" if kind=="mine" else kind
@@ -78,9 +78,9 @@ static func can_catch(state:FarmState, spot:int) -> String:
 	if spot<0 or spot>=FISH_WEIGHTS.size():return "Ponto de pesca desconhecido."
 	if not state.claimed:return "Escolha seu terreno primeiro."
 	if not state.resources.rod:return "Compre uma vara de pesca no armazém."
-	if state.resources.caught>=MAX_COUNTER:return "Limite de capturas atingido."
+	if not state.infinite_resources() and state.resources.caught>=MAX_COUNTER:return "Limite de capturas atingido."
 	for key in FISH_KEYS:
-		if state.resources.stock[key]>=STOCK_LIMIT:return "Venda seus peixes antes de pescar mais."
+		if not state.infinite_resources() and state.resources.stock[key]>=STOCK_LIMIT:return "Venda seus peixes antes de pescar mais."
 	return ""
 
 static func catch_fish(state:FarmState, spot:int) -> String:
@@ -90,8 +90,8 @@ static func catch_fish(state:FarmState, spot:int) -> String:
 	var index:=0
 	while index<2 and roll>=int(FISH_WEIGHTS[spot][index]):
 		roll-=int(FISH_WEIGHTS[spot][index]);index+=1
-	state.resources.stock[FISH_KEYS[index]]+=1
-	state.resources.caught+=1;state.earn_xp(3)
+	state.resources.stock[FISH_KEYS[index]]=mini(STOCK_LIMIT,int(state.resources.stock[FISH_KEYS[index]])+1)
+	state.resources.caught=mini(MAX_COUNTER,int(state.resources.caught)+1);state.earn_xp(3)
 	return ""
 
 static func can_extract(state:FarmState, node:int) -> String:
@@ -102,23 +102,23 @@ static func can_extract(state:FarmState, node:int) -> String:
 	if state.resources.gallery_level<NODE_LEVELS[node]:return "Abra esta galeria antes de extrair."
 	if not is_finite(state.elapsed) or state.elapsed<0:return "Relógio da fazenda inválido."
 	if state.elapsed<float(state.resources.node_ready[node]):return "Este veio está se recuperando."
-	if state.resources.mined>=MAX_COUNTER or state.resources.stock[NODE_ORES[node]]>=STOCK_LIMIT:return "Venda seus minérios antes de extrair mais."
+	if not state.infinite_resources() and (state.resources.mined>=MAX_COUNTER or state.resources.stock[NODE_ORES[node]]>=STOCK_LIMIT):return "Venda seus minérios antes de extrair mais."
 	return ""
 
 static func extract(state:FarmState, node:int) -> String:
 	var error:=can_extract(state,node)
 	if not error.is_empty():return error
-	state.resources.stock[NODE_ORES[node]]+=1
+	state.resources.stock[NODE_ORES[node]]=mini(STOCK_LIMIT,int(state.resources.stock[NODE_ORES[node]])+1)
 	state.resources.node_ready[node]=state.elapsed+COOLDOWN
-	state.resources.mined+=1;state.earn_xp(5)
+	state.resources.mined=mini(MAX_COUNTER,int(state.resources.mined)+1);state.earn_xp(5)
 	return ""
 
 static func sell(state:FarmState, key:String) -> int:
 	if not state.claimed or key not in FISH_KEYS+ORE_KEYS:return 0
-	var count:=int(state.resources.stock[key])
+	var count:=1 if state.infinite_resources() else state.stock(key)
 	if count<=0:return 0
 	var total:=count*int(PRICES[key])
-	state.resources.stock[key]=0;state.money+=total;state.revenue+=total
+	state.consume_stock(key,count);state.money+=total;state.revenue+=total
 	state.refresh_journey()
 	return total
 
