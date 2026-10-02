@@ -261,7 +261,7 @@ func _shot_sound() -> void:
 	wav.data=bytes;sound.stream=wav;sound.play()
 
 func show_shop() -> void:
-	if not game.session_started or game.build_mode or not near_shop():return
+	if down() or not game.session_started or game.build_mode or not near_shop():return
 	var hud:FarmHUD=game.hud;var bag:Dictionary=inventory()
 	var p:=FarmGameUI.open(hud,"armory","Damião · Armeiro do vale","pistol",820,620)
 	hud.label(p,"“Ferramenta boa exige mão firme.”",Vector2(30,111),Vector2(760,32),23)
@@ -280,7 +280,7 @@ func show_shop() -> void:
 
 func _shop_action(value:String) -> void:
 	if not value.begins_with("armory:"):return
-	if game.hud.modal_kind!="armory" or not near_shop() or not game.session_started:return
+	if down() or game.hud.modal_kind!="armory" or not near_shop() or not game.session_started:return
 	if game.network.active:
 		combat.request(value.trim_prefix("armory:"));return
 	var error:String
