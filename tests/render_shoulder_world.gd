@@ -48,5 +48,5 @@ func run() -> void:
 			await capture(model+"-"+mode)
 	game.session_started=false;game.audio.set_process(false);game.audio.stop_all();game.queue_free()
 	await process_frame;await create_timer(.2).timeout
-	print("SHOULDER_WORLD_VISUAL_OK: both avatars, shoulders, vertical aim, reload and release")
+	print("SHOULDER_WORLD_OK: both avatars, shoulders, vertical aim, reload and release")
 	quit()
