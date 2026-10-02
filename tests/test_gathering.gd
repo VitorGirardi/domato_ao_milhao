@@ -43,7 +43,37 @@ func run() -> void:
 	var path:String=game.save_path;game.save_path="user://missing_folder/no.json"
 	g._process(9);game.save_path=path
 	assert(g.jobs.is_empty() and game.state.resources==reward,"Failed save must roll back reward")
-	allow();assert(g.apply(1,"gather:fish:0").is_empty())
+	# The farm stream is an ordinary authoritative eight-second fishing site.
+	move_to(FarmResourceSites.FISH_SPOTS[3]);allow()
+	assert(FarmResourceSites.FISH_NAMES[3]=="Riacho da Fazenda")
+	assert(not FarmWater.swimming_at(game.player.position))
+	assert(FarmResourceSites.nearby(game).value=="gather:fish:3")
+	assert(g.apply(1,"gather:fish:3").is_empty())
+	game.resource_view._process(0)
+	assert(game.resource_view.props.has(1))
+	var prop:Dictionary=game.resource_view.props[1]
+	assert(not prop.rings.visible)
+	g._process(.8);game.resource_view._process(.8)
+	assert(prop.rings.visible and prop.bobber.position.distance_to(FarmResourceSites.FISH_WATER[3])<.2)
+	g._process(5.3);game.resource_view._process(5.3)
+	assert(prop.rings.visible and game.state.resources==reward)
+	g._process(2);game.resource_view._process(2)
+	assert(g.jobs.is_empty() and not game.resource_view.props.has(1))
+	assert(game.state.resources.caught==reward.caught+1)
+	reward=game.state.resources.duplicate(true);g._process(9)
+	assert(game.state.resources==reward)
+	allow();assert(g.apply(1,"gather:fish:3").is_empty())
+	game.resource_view._process(0)
+	game.player.position.x+=1.5;g._process(.1);game.resource_view._process(.1)
+	assert(g.jobs.is_empty() and game.resource_view.props.is_empty() and game.state.resources==reward)
+	move_to(FarmResourceSites.FISH_SPOTS[3]+Vector2(4,0));allow()
+	assert(not g.apply(1,"gather:fish:3").is_empty())
+	move_to(FarmResourceSites.FISH_SPOTS[3]);allow()
+	assert(not g.apply(1,"gather:fish:4").is_empty())
+	allow();assert(not g.apply(1,"gather:fish:03").is_empty())
+	assert(not g.apply(999,"gather:fish:3").is_empty())
+	assert(game.state.resources==reward)
+	move_to(FarmResourceSites.FISH_SPOTS[0]);allow();assert(g.apply(1,"gather:fish:0").is_empty())
 	game.state=FarmState.new();g._process(10);assert(g.jobs.is_empty())
 	game.session_started=false;game.audio.set_process(false);game.audio.stop_all();await create_timer(.2).timeout
 	game.queue_free();await process_frame;await create_timer(.2).timeout

@@ -22,8 +22,8 @@ void fragment(){
  float crests=smoothstep(.68,.85,streams)*smoothstep(.48,.75,secondary);
  float shore=(1.0-smoothstep(.1,.55,water_depth))*smoothstep(.02,.15,water_depth);
  float foam=crests*.38+shore*(.25+.25*sin(flow_time*2.0+world_pos.z*2.0));
- ALBEDO=mix(vec3(.12,.57,.68),vec3(.025,.28,.49),smoothstep(0.0,4.0,water_depth))+foam*vec3(.35,.45,.44);
+ ALBEDO=mix(vec3(.10,.54,.76),vec3(.025,.26,.49),smoothstep(0.0,4.0,water_depth))+foam*vec3(.35,.45,.44);
  NORMAL=normalize(NORMAL+vec3(sin(world_pos.x*2.1+along*1.3)*.10,0.0,cos(along*2.4+world_pos.x)*.10));
  ROUGHNESS=.24;SPECULAR=.65;
- ALPHA=mix(.36,.79,smoothstep(0.0,3.8,water_depth))+foam*.18;
+ ALPHA=mix(.32,.70,smoothstep(0.0,3.8,water_depth))+foam*.18;
 }
