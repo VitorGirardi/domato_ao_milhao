@@ -1,4 +1,15 @@
-# Assobio pelo mapa e águas acessíveis — 0.40.0
+# Queda e retorno — 0.41.0
+
+A pistola agora derruba pessoas e animais por um minuto. A queda e o levantar
+usam animações feitas no Blender para cada espécie, com estrelinhas e sem
+contador na tela. Depois de levantar, o personagem fica protegido por três
+segundos. Não há perda de itens ou dinheiro; as rotinas voltam ao normal.
+
+Funciona no solo e entre os dois jogadores do cooperativo. Quem cair montado
+desmonta com segurança; quem cair na água volta em uma margem próxima.
+Veja os [controles e detalhes](QUEDA_RETORNO.md).
+
+## Assobio pelo mapa e águas acessíveis
 
 Assobie com **C** para chamar o cavalo desocupado mesmo do outro lado do mapa.
 Ele percorre caminhos e pontes até você. Na água, espera em uma margem segura;
@@ -35,7 +46,7 @@ continuam preservados. O vale mantém seus 1.115 × 900 m, estradas de terra,
 ponte, mirante, céu azul, nuvens, sol, lua e estrelas.
 
 Ferramentas, estoque, mina e galerias são compartilhados no cooperativo: atualize
-os dois PCs para **0.40.0 (protocolo 11)**. O save **20** migra os formatos anteriores;
+os dois PCs para **0.41.0 (protocolo 12)**. O save **20** migra os formatos anteriores;
 a migração do 19 preserva ferramentas, mina, estoque e renovação dos veios antigos.
 
 [Guia de pesca e mineração](PESCA_MINERACAO.md) · [Guia da região](VALE_SERRA.md).
@@ -51,13 +62,13 @@ Construam, negociem, cuidem dos animais, contratem a equipe e usem o cavalo junt
 Protótipo jogável de um tycoon de fazenda 3D estilizado para Windows e Linux, em português.
 Godot 4.7.2 + modelos originais feitos no Blender 5.2.1. Campanha solo offline e fazenda cooperativa para dois PCs.
 
-**Versão atual: 0.40.0.** Veja [as prioridades](ROADMAP.md) e [as novidades](CHANGELOG.md).
+**Versão atual: 0.41.0.** Veja [as prioridades](ROADMAP.md) e [as novidades](CHANGELOG.md).
 
 Veja o [roteiro de teste manual](COMO_TESTAR.md), incluindo encomendas e vendas da 0.5.
 
 ## Jogar
 
-O executável local fica em `exports/windows-v0.40.0/DoMatoAoMilhao.exe` depois da exportação.
+O executável local fica em `exports/windows-v0.41.0/DoMatoAoMilhao.exe` depois da exportação.
 Ele abre diretamente, sem instalar Godot ou Blender. Os binários não são enviados ao Git.
 
 Para executar a partir do código:

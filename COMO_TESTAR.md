@@ -1,3 +1,10 @@
+# Testar 0.41 — Queda e retorno
+
+Atualize os dois PCs. Compre a P-8 com Damião; P saca, botão direito mira, clique
+dispara e R recarrega. Confira queda e retorno em um minuto, sem contador,
+nas pessoas e animais. Teste também cavaleiro, água e obstáculos.
+[Roteiro completo](QUEDA_RETORNO.md).
+
 # Testar 0.31 — Cooperativo completo da fazenda
 
 Atualizem os dois PCs. Jogar junto → Criar/Continuar cooperativo; convidado entra pelo IP. Tab constrói; F vende e recebe encomendas; E cuida das construções/animais; H gerencia equipe; I abre estoque. E monta o cavalo, Shift dá tapinha e E desmonta. Um cavalo por vez. F5 salva no anfitrião. Saiam e hospedem novamente para verificar o progresso. Consulte MULTIPLAYER.md para detalhes.
