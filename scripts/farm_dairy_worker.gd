@@ -34,8 +34,10 @@ static func cost(state:FarmState,kind:String) -> int:
 	if w.site<0:return 0
 	return FEE+(ceili((100-state.items[int(w.site)].dairy.food)*.12-.000001) if kind=="food" else 0)
 static func job(state:FarmState) -> String:
+	if state.temporary_down.get("npc:dairy",false):return ""
 	var w:=state.dairy_worker
 	if not w.hired or w.paused or w.site<0: return ""
+	if state.temporary_down.get(FarmFallTargets.item_key(state,int(w.site),"cow"),false):return ""
 	var data:Dictionary=state.items[int(w.site)].dairy
 	if not data.owned:w.reason="cow";return ""
 	var kind:="water" if data.water<=35 else ("food" if data.food<=35 else ("milk" if data.milk>=4 else ""))

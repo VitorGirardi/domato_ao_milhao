@@ -46,7 +46,7 @@ func reset(state:FarmState) -> void:
 			anchored=true;visible=true;return
 
 func can_pet(player:Vector3) -> bool:
-	return visible and player.is_finite() and position.distance_to(player)<1.8 and pet_remaining<=0
+	return not get_meta("temporary_down",false) and visible and player.is_finite() and position.distance_to(player)<1.8 and pet_remaining<=0
 
 func pet(player:Vector3) -> bool:
 	if not can_pet(player):return false
@@ -57,6 +57,7 @@ func pet(player:Vector3) -> bool:
 	return true
 
 func update(delta:float,player:Vector3,state:FarmState) -> void:
+	if get_meta("temporary_down",false):return
 	if not state.claimed:visible=false;anchored=false;return
 	if not anchored or (not roam_valley and home.distance_to(state.center)>state.land_size):reset(state)
 	if not anchored or delta<=0:return

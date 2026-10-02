@@ -30,6 +30,7 @@ static func configure(state:FarmState,site:int,batch:int,budget:int,renew:bool=f
 	w.paused=false;w.reason=""
 	return ""
 static func job(state:FarmState) -> String:
+	if state.temporary_down.get("npc:cheese",false):return ""
 	var w:=state.cheese_worker
 	if not w.hired or w.paused or w.site<0: return ""
 	var data:Dictionary=state.items[int(w.site)].cheese

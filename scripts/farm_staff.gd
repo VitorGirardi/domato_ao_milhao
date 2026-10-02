@@ -39,6 +39,7 @@ static func quote(flock: Dictionary) -> int:
 	return SERVICE_COST+(FarmAnimals.food_cost(flock) if needs_food else 0)
 
 static func service(farm) -> void:
+	if farm.temporary_down.get("npc:staff",false):return
 	var worker:Dictionary=farm.staff
 	if not running(worker): return
 	if farm.legacy_irrigation(): return

@@ -39,7 +39,7 @@ static func animate(pen:Dictionary,delta:float,player:Vector3) -> void:
 	pen.clock+=delta
 	for entry in pen.pigs:
 		var pig:Node3D=entry.node
-		if not pig.visible:continue
+		if not pig.visible or pig.get_meta("temporary_down",false):continue
 		var time:float=pen.clock+entry.slot*2.1
 		var walking:bool=entry.slot==0 and fposmod(time,12.0)>6.0
 		if walking and pig.global_position.distance_to(player)>1.6:
