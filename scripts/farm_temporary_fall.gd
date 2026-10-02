@@ -125,6 +125,10 @@ func force_dismount() -> void:
 			game.horse.reset_rider(game.player,game.avatar,game.actor)
 			game.player.position=_safe_recovery(game.player.position)
 
+func _stop_local_actions() -> void:
+	game.weapons.holster();game.hud.close_modal();game._cancel_route()
+	game.build_mode=false;game.tool="inspect";game.move_index=-1
+
 func knock_down(key:String) -> bool:
 	if not authority() or is_down(key) or float(protected.get(key,0))>0:return false
 	refresh_targets()
@@ -140,7 +144,7 @@ func knock_down(key:String) -> bool:
 		if game.companions.follow_owner==id:
 			game.companions.follow_owner=0;game.world.cat.following=false
 		if id==own_id():
-			game.weapons.holster();game.hud.close_modal();game._cancel_route();game.build_mode=false
+			_stop_local_actions()
 	if key=="horse":game.companions.end_horse_call()
 	if key=="cat":game.companions.follow_owner=0;game.world.cat.following=false;game.companions.path.clear()
 	var entry:Dictionary=targets[key]
@@ -269,7 +273,7 @@ func _snapshot(number:int,payload:Array,protection:Dictionary) -> void:
 		if not records.has(key):
 			records[key]={"age":float(data.age),"position":data.position,"pose_base":data.pose_base,"part_rest":data.part_rest}
 			if targets.has(key):_bind(key,records[key])
-			if key==player_key():game.weapons.holster();game.hud.close_modal();game.build_mode=false;game._cancel_route()
+			if key==player_key():_stop_local_actions()
 		else:
 			var record:Dictionary=records[key]
 			if record.position.distance_to(data.position)>.01 and record.has("entry") and is_instance_valid(record.entry.model):

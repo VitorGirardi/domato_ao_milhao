@@ -81,7 +81,12 @@ func run() -> void:
 	# Local actions/movement freeze, but save remains possible; water recovers dry.
 	var wet:=Vector2(FarmRegion.legacy_river_x(22),22)
 	game.player.position=Vector3(wet.x,FarmRegion.water_level(wet)-.85,wet.y)
+	game.tool="plot";game.build_mode=true;game.move_index=0
 	assert(falls.knock_down("player:1"));var frozen:Vector3=game.player.position
+	assert(game.tool=="inspect" and game.move_index==-1 and not game.build_mode)
+	var escape:=InputEventKey.new();escape.pressed=true;escape.keycode=KEY_ESCAPE;escape.physical_keycode=KEY_ESCAPE
+	game._unhandled_input(escape);assert(not game.hud.modal_kind.is_empty(),"Escape trapped after a building-mode fall")
+	game.hud.close_modal()
 	Input.action_press("forward");game._physics_process(.1);Input.action_release("forward")
 	assert(game.player.position==frozen and not game._try_jump())
 	assert(game._save_game(false))
