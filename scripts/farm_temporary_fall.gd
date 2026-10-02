@@ -311,7 +311,7 @@ func trace_hit(origin:Vector3,end:Vector3,shooter_id:int) -> Dictionary:
 	var wall:=game.get_world_3d().direct_space_state.intersect_ray(query)
 	if not wall.is_empty():end=wall.position
 	var direction:Vector3=(end-origin).normalized();var distance:float=origin.distance_to(end)
-	var result:Dictionary={"key":"","position":end}
+	var result:Dictionary={"key":"","position":end,"collider":wall.get("collider")}
 	for key in targets:
 		if key==player_key(shooter_id) or is_down(key):continue
 		var entry:Dictionary=targets[key]

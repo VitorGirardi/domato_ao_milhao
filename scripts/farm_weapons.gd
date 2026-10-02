@@ -251,17 +251,22 @@ func resolve_shot(origin:Vector3,end:Vector3,shooter:int,bag:Dictionary) -> Vect
 		if not str(hit.get("key","")).is_empty():
 			if game.falls.knock_down(str(hit.key)):hit_time=.2
 			return end
+		_register_practice_hit(hit.get("collider"),bag)
+		return end
 	var excluded:Array[RID]=[game.player.get_rid()]
 	var ray:=PhysicsRayQueryParameters3D.create(origin,end,1,excluded)
 	ray.hit_from_inside=true
 	var wall:=get_world_3d().direct_space_state.intersect_ray(ray)
 	if not wall.is_empty():
 		end=wall.position
-		if wall.collider.has_meta("practice_target"):
-			FarmArmory.register_hit(bag);hit_time=.2
-			var target:Node3D=wall.collider.get_meta("practice_target")
-			var tween:=create_tween();tween.tween_property(target,"rotation:x",-.14,.06);tween.tween_property(target,"rotation:x",0.0,.24)
+		_register_practice_hit(wall.collider,bag)
 	return end
+
+func _register_practice_hit(collider:Variant,bag:Dictionary) -> void:
+	if not is_instance_valid(collider) or not collider.has_meta("practice_target"):return
+	FarmArmory.register_hit(bag);hit_time=.2
+	var target:Node3D=collider.get_meta("practice_target")
+	var tween:=create_tween();tween.tween_property(target,"rotation:x",-.14,.06);tween.tween_property(target,"rotation:x",0.0,.24)
 
 func _tracer(from:Vector3,to:Vector3) -> void:
 	var line:=MeshInstance3D.new();var mesh:=ImmediateMesh.new()
