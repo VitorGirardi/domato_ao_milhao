@@ -8,7 +8,7 @@ bpy.ops.object.select_all(action='SELECT');bpy.ops.object.delete(use_global=Fals
 scene=bpy.context.scene;scene.render.fps=30;scene.frame_end=60
 # Pose controls use game axes explicitly, so values match the runtime rig.
 controls={
- 'weapon':[(.10,1.20,.46),(.10,1.88,.40),(.12,1.38,.40)],
+ 'weapon':[(.10,1.20,.46),(-.20,1.52,.34),(.12,1.38,.40)],
  'rotation':[(-.45,0,0),(0,0,0),(-.55,0,-.25)],
  'UpperArm.R':[(-.75,0,-.12),(-1.3,0,-.12),(-.70,0,-.2)],
  'UpperArm.L':[(-.65,0,.30),(-1.15,0,.35),(-.6,0,.4)],
