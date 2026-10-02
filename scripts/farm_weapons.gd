@@ -218,13 +218,13 @@ func aim_point() -> Vector3:
 	var hit:Dictionary=game.falls.trace_hit(origin,end,game.falls.own_id())
 	# Aim just inside an actor, so the muzzle's different ray does not stop a
 	# floating-point fraction before the capsule surface selected by the camera.
-	if not str(hit.get("key","")).is_empty():return hit.position+(end-origin).normalized()*.025
+	if not str(hit.get("key","")).is_empty() or is_instance_valid(hit.get("collider")):return hit.position+(end-origin).normalized()*.025
 	return hit.get("position",end)
 
 func _pose_player(delta:float,for_shot:bool=false) -> void:
 	var target:=aim_point();var direction:Vector3=target-game.player.position
 	game.avatar.rotation.y=lerp_angle(game.avatar.rotation.y,atan2(direction.x,direction.z),1-exp(-delta*22))
-	pose_pitch=clampf(atan2(target.y-(game.player.position.y+1.95),Vector2(direction.x,direction.z).length()),-.8,.7)
+	pose_pitch=clampf(atan2(target.y-(game.player.position.y+1.72),Vector2(direction.x,direction.z).length()),-.8,.7)
 	var weight:=1.0 if for_shot else maxf(aim_blend,recoil/SHOT_INTERVAL)
 	FarmPistolPose.apply(game.actor,pistol,pose_pitch,weight,reload_left/RELOAD_TIME,recoil/SHOT_INTERVAL)
 	pistol.visible=true
