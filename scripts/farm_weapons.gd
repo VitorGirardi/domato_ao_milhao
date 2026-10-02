@@ -206,7 +206,7 @@ func _physics_process(delta:float) -> void:
 		flashes[i].time-=delta
 		if flashes[i].time<=0:flashes[i].node.queue_free();flashes.remove_at(i)
 	status.visible=active() and inventory().pistol
-	status.text=("P-8  ·  %d / %d\n"%[inventory().magazine,inventory().reserve])+(("RECARREGANDO…" if reload_left>0 else "Clique: disparar · R: recarregar\nDireito: mirar · Q: trocar ombro · P: guardar") if armed else "P: sacar pistola")
+	status.text=("P-8  ·  %d / %d\n"%[inventory().magazine,inventory().reserve])+(("RECARREGANDO…" if reload_left>0 else "Clique: disparar · R: recarregar\nDireito: mirar · Q: trocar ombro\nP: guardar") if armed else "P: sacar pistola")
 	reticle.visible=active() and armed and reload_left<=0;reticle.text="×" if hit_time>0 else "+";reticle.modulate=Color("f4bf64") if hit_time>0 else Color("fff4da")
 	muzzle.visible=armed and recoil>SHOT_INTERVAL-.055
 
@@ -216,6 +216,9 @@ func aim_point() -> Vector3:
 	var end:Vector3=origin+game.camera.project_ray_normal(viewport)*70
 	# Camera selection also includes cooperative players without solid colliders.
 	var hit:Dictionary=game.falls.trace_hit(origin,end,game.falls.own_id())
+	# Aim just inside an actor, so the muzzle's different ray does not stop a
+	# floating-point fraction before the capsule surface selected by the camera.
+	if not str(hit.get("key","")).is_empty():return hit.position+(end-origin).normalized()*.025
 	return hit.get("position",end)
 
 func _pose_player(delta:float,for_shot:bool=false) -> void:
