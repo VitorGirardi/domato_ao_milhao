@@ -33,6 +33,7 @@ static func prepare(entry:Dictionary) -> void:
 	var actor:FarmAvatar=entry.get("actor")
 	if actor:
 		for key in actor.bones:
+			if key=="Root":continue # Rig origin has no surface and must not prop up a bent body.
 			var radius:=.12
 			if key=="Head":radius=.25
 			elif key in ["Spine","Chest","Hips"]:radius=.23
@@ -84,12 +85,23 @@ static func apply(entry:Dictionary,age:float,recovery:bool=false) -> void:
 			if index>=0:hen.set_blend_shape_value(index,sin(clampf(frame,0,30)/30*PI)*.6 if not recovery else sin((frame-30)/60*PI)*.4)
 	var angles:=sample(tracks.ROOT,frame)
 	model.basis=base.basis*Basis.from_euler(angles)
+	if not cache.has("normal_anchor") or cache.normal_anchor!=anchor or cache.get("normal_ground",-INF)!=terrain_key:
+		var center:Vector3=anchor.origin
+		var dx:=ground(entry,center+Vector3.RIGHT*.8)-ground(entry,center-Vector3.RIGHT*.8)
+		var dz:=ground(entry,center+Vector3.BACK*.8)-ground(entry,center-Vector3.BACK*.8)
+		cache.normal=Vector3(-dx,1.6,-dz).normalized();cache.normal_anchor=anchor;cache.normal_ground=terrain_key
+	# Rotate the whole articulated resting pose into the local ground plane;
+	# vertical fitting alone leaves the downhill head floating on an incline.
+	var tilt:=Quaternion.IDENTITY.slerp(Quaternion(Vector3.UP,cache.normal),clampf(absf(angles.z)/1.4,0,1))
+	model.global_basis=Basis(tilt)*model.global_basis
 	# Fit every support to its own terrain sample, so a side-lying body follows
 	# slopes rather than rotating around its feet and hanging above the ground.
 	var lift:float=cache.get("lift",0.0)
 	if not fitted:
 		lift=-INF
 		for mesh in cache.meshes:
+			# Props can be hidden after prepare() captures the authoritative pose.
+			if not mesh.node.is_visible_in_tree():continue
 			for vertex in mesh.vertices:
 				var p:Vector3=mesh.node.to_global(vertex)
 				lift=maxf(lift,ground(entry,p)-p.y+.018)
@@ -101,6 +113,9 @@ static func apply(entry:Dictionary,age:float,recovery:bool=false) -> void:
 	if is_finite(lift):
 		var weight:=smoothstep(0,.28,age) if not recovery else 1.0-smoothstep(1.65,2,age)
 		model.global_position.y+=lift*weight
+	# Reins are a sibling mesh in horse coordinates, so update after rolling
+	# and seating the model rather than leaving them at the standing sockets.
+	if species(entry)=="horse" and entry.body.has_method("update_reins"):entry.body.update_reins()
 
 static func ground(entry:Dictionary,p:Vector3) -> float:
 	if entry.has("ground_y"):return float(entry.ground_y)

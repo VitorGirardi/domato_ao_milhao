@@ -58,6 +58,18 @@ func run() -> void:
 		assert(entry.fall_pose.fit_passes==fits+1)
 		FarmFallPose.reset(entry)
 		assert(entry.model.transform.is_equal_approx(entry.base_transform))
+	# A carried tool hidden by the lifecycle after prepare must not support the
+	# actor and lift the body several metres above the ground.
+	var human:Dictionary=entries[0]
+	FarmFallPose.apply(human,1.0)
+	var normal_pose:Transform3D=human.model.transform
+	FarmFallPose.reset(human)
+	var prop:=MeshInstance3D.new();prop.mesh=BoxMesh.new();prop.position.y=-8
+	human.model.add_child(prop)
+	FarmFallPose.prepare(human);prop.visible=false
+	FarmFallPose.apply(human,1.0)
+	assert(human.model.transform.is_equal_approx(normal_pose))
+	FarmFallPose.reset(human)
 	print("FALL_POSE_OK")
 	quit()
 
