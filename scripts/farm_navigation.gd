@@ -33,6 +33,7 @@ func setup(owner_game:Node3D) -> void:
 
 func destinations() -> Array:
 	var values:Array=[]
+	if not game.network.active:values.append({"key":"pickup","name":"Camionetinha · protótipo","at":Vector2(game.pickup.position.x,game.pickup.position.z),"icon":"map_pickup","group":"Companhia"})
 	if game.state.claimed:values.append({"key":"home","name":"Minha fazenda","at":game.state.center,"icon":"barn","group":"Locais"})
 	values.append({"key":"horse","name":"Pé de Pano","at":Vector2(game.horse.position.x,game.horse.position.z),"icon":"map_horse","group":"Companhia"})
 	values.append({"key":"market","name":"Armazém da Lúcia","at":Vector2(-24,15),"icon":"coins","group":"Locais"})

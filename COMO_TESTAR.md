@@ -1,3 +1,9 @@
+# Testar 0.45 — Camionetinha de roça
+
+No solo, procure a camionetinha perto do armazém da Lúcia ou em Mapa → Companhia.
+E entra/sai; W acelera, S freia/ré, A/D viram e Espaço freia. Pare antes de sair.
+Disponível nas fazendas Survival e Sandbox. [Roteiro e limites do protótipo](CAMIONETINHA.md).
+
 # Testar 0.44 — Águas vivas
 
 No mapa M, escolha Riacho da Fazenda · pesca; leve a vara e pressione E.

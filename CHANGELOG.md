@@ -1,3 +1,11 @@
+# 0.45.0 — Camionetinha de roça
+
+- Picape original verde e creme com caçamba de madeira, rodas animadas e motorista sentado ao volante.
+- Protótipo solo emprestado perto do armazém, nos dois modos de fazenda, com localização no mapa.
+- Direção, ré, freio, velocímetro e som de motor; até 72 km/h, colisões e desembarque seguro.
+- Posição independente por fazenda; saves anteriores, cavalo e cooperativo preservados.
+- Ainda sem carga, passageiros ou combustível. Veículo indisponível no cooperativo nesta etapa.
+
 # 0.44.0 — Águas vivas
 
 - Margens do riacho e Lago do Sossego com taboas, nenúfares e pedras originais Blender.

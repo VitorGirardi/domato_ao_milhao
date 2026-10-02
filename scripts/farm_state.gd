@@ -38,6 +38,7 @@ var owned_parcels:Array=[]
 var resources:Dictionary=FarmResources.fresh()
 var armory:Dictionary=FarmArmory.fresh()
 var horse:Dictionary=FarmHorse.defaults()
+var pickup:Dictionary=FarmPickup.defaults()
 var game_mode:="legacy"
 var character_id:=""
 var unlimited_money:=false
@@ -680,7 +681,7 @@ func expand() -> String:
 	return ""
 
 func serialize() -> Dictionary:
-	return {"version": 20, "game_mode":game_mode, "character_id":character_id, "resources":resources.duplicate(true), "horse":horse.duplicate(), "armory":armory.duplicate(), "owned_parcels":owned_parcels.duplicate(), "unlimited_money":unlimited_money, "farm_xp":farm_xp, "dairy_worker":dairy_worker.duplicate(), "cheese_worker":cheese_worker.duplicate(), "cheese_stock":cheese_stock, "cheese_order":cheese_order.duplicate(), "milk_stock":milk_stock, "cultivation":cultivation.duplicate(true), "field_staff":field_staff.duplicate(true), "professional_watering":professional_watering, "irrigation":irrigation.duplicate(true), "money": _money, "claimed": claimed,
+	return {"version": 20, "pickup":pickup.duplicate(), "game_mode":game_mode, "character_id":character_id, "resources":resources.duplicate(true), "horse":horse.duplicate(), "armory":armory.duplicate(), "owned_parcels":owned_parcels.duplicate(), "unlimited_money":unlimited_money, "farm_xp":farm_xp, "dairy_worker":dairy_worker.duplicate(), "cheese_worker":cheese_worker.duplicate(), "cheese_stock":cheese_stock, "cheese_order":cheese_order.duplicate(), "milk_stock":milk_stock, "cultivation":cultivation.duplicate(true), "field_staff":field_staff.duplicate(true), "professional_watering":professional_watering, "irrigation":irrigation.duplicate(true), "money": _money, "claimed": claimed,
 		"center": [center.x, center.y], "land_size": land_size,
 		"items": items.duplicate(true), "inventory": inventory.duplicate(),
 		"elapsed": elapsed, "revenue": revenue, "harvests": harvests,
@@ -703,6 +704,7 @@ func restore(data: Variant) -> bool:
 		data.resources.node_ready.append_array([0.0,0.0,0.0,0.0,0.0,0.0])
 	if data.has("resources") and (not _number(data.get("elapsed")) or not FarmResources.valid(data.resources,float(data.elapsed))):return false
 	if data.get("game_mode","legacy")!="sandbox" and data.has("resources") and not data.get("claimed",false) and FarmResources.normalized(data.resources)!=FarmResources.fresh():return false
+	if data.has("pickup") and not FarmPickup.valid(data.pickup):return false
 	if data.version>=16 and not FarmHorse.valid(data.get("horse")):return false
 	if data.has("horse") and not FarmHorse.valid(data.horse):return false
 	if data.version>=15 and (not data.get("unlimited_money") is bool or not FarmParcels.valid(data.get("owned_parcels"))):return false
@@ -829,6 +831,7 @@ func restore(data: Variant) -> bool:
 	character_id=data.get("character_id","")
 	unlimited_money=data.get("unlimited_money",false) if game_mode=="legacy" else game_mode=="sandbox"
 	horse=data.get("horse",FarmHorse.defaults()).duplicate()
+	pickup=data.get("pickup",FarmPickup.defaults()).duplicate()
 	owned_parcels=data.get("owned_parcels",[]).duplicate()
 	claimed = data.claimed
 	center = Vector2(data.center[0], data.center[1])

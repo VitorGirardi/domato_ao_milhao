@@ -55,6 +55,7 @@ var picked_trade_board:=false
 var trail_journey:=FarmTrails.new()
 var weapons:=FarmWeapons.new()
 var horse:=FarmHorse.new()
+var pickup:=FarmPickup.new()
 var navigator:=FarmNavigation.new()
 var preferences:=FarmSettings.new()
 var front_end:=FarmFrontEnd.new()
@@ -112,6 +113,7 @@ func _ready() -> void:
 	add_child(gathering);gathering.setup(self)
 	add_child(resource_view);resource_view.setup(self)
 	add_child(falls);falls.setup(self)
+	add_child(pickup);pickup.setup(self)
 	preferences.load_preferences();preferences.apply(self)
 	front_end.show_title()
 	_update_camera(1.0, true)
@@ -152,7 +154,7 @@ func _mounted() -> bool:
 func _try_jump() -> bool:
 	if falls.local_down():return false
 	actor.stop_emote()
-	if actor.swimming or _mounted() or not session_started or build_mode or not hud.modal_kind.is_empty() or not player.is_on_floor() or actor.action_time>0: return false
+	if actor.swimming or _mounted() or pickup.mounted or not session_started or build_mode or not hud.modal_kind.is_empty() or not player.is_on_floor() or actor.action_time>0: return false
 	player.velocity.y=6.8
 	actor.airborne=true
 	actor.landing=0.0
@@ -173,6 +175,9 @@ func _physics_process(delta: float) -> void:
 	var right := Vector3(cos(yaw),0,-sin(yaw))
 	var back := Vector3(sin(yaw),0,cos(yaw))
 	var direction := right * movement.x + back * movement.y
+	if pickup.mounted:
+		pickup.drive(delta,-movement.y,movement.x,Input.is_physical_key_pressed(KEY_SPACE),session_started and hud.modal_kind.is_empty())
+		_update_camera(delta);return
 	if _mounted():
 		actor.swimming=false
 		if network.active and not network.hosting:
@@ -253,11 +258,11 @@ func _start_silly() -> void:
 	hud.toast(messages[silly_kind]%name)
 
 func _update_camera(delta: float, immediate: bool = false) -> void:
-	var target := focus if build_mode else player.position + Vector3(0,2.0 if _mounted() else 1.1,0)
-	var distance := build_distance if build_mode else (walk_distance+3.0 if _mounted() else walk_distance)
+	var target := focus if build_mode else player.position + Vector3(0,2.0 if _mounted() or pickup.mounted else 1.1,0)
+	var distance := build_distance if build_mode else (walk_distance+5.0 if pickup.mounted else walk_distance+3.0 if _mounted() else walk_distance)
 	var angle := pitch if build_mode else clampf(pitch,0.2,1.0)
 	var aim_value:Variant=weapons.get("aim_blend")
-	var blend:float=clampf(float(aim_value),0,1) if aim_value!=null and not build_mode and not _mounted() else 0.0
+	var blend:float=clampf(float(aim_value),0,1) if aim_value!=null and not build_mode and not _mounted() and not pickup.mounted else 0.0
 	var side_value:Variant=weapons.get("shoulder_side")
 	var pitch_value:Variant=weapons.get("aim_pitch")
 	var pose:=shoulder_camera.compose(player.position,target,distance,angle,yaw,blend,float(side_value) if side_value!=null else 1.0,float(pitch_value) if pitch_value!=null else .08,delta,immediate)
@@ -280,6 +285,7 @@ func _update_camera(delta: float, immediate: bool = false) -> void:
 func _camera_clear_position(target:Vector3,candidate:Vector3) -> Vector3:
 	if target.distance_squared_to(candidate)<.000001:return candidate
 	var exclude:Array[RID]=[player.get_rid(),horse.obstacle.get_rid()]
+	if pickup.mounted:exclude.append(pickup.get_rid())
 	var query:=PhysicsRayQueryParameters3D.create(target,candidate,1,exclude)
 	query.hit_from_inside=true
 	var space:=get_world_3d().direct_space_state
@@ -670,6 +676,8 @@ func _nearest() -> int:
 func _nearby_context() -> Dictionary:
 	if falls.local_down():return {}
 	if build_mode or not state.claimed: return {}
+	if pickup.mounted:return {"text":"Sair da camionetinha" if absf(pickup.speed)<1.2 else "Frear para sair · Espaço","action":"pickup","ready":absf(pickup.speed)<1.2}
+	if pickup.nearby():return {"text":"Dirigir camionetinha","action":"pickup"}
 	if _mounted():return {"text":"Desmontar · Pé de Pano","action":"horse"}
 	var resource_context:=FarmResourceSites.nearby(self)
 	if not resource_context.is_empty():return resource_context
@@ -713,6 +721,9 @@ func _interact_nearest() -> void:
 	var context:=_nearby_context()
 	if context.is_empty(): return
 	match context.action:
+		"pickup":
+			if pickup.mounted:pickup.exit_vehicle()
+			else:pickup.enter()
 		"resource":
 			weapons.holster()
 			if context.value.begins_with("gather:") and context.value!="gather:cancel" and (not state.resources.rod if context.value.begins_with("gather:fish:") else not state.resources.pickaxe):
@@ -788,6 +799,10 @@ func _tend_selected() -> void:
 	elif item.kind=="stable": FarmStable.show(hud,state,horse,selected)
 
 func _action(value: String) -> void:
+	if pickup.mounted:
+		if value in ["mode","emotes","move"] or value.begins_with("tool:") or value.begins_with("emote:") or value.begins_with("resource:") or value.begins_with("gather:"):
+			hud.toast("Estacione e saia com E para fazer isso.");return
+		if value in ["front:title","net:menu"] and not pickup.exit_vehicle():return
 	if falls.local_down() and value not in ["close","save","quit","start","menu","net:leave","net:menu","net:back","front:continue","front:settings","front:controls","front:back","front:audio_tab","front:video_tab","front:defaults","front:apply","front:title","front:quit"]:return
 	if value in ["move","remove"] and falls.blocks_command({"action":"move_item" if value=="move" else "remove","index":selected}):return
 	if value in ["market","market_orders"] and falls.is_down("npc:vendor"):return
@@ -1295,10 +1310,12 @@ func _update_ui() -> void:
 	hud.update(state,build_mode,selected,tool,crop,hover_hint)
 	hud.walking.update(hud,state,_nearby_context(),crop)
 	hud.walking.mount_status(_mounted(),horse.stamina,horse.burst,actor.swimming)
+	if pickup.mounted:hud.walking.controls.text="W acelerar · S frear / ré · A/D virar · Espaço freio · E sair"
 	hud.walking.visit_mode(network.active)
 	if network.active:hud.mode_label.text="CONSTRUÇÃO · COOPERATIVO" if build_mode else "FAZENDA COOPERATIVA"
 	navigator.refresh()
 	if not network.active and horse.is_inside_tree():horse.ensure_parking(state,world.landscape)
+	if pickup.game!=null:pickup.ensure_parking()
 	var step:=state.journey_step()
 	if session_started and journey_seen>=0 and step>journey_seen:
 		hud.toast("Etapa concluída: "+FarmState.JOURNEY[journey_seen].title+"!")
@@ -1372,6 +1389,7 @@ func _load_game() -> bool:
 			if parser.parse(FileAccess.get_file_as_string(path))==OK and state.restore(parser.data):
 				if not qa_mode and state.game_mode=="legacy":state.unlimited_money=true
 				if is_instance_valid(horse) and horse.is_inside_tree() and not _mounted():horse.restore(state.horse)
+				if pickup.is_inside_tree() and pickup.game!=null:pickup.restore(state.pickup)
 				return true
 	return false
 
@@ -3265,6 +3283,7 @@ func _qa_v025() -> void:
 	print("V025_INTEGRATION_OK: stable render/menu/map, graze, bounded walking, obstacle sweep, pause, recovery, approach/mount/dismount")
 
 func _reset_farm(next_state:FarmState=null) -> void:
+	pickup.reset_driver()
 	_cancel_route();move_index=-1;turn=0;crop="carrot"
 	resource_panel_state.clear();gathering.reset()
 	navigator.selected_item={}
@@ -3275,6 +3294,7 @@ func _reset_farm(next_state:FarmState=null) -> void:
 	if horse.mounted:horse.reset_rider(player,avatar,actor)
 	state=next_state if next_state!=null else FarmState.new()
 	if next_state==null:state.unlimited_money=not qa_mode
+	pickup.restore(state.pickup)
 	horse.restore(state.horse)
 	world.rebuild(state)
 	selected=-1

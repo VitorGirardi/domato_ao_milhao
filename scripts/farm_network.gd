@@ -295,6 +295,7 @@ func leave(message:String="") -> void:
 	multiplayer.multiplayer_peer=OfflineMultiplayerPeer.new();peer=null
 	_remove_remote();badge.visible=false;stock_button.visible=false;game.actor.stop_emote()
 	game.state=saved_state;game.world.rebuild(game.state);game.horse.restore(game.state.horse)
+	game.pickup.restore(game.state.pickup)
 	game.player.position=saved_position;game.player.velocity=Vector3.ZERO;game.build_mode=saved_build;game.pitch=saved_pitch;game.yaw=saved_yaw
 	if saved_mounted:game.horse.mount(game.player,game.avatar,game.actor)
 	game.session_started=false;hosting=false;last_message=message

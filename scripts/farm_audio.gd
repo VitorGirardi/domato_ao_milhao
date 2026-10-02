@@ -115,15 +115,16 @@ func _process(delta:float) -> void:
 		return
 	var grounded:bool=game.player.is_on_floor()
 	var mounted:bool=game._mounted()
+	var driving:bool=game.get("pickup")!=null and game.pickup.mounted
 	if mounted and not previous_mounted:_horse_call("horse_neigh")
-	if previous_mounted!=mounted or travel>=2:distance_walked=0
-	if travel<2 and (grounded or mounted):
+	if previous_mounted!=mounted or travel>=2 or driving:distance_walked=0
+	if not driving and travel<2 and (grounded or mounted):
 		distance_walked+=travel
 		var stride:float=1.45 if not mounted else (2.15 if game.horse.burst>0 else 1.75)
 		if distance_walked>=stride:
 			distance_walked=fmod(distance_walked,stride);step_count+=1
 			play_effect(("hoof_" if mounted else "step_")+str(step_count%4),-17 if mounted else -22,rng.randf_range(.94,1.06))
-	if grounded and not previous_grounded and not mounted:play_effect("step_2",-17,.88)
+	if grounded and not previous_grounded and not mounted and not driving:play_effect("step_2",-17,.88)
 	previous_grounded=grounded;previous_mounted=mounted
 	for kind in call_timers:call_timers[kind]=maxf(0,call_timers[kind]-delta)
 	event_wait-=delta
