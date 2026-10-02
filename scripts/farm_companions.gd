@@ -38,7 +38,7 @@ func own_id() -> int:return multiplayer.get_unique_id() if game.network.active e
 func body(id:int) -> Node3D:return game.player if id==own_id() else game.network.remote
 func actor(id:int) -> FarmAvatar:return game.actor if id==own_id() else game.network.remote_actor
 func model(id:int) -> Node3D:return game.avatar if id==own_id() else game.network.remote_model
-func allowed() -> bool:return not game.falls.local_down() and game.session_started and not game.build_mode and game.hud.modal_kind.is_empty() and not game._mounted() and not game.actor.airborne
+func allowed() -> bool:return not game.falls.local_down() and game.session_started and not game.build_mode and game.hud.modal_kind.is_empty() and not game._mounted() and not game.pickup.mounted and not game.actor.airborne
 
 func request(kind:String) -> void:
 	if not allowed() or request_wait>0:return

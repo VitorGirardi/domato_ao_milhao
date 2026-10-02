@@ -1,3 +1,9 @@
+# Testar 0.45 — Camionetinha de roça
+
+No solo, procure a camionetinha perto do armazém da Lúcia ou em Mapa → Companhia.
+E entra/sai; W acelera, S freia/ré, A/D viram e Espaço freia. Pare antes de sair.
+Disponível nas fazendas Survival e Sandbox. [Roteiro e limites do protótipo](CAMIONETINHA.md).
+
 # Testar 0.43 — Mira sobre o ombro
 
 P saca a pistola; segure direito para mirar e Q troca o ombro. Confira a pose

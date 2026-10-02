@@ -100,6 +100,7 @@ func _build_hud() -> void:
 	reticle=Label.new();reticle.set_anchors_and_offsets_preset(Control.PRESET_CENTER);reticle.position=Vector2(-24,-24);reticle.size=Vector2(48,48);reticle.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;reticle.vertical_alignment=VERTICAL_ALIGNMENT_CENTER;reticle.add_theme_font_size_override("font_size",30);reticle.mouse_filter=Control.MOUSE_FILTER_IGNORE;ui.add_child(reticle)
 
 func active() -> bool:
+	if game!=null and game.get("pickup")!=null and game.pickup.mounted:return false
 	if game==null or down() or (game.network.active and not game.network.ready_session) or not game.session_started or game.build_mode or not game.hud.modal_kind.is_empty():return false
 	# Horse is optional so the armory also works before the mount feature lands.
 	var mount:Variant=game.get("horse")

@@ -1,3 +1,11 @@
+# 0.45.0 — Camionetinha de roça
+
+- Picape original verde e creme com caçamba de madeira, rodas animadas e motorista sentado ao volante.
+- Protótipo solo emprestado perto do armazém, nos dois modos de fazenda, com localização no mapa.
+- Direção, ré, freio, velocímetro e som de motor; até 72 km/h, colisões e desembarque seguro.
+- Posição independente por fazenda; saves anteriores, cavalo e cooperativo preservados.
+- Ainda sem carga, passageiros ou combustível. Veículo indisponível no cooperativo nesta etapa.
+
 # 0.43.0 — Mira sobre o ombro
 
 - Segurar o botão direito aproxima suavemente a câmera sobre o ombro; soltar devolve a visão normal de caminhada. Sem primeira pessoa.

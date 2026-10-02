@@ -52,6 +52,13 @@ jobs:
           python3 tools/linux/audit_resources.py
           timeout 300 godot --headless --editor --path . --import --quit > test-results/linux/import.log 2>&1
           ! grep -E 'SCRIPT ERROR|ERROR:' test-results/linux/import.log
+      - name: Pickup prototype gameplay
+        if: matrix.suite == 'gameplay'
+        run: |
+          timeout 180 godot --headless --audio-driver Dummy --path . --script tests/test_pickup.gd > test-results/linux/pickup.log 2>&1
+          cat test-results/linux/pickup.log
+          grep -q PICKUP_OK test-results/linux/pickup.log
+          ! grep -E 'SCRIPT ERROR|ERROR:' test-results/linux/pickup.log
       - name: Linux gameplay and saves
         if: matrix.suite == 'gameplay'
         shell: bash
@@ -89,6 +96,13 @@ jobs:
           cat test-results/linux/x11.log
           grep -q LINUX_QA_OK test-results/linux/x11.log
           ! grep -E 'SCRIPT ERROR|ERROR:' test-results/linux/x11.log
+      - name: Pickup prototype graphical review
+        if: matrix.suite == 'graphics'
+        run: |
+          xvfb-run -a timeout 180 godot --audio-driver Dummy --path . --script tests/test_pickup.gd > test-results/linux/pickup-visual.log 2>&1
+          grep -q PICKUP_OK test-results/linux/pickup-visual.log
+          ! grep -E 'SCRIPT ERROR|ERROR:' test-results/linux/pickup-visual.log
+          cp test-results/pickup-*.png test-results/linux/
       - name: Shoulder aim graphical review
         if: matrix.suite == 'graphics'
         run: |
@@ -177,7 +191,7 @@ jobs:
           git rev-parse HEAD > exports/linux/COMMIT.txt
           cp tools/linux/jogar.sh exports/linux/
           cp LINUX.md exports/linux/LEIA-ME.md
-          cp GODOT_LICENSE.txt AUDIO.md AUDIO_CREDITS.md MULTIPLAYER.md QUEDA_RETORNO.md MIRA.md MAPA.md VALE_SERRA.md PESCA_MINERACAO.md exports/linux/
+          cp CAMIONETINHA.md GODOT_LICENSE.txt AUDIO.md AUDIO_CREDITS.md MULTIPLAYER.md QUEDA_RETORNO.md MIRA.md MAPA.md VALE_SERRA.md PESCA_MINERACAO.md exports/linux/
           chmod +x exports/linux/jogar.sh
           tar -czf exports/DoMatoAoMilhao-Linux-x86_64.tar.gz -C exports/linux .
           sha256sum exports/DoMatoAoMilhao-Linux-x86_64.tar.gz | tee exports/SHA256SUMS
