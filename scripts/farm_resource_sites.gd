@@ -1,9 +1,9 @@
 class_name FarmResourceSites
 extends RefCounted
 
-const FISH_SPOTS := [Vector2(280,295),Vector2(820,-193),Vector2(430,45),Vector2(-42.0+sin(12.0*.065)*2.6+5.8,12)]
+const FISH_SPOTS := [Vector2(280,295),Vector2(820,-193),Vector2(430,45),Vector2(-42.0+sin(-15.0*.065)*2.6+5.8,-15)]
 const FISH_NAMES := ["Lago do Sossego","Lago da Serra","Rio Azul","Riacho da Fazenda"]
-const FISH_WATER := [Vector3(280,5,282),Vector3(820,68,-214),Vector3(446,2,45),Vector3(-42.0+sin(12.0*.065)*2.6,-.1,12)]
+const FISH_WATER := [Vector3(280,5,282),Vector3(820,68,-214),Vector3(446,2,45),Vector3(-42.0+sin(-15.0*.065)*2.6,-.1,-15)]
 const ORE_SPOTS := [Vector2(898,-224),Vector2(902,-225),Vector2(902,-230),Vector2(882,-247),Vector2(882,-256),Vector2(899,-258),Vector2(918,-268),Vector2(902,-280),Vector2(898,-289)]
 const MINE_AT := Vector2(900,-216)
 
