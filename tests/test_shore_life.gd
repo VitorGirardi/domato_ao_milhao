@@ -1,4 +1,4 @@
-﻿extends SceneTree
+extends SceneTree
 var game:Node3D
 func _initialize() -> void:call_deferred("run")
 func capture(label:String,at:Vector3,target:Vector3) -> void:
@@ -45,4 +45,3 @@ func run() -> void:
 	game.session_started=false;game.audio.stop_all();game.queue_free();await process_frame
 	print("SHORE_LIFE_OK: authored shores, bounded swimming fish, fishing and saves")
 	quit()
-
