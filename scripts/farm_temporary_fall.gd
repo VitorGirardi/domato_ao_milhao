@@ -62,7 +62,16 @@ func _bind(key:String,record:Dictionary) -> void:
 		entry.actor.stop_emote();entry.actor.action_time=0;entry.actor.airborne=false;entry.actor.swimming=false
 		entry.model.rotation.x=0;entry.model.rotation.z=0
 		if entry.model!=entry.body:entry.model.position.y=0
-	entry.base_transform=entry.model.transform
+	entry.base_transform=record.get("pose_base",entry.model.transform)
+	entry.model.transform=entry.base_transform
+	record.pose_base=entry.base_transform
+	FarmFallPose.prepare(entry)
+	if record.has("part_rest"):
+		for part_name in record.part_rest:
+			if entry.fall_pose.parts.has(part_name):entry.fall_pose.parts[part_name].rest=record.part_rest[part_name]
+	else:
+		record.part_rest={}
+		for part_name in entry.fall_pose.parts:record.part_rest[part_name]=entry.fall_pose.parts[part_name].rest
 	var colliders:Array[CollisionObject3D]=[];_colliders(entry.body,colliders)
 	entry.layers=[]
 	for collider in colliders:
@@ -165,7 +174,7 @@ func _start_recovery(key:String,record:Dictionary) -> void:
 	if FarmWater.immersion(at)>.12 or at.y<FarmLandscape.height_at(Vector2(at.x,at.z))-.5:
 		var safe:=_safe_recovery(at)
 		FarmFallPose.reset(entry);entry.body.global_position=safe
-		entry.base_transform=entry.model.transform;record.position=safe
+		entry.base_transform=entry.model.transform;record.pose_base=entry.base_transform;record.position=safe
 	if key.begins_with("player:") and int(key.get_slice(":",1))==own_id():game.player.velocity=Vector3.ZERO
 
 func _sync_flags() -> void:
@@ -211,8 +220,7 @@ func apply_poses() -> void:
 		if not is_instance_valid(entry.model) or not is_instance_valid(entry.body):continue
 		if entry.body!=entry.model:entry.body.global_position=record.position
 		if entry.body is CharacterBody3D:entry.body.velocity=Vector3.ZERO
-		# External presentation (network interpolation, blinking) may touch bones.
-		if entry.has("fall_pose"):entry.fall_pose.erase("last_frame")
+		# Reapply articulation after interpolation; terrain fitting is cached.
 		FarmFallPose.apply(entry,maxf(0,record.age-DOWN_SECONDS) if record.age>=DOWN_SECONDS else record.age,record.age>=DOWN_SECONDS)
 		if record.has("stars") and is_instance_valid(record.stars):
 			record.stars.visible=record.age>1 and record.age<DOWN_SECONDS
@@ -225,7 +233,9 @@ func apply_poses() -> void:
 func sync_to(peer_id:int) -> void:
 	if not game.network.active or not game.network.hosting or peer_id==0:return
 	var payload:Array=[]
-	for key in records:payload.append({"key":key,"age":records[key].age,"position":records[key].position})
+	for key in records:
+		var record:Dictionary=records[key]
+		payload.append({"key":key,"age":record.age,"position":record.position,"pose_base":record.pose_base,"part_rest":record.part_rest})
 	sequence+=1;_snapshot.rpc_id(peer_id,sequence,payload,protected)
 
 @rpc("authority","call_remote","reliable",0)
@@ -234,19 +244,19 @@ func _snapshot(number:int,payload:Array,protection:Dictionary) -> void:
 	received=number;refresh_targets()
 	var keep:Dictionary={}
 	for data in payload:
-		if not data is Dictionary or not data.get("key") is String or not data.get("position") is Vector3:continue
+		if not data is Dictionary or not data.get("key") is String or not data.get("position") is Vector3 or not data.get("pose_base") is Transform3D or not data.get("part_rest") is Dictionary:continue
 		var key:String=data.key
 		if not data.position.is_finite() or not is_finite(float(data.get("age",-1))) or float(data.age)<0:continue
 		keep[key]=true
 		if not records.has(key):
-			records[key]={"age":float(data.age),"position":data.position}
+			records[key]={"age":float(data.age),"position":data.position,"pose_base":data.pose_base,"part_rest":data.part_rest}
 			if targets.has(key):_bind(key,records[key])
 			if key==player_key():game.weapons.holster();game.hud.close_modal();game.build_mode=false;game._cancel_route()
 		else:
 			var record:Dictionary=records[key]
 			if record.position.distance_to(data.position)>.01 and record.has("entry") and is_instance_valid(record.entry.model):
-				FarmFallPose.reset(record.entry);record.entry.body.global_position=data.position;record.entry.base_transform=record.entry.model.transform
-			record.position=data.position;record.age=float(data.age)
+				FarmFallPose.reset(record.entry);record.entry.body.global_position=data.position;record.entry.base_transform=data.pose_base
+			record.pose_base=data.pose_base;record.position=data.position;record.age=float(data.age)
 	for key in records.keys():
 		if not keep.has(key):_restore(records[key]);records.erase(key)
 	protected=protection.duplicate();_sync_flags();apply_poses()
