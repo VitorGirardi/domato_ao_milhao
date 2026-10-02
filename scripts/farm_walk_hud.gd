@@ -24,12 +24,12 @@ func setup(hud:FarmHUD) -> void:
 	farm_levels.setup(hud,root,Rect2(470,22,500,70))
 	var time_panel:=FarmGameUI.card(hud,root,Rect2(24,22,242,50))
 	clock=hud.label(time_panel,"",Vector2(15,10),Vector2(220,32),20)
-	var cash:=FarmGameUI.card(hud,root,Rect2(1154,22,262,50))
-	FarmGameUI.icon(cash,"coins",Rect2(12,9,33,33))
-	wallet=hud.label(cash,"",Vector2(57,9),Vector2(190,33),24)
+	var cash:=FarmGameUI.card(hud,root,Rect2(1164,286,252,42))
+	FarmGameUI.icon(cash,"coins",Rect2(12,7,28,28))
+	wallet=hud.label(cash,"",Vector2(50,6),Vector2(190,30),19)
 	objective=FarmGameUI.action(hud,root,"Objetivo",Rect2(24,86,335,43),"objectives")
 	objective.add_theme_font_size_override("font_size",16)
-	attention=FarmGameUI.action(hud,root,"",Rect2(986,86,430,48),"field_attention",true)
+	attention=FarmGameUI.action(hud,root,"",Rect2(986,343,430,48),"field_attention",true)
 	attention.add_theme_font_size_override("font_size",16)
 	interaction=FarmGameUI.action(hud,root,"",Rect2(470,737,500,60),"nearby_interact",true)
 	interaction.add_theme_font_size_override("font_size",23)
@@ -49,8 +49,8 @@ func setup(hud:FarmHUD) -> void:
 	for entry in [["background",Color("d8cfb6")],["fill",Color("6d9650")]]:
 		var style:=StyleBoxFlat.new();style.bg_color=entry[1];style.set_corner_radius_all(4);horse_stamina.add_theme_stylebox_override(entry[0],style)
 	for i in range(7):
-		var shortcut:=FarmGameUI.action(hud,root,["F · Armazém","H · Ajudante","TAB · Construir","F5 · Salvar","Esc · Menu","B · Emotes","T · Terrenos"][i],Rect2(139+i*166,854,156,32),["market","staff","mode","save","menu","emotes","parcels"][i])
-		shortcut.add_theme_font_size_override("font_size",14);shortcuts.append(shortcut)
+		var shortcut:=FarmGameUI.action(hud,root,["F · Armazém","H · Ajudante","TAB · Construir","F5 · Salvar","Esc · Menu","B · Emotes","T · Terrenos"][i],Rect2(24,160+i*48,190,40),["market","staff","mode","save","menu","emotes","parcels"][i])
+		shortcut.add_theme_font_size_override("font_size",15);shortcuts.append(shortcut);dim_shortcut(shortcut)
 
 func update(hud:FarmHUD,state:FarmState,context:Dictionary,crop:String) -> void:
 	farm_levels.update(state)
@@ -98,8 +98,15 @@ func mount_status(mounted:bool,stamina:float,burst:float,swimming:bool=false) ->
 
 func visit_mode(active:bool) -> void:
 	for i in range(shortcuts.size()):
-		shortcuts[i].visible=true;shortcuts[i].position.x=(61 if active else 139)+i*166
+		shortcuts[i].visible=true
 	objective.visible=true
 	if active:
 		pass
 		controls.text="COOP · E interagir · Tab construir · I estoque · F5 salvar"
+
+static func dim_shortcut(button:Button) -> void:
+	button.focus_mode=Control.FOCUS_ALL
+	var refresh:=func():button.modulate=Color.WHITE if button.is_hovered() or button.has_focus() else Color(.82,.86,.82,.62)
+	button.mouse_entered.connect(refresh);button.mouse_exited.connect(refresh)
+	button.focus_entered.connect(refresh);button.focus_exited.connect(refresh)
+	refresh.call()

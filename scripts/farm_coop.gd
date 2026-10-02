@@ -11,7 +11,8 @@ static func load_farm(path:String) -> FarmState:
 		if not data is Dictionary or data.get("coop_version")!=1:continue
 		var state:=FarmState.new()
 		if state.restore(data.get("farm")):
-			state.unlimited_money=true;return state
+			if state.game_mode=="legacy":state.unlimited_money=true
+			return state
 	return null
 
 static func save_farm(path:String,state:FarmState) -> bool:

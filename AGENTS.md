@@ -2,7 +2,7 @@
 
 ## Preferência de Vitor — dinheiro infinito
 
-A partida normal do autor deve iniciar e continuar com dinheiro infinito, exibido como ∞. Preserve essa regra nas próximas versões; só a remova se Vitor pedir explicitamente. Saves antigos também recebem o modo ao serem abertos. Não use essa preferência para apagar ou reiniciar a fazenda.
+A pedido de Vitor, cada nova fazenda escolhe Survival (economia limitada, $1.600 iniciais e progressão) ou Sandbox (dinheiro infinito, exibido como ∞, e catálogo/equipamentos liberados). Preserve o modo escolhido ao salvar e carregar. Saves anteriores à escolha de modos mantêm o dinheiro infinito e seu progresso original. Nunca apague ou reinicie uma fazenda para aplicar essa preferência. Cada fazenda tem seu save; criar outra não substitui as existentes.
 
 Os testes de economia usam FarmState com dinheiro limitado por padrão, em arquivos QA isolados. Nunca sobrescreva farm_v1.json ou seu backup para testar. Preços, requisitos de nível e recursos de produção continuam existindo.
 

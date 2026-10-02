@@ -2,6 +2,7 @@ extends Node3D
 
 const SAVE_PATH := "user://farm_v1.json"
 var save_path := SAVE_PATH
+var farm_saves:=FarmSaves.new()
 var state := FarmState.new()
 var world: FarmWorld
 var hud: FarmHUD
@@ -68,12 +69,14 @@ var windowed_mode:=Window.MODE_WINDOWED
 func _ready() -> void:
 	qa_mode = OS.is_debug_build() and "--qa" in OS.get_cmdline_user_args()
 	if qa_mode: save_path="user://qa_farm_v025.json"
+	farm_saves.legacy_path=save_path
+	if not qa_mode:save_path=farm_saves.active_path()
 	get_tree().auto_accept_quit = false
 	_inputs()
 	world = FarmWorld.new()
 	add_child(world)
 	var loaded := false if qa_mode else _load_game()
-	state.unlimited_money=not qa_mode
+	if not loaded:state.unlimited_money=not qa_mode
 	next_silly=state.elapsed+75
 	world.rebuild(state)
 	add_child(feedback)
@@ -1257,7 +1260,9 @@ func _action(value: String) -> void:
 				hud.toast("Espaço livre. Metade do custo voltou para você.")
 		"reset_ask": hud.confirm_reset()
 		"reset_confirm":
-			_reset_farm()
+			var fresh:=FarmState.new_farm(state.game_mode,state.character_id)
+			if state.game_mode=="legacy":fresh.unlimited_money=state.unlimited_money
+			_reset_farm(fresh)
 			hud.welcome(state,false)
 			_save_game(false,true)
 		"quit":_request_quit()
@@ -1286,6 +1291,7 @@ func _update_ui() -> void:
 		hud.toast(state.level_notice);state.level_notice="";_chime()
 
 func _journey_action() -> void:
+	hud.close_modal()
 	var step:=state.journey_step()
 	if step>=FarmState.JOURNEY.size(): return
 	var key:String=FarmState.JOURNEY[step].action
@@ -1331,7 +1337,11 @@ func _save_game(notify: bool, force: bool = false) -> bool:
 		return false
 	# Keep a known-good backup and replace via rename to avoid half-written JSON.
 	if FileAccess.file_exists(save_path):
-		DirAccess.copy_absolute(save_path,save_path+".bak")
+		var prior:=FarmState.new()
+		var parser:=JSON.new()
+		if parser.parse(FileAccess.get_file_as_string(save_path))==OK and prior.restore(parser.data):
+			if DirAccess.copy_absolute(save_path,save_path+".bak")!=OK:
+				hud.toast("Não foi possível guardar o backup. Tente salvar novamente.");return false
 	var result:=DirAccess.rename_absolute(temporary,save_path)
 	if result!=OK:
 		hud.toast("Não foi possível concluir o salvamento.")
@@ -1344,7 +1354,7 @@ func _load_game() -> bool:
 		if FileAccess.file_exists(path):
 			var parser:=JSON.new()
 			if parser.parse(FileAccess.get_file_as_string(path))==OK and state.restore(parser.data):
-				if not qa_mode:state.unlimited_money=true
+				if not qa_mode and state.game_mode=="legacy":state.unlimited_money=true
 				if is_instance_valid(horse) and horse.is_inside_tree() and not _mounted():horse.restore(state.horse)
 				return true
 	return false
@@ -3238,13 +3248,14 @@ func _qa_v025() -> void:
 	assert(state.items[0].kind=="stable")
 	print("V025_INTEGRATION_OK: stable render/menu/map, graze, bounded walking, obstacle sweep, pause, recovery, approach/mount/dismount")
 
-func _reset_farm() -> void:
+func _reset_farm(next_state:FarmState=null) -> void:
 	falls.reset()
 	actor.stop_emote();weapons.holster();player.velocity=Vector3.ZERO
 	navigator.waypoint_name="";navigator.target_key="";navigator.stable_target={}
 	field_alerts=FarmFieldAlerts.new()
 	if horse.mounted:horse.reset_rider(player,avatar,actor)
-	state=FarmState.new();state.unlimited_money=not qa_mode
+	state=next_state if next_state!=null else FarmState.new()
+	if next_state==null:state.unlimited_money=not qa_mode
 	horse.restore(state.horse)
 	world.rebuild(state)
 	selected=-1
@@ -3305,33 +3316,18 @@ func _qa_v026() -> void:
 	assert(_save_game(false))
 	_action("front:title");assert(not session_started and front_end.has_save and hud.modal_kind=="title")
 	await _qa_ui_capture("menu-v026-continue")
-	var saved:=FileAccess.get_file_as_string(save_path)
-	_action("front:new");hud.text_input.text="Fazenda Outra";_action("front:new_review")
-	assert(hud.modal_kind=="new_confirm" and FileAccess.get_file_as_string(save_path)==saved)
-	await _qa_ui_capture("menu-v026-confirm")
-	# Force a write failure using an isolated directory where the temporary file should be.
 	var original_path:=save_path
-	var failed_path:="res://test-results/qa_new_failure.json"
-	DirAccess.make_dir_recursive_absolute(failed_path+".tmp")
-	save_path=failed_path
-	var retained:=state
-	_action("front:new_commit")
-	assert(state==retained and hud.modal_kind=="new_confirm" and FileAccess.get_file_as_string(original_path)==saved)
-	DirAccess.remove_absolute(failed_path+".tmp");save_path=original_path
-	_action("front:cancel_new");assert(hud.modal_kind=="title" and FileAccess.get_file_as_string(save_path)==saved)
-	# Simulate startup loading from disk rather than continuing only the in-memory state.
+	var saved:=FileAccess.get_file_as_string(save_path)
+	_action("front:new");hud.text_input.text="Fazenda Outra";_action("front:back")
+	assert(hud.modal_kind=="title" and FileAccess.get_file_as_string(original_path)==saved)
 	state=FarmState.new();assert(_load_game())
 	front_end.setup(self,true);front_end.resume_session=false;front_end.show_title()
 	_action("front:continue");assert(session_started and state.armory.magazine==7 and state.farm_name=="Fazenda Horizonte")
 	_action("menu");_action("front:settings");_action("front:back");assert(hud.modal_kind=="menu" and session_started)
-	_action("front:title");_action("front:new");hud.text_input.text="Fazenda Renovada";_action("front:new_review");_action("front:new_commit")
+	_action("front:title");_action("front:new");hud.text_input.text="Fazenda Renovada";_action("front:new_review")
 	assert(session_started and state.farm_name=="Fazenda Renovada" and not state.claimed and not state.armory.pistol)
-	var archive:=save_path.get_base_dir().path_join("farms_archive")
-	var found:=false
-	for name in DirAccess.get_files_at(archive):
-		var data:Variant=JSON.parse_string(FileAccess.get_file_as_string(archive.path_join(name)))
-		if data is Dictionary and data.get("farm_name")=="Fazenda Horizonte" and data.armory.magazine==7:found=true
-	assert(found,"Previous farm archived before replacement")
+	assert(save_path!=original_path)
+	assert(JSON.parse_string(FileAccess.get_file_as_string(original_path)).armory.magazine==7)
 	assert(JSON.parse_string(FileAccess.get_file_as_string(save_path)).farm_name=="Fazenda Renovada")
 	session_started=false
-	print("V026_INTEGRATION_OK: startup pause, title, continue, cancel new, archived old farm, new save, settings apply/cancel/persist, controls and pause menu")
+	print("V026_INTEGRATION_OK: startup pause, title, continue, cancel new, independent old farm, new save, settings apply/cancel/persist, controls and pause menu")

@@ -2,7 +2,7 @@ class_name FarmNetwork
 extends Node
 ## Host-authoritative cooperative farm.
 const PORT:=28729
-const PROTOCOL:=12
+const PROTOCOL:=13
 var game:Node3D
 var active:=false
 var ready_session:=false
@@ -67,11 +67,12 @@ func setup(owner_game:Node3D) -> void:
 	multiplayer.connection_failed.connect(func():leave("Não foi possível conectar. Confira o endereço e a rede."))
 	multiplayer.server_disconnected.connect(func():leave("O anfitrião encerrou a sessão. Sua fazenda solo está preservada."))
 	badge=game.hud.label(game.hud.root,"",Vector2(440,122),Vector2(610,35),18,FarmHUD.CREAM)
-	stock_button=FarmGameUI.action(game.hud,game.hud.walking.root,"I · Estoque",Rect2(1223,854,156,32),"net:stock");stock_button.visible=false;stock_button.add_theme_font_size_override("font_size",14)
+	stock_button=FarmGameUI.action(game.hud,game.hud.walking.root,"I · Estoque",Rect2(24,496,190,40),"net:stock");stock_button.visible=false;stock_button.add_theme_font_size_override("font_size",15);FarmWalkHUD.dim_shortcut(stock_button)
 	badge.mouse_filter=Control.MOUSE_FILTER_IGNORE;badge.visible=false
 	badge.add_theme_color_override("font_shadow_color",Color("20392a"));badge.add_theme_constant_override("shadow_offset_y",2)
 
 func show_menu(message:String="") -> void:
+	coop_path=FarmCoop.path_for(game.save_path)
 	var p:=FarmGameUI.open(game.hud,"network","Jogar junto · 2 jogadores","worker",850,650)
 	game.hud.label(p,"COOPERATIVO · FAZENDA",Vector2(32,112),Vector2(780,30),20)
 	game.hud.label(p,"Construam, produzam e cuidem da fazenda juntos.\nCooperativo salvo à parte; sua fazenda solo fica preservada.",Vector2(32,153),Vector2(585,62),17)
@@ -208,7 +209,7 @@ func _welcome(snapshot:String,who:String,pos:Vector3,versions:Dictionary,topolog
 	var data:Variant=JSON.parse_string(snapshot)
 	var restored:=FarmState.new()
 	if not restored.restore(data):leave("Não foi possível carregar a fazenda compartilhada.");return
-	game.state=restored;game.state.unlimited_money=true;game.world.rebuild(game.state);game.horse.restore(game.state.horse)
+	game.state=restored;game.world.rebuild(game.state);game.horse.restore(game.state.horse)
 	remote_character=character if FarmCharacters.valid(character) else "farmer";structure_version=topology;remote_name=who.left(20);accepted=1;ready_session=true;plot_versions=versions;received_revision=-1
 	_start_visit(pos);_spawn_remote(remote_name,pos-Vector3(2,0,0));_client_ready.rpc_id(1)
 
