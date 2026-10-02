@@ -1,3 +1,9 @@
+# Testar 0.42 — Mira sobre o ombro
+
+P saca a pistola; segure direito para mirar e Q troca o ombro. Confira a pose
+com duas mãos, o centro livre e o retorno suave ao soltar. Teste paredes,
+recarga e o amigo no cooperativo. Sem primeira pessoa. [Roteiro completo](MIRA.md).
+
 # Testar 0.41 — Queda e retorno
 
 Atualize os dois PCs. Compre a P-8 com Damião; P saca, botão direito mira, clique
