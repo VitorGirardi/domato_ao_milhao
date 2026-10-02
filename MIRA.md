@@ -1,4 +1,4 @@
-# Mira sobre o ombro — 0.42.0
+# Mira sobre o ombro — 0.43.0
 
 **P** saca ou guarda a pistola. Segure o **botão direito** para aproximar a câmera
 sobre o ombro e levantar a arma com as duas mãos. Mova o mouse para mirar e
@@ -14,7 +14,7 @@ enxergar por cima ou ao lado dela. A câmera recua diante de obstáculos.
 
 A pose feita no Blender serve aos dois personagens e aparece para o amigo
 no cooperativo, incluindo mira, disparo e recarga. Ambos os PCs devem atualizar
-para 0.42.0, protocolo 13. Save 20, dinheiro infinito e queda temporária preservados.
+para 0.43.0, protocolo 14. Save 20, dinheiro infinito e queda temporária preservados.
 
 ## Conferência no jogo
 

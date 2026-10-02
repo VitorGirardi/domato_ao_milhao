@@ -1,8 +1,12 @@
-# Testar 0.42 — Mira sobre o ombro
+# Testar 0.43 — Mira sobre o ombro
 
 P saca a pistola; segure direito para mirar e Q troca o ombro. Confira a pose
 com duas mãos, o centro livre e o retorno suave ao soltar. Teste paredes,
 recarga e o amigo no cooperativo. Sem primeira pessoa. [Roteiro completo](MIRA.md).
+
+# Testar 0.42 — Fazendas e modos
+
+Menu inicial → Minhas fazendas → Criar outra fazenda. Escolha Survival ou Sandbox; a fazenda atual fica preservada. [Modos, saves e roteiro completo](FAZENDAS.md).
 
 # Testar 0.41 — Queda e retorno
 

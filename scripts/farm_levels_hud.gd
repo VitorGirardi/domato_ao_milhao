@@ -22,8 +22,8 @@ func setup(hud:FarmHUD,parent:Control,rect:Rect2,compact:bool=false) -> void:
 
 func update(state:FarmState) -> void:
 	var level:=FarmLevels.level(state.farm_xp)
-	title.text="FAZENDA · NÍVEL %d"%level
-	detail.text=FarmLevels.next_text(state.farm_xp)
+	title.text="SANDBOX · TUDO LIBERADO" if state.game_mode=="sandbox" else "FAZENDA · NÍVEL %d"%level
+	detail.text="Construa e explore com dinheiro infinito" if state.game_mode=="sandbox" else FarmLevels.next_text(state.farm_xp)
 	var start:int=FarmLevels.THRESHOLDS[level-1]
 	progress.max_value=FarmLevels.THRESHOLDS[level]-start if level<6 else 1
 	progress.value=state.farm_xp-start if level<6 else 1
@@ -31,11 +31,11 @@ func update(state:FarmState) -> void:
 static func show(hud:FarmHUD,state:FarmState) -> void:
 	var level:=FarmLevels.level(state.farm_xp)
 	var p:=FarmGameUI.open(hud,"farm_levels","Sua fazenda · Nível %d"%level,"upgrade",860,640)
-	hud.label(p,FarmLevels.next_text(state.farm_xp),Vector2(28,111),Vector2(804,34),24)
+	hud.label(p,"Sandbox · Todas as construções liberadas" if state.game_mode=="sandbox" else FarmLevels.next_text(state.farm_xp),Vector2(28,111),Vector2(804,34),24)
 	hud.label(p,"%d XP no total  •  Produza e entregue encomendas para crescer."%state.farm_xp,Vector2(28,149),Vector2(804,26),16)
 	for i in range(6):
 		var kind:String=FarmLevels.BUILDINGS[i]
-		var unlocked:=level>=i+1
+		var unlocked:=FarmLevels.unlocked(state,kind)
 		var card:=FarmGameUI.card(hud,p,Rect2(28+(i%3)*272,193+(i/3)*150,260,138))
 		FarmGameUI.icon(card,FarmLevels.ICONS[i],Rect2(12,18,57,57))
 		hud.label(card,"Curral + estrebaria" if kind=="corral" else FarmState.ITEMS[kind].name,Vector2(78,16),Vector2(172,30),16 if kind=="corral" else 20)

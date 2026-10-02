@@ -18,7 +18,7 @@ var filters:Array[Button]=[]
 
 func setup(owner_game:Node3D) -> void:
 	game=owner_game;terrain=FarmMapView.background()
-	var p:=FarmGameUI.card(game.hud,game.hud.walking.root,Rect2(24,153,252,254))
+	var p:=FarmGameUI.card(game.hud,game.hud.walking.root,Rect2(1164,22,252,254))
 	mini=FarmMapView.new();mini.position=Vector2(7,7);mini.size=Vector2(238,190);mini.terrain=terrain;p.add_child(mini)
 	mini.gui_input.connect(func(event:InputEvent):
 		if event is InputEventMouseButton and event.pressed and event.button_index==MOUSE_BUTTON_LEFT:show())
