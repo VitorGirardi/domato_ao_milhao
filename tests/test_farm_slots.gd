@@ -88,5 +88,20 @@ func run() -> void:
 	assert(not FarmState.new().restore(data))
 	game.front_end.open_farm(sandbox_path)
 	assert(game.state.unlimited_money and game.state.game_mode=="sandbox")
-	print("FARM_SLOTS_OK: legacy preservation, independent farms, modes, backups, failures, coop, mission CTA and HUD")
+	# Changing farm while aiming releases the mouse and uses the destination armory.
+	game.build_mode=false;game.hud.close_modal()
+	var draw:=InputEventKey.new();draw.physical_keycode=KEY_P;draw.pressed=true
+	var aim:=InputEventMouseButton.new();aim.button_index=MOUSE_BUTTON_RIGHT;aim.pressed=true
+	var prior_mouse:=Input.mouse_mode
+	assert(game.weapons.handle_input(draw) and game.weapons.armed)
+	assert(game.weapons.handle_input(aim) and game.weapons.aiming and game.weapons.cursor_owned)
+	game.weapons._physics_process(.1);assert(game.weapons.aim_blend>0)
+	game.front_end.open_farm(survival_path)
+	assert(not game.weapons.armed and not game.weapons.aiming and not game.weapons.cursor_owned)
+	assert(Input.mouse_mode==prior_mouse and not game.weapons.pistol.visible)
+	assert(not game.weapons.inventory().pistol and game.state.game_mode=="survival")
+	assert(game.state.money==1200 and not game.state.unlimited_money)
+	game.front_end.open_farm(sandbox_path)
+	assert(game.weapons.inventory().pistol and not game.weapons.armed and not game.weapons.aiming)
+	print("FARM_SLOTS_OK: legacy preservation, independent farms, modes, backups, failures, coop, mission CTA, HUD and aiming reset across farms")
 	game.session_started=false;game.free();quit()
