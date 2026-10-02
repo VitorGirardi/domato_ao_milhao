@@ -41,9 +41,9 @@ func is_down(key:String) -> bool:return records.has(key)
 func refresh_targets() -> void:
 	if game==null or not is_instance_valid(game.world):return
 	targets=FarmFallTargets.collect(game)
-	FarmFallTargets.add(targets,player_key(),game.player,game.avatar,game.actor,"human",.43,2.58)
+	FarmFallTargets.add(targets,player_key(),game.player,game.avatar,game.actor,"human",.43,2.58,-1,true)
 	if game.network.active and is_instance_valid(game.network.remote):
-		FarmFallTargets.add(targets,player_key(game.network.accepted),game.network.remote,game.network.remote_model,game.network.remote_actor,"human",.43,2.58)
+		FarmFallTargets.add(targets,player_key(game.network.accepted),game.network.remote,game.network.remote_model,game.network.remote_actor,"human",.43,2.58,-1,true)
 	for key in records:
 		var record:Dictionary=records[key]
 		if not targets.has(key):continue

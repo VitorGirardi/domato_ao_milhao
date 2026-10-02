@@ -1,3 +1,9 @@
+# Atualização 0.42 — mira sobre o ombro
+
+Atualizem os dois PCs para **0.42.0, protocolo 13**. Segurar direito aproxima a
+câmera; Q troca o ombro. A pose da pistola com duas mãos, disparos e recarga
+aparecem para o outro jogador. [Guia da mira](MIRA.md).
+
 # Atualização 0.41 — queda e retorno
 
 Atualizem os dois PCs para **0.41.0, protocolo 12**. Pistola, tiros e recuperação

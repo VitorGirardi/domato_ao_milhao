@@ -1,3 +1,11 @@
+# 0.42.0 — Mira sobre o ombro
+
+- Segurar o botão direito aproxima suavemente a câmera sobre o ombro; soltar devolve a visão normal de caminhada. Sem primeira pessoa.
+- Q durante a mira troca o lado da câmera, deixando o centro livre para enxergar o alvo.
+- Nova pose de duas mãos feita no Blender, com apoio na pistola, inclinação acompanhando a mira e recarga; compatível com os dois personagens e o cooperativo.
+- O ponto central considera jogadores e animais; a trajetória sai do cano e respeita obstáculos.
+- Colisão da câmera protege a visão perto de paredes. Saves, dinheiro infinito e recuperação temporária preservados. Protocolo 13.
+
 # 0.41.0 — Queda e retorno
 
 - Tiros da pistola derrubam pessoas e animais temporariamente. Após 60 segundos começa a animação de levantar, seguida de três segundos de proteção.

@@ -25,7 +25,10 @@ var layer:=CanvasLayer.new()
 var status:Label
 var reticle:Label
 var last_state:FarmState
-var walk_pitch:=0.78
+var aim_blend:=0.0
+var shoulder_side:=1.0
+var aim_pitch:=.08
+var pose_pitch:=0.0
 var combat:=FarmCombatNet.new()
 
 func setup(host:Node3D) -> void:
@@ -119,25 +122,30 @@ func shop_has_priority() -> bool:
 	return true
 
 func holster() -> void:
-	if armed and game!=null:game.pitch=walk_pitch
 	armed=false;aiming=false;reload_left=0;recoil=0
 	if pistol:pistol.visible=false
 
+func _input(event:InputEvent) -> void:
+	# A release over a HUD panel must still end the aim.
+	if event is InputEventMouseButton and event.button_index==MOUSE_BUTTON_RIGHT and not event.pressed:aiming=false
+
 func handle_input(event:InputEvent) -> bool:
 	if not active():return false
-	if event is InputEventMouseMotion and armed and Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT):
+	if event is InputEventMouseMotion and armed and aiming:
 		var sensitivity:=float(game.preferences.data.sensitivity)
 		game.yaw-=event.relative.x*.004*sensitivity
-		game.pitch=clampf(game.pitch+event.relative.y*.003*sensitivity,-.35,.80)
+		aim_pitch=clampf(aim_pitch+event.relative.y*.003*sensitivity,-.65,.80)
 		return true
 	if event is InputEventKey and event.pressed and not event.echo:
 		match event.physical_keycode:
 			KEY_P:
 				if armed:holster()
 				elif inventory().pistol:
-					game.actor.stop_emote();walk_pitch=game.pitch;game.pitch=.12;armed=true
+					game.actor.stop_emote();armed=true
 				else:game.hud.toast("Damião vende a P-8 na margem oeste da estrada, perto do armazém.")
 				return true
+			KEY_Q:
+				if armed and aiming:shoulder_side=-shoulder_side;return true
 			KEY_E:
 				if shop_has_priority():
 					holster();show_shop();return true
@@ -146,6 +154,8 @@ func handle_input(event:InputEvent) -> bool:
 				if armed:start_reload();return true
 			KEY_TAB,KEY_B:holster()
 	if event is InputEventMouseButton and armed:
+		if event.button_index==MOUSE_BUTTON_RIGHT:
+			aiming=event.pressed;return true
 		if event.button_index==MOUSE_BUTTON_LEFT:
 			if event.pressed:shoot()
 			return true
@@ -161,6 +171,7 @@ func start_reload() -> bool:
 func _physics_process(delta:float) -> void:
 	if game==null:return
 	elapsed+=delta
+	aim_blend=lerpf(aim_blend,1.0 if armed and aiming and active() else 0.0,1-exp(-delta*14))
 	if last_state!=game.state and not game.network.active:
 		holster();last_state=game.state;cooldown=0
 	if not active():
@@ -178,7 +189,7 @@ func _physics_process(delta:float) -> void:
 		flashes[i].time-=delta
 		if flashes[i].time<=0:flashes[i].node.queue_free();flashes.remove_at(i)
 	status.visible=active() and inventory().pistol
-	status.text=("P-8  ·  %d / %d\n"%[inventory().magazine,inventory().reserve])+(("RECARREGANDO…" if reload_left>0 else "Clique: disparar · R: recarregar\nSegure direito: mirar · P: guardar") if armed else "P: sacar pistola")
+	status.text=("P-8  ·  %d / %d\n"%[inventory().magazine,inventory().reserve])+(("RECARREGANDO…" if reload_left>0 else "Clique: disparar · R: recarregar\nDireito: mirar · Q: trocar ombro · P: guardar") if armed else "P: sacar pistola")
 	reticle.visible=active() and armed and reload_left<=0;reticle.text="×" if hit_time>0 else "+";reticle.modulate=Color("f4bf64") if hit_time>0 else Color("fff4da")
 	muzzle.visible=armed and recoil>SHOT_INTERVAL-.055
 
@@ -186,33 +197,21 @@ func aim_point() -> Vector3:
 	var viewport:=get_viewport().get_visible_rect().size*.5
 	var origin:Vector3=game.camera.project_ray_origin(viewport)
 	var end:Vector3=origin+game.camera.project_ray_normal(viewport)*70
-	var ray:=PhysicsRayQueryParameters3D.create(origin,end,1,[game.player.get_rid()])
-	var hit:=get_world_3d().direct_space_state.intersect_ray(ray)
-	return hit.position if not hit.is_empty() else end
+	# Camera selection also includes cooperative players without solid colliders.
+	var hit:Dictionary=game.falls.trace_hit(origin,end,game.falls.own_id())
+	return hit.get("position",end)
 
-func _pose_player(delta:float) -> void:
-	var actor:FarmAvatar=game.actor
-	aiming=Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT)
+func _pose_player(delta:float,for_shot:bool=false) -> void:
 	var target:=aim_point();var direction:Vector3=target-game.player.position
 	game.avatar.rotation.y=lerp_angle(game.avatar.rotation.y,atan2(direction.x,direction.z),1-exp(-delta*22))
-	var pitch:=clampf(atan2(target.y-(game.player.position.y+1.55),Vector2(direction.x,direction.z).length()),-.8,.7)
-	var kick:=recoil/SHOT_INTERVAL
-	var lowering:=.60 if reload_left>0 else 0.0
-	actor.pose_bone("UpperArm.R",Vector3(-1.17-pitch*.65-kick*.15+lowering,0,-.08),1)
-	actor.pose_bone("Forearm.R",Vector3(-.25,0,0),1)
-	actor.pose_bone("Hand.R",Vector3(-.10,0,0),1)
-	actor.pose_bone("UpperArm.L",Vector3(-1.00-pitch*.5+lowering,.2,.34),1)
-	actor.pose_bone("Forearm.L",Vector3(-.72-(sin(reload_left/RELOAD_TIME*PI)*.5 if reload_left>0 else 0.0),-.28,0),1)
-	actor.can.visible=false;actor.carried_egg.visible=false
-	var hand:Transform3D=actor.skeleton.get_bone_global_pose(actor.bones["Hand.R"])
-	var grip:Vector3=hand*actor.hand_grip
-	var basis:Basis=(Basis(Vector3.RIGHT,-pitch-kick*.12+lowering)*Basis(Vector3.FORWARD,.45 if reload_left>0 else 0.0)).scaled(Vector3.ONE*1.1)
-	pistol.transform=hand.affine_inverse()*Transform3D(basis,grip)
+	pose_pitch=clampf(atan2(target.y-(game.player.position.y+1.95),Vector2(direction.x,direction.z).length()),-.8,.7)
+	var weight:=1.0 if for_shot else maxf(aim_blend,recoil/SHOT_INTERVAL)
+	FarmPistolPose.apply(game.actor,pistol,pose_pitch,weight,reload_left/RELOAD_TIME,recoil/SHOT_INTERVAL)
 	pistol.visible=true
 
 func shoot() -> bool:
 	if not active() or not armed or reload_left>0 or cooldown>0 or game.actor.action_time>0 or game.actor.airborne:return false
-	_pose_player(1.0)
+	_pose_player(1.0,true)
 	var origin:Vector3=pistol.global_transform*Vector3(0,.184,.235)
 	var end:=aim_point()
 	if game.network.active:
