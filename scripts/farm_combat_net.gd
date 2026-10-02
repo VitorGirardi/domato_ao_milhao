@@ -34,7 +34,10 @@ func release(id:int) -> void:
 
 func bag_for(id:int) -> Dictionary:
 	if id==1:return game.state.armory
-	if not bags.has(id):bags[id]=FarmArmory.fresh()
+	if not bags.has(id):
+		bags[id]=FarmArmory.fresh()
+		if game.state.infinite_resources():
+			FarmArmory.buy_pistol(game.state,bags[id]);bags[id].reserve=FarmArmory.MAX_RESERVE
 	return bags[id]
 
 func allowed(id:int) -> bool:
@@ -138,7 +141,7 @@ func _physics_process(delta:float) -> void:
 		for id in reloads.keys():
 			if not allowed(id):reloads.erase(id);send_bag(id)
 			elif Time.get_ticks_msec()>=int(reloads[id]):
-				FarmArmory.reload_magazine(bag_for(id));reloads.erase(id);send_bag(id)
+				FarmArmory.reload_magazine(bag_for(id),game.state.infinite_resources());reloads.erase(id);send_bag(id)
 	send_left-=delta
 	if net.accepted!=0 and send_left<=0:
 		send_left=.05

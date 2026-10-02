@@ -47,8 +47,8 @@ static func care(state:FarmState,index:int,action:String) -> String:
 		_: return "Ação desconhecida."
 	return ""
 static func sell(state:FarmState,amount:int) -> int:
-	if amount<=0 or amount>state.milk_stock: return 0
+	if amount<=0 or amount>state.stock("milk"): return 0
 	var total:=amount*MILK_PRICE
-	state.milk_stock-=amount; state.money+=total; state.revenue+=total
+	state.consume_stock("milk",amount); state.money+=total; state.revenue+=total
 	state.refresh_journey()
 	return total

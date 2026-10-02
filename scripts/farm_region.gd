@@ -89,6 +89,11 @@ static func bed(p: Vector2, h: float) -> float:
 		var ceiling:=66.0+clampf((-p.y-262.0)/14.0,0,1)*18.0
 		h=minf(h,ceiling)
 	h=minf(h,lerpf(64.4,70.0,smoothstep(.55,1.15,plunge_distance(p)))) if plunge_distance(p)<1.15 else h
+	# Meet the deck at its end edges, then lower the banks beneath the planks.
+	# Keeping the approach at y=5 avoids a vertical step for horses/vehicles.
+	if p.x>=397 and p.x<=443 and absf(p.y)<=4:
+		var inset:=minf(p.x-397,443-p.x)
+		h=minf(h,5.0-.32*smoothstep(0,.15,inset))
 	return h
 
 static func on_bridge(p: Vector2) -> bool:

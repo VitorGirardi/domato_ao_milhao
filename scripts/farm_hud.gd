@@ -275,10 +275,10 @@ func update(state: FarmState, build_mode: bool, selected: int, tool: String, cro
 	build_hud.visible=build_mode or not state.claimed
 	walking.root.visible=not build_mode and state.claimed
 	money_label.text=money_text(state)
-	var total:=state.milk_stock+state.cheese_stock
+	var total:=state.stock("milk")+state.stock("cheese")
 	for value in state.inventory.values():
 		total+=int(value)
-	stock_label.text="%d produtos no estoque   •   Venda: $%d"%[total,state.sale_value()]
+	stock_label.text="∞ Recursos infinitos · Sandbox" if state.infinite_resources() else "%d produtos no estoque   •   Venda: $%d"%[total,state.sale_value()]
 	clock_label.text=FarmDayNight.clock_text(state.elapsed)
 	mode_label.text="CONSTRUÇÃO • PAUSADO" if build_mode else "VIDA NO CAMPO"
 	if not state.claimed:
@@ -316,9 +316,9 @@ func update(state: FarmState, build_mode: bool, selected: int, tool: String, cro
 		if goal.key=="plots": quest_label.text+="\nCanteiros: %d / 3"%mini(3,state.count_items("plot"))
 		if goal.key=="water": quest_label.text+="\nRegados: %d / 3"%mini(3,state.count_items("plot",true))
 		if goal.key=="contract":
-			quest_label.text+="\nCenouras: %d / 6"%mini(6,int(state.inventory.carrot))
-			if state.inventory.carrot<6 and state.reserve.carrot>0:
-				quest_label.text="Você tem cenouras reservadas.\nRetire no celeiro antes de\nentregar o pedido de $110.\nEstoque: %d / 6"%int(state.inventory.carrot)
+			quest_label.text+="\nCenouras: %d / 6"%mini(6,int(state.stock("carrot")))
+			if state.stock("carrot")<6 and state.reserve.carrot>0:
+				quest_label.text="Você tem cenouras reservadas.\nRetire no celeiro antes de\nentregar o pedido de $110.\nEstoque: %d / 6"%int(state.stock("carrot"))
 				quest_button.text="Retirar no celeiro"
 	else:
 		quest_counter.text="CAPÍTULO CONCLUÍDO!"
@@ -601,16 +601,16 @@ func _orders(state: FarmState, p: Panel) -> void:
 	var row:=0
 	for product in request.needs:
 		var need:int=request.needs[product]
-		var available:int=state.inventory[product]
+		var available:int=state.stock(product)
 		FarmGameUI.icon(c,product,Rect2(22,119+row*63,46,46))
 		label(c,FarmTrade.NAMES[product],Vector2(85,124+row*63),Vector2(300,32),22)
-		label(c,"%d / %d"%[available,need],Vector2(417,124+row*63),Vector2(187,32),25,INK if available>=need else Color("a95734"))
+		label(c,"%s / %d"%[state.stock_text(product),need],Vector2(417,124+row*63),Vector2(187,32),25,INK if available>=need else Color("a95734"))
 		row+=1
 	FarmGameUI.icon(c,"coins",Rect2(22,264,38,38))
 	label(c,"$%d  + 1 reputação"%request.reward,Vector2(77,268),Vector2(520,36),25).tooltip_text="Venda comum: $%d"%request.base
 	label(c,"Restam %s"%FarmTrade.time_label(float(record.active.deadline)-state.elapsed) if active else "Prazo: %d min após aceitar"%int(request.seconds/60),Vector2(22,319),Vector2(590,28),19).tooltip_text="Tempo de jogo ativo. Pausa nos menus e na construção."
 	order_action=FarmGameUI.action(self,c,"Entregar • $%d"%request.reward if active else "Aceitar encomenda",Rect2(22,366,379,45),("deliver_order:" if active else "accept_order:")+market_neighbor,true)
-	order_action.disabled=not FarmTrade.can_supply(request,state.inventory) if active else not state.claimed
+	order_action.disabled=not state.can_supply(request) if active else not state.claimed
 	order_action.tooltip_text="Usa o estoque disponível. Retire reservas no celeiro para entregar."
 	if active:
 		FarmGameUI.action(self,c,"Desistir",Rect2(417,366,194,45),"cancel_order:"+market_neighbor).tooltip_text="Cancela sem multa e sem perder produtos ou reputação."

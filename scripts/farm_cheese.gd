@@ -24,8 +24,8 @@ static func start(state:FarmState,index:int,amount:int) -> String:
 	var data:Dictionary=state.items[index].cheese
 	if data.batch>0 or data.ready>0: return "Recolha o lote antes de produzir outro."
 	if amount<1 or amount>MAX_BATCH: return "Escolha de 1 a 4 queijos."
-	if state.milk_stock<amount*2: return "Falta leite no estoque. Colete no curral."
-	state.milk_stock-=amount*2;data.batch=amount;data.remaining=SECONDS
+	if state.stock("milk")<amount*2: return "Falta leite no estoque. Colete no curral."
+	state.consume_stock("milk",amount*2);data.batch=amount;data.remaining=SECONDS
 	return ""
 static func collect(state:FarmState,index:int) -> int:
 	if index<0 or index>=state.items.size() or state.items[index].kind!="cheesery": return 0
@@ -35,16 +35,16 @@ static func collect(state:FarmState,index:int) -> int:
 	state.earn_xp(amount*FarmLevels.CHEESE)
 	return amount
 static func sell(state:FarmState,amount:int) -> int:
-	if amount<1 or amount>state.cheese_stock: return 0
-	state.cheese_stock-=amount;state.money+=amount*PRICE;state.revenue+=amount*PRICE
+	if amount<1 or amount>state.stock("cheese"): return 0
+	state.consume_stock("cheese",amount);state.money+=amount*PRICE;state.revenue+=amount*PRICE
 	state.refresh_journey()
 	return amount*PRICE
 static func order_amount(state:FarmState) -> int:
 	return 3+int(state.cheese_order.cycle)%3
 static func deliver(state:FarmState) -> bool:
 	var amount:=order_amount(state)
-	if not state.cheese_order.active or state.cheese_stock<amount: return false
-	state.cheese_stock-=amount;state.money+=amount*64;state.revenue+=amount*64
+	if not state.cheese_order.active or state.stock("cheese")<amount: return false
+	state.consume_stock("cheese",amount);state.money+=amount*64;state.revenue+=amount*64
 	state.cheese_order.active=false;state.cheese_order.cycle+=1
 	state.earn_xp(FarmLevels.ORDER)
 	state.trade.nena.reputation+=1;state.refresh_journey()

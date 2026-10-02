@@ -2,7 +2,7 @@ class_name FarmNetwork
 extends Node
 ## Host-authoritative cooperative farm.
 const PORT:=28729
-const PROTOCOL:=15
+const PROTOCOL:=16
 var game:Node3D
 var active:=false
 var ready_session:=false
@@ -443,20 +443,18 @@ func show_stock() -> void:
 		var y:=120+(i%3)*76
 		FarmGameUI.icon(p,key,Rect2(x,y,44,44))
 		game.hud.label(p,names[i],Vector2(x+58,y+4),Vector2(210,35),23)
-		stock_labels[key]=game.hud.label(p,str(stock_count(key))+" un.",Vector2(x+275,y+4),Vector2(120,35),24)
+		stock_labels[key]=game.hud.label(p,game.state.stock_text(key)+" un.",Vector2(x+275,y+4),Vector2(120,35),24)
 	game.hud.label(p,"Produção e vendas dos dois usam este estoque.",Vector2(32,355),Vector2(836,30),18)
 	FarmGameUI.action(game.hud,p,"Voltar ao campo",Rect2(32,410,408,44),"close",true)
 	FarmGameUI.action(game.hud,p,"Peixes e minérios",Rect2(460,410,408,44),"resources")
 
 func stock_count(key:String) -> int:
-	if key=="milk":return game.state.milk_stock
-	if key=="cheese":return game.state.cheese_stock
-	return int(game.state.inventory.get(key,0))
+	return game.state.stock(key)
 
 func update_stock() -> void:
 	if game.hud.modal_kind!="coop_stock":return
 	for key in stock_labels:
-		if is_instance_valid(stock_labels[key]):stock_labels[key].text=str(stock_count(key))+" un."
+		if is_instance_valid(stock_labels[key]):stock_labels[key].text=game.state.stock_text(key)+" un."
 
 func click_world() -> bool:
 	if not game.pointer_valid:return true

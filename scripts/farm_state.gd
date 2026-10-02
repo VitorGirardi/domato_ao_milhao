@@ -80,11 +80,39 @@ static func new_farm(mode:String,chosen_character:String="") -> FarmState:
 	var farm:=FarmState.new()
 	farm.game_mode=mode;farm.character_id=chosen_character
 	farm.unlimited_money=mode=="sandbox"
-	if mode=="sandbox":
-		farm.resources.rod=true;farm.resources.pickaxe=true;farm.resources.mine_owned=true;farm.resources.gallery_level=2
-		farm.watering_upgrade=true;farm.professional_watering=true
-		FarmArmory.buy_pistol(farm,farm.armory)
+	farm.unlock_sandbox()
 	return farm
+
+func infinite_resources() -> bool:
+	return game_mode=="sandbox"
+
+func stock(key:String) -> int:
+	if key not in ["milk","cheese"] and not inventory.has(key) and not resources.stock.has(key):return 0
+	if infinite_resources():return 1000000000
+	if key=="milk":return milk_stock
+	if key=="cheese":return cheese_stock
+	if inventory.has(key):return int(inventory[key])
+	return int(resources.stock[key])
+
+func stock_text(key:String) -> String:
+	return "∞" if infinite_resources() else str(stock(key))
+
+func consume_stock(key:String,amount:int) -> void:
+	if infinite_resources():return
+	if key=="milk":milk_stock-=amount
+	elif key=="cheese":cheese_stock-=amount
+	elif inventory.has(key):inventory[key]-=amount
+	else:resources.stock[key]-=amount
+
+func can_supply(order:Dictionary) -> bool:
+	return infinite_resources() or FarmTrade.can_supply(order,inventory)
+
+func unlock_sandbox() -> void:
+	if not infinite_resources():return
+	resources.rod=true;resources.pickaxe=true;resources.mine_owned=true;resources.gallery_level=2
+	watering_upgrade=true;professional_watering=true
+	if not armory.pistol:FarmArmory.buy_pistol(self,armory)
+	armory.reserve=FarmArmory.MAX_RESERVE
 
 func earn_xp(amount:int) -> void:
 	if amount<=0: return
@@ -234,8 +262,8 @@ func deliver_order(key: String) -> String:
 		_expire_orders()
 		return "O prazo terminou. Nenhum produto foi retirado."
 	var requested:=FarmTrade.offer(key,record)
-	if not FarmTrade.can_supply(requested,inventory): return "Faltam produtos no estoque. Retire reservas no celeiro, se precisar."
-	for product in requested.needs: inventory[product]-=int(requested.needs[product])
+	if not can_supply(requested): return "Faltam produtos no estoque. Retire reservas no celeiro, se precisar."
+	for product in requested.needs: consume_stock(product,int(requested.needs[product]))
 	money+=int(requested.reward)
 	revenue+=int(requested.reward)
 	record.reputation+=1
@@ -269,9 +297,9 @@ func active_orders() -> int:
 	return count
 
 func sell_product(key: String, quantity: int) -> int:
-	if not FarmTrade.PRICES.has(key) or quantity<=0 or quantity>int(inventory.get(key,0)): return 0
+	if not FarmTrade.PRICES.has(key) or quantity<=0 or quantity>stock(key): return 0
 	var total:=quantity*int(FarmTrade.PRICES[key])
-	inventory[key]-=quantity
+	consume_stock(key,quantity)
 	money+=total
 	revenue+=total
 	refresh_journey()
@@ -335,9 +363,9 @@ func reserve_capacity() -> int:
 
 func transfer_reserve(key: String, deposit: bool) -> int:
 	if not reserve.has(key) or count_items("barn")==0: return 0
-	var amount:=mini(int(inventory[key]),maxi(0,reserve_capacity()-reserve_count())) if deposit else int(reserve[key])
+	var amount:=mini(stock(key),maxi(0,reserve_capacity()-reserve_count())) if deposit else int(reserve[key])
 	reserve[key]+=amount if deposit else -amount
-	inventory[key]+=-amount if deposit else amount
+	if not infinite_resources():inventory[key]+=-amount if deposit else amount
 	return amount
 
 func upgrade_building(index:int) -> String:
@@ -641,6 +669,7 @@ func tick(delta: float) -> bool:
 	return eggs
 
 func sale_value() -> int:
+	if infinite_resources():return 10+12+17+24+FarmDairy.MILK_PRICE+FarmCheese.PRICE
 	var total: int = int(inventory.egg) * 10 + milk_stock*FarmDairy.MILK_PRICE+cheese_stock*FarmCheese.PRICE
 	for key in CROPS:
 		total += int(inventory[key]) * int(CROPS[key].price)
@@ -648,18 +677,18 @@ func sale_value() -> int:
 
 func sell_all() -> int:
 	var total := sale_value()
-	milk_stock=0;cheese_stock=0
+	if not infinite_resources():milk_stock=0;cheese_stock=0
 	money += total
 	revenue += total
 	for key in inventory:
-		inventory[key] = 0
+		if not infinite_resources():inventory[key] = 0
 	refresh_journey()
 	return total
 
 func deliver_contract() -> bool:
-	if contract_done or int(inventory.carrot) < 6:
+	if contract_done or stock("carrot") < 6:
 		return false
-	inventory.carrot -= 6
+	consume_stock("carrot",6)
 	money += 110
 	revenue += 110
 	contract_done = true
@@ -887,6 +916,7 @@ func restore(data: Variant) -> bool:
 	for key in ["watered","spent"]: irrigation[key]=int(irrigation[key])
 	farm_xp=int(data.farm_xp) if data.version>=14 else FarmLevels.legacy_xp(self)
 	level_notice=""
+	unlock_sandbox()
 	_expire_orders()
 	refresh_journey()
 	return true

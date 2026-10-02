@@ -199,7 +199,7 @@ func _physics_process(delta:float) -> void:
 		cooldown=maxf(0,cooldown-delta);recoil=maxf(0,recoil-delta);hit_time=maxf(0,hit_time-delta)
 		if reload_left>0:
 			reload_left=maxf(0,reload_left-delta)
-			if reload_left==0 and not game.network.active:FarmArmory.reload_magazine(inventory())
+			if reload_left==0 and not game.network.active:FarmArmory.reload_magazine(inventory(),game.state.infinite_resources())
 		if armed and (game.actor.action_time>0 or game.actor.airborne or game.actor.emote_time>0):holster()
 		if armed:_pose_player(delta)
 	if not npc.get_meta("temporary_down",false):npc_actor.animate(delta,false,false)
@@ -208,7 +208,7 @@ func _physics_process(delta:float) -> void:
 		flashes[i].time-=delta
 		if flashes[i].time<=0:flashes[i].node.queue_free();flashes.remove_at(i)
 	status.visible=active() and inventory().pistol
-	status.text=("P-8  ·  %d / %d\n"%[inventory().magazine,inventory().reserve])+(("RECARREGANDO…" if reload_left>0 else "Clique: disparar · R: recarregar\nDireito: mirar · Q: trocar ombro\nP: guardar") if armed else "P: sacar pistola")
+	status.text=("P-8  ·  %d / %s\n"%[inventory().magazine,"∞" if game.state.infinite_resources() else str(inventory().reserve)])+(("RECARREGANDO…" if reload_left>0 else "Clique: disparar · R: recarregar\nDireito: mirar · Q: trocar ombro\nP: guardar") if armed else "P: sacar pistola")
 	reticle.visible=active() and armed and reload_left<=0;reticle.text="×" if hit_time>0 else "+";reticle.modulate=Color("f4bf64") if hit_time>0 else Color("fff4da")
 	muzzle.visible=armed and recoil>SHOT_INTERVAL-.055
 
@@ -299,7 +299,7 @@ func show_shop() -> void:
 	var buy:=FarmGameUI.action(hud,gun_card,"Comprada" if bag.pistol else "Comprar · $%d"%FarmArmory.PRICE,Rect2(495,47,239,50),"armory:buy",true);buy.disabled=bag.pistol
 	var ammo_card:=FarmGameUI.card(hud,p,Rect2(30,363,760,107))
 	hud.label(ammo_card,"Caixa de 24 munições",Vector2(20,14),Vector2(430,32),23)
-	hud.label(ammo_card,"Reserva: %d / %d · Acertos: %d"%[bag.reserve,FarmArmory.MAX_RESERVE,bag.hits],Vector2(20,55),Vector2(430,26),17)
+	hud.label(ammo_card,"Reserva: ∞ · Acertos: %d"%bag.hits if game.state.infinite_resources() else "Reserva: %d / %d · Acertos: %d"%[bag.reserve,FarmArmory.MAX_RESERVE,bag.hits],Vector2(20,55),Vector2(430,26),17)
 	var ammo:=FarmGameUI.action(hud,ammo_card,"Comprar · $%d"%FarmArmory.AMMO_PRICE,Rect2(495,27,239,50),"armory:ammo");ammo.disabled=not bag.pistol or bag.reserve+FarmArmory.AMMO_PACK>FarmArmory.MAX_RESERVE
 	hud.label(p,"P: sacar/guardar · Botão direito: mirar · Clique: disparar · R: recarregar\nExperimente nos três alvos ao lado da banca.",Vector2(30,490),Vector2(760,62),17)
 	FarmGameUI.action(hud,p,"Voltar ao vale",Rect2(240,565,340,40),"close")
