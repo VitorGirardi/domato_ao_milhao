@@ -54,7 +54,10 @@ func run() -> void:
 	assert(game.player.position.distance_to(truck.position)>2)
 	truck.store();assert(game._save_game(false,true))
 	var saved:Dictionary=game.state.pickup.duplicate();game.state=FarmState.new();assert(game._load_game())
-	assert(game.state.pickup==saved and not game.state.unlimited_money)
+	assert(game.state.game_mode=="survival" and not game.state.unlimited_money,"Loading must preserve the farm mode")
+	# JSON numbers can differ in their last bit between platform parsers.
+	for key in ["x","z","angle"]:
+		assert(absf(game.state.pickup[key]-saved[key])<.000001,"Saved pickup %s changed: %.16f -> %.16f"%[key,saved[key],game.state.pickup[key]])
 	assert(Vector2(truck.position.x,truck.position.z).distance_to(Vector2(saved.x,saved.z))<.01)
 	# A wall stops the body at speed; no teleport through thin obstacles.
 	truck.restore({"x":30.0,"z":25.0,"angle":0.0})
