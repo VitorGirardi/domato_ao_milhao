@@ -192,6 +192,7 @@ func _start_recovery(key:String,record:Dictionary) -> void:
 	if not safe.is_equal_approx(at):
 		FarmFallPose.reset(entry);entry.body.global_position=safe
 		entry.base_transform=entry.model.transform;record.pose_base=entry.base_transform;record.position=safe
+		if game.network.active and key==player_key(game.network.accepted):game.network.target=safe
 	if key.begins_with("player:") and int(key.get_slice(":",1))==own_id():game.player.velocity=Vector3.ZERO
 
 func _sync_flags() -> void:

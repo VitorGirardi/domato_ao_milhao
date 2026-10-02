@@ -88,6 +88,13 @@ jobs:
           cat test-results/linux/x11.log
           grep -q LINUX_QA_OK test-results/linux/x11.log
           ! grep -E 'SCRIPT ERROR|ERROR:' test-results/linux/x11.log
+      - name: Temporary fall graphical review
+        if: matrix.suite == 'graphics'
+        run: |
+          xvfb-run -a timeout 180 godot --audio-driver Dummy --path . --script tests/render_fall_world.gd > test-results/linux/fall-world.log 2>&1
+          grep -q FALL_WORLD_VISUAL_OK test-results/linux/fall-world.log
+          if grep -E 'SCRIPT ERROR|ERROR:' test-results/linux/fall-world.log; then exit 1; fi
+          cp -r test-results/fall-world test-results/linux/
       - name: Day and night graphical review
         if: matrix.suite == 'graphics'
         run: |
