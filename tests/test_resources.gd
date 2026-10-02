@@ -28,19 +28,19 @@ func run() -> void:
 		assert(FarmResources.buy(state,kind)!="" and state.serialize()==before)
 	assert(state.money==1170 and FarmResources.value(state)==0)
 	var before:=state.serialize()
-	assert(FarmResources.buy(state,"quartz")!="" and FarmResources.catch_fish(state,-1)!="" and FarmResources.catch_fish(state,3)!="" and FarmResources.extract(state,9)!="")
+	assert(FarmResources.buy(state,"quartz")!="" and FarmResources.catch_fish(state,-1)!="" and FarmResources.catch_fish(state,4)!="" and FarmResources.extract(state,9)!="")
 	assert(state.serialize()==before)
 	seed(4721)
-	for spot in range(3):
+	for spot in range(FarmResourceSites.FISH_SPOTS.size()):
 		for i in range(100):assert(FarmResources.catch_fish(state,spot).is_empty())
-	assert(state.resources.caught==300 and state.farm_xp==900)
+	assert(state.resources.caught==400 and state.farm_xp==1200)
 	for key in FarmResources.FISH_KEYS:assert(state.resources.stock[key]>0)
 	# Distinct authored habitats produce different dominant species on a fixed seed.
-	for spot in [0,2]:
+	for spot in [0,2,3]:
 		var habitat:=FarmState.new();habitat.claimed=true;habitat.resources.rod=true
 		seed(22)
 		for i in range(500):assert(FarmResources.catch_fish(habitat,spot).is_empty())
-		assert(habitat.resources.stock.tilapia>habitat.resources.stock.dorado if spot==0 else habitat.resources.stock.dorado>habitat.resources.stock.tilapia)
+		assert(habitat.resources.stock.tilapia>habitat.resources.stock.dorado if spot!=2 else habitat.resources.stock.dorado>habitat.resources.stock.tilapia)
 	for node in range(3):
 		assert(FarmResources.extract(state,node).is_empty())
 		before=state.serialize()
