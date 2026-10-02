@@ -14,7 +14,7 @@ func run() -> void:
 		assert(not state.restore(data) and state.serialize()==before)
 	game=load("res://scenes/main.tscn").instantiate();game.save_path="user://qa_pickup.json";root.add_child(game)
 	await process_frame;game.set_process(false);game.set_physics_process(false)
-	game.session_started=true;game.build_mode=false;game.hud.close_modal()
+	game.qa_mode=true;game.session_started=true;game.build_mode=false;game.hud.close_modal()
 	game.state=FarmState.new_farm("survival","farmer");assert(game.state.claim(Vector2(4,-2)).is_empty())
 	var truck:FarmPickup=game.pickup
 	truck.set_physics_process(false);truck.restore(FarmPickup.defaults())
