@@ -27,7 +27,10 @@ func run() -> void:
 	assert(nav.waypoint==FarmStable.entrance(game.state.items[3]))
 	game.state.items=game.state.items.duplicate(true);nav.refresh();assert(nav.target_key=="stable:3")
 	game.state.items.remove_at(3);nav.refresh();assert(nav.target_key.is_empty())
-	nav.show();nav.handle("map:filter:Companhia");assert(nav.destination_list.get_child_count()==2)
+	nav.show();nav.handle("map:filter:Companhia");assert(nav.destination_list.get_child_count()==3)
+	nav.handle("map:go:pickup");assert(nav.target_key=="pickup")
+	game.pickup.position.x+=3;nav.refresh()
+	assert(nav.waypoint==Vector2(game.pickup.position.x,game.pickup.position.z))
 	var view:FarmMapView=nav.large
 	var cat:Dictionary=nav.destinations().filter(func(e:Dictionary):return e.key=="cat")[0]
 	var click:=InputEventMouseButton.new();click.button_index=MOUSE_BUTTON_LEFT;click.pressed=true;click.position=view.project(cat.at)
@@ -50,4 +53,3 @@ func run() -> void:
 	game.session_started=false;game.queue_free();await process_frame;await create_timer(.2).timeout
 	print("MAP_PLACES_OK: moving destinations, snapshot replacement, removal, care notices, filters and zoom")
 	quit()
-
