@@ -1,3 +1,12 @@
+# 0.41.0 — Queda e retorno
+
+- Tiros da pistola derrubam pessoas e animais temporariamente. Após 60 segundos começa a animação de levantar, seguida de três segundos de proteção.
+- Animações originais Blender para humanos, cavalo, gato, vaca, porcos e galinhas. Estrelinhas durante a espera, sem contador e sem sangue.
+- Caminhada, interações e trabalho do alvo param durante a queda e retomam depois. Nenhuma perda permanente de dinheiro, itens ou animais.
+- Desmontagem segura ao atingir cavalo ou cavaleiro. Recuperação em uma margem próxima quando o alvo caiu na água.
+- Pistola disponível no cooperativo: anfitrião valida acertos, obstáculos, munição, cadência e recuperação. Cada jogador tem seu carregador; equipamento do visitante vale pela sessão.
+- Save 20 e dinheiro infinito preservados. Estado de queda não é salvo. Protocolo 12 exige atualizar os dois PCs.
+
 # 0.40.0 — Assobio pelo mapa e águas acessíveis
 
 - Assobio chama o cavalo de longe, com navegação por caminhos e pontes. A chamada permanece ativa durante o percurso; o cavalo ocupado não é retirado de outro jogador.

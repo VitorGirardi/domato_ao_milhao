@@ -26,9 +26,11 @@ var status:Label
 var reticle:Label
 var last_state:FarmState
 var walk_pitch:=0.78
+var combat:=FarmCombatNet.new()
 
 func setup(host:Node3D) -> void:
 	game=host;last_state=game.state
+	combat.name="Combat";add_child(combat);combat.setup(self)
 	process_physics_priority=10 # Pose after the main actor's walk/idle update.
 	_reserve_site()
 	_build_shop()
@@ -92,12 +94,19 @@ func _build_hud() -> void:
 	reticle=Label.new();reticle.set_anchors_and_offsets_preset(Control.PRESET_CENTER);reticle.position=Vector2(-24,-24);reticle.size=Vector2(48,48);reticle.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;reticle.vertical_alignment=VERTICAL_ALIGNMENT_CENTER;reticle.add_theme_font_size_override("font_size",30);reticle.mouse_filter=Control.MOUSE_FILTER_IGNORE;ui.add_child(reticle)
 
 func active() -> bool:
-	if game==null or game.network.active or not game.session_started or game.build_mode or not game.hud.modal_kind.is_empty():return false
+	if game==null or down() or (game.network.active and not game.network.ready_session) or not game.session_started or game.build_mode or not game.hud.modal_kind.is_empty():return false
 	# Horse is optional so the armory also works before the mount feature lands.
 	var mount:Variant=game.get("horse")
 	return mount==null or not mount.mounted
 
+func down() -> bool:
+	return game!=null and game.get("falls")!=null and game.falls.local_down()
+
+func inventory() -> Dictionary:
+	return combat.inventory() if game.network.active else game.state.armory
+
 func near_shop() -> bool:
+	if npc.get_meta("temporary_down",false):return false
 	var p:Vector3=game.player.position;var door:=SHOP_AT+Vector3(2.8,0,0)
 	return Vector2(p.x-door.x,p.z-door.z).length()<3.2 and absf(p.y-npc.position.y)<3
 
@@ -125,7 +134,7 @@ func handle_input(event:InputEvent) -> bool:
 		match event.physical_keycode:
 			KEY_P:
 				if armed:holster()
-				elif game.state.armory.pistol:
+				elif inventory().pistol:
 					game.actor.stop_emote();walk_pitch=game.pitch;game.pitch=.12;armed=true
 				else:game.hud.toast("Damião vende a P-8 na margem oeste da estrada, perto do armazém.")
 				return true
@@ -144,14 +153,15 @@ func handle_input(event:InputEvent) -> bool:
 
 func start_reload() -> bool:
 	if not active() or not armed or reload_left>0:return false
-	if not FarmArmory.can_reload(game.state.armory):
-		game.hud.toast("Carregador cheio." if game.state.armory.magazine==FarmArmory.CAPACITY else "Sem munição na reserva. Fale com Damião.");return false
+	if not FarmArmory.can_reload(inventory()):
+		game.hud.toast("Carregador cheio." if inventory().magazine==FarmArmory.CAPACITY else "Sem munição na reserva. Fale com Damião.");return false
+	if game.network.active:return combat.request("reload")
 	reload_left=RELOAD_TIME;return true
 
 func _physics_process(delta:float) -> void:
 	if game==null:return
 	elapsed+=delta
-	if last_state!=game.state:
+	if last_state!=game.state and not game.network.active:
 		holster();last_state=game.state;cooldown=0
 	if not active():
 		holster()
@@ -159,16 +169,16 @@ func _physics_process(delta:float) -> void:
 		cooldown=maxf(0,cooldown-delta);recoil=maxf(0,recoil-delta);hit_time=maxf(0,hit_time-delta)
 		if reload_left>0:
 			reload_left=maxf(0,reload_left-delta)
-			if reload_left==0:FarmArmory.reload_magazine(game.state.armory)
+			if reload_left==0 and not game.network.active:FarmArmory.reload_magazine(inventory())
 		if armed and (game.actor.action_time>0 or game.actor.airborne or game.actor.emote_time>0):holster()
 		if armed:_pose_player(delta)
-	npc_actor.animate(delta,false,false)
+	if not npc.get_meta("temporary_down",false):npc_actor.animate(delta,false,false)
 	if near_shop():npc_actor.pose_bone("Head",Vector3(0,sin(elapsed*.7)*.08,0),.1)
 	for i in range(flashes.size()-1,-1,-1):
 		flashes[i].time-=delta
 		if flashes[i].time<=0:flashes[i].node.queue_free();flashes.remove_at(i)
-	status.visible=active() and game.state.armory.pistol
-	status.text=("P-8  ·  %d / %d\n"%[game.state.armory.magazine,game.state.armory.reserve])+(("RECARREGANDO…" if reload_left>0 else "Clique: disparar · R: recarregar\nSegure direito: mirar · P: guardar") if armed else "P: sacar pistola")
+	status.visible=active() and inventory().pistol
+	status.text=("P-8  ·  %d / %d\n"%[inventory().magazine,inventory().reserve])+(("RECARREGANDO…" if reload_left>0 else "Clique: disparar · R: recarregar\nSegure direito: mirar · P: guardar") if armed else "P: sacar pistola")
 	reticle.visible=active() and armed and reload_left<=0;reticle.text="×" if hit_time>0 else "+";reticle.modulate=Color("f4bf64") if hit_time>0 else Color("fff4da")
 	muzzle.visible=armed and recoil>SHOT_INTERVAL-.055
 
@@ -202,23 +212,37 @@ func _pose_player(delta:float) -> void:
 
 func shoot() -> bool:
 	if not active() or not armed or reload_left>0 or cooldown>0 or game.actor.action_time>0 or game.actor.airborne:return false
-	if not FarmArmory.fire(game.state.armory):game.hud.toast("Carregador vazio. R para recarregar.");return false
-	cooldown=SHOT_INTERVAL;recoil=SHOT_INTERVAL
 	_pose_player(1.0)
 	var origin:Vector3=pistol.global_transform*Vector3(0,.184,.235)
 	var end:=aim_point()
-	# Cast from the muzzle as well: camera visibility never shoots through cover.
-	var ray:=PhysicsRayQueryParameters3D.create(origin,end,1,[game.player.get_rid()])
-	ray.hit_from_inside=true
-	var hit:=get_world_3d().direct_space_state.intersect_ray(ray)
-	if not hit.is_empty():
-		end=hit.position
-		if hit.collider.has_meta("practice_target"):
-			FarmArmory.register_hit(game.state.armory);hit_time=.2
-			var target:Node3D=hit.collider.get_meta("practice_target")
-			var tween:=create_tween();tween.tween_property(target,"rotation:x",-.14,.06);tween.tween_property(target,"rotation:x",0.0,.24)
+	if game.network.active:
+		if combat.request("fire",origin,end):cooldown=SHOT_INTERVAL;return true
+		return false
+	if not FarmArmory.fire(inventory()):game.hud.toast("Carregador vazio. R para recarregar.");return false
+	cooldown=SHOT_INTERVAL;recoil=SHOT_INTERVAL
+	end=resolve_shot(origin,end,0,inventory())
 	_tracer(origin,end);_shot_sound()
 	return true
+
+func resolve_shot(origin:Vector3,end:Vector3,shooter:int,bag:Dictionary) -> Vector3:
+	var hit:Dictionary={}
+	if game.get("falls")!=null:hit=game.falls.trace_hit(origin,end,shooter)
+	if not hit.is_empty():
+		end=hit.position
+		if not str(hit.get("key","")).is_empty():
+			if game.falls.knock_down(str(hit.key)):hit_time=.2
+			return end
+	var excluded:Array[RID]=[game.player.get_rid()]
+	var ray:=PhysicsRayQueryParameters3D.create(origin,end,1,excluded)
+	ray.hit_from_inside=true
+	var wall:=get_world_3d().direct_space_state.intersect_ray(ray)
+	if not wall.is_empty():
+		end=wall.position
+		if wall.collider.has_meta("practice_target"):
+			FarmArmory.register_hit(bag);hit_time=.2
+			var target:Node3D=wall.collider.get_meta("practice_target")
+			var tween:=create_tween();tween.tween_property(target,"rotation:x",-.14,.06);tween.tween_property(target,"rotation:x",0.0,.24)
+	return end
 
 func _tracer(from:Vector3,to:Vector3) -> void:
 	var line:=MeshInstance3D.new();var mesh:=ImmediateMesh.new()
@@ -230,15 +254,15 @@ func _tracer(from:Vector3,to:Vector3) -> void:
 func _shot_sound() -> void:
 	var wav:=AudioStreamWAV.new();wav.format=AudioStreamWAV.FORMAT_16_BITS;wav.mix_rate=22050
 	var bytes:=PackedByteArray();bytes.resize(3308*2)
-	var rng:=RandomNumberGenerator.new();rng.seed=game.state.armory.shots+37
+	var rng:=RandomNumberGenerator.new();rng.seed=inventory().shots+37
 	for i in range(3308):
 		var t:=float(i)/22050;var sample:float=(rng.randf_range(-1,1)*exp(-t*70)*.65+sin(t*TAU*90)*exp(-t*40)*.35)*.65
 		bytes.encode_s16(i*2,int(clampf(sample,-1,1)*32767))
 	wav.data=bytes;sound.stream=wav;sound.play()
 
 func show_shop() -> void:
-	if not game.session_started or game.build_mode or not near_shop():return
-	var hud:FarmHUD=game.hud;var bag:Dictionary=game.state.armory
+	if down() or not game.session_started or game.build_mode or not near_shop():return
+	var hud:FarmHUD=game.hud;var bag:Dictionary=inventory()
 	var p:=FarmGameUI.open(hud,"armory","Damião · Armeiro do vale","pistol",820,620)
 	hud.label(p,"“Ferramenta boa exige mão firme.”",Vector2(30,111),Vector2(760,32),23)
 	hud.label(p,"Pistola P-8 · peça única do catálogo   |   Saldo: %s"%hud.money_text(game.state),Vector2(30,151),Vector2(760,30),18)
@@ -255,12 +279,13 @@ func show_shop() -> void:
 	FarmGameUI.action(hud,p,"Voltar ao vale",Rect2(240,565,340,40),"close")
 
 func _shop_action(value:String) -> void:
-	if game.network.active:return
 	if not value.begins_with("armory:"):return
-	if game.hud.modal_kind!="armory" or not near_shop() or not game.session_started:return
+	if down() or game.hud.modal_kind!="armory" or not near_shop() or not game.session_started:return
+	if game.network.active:
+		combat.request(value.trim_prefix("armory:"));return
 	var error:String
-	if value=="armory:buy":error=FarmArmory.buy_pistol(game.state,game.state.armory)
-	elif value=="armory:ammo":error=FarmArmory.buy_ammo(game.state,game.state.armory)
+	if value=="armory:buy":error=FarmArmory.buy_pistol(game.state,inventory())
+	elif value=="armory:ammo":error=FarmArmory.buy_ammo(game.state,inventory())
 	else:return
 	if error.is_empty():
 		game._save_game(false);game.hud.toast("Fechado. P para sacar a P-8." if value=="armory:buy" else "Munição guardada na reserva.")

@@ -426,6 +426,7 @@ func update_field_staff(state:FarmState,delta:float) -> void:
 		field_label.modulate=Color("b6e8ff")
 		field_root.add_child(field_label)
 	field_root.visible=true
+	if state.temporary_down.get("npc:field",false):return
 	if created or not field_motion.route.walkable(field_root.position,state):
 		var origin:=Vector3(state.center.x,0,state.center.y)
 		if not state.irrigation.plots.is_empty():
@@ -470,6 +471,9 @@ func update_staff(state: FarmState, delta: float) -> void:
 		staff_label.modulate=Color("fff1cb")
 		staff_root.add_child(staff_label)
 	staff_root.visible=true
+	if state.temporary_down.get("npc:staff",false):
+		state.staff_accessible=false
+		return
 	var item:Dictionary=state.items[int(worker.coop)]
 	var site:="%d:%s:%s:%s"%[worker.coop,item.x,item.z,item.turn]
 	var anchor:=site+str(state.legacy_irrigation())
@@ -653,14 +657,15 @@ func animate(delta: float, player_pos: Vector3, state: FarmState, event: String 
 	for cow in cows:
 		var data:Dictionary=state.items[cow.index].dairy
 		cow.node.visible=data.owned
-		cow.body.collision_layer=1 if data.owned else 0
+		cow.body.collision_layer=1 if data.owned and not cow.node.get_meta("temporary_down",false) else 0
 		if not data.owned: continue
-		FarmCowMotion.animate(cow,delta,player_pos)
+		if not cow.node.get_meta("temporary_down",false):FarmCowMotion.animate(cow,delta,player_pos)
 		if cow.feed: cow.feed.visible=data.food>0
 		if cow.water: cow.water.visible=data.water>0
 
 	for chicken in chickens:
 		var hen: Node3D = chicken.node
+		if hen.get_meta("temporary_down",false):continue
 		var phase: float = chicken.phase
 		var local:=Vector3(sin(clock*0.30+phase)*2.5,0,2.8+cos(clock*0.22+phase)*0.6)
 		var resting:=sin(clock*0.55+phase)>0.35
@@ -705,6 +710,6 @@ func _hen_walkable(at: Vector3, state: FarmState) -> bool:
 	return true
 
 func _process(delta:float) -> void:
-	if vendor_actor: vendor_actor.update_blink(delta)
-	if staff_actor and is_instance_valid(staff_root) and staff_root.visible: staff_actor.update_blink(delta)
-	if field_actor and is_instance_valid(field_root) and field_root.visible: field_actor.update_blink(delta)
+	if vendor_actor and not vendor_actor.root.get_meta("temporary_down",false): vendor_actor.update_blink(delta)
+	if staff_actor and is_instance_valid(staff_root) and staff_root.visible and not staff_root.get_meta("temporary_down",false): staff_actor.update_blink(delta)
+	if field_actor and is_instance_valid(field_root) and field_root.visible and not field_root.get_meta("temporary_down",false): field_actor.update_blink(delta)

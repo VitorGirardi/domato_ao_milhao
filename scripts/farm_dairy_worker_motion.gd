@@ -90,6 +90,7 @@ func update(world:FarmWorld,state:FarmState,delta:float) -> void:
 		label=Label3D.new();label.position.y=2.65;label.font_size=27;label.pixel_size=.007;label.billboard=BaseMaterial3D.BILLBOARD_ENABLED;node.add_child(label)
 		node.position=point(item,Vector3(0,0,3.85))
 	node.visible=true
+	if state.temporary_down.get("npc:dairy",false):return
 	var next_anchor:=str([w.site,item.x,item.z,item.turn])
 	if next_anchor!=anchor:
 		anchor=next_anchor;reset();node.position=point(item,Vector3(0,0,3.85))

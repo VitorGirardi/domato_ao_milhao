@@ -1,10 +1,18 @@
+# Atualização 0.41 — queda e retorno
+
+Atualizem os dois PCs para **0.41.0, protocolo 12**. Pistola, tiros e recuperação
+temporária agora funcionam entre jogadores, pessoas da fazenda e animais.
+Após 60 segundos o alvo levanta, sem contador e sem perda de itens. O anfitrião
+confirma os acertos. Cada jogador usa sua própria munição; equipamento do visitante
+dura a sessão. [Controles e regras](QUEDA_RETORNO.md). Save 20 preservado.
+
 # Atualização 0.34 — animais e companheiros
 
 Atualizem os dois PCs pelo launcher. Protocolo 6, save 18 (carrega fazendas anteriores). Chiqueiro em TAB → Animais; E abre os cuidados. E perto do gato faz carinho, V alterna acompanhar/ficar e C a pé chama o cavalo livre próximo. [Porcos](PORCOS.md) · [Companheiros](COMPANHEIROS.md).
 
 # Fazenda cooperativa — 0.31.0
 
-Dois jogadores por ENet/UDP, sem servidor pago. Os dois usam a **mesma versão 0.31.0**. O anfitrião mantém o jogo aberto e valida as mudanças da fazenda.
+Dois jogadores por ENet/UDP, sem servidor pago. Os dois usam a **mesma versão 0.41.0**. O anfitrião mantém o jogo aberto e valida as mudanças da fazenda.
 
 ## Entrar e jogar
 1. Extraia o pacote em uma pasta nova. Windows: `DoMatoAoMilhao.exe`. Linux/Omarchy: `./jogar.sh`.
@@ -30,7 +38,7 @@ O cooperativo usa `farm_v1_coop.json` com `.bak`, separado de `farm_v1.json`. A 
 As alterações confirmadas são salvas antes da resposta. Uma falha de gravação desfaz a alteração. F5, autosave e saída também salvam. O visitante não grava por cima da própria fazenda solo. Não há migração de anfitrião: quando ele sai, o convidado volta ao menu; o progresso fica no PC anfitrião.
 
 ## Limites
-Dois jogadores, acesso por IP e um cavalo. Sem servidor dedicado, descoberta automática ou migração de anfitrião. A pistola e treino de tiro continuam apenas no solo; não há combate entre jogadores. O porco é um modelo de prévia, ainda não uma espécie comprável. Jogue com amigos na sua rede privada.
+Dois jogadores, acesso por IP e um cavalo. Sem servidor dedicado, descoberta automática ou migração de anfitrião. Quedas são temporárias e não geram recompensas. Jogue com amigos na sua rede privada.
 
 ## Testes
 `tests/run_network.py --godot CAMINHO --test test_coop_full --gui` executa dois jogos isolados e verifica comércio sem duplicação, animais, contratação, construção, seleções antigas, identidade masculina/feminina, animação replicada, ocupação/movimento/sprint/desmontagem do cavalo, desconexão montado e persistência. Os testes `test_coop`, `test_network`, `test_coop_commands` e `test_coop_save` cobrem cultivo, reconexão, operações de domínio e recuperação de save. CI Linux valida X11, Wayland e o executável exportado. Desempenho e latência nos PCs de Vitor e Ian ainda precisam do teste real.

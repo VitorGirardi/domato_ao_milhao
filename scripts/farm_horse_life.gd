@@ -37,6 +37,7 @@ func safe_step(horse:FarmHorse,point:Vector2,heading:float,state:FarmState,lands
 	return space.intersect_shape(query,1).is_empty() and space.cast_motion(query)[0]>=.999
 
 func update(horse:FarmHorse,delta:float,active:bool,state:FarmState,landscape:FarmLandscape,player:CharacterBody3D) -> void:
+	if horse.get_meta("temporary_down",false):return
 	if not anchored:reset(horse)
 	if not active:return
 	if calling:

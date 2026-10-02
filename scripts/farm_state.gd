@@ -67,6 +67,7 @@ var trade:Dictionary=FarmTrade.fresh()
 var trade_notices:Array[String]=[]
 var staff:Dictionary=FarmStaff.fresh()
 var field_staff:Dictionary=FarmCrew.fresh()
+var temporary_down:Dictionary={} # Active-session falls only; never saved.
 var staff_accessible:=true # Runtime arrival gate, recalculated by the world; not saved.
 var staff_notice:=""
 var cultivation:Dictionary=FarmCultivation.fresh()
@@ -143,6 +144,7 @@ func configure_irrigation(plots:Array) -> String:
 	return ""
 
 func irrigate(index:int) -> String:
+	if temporary_down.get("npc:field" if field_staff.hired else "npc:staff",false):return "Rotina pausada."
 	if cultivation.enabled and field_staff.hired: return FarmCultivation.complete(self,index,"water")
 	var worker:=irrigation_worker()
 	if not irrigation.enabled or not worker.hired or worker.paused: return "Rotina pausada."
@@ -589,6 +591,13 @@ func tend(index: int, crop: String = "carrot") -> String:
 		return "%d canteiros regados de uma vez!"%targets.size() if targets.size()>1 else "Regado! A natureza cuida do resto."
 	return "Crescendo... %d%%" % int(float(item.growth) * 100)
 
+func active_animals(kind:String,index:int,count:int) -> float:
+	if count<=0:return 0.0
+	var active:=count
+	for slot in range(count):
+		if temporary_down.get(FarmFallTargets.item_key(self,index,kind,slot),false):active-=1
+	return float(active)/float(count)
+
 func tick(delta: float) -> bool:
 	if not claimed:
 		return false
@@ -596,18 +605,19 @@ func tick(delta: float) -> bool:
 	var remaining:=maxf(0,delta)
 	# Split at service boundaries so large and small simulation steps agree.
 	while remaining>0.0000001:
-		var active:bool=FarmStaff.running(staff) and not legacy_irrigation()
+		var active:bool=FarmStaff.running(staff) and not legacy_irrigation() and not temporary_down.get("npc:staff",false)
 		var span:=minf(remaining,FarmStaff.interval(staff)-float(staff.timer)) if active else remaining
 		elapsed+=span
 		_expire_orders()
-		for item in items:
+		for index in range(items.size()):
+			var item:Dictionary=items[index]
 			if item.kind=="plot" and item.planted and item.watered:
 				item.growth=minf(1.0,float(item.growth)+span/float(CROPS[item.crop].seconds))
 			if item.kind=="cheesery": FarmCheese.tick(item.cheese,span)
-			if item.kind=="corral": FarmDairy.tick(item.dairy,span)
-			if item.kind=="pigsty": FarmPigs.tick(item.pigs,span)
+			if item.kind=="corral" and not temporary_down.get(FarmFallTargets.item_key(self,index,"cow"),false): FarmDairy.tick(item.dairy,span)
+			if item.kind=="pigsty": FarmPigs.tick(item.pigs,span*active_animals("pig",index,int(item.pigs.count)))
 			if item.kind=="coop":
-				if FarmAnimals.tick(item,span): eggs=true
+				if FarmAnimals.tick(item,span*active_animals("chicken",index,item.flock.names.size())): eggs=true
 		if active:
 			staff.timer+=span
 			if staff.timer>=FarmStaff.interval(staff)-0.0000001:

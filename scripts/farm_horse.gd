@@ -70,9 +70,10 @@ func store(state:FarmState) -> void:
 	snapshot=state.horse.duplicate()
 
 func can_mount(player:CharacterBody3D) -> bool:
-	return not mounted and player.position.distance_to(position)<2.8 and player.is_on_floor()
+	return not get_meta("temporary_down",false) and not player.get_meta("temporary_down",false) and not mounted and player.position.distance_to(position)<2.8 and player.is_on_floor()
 
 func mount(player:CharacterBody3D,avatar:Node3D,actor:FarmAvatar) -> void:
+	if get_meta("temporary_down",false):return
 	rider_actor=actor;rider_body=player
 	mounted=true;obstacle.collision_layer=0;label.visible=false
 	parts.HorseNeck.position=part_home.HorseNeck;parts.HorseNeck.rotation=Vector3.ZERO;life.reset(self)
@@ -115,12 +116,14 @@ func dismount(player:CharacterBody3D,avatar:Node3D,actor:FarmAvatar,state:FarmSt
 	return false
 
 func encourage() -> bool:
+	if get_meta("temporary_down",false):return false
 	if not mounted or pat_time>0 or stamina<25:return false
 	stamina-=25;burst=3.5;pat_time=.55
 	encouraged.emit()
 	return true
 
 func drive(player:CharacterBody3D,avatar:Node3D,actor:FarmAvatar,direction:Vector3,delta:float,active:bool) -> void:
+	if get_meta("temporary_down",false):return
 	if active:
 		burst=maxf(0,burst-delta);pat_time=maxf(0,pat_time-delta)
 		stamina=minf(100,stamina+delta*(7 if burst<=0 else 0))
@@ -162,6 +165,7 @@ func pose_rider(avatar:Node3D,actor:FarmAvatar) -> void:
 	update_reins()
 
 func animate(delta:float,velocity:float,running:bool) -> void:
+	if get_meta("temporary_down",false):return
 	gait+=delta*(12 if running else lerpf(2.5,7,clampf(velocity/6,0,1)))
 	var moving:=velocity>.3;var amount:=minf(1,velocity)
 	parts.HorseBody.position=body_home+Vector3(0,absf(sin(gait if running else gait*2))*(.045 if running else .015)*amount,0)
@@ -301,6 +305,7 @@ func parking_clear(p:Vector2,state:FarmState,landscape:FarmLandscape) -> bool:
 	return true
 
 func ensure_parking(state:FarmState,landscape:FarmLandscape) -> void:
+	if get_meta("temporary_down",false):return
 	if mounted:return
 	var origin:=Vector2(position.x,position.z)
 	if parking_clear(origin,state,landscape):return

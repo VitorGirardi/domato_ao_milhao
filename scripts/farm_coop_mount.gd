@@ -21,6 +21,7 @@ func model(id:int) -> Node3D:return network.game.avatar if id==multiplayer.get_u
 func actor(id:int) -> FarmAvatar:return network.game.actor if id==multiplayer.get_unique_id() else network.remote_actor
 
 func request(action:String) -> void:
+	if network.game.falls.local_down() or network.game.falls.is_down("horse"):return
 	if not network.ready_session or waiting:return
 	serial+=1;waiting=true
 	if network.hosting:apply_request(1,serial,action)
@@ -37,6 +38,10 @@ func apply_request(sender:int,number:int,action:String) -> void:
 	var g:Node3D=network.game
 	var h:FarmHorse=g.horse
 	var message:=""
+	if g.falls.is_player_down(sender) or g.falls.is_down("horse"):
+		if sender==1:_answer("Aguarde se recuperar.")
+		else:_answer.rpc_id(sender,"Aguarde se recuperar.")
+		return
 	match action:
 		"mount":
 			if rider!=0:message="Pé de Pano já está com outro jogador."
@@ -79,11 +84,13 @@ func _state(owner_id:int,position:Vector3,heading:float,host_at:Vector3,guest_at
 @rpc("any_peer","call_remote","unreliable_ordered",4)
 func _input_direction(value:Vector3) -> void:
 	if not network.hosting or rider!=multiplayer.get_remote_sender_id() or rider!=network.accepted:return
+	if network.game.falls.is_down("horse") or network.game.falls.is_player_down(rider):return
 	if not value.is_finite() or value.length()>1.01 or absf(value.y)>.001:return
 	direction=value;input_at=Time.get_ticks_msec()
 
 func input_direction() -> Vector3:
 	var g:Node3D=network.game
+	if g.falls.local_down() or g.falls.is_down("horse"):return Vector3.ZERO
 	if not g.hud.modal_kind.is_empty():return Vector3.ZERO
 	var input:=Input.get_vector("left","right","forward","back")
 	return Vector3(cos(g.yaw),0,-sin(g.yaw))*input.x+Vector3(sin(g.yaw),0,cos(g.yaw))*input.y
@@ -128,6 +135,27 @@ func send_initial() -> void:
 	if network.accepted==0:return
 	var h:FarmHorse=network.game.horse
 	_state.rpc_id(network.accepted,rider,h.position,h.heading,network.game.player.position,network.remote.position)
+
+func force_dismount() -> void:
+	if not network.hosting or rider==0:return
+	var g:Node3D=network.game
+	var h:FarmHorse=g.horse
+	var id:=rider
+	if is_instance_valid(body(id)):
+		if not h.dismount(body(id),model(id),actor(id),g.state,g.world.landscape):
+			release(id)
+			var found:=false
+			for radius in [4.0,6.0,9.0,14.0,22.0]:
+				for step in range(24):
+					var point:Vector2=Vector2(h.position.x,h.position.z)+Vector2(sin(step*TAU/24),cos(step*TAU/24))*radius
+					if h.safe_spot(point,body(id),g.state,g.world.landscape):
+						body(id).position=Vector3(point.x,h.ground_at(point)+.12,point.y);found=true;break
+				if found:break
+		body(id).velocity=Vector3.ZERO
+		if id!=1:network.target=body(id).position
+	rider=0;direction=Vector3.ZERO;waiting=false
+	h.store(g.state)
+	send_initial()
 
 func release(id:int) -> void:
 	last_request.erase(id)

@@ -77,6 +77,7 @@ static func authorize(farm,index:int,action:String) -> String:
 	return farm.staff_notice
 
 static func complete(farm,index:int,action:String) -> String:
+	if farm.temporary_down.get("npc:field",false):return "Rotina pausada."
 	var error:=authorize(farm,index,action)
 	if not error.is_empty(): return error
 	var item:Dictionary=farm.items[index]

@@ -48,6 +48,7 @@ static func apply(world:FarmWorld,data:Dictionary,weight:float) -> void:
 	var nodes:=roots(world)
 	for key in data:
 		if not nodes.has(key):continue
+		if nodes[key].get_meta("temporary_down",false):continue
 		for entry in data[key]:
 			var node:Node=nodes[key].get_node_or_null(NodePath(entry.path))
 			if not node is Node3D:continue

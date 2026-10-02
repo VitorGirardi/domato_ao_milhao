@@ -60,6 +60,7 @@ var network:=FarmNetwork.new()
 var companions:=FarmCompanions.new()
 var gathering:=FarmGathering.new()
 var resource_view:=FarmResourceView.new()
+var falls:=FarmTemporaryFall.new()
 var resource_panel_state:Dictionary={}
 var windowed_rect:=Rect2i()
 var windowed_mode:=Window.MODE_WINDOWED
@@ -106,6 +107,7 @@ func _ready() -> void:
 	add_child(companions);companions.setup(self)
 	add_child(gathering);gathering.setup(self)
 	add_child(resource_view);resource_view.setup(self)
+	add_child(falls);falls.setup(self)
 	preferences.load_preferences();preferences.apply(self)
 	front_end.show_title()
 	_update_camera(1.0, true)
@@ -144,6 +146,7 @@ func _mounted() -> bool:
 	return horse.mounted and (not network.active or network.mounts.local_rider())
 
 func _try_jump() -> bool:
+	if falls.local_down():return false
 	actor.stop_emote()
 	if actor.swimming or _mounted() or not session_started or build_mode or not hud.modal_kind.is_empty() or not player.is_on_floor() or actor.action_time>0: return false
 	player.velocity.y=6.8
@@ -153,6 +156,11 @@ func _try_jump() -> bool:
 
 func _physics_process(delta: float) -> void:
 	if not is_instance_valid(hud):
+		return
+	if falls.local_down():
+		if not network.active and horse.is_inside_tree():horse.life.update(horse,delta,session_started and hud.modal_kind.is_empty() and not build_mode,state,world.landscape,player)
+		player.velocity=Vector3.ZERO
+		_update_camera(delta)
 		return
 	var movement := Vector2.ZERO
 	if hud.modal_kind.is_empty() and session_started:
@@ -325,6 +333,7 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 func _unhandled_input(event: InputEvent) -> void:
+	if falls.local_down() and not (event is InputEventKey and event.pressed and event.physical_keycode in [KEY_ESCAPE,KEY_F5]):return
 	if network.active:
 		if event is InputEventKey and event.pressed and not event.echo:
 			if event.keycode==KEY_ESCAPE:
@@ -516,10 +525,12 @@ func _ghost_material(node: Node) -> void:
 	for child in node.get_children(): _ghost_material(child)
 
 func _click_world() -> void:
+	if falls.local_down():return
 	if network.active and network.click_world():return
 	if not pointer_valid:
 		return
 	if move_index>=0:
+		if falls.blocks_command({"action":"move_item","index":move_index}):return
 		var error:=state.move_item(move_index,pointer,turn)
 		if not error.is_empty():
 			hud.toast(error)
@@ -638,16 +649,17 @@ func _nearest() -> int:
 	return best
 
 func _nearby_context() -> Dictionary:
+	if falls.local_down():return {}
 	if build_mode or not state.claimed: return {}
 	if _mounted():return {"text":"Desmontar · Pé de Pano","action":"horse"}
 	var resource_context:=FarmResourceSites.nearby(self)
 	if not resource_context.is_empty():return resource_context
-	if not network.active and weapons.shop_has_priority():return {"text":"Conversar com Damião","action":"armory"}
+	if not falls.is_down("npc:armorer") and weapons.shop_has_priority():return {"text":"Conversar com Damião","action":"armory"}
 	if horse.can_mount(player):
 		var nearby:=_nearest()
 		if nearby<0 or state.items[nearby].kind!="stable" or player.position.distance_to(horse.position)<=_distance_to_item(nearby):return {"text":"Montar · Pé de Pano","action":"horse"}
 	if player.position.distance_to(FarmWorld.TRADE_BOARD_AT)<2.8: return {"text":"Ver encomendas","action":"orders"}
-	if player.position.distance_to(Vector3(-24,0,14))<4: return {"text":"Conversar com Lúcia","action":"market"}
+	if not falls.is_down("npc:vendor") and player.position.distance_to(Vector3(-24,0,14))<4: return {"text":"Conversar com Lúcia","action":"market"}
 	var index:=_nearest()
 	if world.cat.can_pet(player.position) and player.position.distance_to(world.cat.position)<1.25 and (index<0 or player.position.distance_to(world.cat.position)<_distance_to_item(index)):
 		return {"text":"Fazer carinho no gato","action":"cat"}
@@ -676,6 +688,7 @@ func _nearby_context() -> Dictionary:
 	return context
 
 func _interact_nearest() -> void:
+	if falls.local_down():return
 	actor.stop_emote()
 	if not hud.modal_kind.is_empty(): return
 	var context:=_nearby_context()
@@ -699,6 +712,7 @@ func _interact_nearest() -> void:
 			_tend_selected()
 
 func _tend_selected() -> void:
+	if falls.local_down():return
 	if _mounted():return
 	actor.stop_emote()
 	if not build_mode and actor.airborne: return
@@ -755,6 +769,10 @@ func _tend_selected() -> void:
 	elif item.kind=="stable": FarmStable.show(hud,state,horse,selected)
 
 func _action(value: String) -> void:
+	if falls.local_down() and value not in ["close","save","quit","start","menu","net:leave","net:menu","net:back","front:continue","front:settings","front:controls","front:back","front:audio_tab","front:video_tab","front:defaults","front:apply","front:title","front:quit"]:return
+	if value in ["move","remove"] and falls.blocks_command({"action":"move_item" if value=="move" else "remove","index":selected}):return
+	if value in ["market","market_orders"] and falls.is_down("npc:vendor"):return
+	if value=="armory" and falls.is_down("npc:armorer"):return
 	if quitting:return
 	if value=="mine_gallery":
 		gathering.handle("gather:cancel")
@@ -3055,6 +3073,7 @@ func _qa_v022() -> void:
 	print("V022_INTEGRATION_OK: 6 routes walked with player collision; 9 signs, 3 discoveries, animated mill, infinite wallet and isolated save reload")
 
 func _horse_interact() -> void:
+	if falls.local_down() or falls.is_down("horse"):return
 	if network.active:
 		network.mounts.request("dismount" if _mounted() else "mount");return
 	if not session_started or build_mode or not hud.modal_kind.is_empty():return
@@ -3220,6 +3239,7 @@ func _qa_v025() -> void:
 	print("V025_INTEGRATION_OK: stable render/menu/map, graze, bounded walking, obstacle sweep, pause, recovery, approach/mount/dismount")
 
 func _reset_farm() -> void:
+	falls.reset()
 	actor.stop_emote();weapons.holster();player.velocity=Vector3.ZERO
 	navigator.waypoint_name="";navigator.target_key="";navigator.stable_target={}
 	field_alerts=FarmFieldAlerts.new()
