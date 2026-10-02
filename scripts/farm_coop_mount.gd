@@ -147,7 +147,7 @@ func force_dismount() -> void:
 			var found:=false
 			for radius in [4.0,6.0,9.0,14.0,22.0]:
 				for step in range(24):
-					var point:=Vector2(h.position.x,h.position.z)+Vector2(sin(step*TAU/24),cos(step*TAU/24))*radius
+					var point:Vector2=Vector2(h.position.x,h.position.z)+Vector2(sin(step*TAU/24),cos(step*TAU/24))*radius
 					if h.safe_spot(point,body(id),g.state,g.world.landscape):
 						body(id).position=Vector3(point.x,h.ground_at(point)+.12,point.y);found=true;break
 				if found:break
