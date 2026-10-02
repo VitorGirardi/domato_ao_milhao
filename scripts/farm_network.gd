@@ -2,7 +2,7 @@ class_name FarmNetwork
 extends Node
 ## Host-authoritative cooperative farm.
 const PORT:=28729
-const PROTOCOL:=11
+const PROTOCOL:=12
 var game:Node3D
 var active:=false
 var ready_session:=false
@@ -134,6 +134,8 @@ func handle(value:String) -> bool:
 	return false
 
 func _preserve(who:String) -> void:
+	game.weapons.combat.reset()
+	if game.get("falls")!=null:game.falls.reset()
 	local_name=who.strip_edges().left(20).replace("\n", " ")
 	if local_name.is_empty():local_name="Fazendeiro"
 	structure_version=0;command_busy=false;sequence=0;revision=0;received_revision=-1;plot_versions.clear();last_sequence.clear();last_action.clear();crop_visuals.clear();plot_states.clear();visual_state.clear()
@@ -218,6 +220,7 @@ func _spawn_remote(who:String,pos:Vector3) -> void:
 	var title:=Label3D.new();title.text=who;title.position.y=3.5;title.billboard=BaseMaterial3D.BILLBOARD_ENABLED;title.font_size=42;title.pixel_size=.008;title.modulate=Color("ffe6a0");remote.add_child(title)
 
 func _remove_remote() -> void:
+	game.weapons.combat.remove_remote()
 	if is_instance_valid(remote):remote.queue_free()
 	remote=null;remote_actor=null
 
@@ -225,6 +228,7 @@ func _remove_remote() -> void:
 func _motion(pos:Vector3,angle:float,moving:bool,running:bool,airborne:bool,dance:String,elapsed:float) -> void:
 	if not ready_session or multiplayer.get_remote_sender_id()!=accepted or not is_instance_valid(remote):return
 	if mounts.rider==accepted:return
+	if game.get("falls")!=null and game.falls.is_player_down(accepted):return
 	if not pos.is_finite() or not is_finite(angle) or pos.x<FarmLandscape.WALK_MIN.x-2 or pos.x>FarmLandscape.WALK_MAX.x+2 or pos.z<FarmLandscape.WALK_MIN.y-2 or pos.z>FarmLandscape.WALK_MAX.y+2 or pos.y< -4 or pos.y>FarmLandscape.height_at(Vector2(pos.x,pos.z))+15:return
 	if not is_finite(elapsed):return
 	if dance.is_empty():remote_actor.stop_emote()
@@ -239,6 +243,7 @@ func send_emote(key:String) -> void:
 @rpc("any_peer","call_remote","reliable",0)
 func _emote(key:String) -> void:
 	if not ready_session or multiplayer.get_remote_sender_id()!=accepted or remote_actor==null:return
+	if game.get("falls")!=null and game.falls.is_player_down(accepted):return
 	if not FarmEmotes.DANCES.has(key) and not FarmEmotes.REACTIONS.has(key):return
 	remote_actor.airborne=false;remote_actor.emote(key);emote_count+=1
 
@@ -265,12 +270,13 @@ func _process(delta:float) -> void:
 	if accepted!=0 and send_timer<=0:
 		send_timer=.05
 		_motion.rpc_id(accepted,game.player.position,game.avatar.rotation.y,Vector2(game.player.velocity.x,game.player.velocity.z).length()>.2,Input.is_action_pressed("run"),game.actor.airborne,game.actor.emote_kind,game.actor.emote_elapsed)
-	if is_instance_valid(remote) and mounts.rider!=accepted:
+	if is_instance_valid(remote) and mounts.rider!=accepted and (game.get("falls")==null or not game.falls.is_player_down(accepted)):
 		remote.position=remote.position.lerp(target,minf(delta*15,1));remote_model.rotation.y=lerp_angle(remote_model.rotation.y,target_yaw,minf(delta*15,1))
 		remote_actor.swimming=FarmWater.swimming_at(remote.position) and mounts.rider!=accepted
 		remote_actor.airborne=remote_airborne and not remote_actor.swimming;remote_actor.animate(delta,remote_moving,remote_running)
 
 func _disconnected(id:int) -> void:
+	game.weapons.combat.release(id)
 	mounts.release(id)
 	pending_peers.erase(id);last_sequence.erase(id);last_action.erase(id)
 	if hosting and id==accepted:
@@ -280,6 +286,8 @@ func leave(message:String="") -> void:
 	if not active:return
 	if hosting and ready_session and not save_coop():
 		game.hud.toast("Falha ao salvar. A sessão continua aberta para tentar novamente.");return
+	game.weapons.combat.reset()
+	if game.get("falls")!=null:game.falls.reset()
 	mounts.reset()
 	active=false;ready_session=false;accepted=0;pending_peers.clear()
 	if peer:peer.close()
@@ -338,6 +346,7 @@ func _tend_request(seq:int,index:int,op:String,crop:String,expected:int,topology
 func apply_tend(sender:int,seq:int,index:int,op:String,crop:String,expected:int,topology:int=-1) -> void:
 	if not hosting or not active:return
 	if sender!=1 and sender!=accepted:return
+	if game.get("falls")!=null and game.falls.is_player_down(sender):return
 	if seq<=int(last_sequence.get(sender,0)):return
 	last_sequence[sender]=seq
 	var error:=""
@@ -471,6 +480,8 @@ func _command(seq:int,topology:int,command:Dictionary) -> void:
 func apply_command(sender:int,seq:int,topology:int,command:Dictionary) -> void:
 	if not hosting or not ready_session or sender not in [1,accepted] or seq<=int(last_sequence.get(sender,0)):return
 	last_sequence[sender]=seq
+	if game.get("falls")!=null and (game.falls.is_player_down(sender) or game.falls.blocks_command(command)):
+		command_result(sender,false,"Aguarde a recuperacao antes dessa acao.",command);return
 	if var_to_bytes(command).size()>32000:command_result(sender,false,"Pedido muito grande.",command);return
 	if topology!=structure_version:command_result(sender,false,"A fazenda mudou. Confira a seleção e tente novamente.",command);return
 	var before:Dictionary=game.state.serialize()
@@ -548,6 +559,8 @@ func _visuals(topology:int,packet:PackedByteArray) -> void:
 func _client_ready() -> void:
 	if hosting and multiplayer.get_remote_sender_id()==accepted:
 		mounts.send_initial()
+		game.weapons.combat.initial()
+		if game.get("falls")!=null:game.falls.sync_to(accepted)
 		game.companions._event.rpc_id(accepted,1,"follow",game.world.cat.position,game.companions.follow_owner)
 
 
