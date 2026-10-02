@@ -24,10 +24,13 @@ func run() -> void:
 		await until(func():return count_stock()>0)
 		var mined:=count_stock();flag("mined")
 		await until(func():return exists("fishing") and game.gathering.jobs.has(n.accepted))
-		assert(count_stock()==mined)
+		assert(count_stock()==mined and game.gathering.jobs[n.accepted].index==3)
 		await until(func():return exists("cancelled") and not game.gathering.jobs.has(n.accepted))
 		assert(count_stock()==mined);flag("cancel_seen")
 		await until(func():return count_stock()>mined)
+		assert(count_stock()==mined+1 and game.state.resources.caught==1)
+		await create_timer(.4).timeout
+		assert(count_stock()==mined+1)
 		flag("fish_saved")
 		# Give the shared QA farm the materials for both gallery transactions.
 		game.state.resources.stock.copper+=8;game.state.resources.stock.iron+=10;game.state.resources.mined+=18
@@ -48,13 +51,17 @@ func run() -> void:
 		game.gathering.request("gather:mine:0");flag("race_sent")
 		await create_timer(.7).timeout;assert(not game.gathering.jobs.has(game.gathering.own_id()))
 		await until(func():return exists("mined") and count_stock()>0)
-		move_to(FarmResourceSites.FISH_SPOTS[0]);await create_timer(.5).timeout
-		game.gathering.request("gather:fish:0")
+		move_to(FarmResourceSites.FISH_SPOTS[3]);await create_timer(.5).timeout
+		game.gathering.request("gather:fish:3")
 		await until(func():return game.gathering.jobs.has(game.gathering.own_id()));flag("fishing")
+		var stock_before:=count_stock()
+		assert(game.gathering.jobs[game.gathering.own_id()].index==3)
+		game.gathering._process(20) # A client clock can never award the fish.
+		assert(count_stock()==stock_before)
 		await create_timer(.5).timeout;game.player.position.x+=2;flag("cancelled")
 		await until(func():return exists("cancel_seen") and game.gathering.jobs.is_empty())
-		move_to(FarmResourceSites.FISH_SPOTS[0]);await create_timer(.5).timeout
-		game.gathering.request("gather:fish:0")
+		move_to(FarmResourceSites.FISH_SPOTS[3]);await create_timer(.5).timeout
+		game.gathering.request("gather:fish:3")
 		await until(func():return exists("fish_saved") and game.gathering.jobs.is_empty())
 		await until(func():return exists("gallery_materials") and game.state.resources.stock.copper>=8)
 		move_to(Vector2(900,-233));await create_timer(.5).timeout
