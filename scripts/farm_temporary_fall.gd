@@ -65,6 +65,8 @@ func _bind(key:String,record:Dictionary) -> void:
 	entry.base_transform=record.get("pose_base",entry.model.transform)
 	entry.model.transform=entry.base_transform
 	record.pose_base=entry.base_transform
+	var support:=_support_at(record.position)
+	if support.y>FarmLandscape.height_at(Vector2(support.x,support.z))+.2:entry.ground_y=support.y
 	FarmFallPose.prepare(entry)
 	if record.has("part_rest"):
 		for part_name in record.part_rest:
@@ -147,6 +149,16 @@ func knock_down(key:String) -> bool:
 	if game.network.active and game.network.accepted!=0:sync_to(game.network.accepted)
 	return true
 
+func _support_at(at:Vector3) -> Vector3:
+	var excluded:Array[RID]=[]
+	for entry in targets.values():
+		var bodies:Array[CollisionObject3D]=[];_colliders(entry.body,bodies)
+		for body in bodies:excluded.append(body.get_rid())
+	var query:=PhysicsRayQueryParameters3D.create(at+Vector3.UP*.15,at+Vector3.DOWN*80,1,excluded)
+	var floor_hit:=game.get_world_3d().direct_space_state.intersect_ray(query)
+	if not floor_hit.is_empty() and floor_hit.normal.y>.4:return floor_hit.position
+	return at
+
 func _safe_recovery(at:Vector3) -> Vector3:
 	var flat:=Vector2(at.x,at.z)
 	var capsule:=CapsuleShape3D.new();capsule.radius=.42;capsule.height=2.58
@@ -169,10 +181,15 @@ func _start_recovery(key:String,record:Dictionary) -> void:
 	if not record.has("entry") or not is_instance_valid(record.entry.model):return
 	var entry:Dictionary=record.entry
 	var at:Vector3=record.position
+	var safe:=at
 	# Ordinary land actors rise where they fell. Only an unsafe water position
 	# needs a nearby dry return, instead of reviving below the lake surface.
 	if FarmWater.immersion(at)>.12 or at.y<FarmLandscape.height_at(Vector2(at.x,at.z))-.5:
-		var safe:=_safe_recovery(at)
+		safe=_safe_recovery(at)
+	elif key.begins_with("player:"):
+		var support:=_support_at(at)
+		if at.y-support.y>.15:safe=support+Vector3.UP*.03
+	if not safe.is_equal_approx(at):
 		FarmFallPose.reset(entry);entry.body.global_position=safe
 		entry.base_transform=entry.model.transform;record.pose_base=entry.base_transform;record.position=safe
 	if key.begins_with("player:") and int(key.get_slice(":",1))==own_id():game.player.velocity=Vector3.ZERO
