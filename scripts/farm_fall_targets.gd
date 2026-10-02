@@ -11,7 +11,7 @@ static func add(targets:Dictionary,key:String,body:Node3D,model:Node3D,actor:Far
 	targets[key]={"body":body,"model":model,"actor":actor,"kind":kind,"radius":radius,"height":height,"item_index":index}
 
 static func human(targets:Dictionary,key:String,body:Node3D,actor:FarmAvatar) -> void:
-	if actor:add(targets,key,body,actor.root,actor,"human",.43,2.1)
+	if actor:add(targets,key,body,actor.root,actor,"human",.43,2.58)
 
 static func collect(game:Node3D) -> Dictionary:
 	var result:Dictionary={}

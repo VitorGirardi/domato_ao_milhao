@@ -38,7 +38,7 @@ func own_id() -> int:return multiplayer.get_unique_id() if game.network.active e
 func body(id:int) -> Node3D:return game.player if id==own_id() else game.network.remote
 func actor(id:int) -> FarmAvatar:return game.actor if id==own_id() else game.network.remote_actor
 func model(id:int) -> Node3D:return game.avatar if id==own_id() else game.network.remote_model
-func allowed() -> bool:return game.session_started and not game.build_mode and game.hud.modal_kind.is_empty() and not game._mounted() and not game.actor.airborne
+func allowed() -> bool:return not game.falls.local_down() and game.session_started and not game.build_mode and game.hud.modal_kind.is_empty() and not game._mounted() and not game.actor.airborne
 
 func request(kind:String) -> void:
 	if not allowed() or request_wait>0:return
@@ -58,6 +58,7 @@ func _reply(message:String) -> void:
 	game.hud.toast(message)
 
 func apply(id:int,kind:String) -> bool:
+	if game.falls.is_player_down(id) or game.falls.is_down("horse" if kind=="whistle" else "cat"):return false
 	if kind not in ["pet","follow","whistle"] or not is_instance_valid(body(id)):return false
 	var now:=Time.get_ticks_msec();var key:="%d:%s"%[id,kind]
 	if now-int(last_request.get(key,-10000))<(4000 if kind=="whistle" else 700):return false
@@ -118,6 +119,7 @@ func _process(delta:float) -> void:
 		gestures.clear();purr.stop();whistle.stop();return
 	if not game.network.active or game.network.hosting:update_follow(delta)
 	for id in gestures.keys():
+		if game.falls.is_player_down(id):gestures.erase(id);continue
 		if not is_instance_valid(body(id)) or actor(id)==null:gestures.erase(id);continue
 		var entry:Dictionary=gestures[id];entry.time+=delta
 		var duration:=3.2 if entry.kind=="pet" else 1.8
@@ -129,7 +131,7 @@ func _process(delta:float) -> void:
 
 func update_follow(delta:float) -> void:
 	var cat:FarmCat=game.world.cat
-	if follow_owner!=0:
+	if follow_owner!=0 and not game.falls.is_down("cat"):
 		if not is_instance_valid(body(follow_owner)):follow_owner=0;cat.following=false;path.clear()
 		else:
 			cat.following=true;plan_wait-=delta
@@ -175,6 +177,7 @@ func end_horse_call() -> void:
 	game.horse.life.calling=false;game.horse.life.call_path.clear();game.horse.speed=0;game.horse.life.reset(game.horse)
 
 func update_horse_call(delta:float) -> void:
+	if game.falls.is_down("horse"):return
 	var h:FarmHorse=game.horse
 	if not is_instance_valid(body(horse_owner)) or h.mounted:end_horse_call();return
 	var target3:Vector3=body(horse_owner).position

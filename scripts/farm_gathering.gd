@@ -27,6 +27,7 @@ func handle(value:String) -> bool:
 	if not value.begins_with("gather:") and not value.begins_with("resource:buy:") and not value.begins_with("resource:sell:"):return false
 	request(value);return true
 func request(action:String) -> void:
+	if game.falls.local_down():return
 	if not game.session_started:return
 	if game.network.active and not game.network.ready_session:return
 	if not authority():_request.rpc_id(1,action)
@@ -48,6 +49,7 @@ func _reply(message:String) -> void:
 func position_for(id:int) -> Vector3:
 	return game.player.position if id==own_id() else game.network.target
 func _valid_actor(id:int) -> bool:
+	if game.falls.is_player_down(id):return false
 	if FarmWater.swimming_at(position_for(id)):return false
 	if not game.session_started:return false
 	if id==own_id():return not game.build_mode and game.hud.modal_kind.is_empty() and not game._mounted() and not game.actor.airborne
@@ -62,6 +64,7 @@ func _can(kind:String,index:int) -> String:
 	return FarmResources.can_catch(game.state,index) if kind=="fish" else FarmResources.can_extract(game.state,index)
 
 func apply(id:int,action:String) -> String:
+	if game.falls.is_player_down(id):return "Aguarde se recuperar."
 	if session_key!=_key() or (authority() and state_id!=game.state.get_instance_id()):reset()
 	if not authority() or not game.session_started or (game.network.active and not game.network.ready_session):return "Aguarde a fazenda carregar."
 	if id!=own_id() and (not game.network.active or id!=game.network.accepted):return "Jogador desconectado."
