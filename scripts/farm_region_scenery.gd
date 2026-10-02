@@ -24,6 +24,8 @@ func setup(owner_landscape: FarmLandscape, owner_world: FarmWorld) -> void:
 	_lookout()
 	_cave()
 	for key in FarmRegion.PLACES:
+		# The nearby fishing marker already labels this narrow bank.
+		if key=="farm_fishing":continue
 		var place: Dictionary = FarmRegion.PLACES[key]
 		landscape._trail_sign(world, place.at+Vector2(5, 5), place.name.to_upper(), "53765c")
 	landscape._trail_sign(world, Vector2(165, -25), "SERRA / RIO AZUL →\nLAGOS / MINA · MAPA [M]", "53765c")

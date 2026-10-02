@@ -4,6 +4,12 @@ No solo, procure a camionetinha perto do armazém da Lúcia ou em Mapa → Compa
 E entra/sai; W acelera, S freia/ré, A/D viram e Espaço freia. Pare antes de sair.
 Disponível nas fazendas Survival e Sandbox. [Roteiro e limites do protótipo](CAMIONETINHA.md).
 
+# Testar 0.44 — Águas vivas
+
+No mapa M, escolha Riacho da Fazenda · pesca; leve a vara e pressione E.
+Confira lançamento, anéis, captura e cancelamento. Nade e atravesse a ponte
+a pé e montado. [Roteiro e detalhes](AGUAS_VIVAS.md).
+
 # Testar 0.43 — Mira sobre o ombro
 
 P saca a pistola; segure direito para mirar e Q troca o ombro. Confira a pose
@@ -516,4 +522,3 @@ T continua abrindo os terrenos; F5 salva. O cavalo ainda não foi implementado.
 7. Abra um menu durante a montaria: o deslocamento e o impulso devem pausar. Feche para continuar.
 
 O cavalo ainda não tem compra, alimentação ou evolução; este bloco entrega montaria e exploração. Seu dinheiro infinito continua ativo.
-

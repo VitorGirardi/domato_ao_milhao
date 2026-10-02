@@ -12,6 +12,7 @@ const ROUTES := [
 	[Vector3(500, 9, -12), Vector3(535, 11, 35), Vector3(565, 14, 90), Vector3(580, 17, 150), Vector3(630, 21, 198), Vector3(690, 24, 222), Vector3(750, 26, 245), Vector3(820, 30, 285)]
 ]
 const PLACES := {
+	"farm_fishing": {"name":"Riacho da Fazenda · pesca", "at":Vector2(-42.0+sin(-15.0*.065)*2.6+5.8,-15), "notice":"Vara de pesca + E na margem"},
 	"serra_view": {"name": "Mirante da Serra", "at": Vector2(705, -325), "notice": "Vista do vale e do Rio Azul"},
 	"serra_mine": {"name": "Mina da Pedra Clara", "at": Vector2(900, -216), "notice": "Compre na entrada · cobre, ferro e quartzo"},
 	"valley_lake": {"name": "Lago do Sossego · pesca", "at": Vector2(280, 295), "notice": "Vara de pesca + E na margem"},

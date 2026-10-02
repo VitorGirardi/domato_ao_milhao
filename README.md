@@ -1,3 +1,8 @@
+# Aguas vivas - 0.44.0
+
+Margens com modelos Blender, cardumes e pesca perto da fazenda.
+[Novidades e controles](AGUAS_VIVAS.md).
+
 # Mira sobre o ombro — 0.43.0
 
 Segure o **botão direito** para aproximar a câmera e mirar com a pistola apoiada
@@ -74,13 +79,13 @@ Construam, negociem, cuidem dos animais, contratem a equipe e usem o cavalo junt
 Protótipo jogável de um tycoon de fazenda 3D estilizado para Windows e Linux, em português.
 Godot 4.7.2 + modelos originais feitos no Blender 5.2.1. Campanha solo offline e fazenda cooperativa para dois PCs.
 
-**Versão atual: 0.43.0.** Veja [as prioridades](ROADMAP.md) e [as novidades](CHANGELOG.md).
+**Versão atual: 0.44.0.** Veja [as prioridades](ROADMAP.md) e [as novidades](CHANGELOG.md).
 
 Veja o [roteiro de teste manual](COMO_TESTAR.md), incluindo encomendas e vendas da 0.5.
 
 ## Jogar
 
-O executável local fica em `exports/windows-v0.43.0/DoMatoAoMilhao.exe` depois da exportação.
+O executável local fica em `exports/windows-v0.44.0/DoMatoAoMilhao.exe` depois da exportação.
 Ele abre diretamente, sem instalar Godot ou Blender. Os binários não são enviados ao Git.
 
 Para executar a partir do código:

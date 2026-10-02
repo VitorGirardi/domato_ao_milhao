@@ -11,7 +11,7 @@ const PRICES := {"tilapia":18, "trout":28, "dorado":45, "copper":24, "iron":40, 
 const STOCK_LIMIT := 10000
 const MAX_COUNTER := 1000000000
 const COOLDOWN := 120.0
-const FISH_WEIGHTS := [[75,20,5], [40,45,15], [20,35,45]]
+const FISH_WEIGHTS := [[75,20,5], [40,45,15], [20,35,45], [75,20,5]]
 
 static func fresh() -> Dictionary:
 	return {"rod":false, "pickaxe":false, "mine_owned":false, "gallery_level":0, "stock":{"tilapia":0,"trout":0,"dorado":0,"copper":0,"iron":0,"quartz":0}, "node_ready":[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0], "caught":0, "mined":0}
@@ -75,7 +75,7 @@ static func buy(state:FarmState, kind:String) -> String:
 	return ""
 
 static func can_catch(state:FarmState, spot:int) -> String:
-	if spot<0 or spot>=3:return "Ponto de pesca desconhecido."
+	if spot<0 or spot>=FISH_WEIGHTS.size():return "Ponto de pesca desconhecido."
 	if not state.claimed:return "Escolha seu terreno primeiro."
 	if not state.resources.rod:return "Compre uma vara de pesca no armazém."
 	if state.resources.caught>=MAX_COUNTER:return "Limite de capturas atingido."

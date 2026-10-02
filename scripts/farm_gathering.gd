@@ -92,8 +92,8 @@ func apply(id:int,action:String) -> String:
 		if not _commit(before):return "Não foi possível salvar. Nenhum recurso foi alterado."
 		return "Compra concluída." if parts[1]=="buy" else "Venda concluída."
 	if parts[0]!="gather" or parts[1] not in ["fish","mine"]:return "Ação inválida."
-	var allowed:= ["0","1","2"] if parts[1]=="fish" else ["0","1","2","3","4","5","6","7","8"]
-	if parts[2] not in allowed:return "Ação inválida."
+	var count:=FarmResourceSites.FISH_SPOTS.size() if parts[1]=="fish" else FarmResources.NODE_COUNT
+	if not parts[2].is_valid_int() or str(int(parts[2]))!=parts[2] or int(parts[2])<0 or int(parts[2])>=count:return "Ação inválida."
 	var kind:String=parts[1];var index:=int(parts[2])
 	if jobs.has(id):return "Você já está coletando."
 	if not _valid_actor(id) or not _near(id,_site(kind,index),1.55 if kind=="mine" else 3.0):return "Aproxime-se do ponto de coleta, a pé."

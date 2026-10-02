@@ -111,6 +111,7 @@ func setup(world:FarmWorld) -> void:
 	_horizon(world)
 	_landmarks(world)
 	var region := FarmRegionScenery.new(); add_child(region); region.setup(self,world)
+	var shore:=FarmShoreLife.new();add_child(shore);shore.setup()
 	add_child(meadow)
 	for i in range(65000):
 		var p:=Vector2(rng.randf_range(-34,184),rng.randf_range(-149,149))

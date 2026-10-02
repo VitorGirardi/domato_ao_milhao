@@ -6,6 +6,13 @@
 - Posição independente por fazenda; saves anteriores, cavalo e cooperativo preservados.
 - Ainda sem carga, passageiros ou combustível. Veículo indisponível no cooperativo nesta etapa.
 
+# 0.44.0 — Águas vivas
+
+- Margens do riacho e Lago do Sossego com taboas, nenúfares e pedras originais Blender.
+- Cardumes nadando sob a água azul, plantas ao vento e folhas flutuando suavemente.
+- Novo ponto de pesca perto da fazenda, marcado no mapa; lançamento da boia e anéis na mordida.
+- Capturas autoritativas, cancelamento limpo, saves e modos preservados. Protocolo 15.
+
 # 0.43.0 — Mira sobre o ombro
 
 - Segurar o botão direito aproxima suavemente a câmera sobre o ombro; soltar devolve a visão normal de caminhada. Sem primeira pessoa.
@@ -466,4 +473,3 @@ Construção, comércio, animais, equipe e cavalo compartilhados. Comandos valid
 
 Primeiro protótipo: vale 3D, escolha do terreno, câmeras, construção, plantação,
 galinhas, comércio, placas, pintura e salvamento.
-

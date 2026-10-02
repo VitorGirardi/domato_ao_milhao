@@ -31,11 +31,9 @@ func setup(g:Node3D) -> void:
 		shape.radius=.6;shape.height=.9;collision.shape=shape;collision.position.y=.45
 		body.add_child(collision);ore.add_child(body)
 		var label:=_label(FarmResources.NAMES[FarmResources.NODE_ORES[i]],ore.position+Vector3(0,1.65,0));ore_labels.append(label)
-	for i in range(3):
+	for i in range(FarmResourceSites.FISH_SPOTS.size()):
 		var at:=FarmResourceSites.point(FarmResourceSites.FISH_SPOTS[i])
 		fish_labels.append(_label("PESCA · E",at+Vector3(0,1.6,0)))
-		var fish:=load("res://assets/models/resource_fish.glb").instantiate() as Node3D
-		fish.position=at+Vector3(0,.9,0);fish.scale=Vector3.ONE*1.5;add_child(fish)
 		var marker:=MeshInstance3D.new();var cylinder:=CylinderMesh.new();cylinder.top_radius=.06;cylinder.bottom_radius=.08;cylinder.height=.85
 		marker.mesh=cylinder;marker.position=at+Vector3(0,.4,0);var mat:=StandardMaterial3D.new();mat.albedo_color=Color("79553b");marker.material_override=mat;add_child(marker)
 	refresh_world()
@@ -64,7 +62,15 @@ func _new_prop(id:int,kind:String) -> Dictionary:
 	var bobber:=MeshInstance3D.new();var sphere:=SphereMesh.new();sphere.radius=.09;sphere.height=.18;bobber.mesh=sphere
 	var material:=StandardMaterial3D.new();material.albedo_color=Color("f5ba55");bobber.material_override=material;add_child(bobber)
 	var line:=MeshInstance3D.new();line.mesh=ImmediateMesh.new();var thread:=StandardMaterial3D.new();thread.albedo_color=Color("efe5c7");thread.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED;line.material_override=thread;add_child(line)
-	var entry:Dictionary={"kind":kind,"tool":tool,"bobber":bobber,"line":line,"last_time":-1.0,"actor":null};props[id]=entry;return entry
+	var rings:=Node3D.new();rings.visible=false;add_child(rings)
+	for i in range(3):
+		var ring:=MeshInstance3D.new();var torus:=TorusMesh.new()
+		torus.inner_radius=.91;torus.outer_radius=1.0;torus.rings=24;torus.ring_segments=6
+		ring.mesh=torus;ring.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		var foam:=StandardMaterial3D.new();foam.albedo_color=Color(.78,.96,1,.7)
+		foam.transparency=BaseMaterial3D.TRANSPARENCY_ALPHA;foam.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED
+		ring.material_override=foam;rings.add_child(ring)
+	var entry:Dictionary={"rings":rings,"kind":kind,"tool":tool,"bobber":bobber,"line":line,"last_time":-1.0,"actor":null};props[id]=entry;return entry
 
 func _process(delta:float) -> void:
 	if game==null:return
@@ -82,7 +88,7 @@ func _process(delta:float) -> void:
 		if not jobs.has(id) or props[id].kind!=jobs[id].kind:
 			var previous:FarmAvatar=props[id].actor
 			if previous!=null and is_instance_valid(previous.root):previous.animate(1,false,false,false)
-			for key in ["tool","bobber","line"]:props[id][key].queue_free()
+			for key in ["tool","bobber","line","rings"]:props[id][key].queue_free()
 			props.erase(id)
 	for id in jobs:
 		var a:FarmAvatar=game.actor if id==own else game.network.remote_actor
@@ -110,7 +116,7 @@ func _process(delta:float) -> void:
 			entry.tool.global_basis=Basis(Vector3.UP,a.root.rotation.y)*Basis(Vector3.RIGHT,.85)
 		entry.bobber.visible=job.kind=="fish";entry.line.visible=job.kind=="fish"
 		if job.kind=="fish":
-			entry.bobber.position=target+Vector3.UP*(.07+sin(elapsed*3)*.035)
+			_fishing_feedback(entry,job,target)
 			var mesh:ImmediateMesh=entry.line.mesh;mesh.clear_surfaces();mesh.surface_begin(Mesh.PRIMITIVE_LINES)
 			mesh.surface_add_vertex(entry.tool.global_transform*Vector3(0,2,0));mesh.surface_add_vertex(entry.bobber.position);mesh.surface_end()
 
@@ -127,3 +133,22 @@ func _impact(at:Vector3) -> void:
 		tween.chain().tween_callback(chip.queue_free)
 	if game.player.global_position.distance_to(at)<12:
 		game.audio.play_effect("step_2",-18,.65)
+
+func _fishing_feedback(entry:Dictionary,job:Dictionary,target:Vector3) -> void:
+	# All motion follows the replicated job clock; only FarmGathering grants fish.
+	var seconds:float=float(job.duration)-float(job.remaining)
+	var cast:=clampf(seconds/.65,0,1)
+	var tip:Vector3=entry.tool.global_transform*Vector3(0,2,0)
+	var biting:bool=job.remaining<=2.0
+	var bob:=sin(seconds*(15.0 if biting else 3.0))*(.065 if biting else .025)
+	var water:=target+Vector3.UP*(.07+bob)
+	entry.bobber.position=tip.lerp(water,cast)+Vector3.UP*sin(cast*PI)*.8
+	entry.rings.position=target+Vector3.UP*.035
+	entry.rings.visible=cast>=1 and (seconds<2.15 or biting)
+	var ripple_time:=seconds-.65 if not biting else seconds-(float(job.duration)-2.0)
+	for i in range(entry.rings.get_child_count()):
+		var ring:MeshInstance3D=entry.rings.get_child(i)
+		var phase:=fposmod(ripple_time-float(i)*.27,1.15)/1.15
+		var radius:=lerpf(.08,.66 if biting else .9,phase)
+		ring.scale=Vector3(radius,.08,radius)
+		ring.material_override.albedo_color.a=(1-phase)*.6
