@@ -1,4 +1,16 @@
-# Queda e retorno — 0.41.0
+# Mira sobre o ombro — 0.43.0
+
+Segure o **botão direito** para aproximar a câmera e mirar com a pistola apoiada
+nas duas mãos. **Q** troca o ombro; soltar direito retorna à câmera de caminhada.
+Nova pose feita no Blender, centro livre para mirar e proteção contra obstáculos.
+Sem primeira pessoa. [Controles e detalhes](MIRA.md).
+
+## Fazendas e modos
+
+Survival e Sandbox, saves independentes e HUD lateral da 0.42 preservados.
+Veja [modos e saves](FAZENDAS.md).
+
+## Queda e retorno
 
 A pistola agora derruba pessoas e animais por um minuto. A queda e o levantar
 usam animações feitas no Blender para cada espécie, com estrelinhas e sem
@@ -46,7 +58,7 @@ continuam preservados. O vale mantém seus 1.115 × 900 m, estradas de terra,
 ponte, mirante, céu azul, nuvens, sol, lua e estrelas.
 
 Ferramentas, estoque, mina e galerias são compartilhados no cooperativo: atualize
-os dois PCs para **0.41.0 (protocolo 12)**. O save **20** migra os formatos anteriores;
+os dois PCs para **0.43.0 (protocolo 14)**. O save **20** migra os formatos anteriores;
 a migração do 19 preserva ferramentas, mina, estoque e renovação dos veios antigos.
 
 [Guia de pesca e mineração](PESCA_MINERACAO.md) · [Guia da região](VALE_SERRA.md).
@@ -62,13 +74,13 @@ Construam, negociem, cuidem dos animais, contratem a equipe e usem o cavalo junt
 Protótipo jogável de um tycoon de fazenda 3D estilizado para Windows e Linux, em português.
 Godot 4.7.2 + modelos originais feitos no Blender 5.2.1. Campanha solo offline e fazenda cooperativa para dois PCs.
 
-**Versão atual: 0.41.0.** Veja [as prioridades](ROADMAP.md) e [as novidades](CHANGELOG.md).
+**Versão atual: 0.43.0.** Veja [as prioridades](ROADMAP.md) e [as novidades](CHANGELOG.md).
 
 Veja o [roteiro de teste manual](COMO_TESTAR.md), incluindo encomendas e vendas da 0.5.
 
 ## Jogar
 
-O executável local fica em `exports/windows-v0.41.0/DoMatoAoMilhao.exe` depois da exportação.
+O executável local fica em `exports/windows-v0.43.0/DoMatoAoMilhao.exe` depois da exportação.
 Ele abre diretamente, sem instalar Godot ou Blender. Os binários não são enviados ao Git.
 
 Para executar a partir do código:

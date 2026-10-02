@@ -41,9 +41,9 @@ func is_down(key:String) -> bool:return records.has(key)
 func refresh_targets() -> void:
 	if game==null or not is_instance_valid(game.world):return
 	targets=FarmFallTargets.collect(game)
-	FarmFallTargets.add(targets,player_key(),game.player,game.avatar,game.actor,"human",.43,2.58)
+	FarmFallTargets.add(targets,player_key(),game.player,game.avatar,game.actor,"human",.43,2.58,-1,true)
 	if game.network.active and is_instance_valid(game.network.remote):
-		FarmFallTargets.add(targets,player_key(game.network.accepted),game.network.remote,game.network.remote_model,game.network.remote_actor,"human",.43,2.58)
+		FarmFallTargets.add(targets,player_key(game.network.accepted),game.network.remote,game.network.remote_model,game.network.remote_actor,"human",.43,2.58,-1,true)
 	for key in records:
 		var record:Dictionary=records[key]
 		if not targets.has(key):continue
@@ -311,7 +311,7 @@ func trace_hit(origin:Vector3,end:Vector3,shooter_id:int) -> Dictionary:
 	var wall:=game.get_world_3d().direct_space_state.intersect_ray(query)
 	if not wall.is_empty():end=wall.position
 	var direction:Vector3=(end-origin).normalized();var distance:float=origin.distance_to(end)
-	var result:Dictionary={"key":"","position":end}
+	var result:Dictionary={"key":"","position":end,"collider":wall.get("collider")}
 	for key in targets:
 		if key==player_key(shooter_id) or is_down(key):continue
 		var entry:Dictionary=targets[key]

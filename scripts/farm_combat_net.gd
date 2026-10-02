@@ -129,7 +129,7 @@ func _pose(armed:bool,aiming:bool,pitch:float) -> void:
 	if not net.ready_session or id!=net.accepted or not is_finite(pitch):return
 	if net.hosting and (not allowed(id) or not bag_for(id).pistol):armed=false
 	var previous:Dictionary=poses.get(id,{})
-	poses[id]={"armed":armed,"aiming":aiming,"pitch":clampf(pitch,-.8,.7),"reload":float(previous.get("reload",0)),"kick":float(previous.get("kick",0))}
+	poses[id]={"armed":armed,"aiming":aiming,"pitch":clampf(pitch,-.8,.7),"reload":float(previous.get("reload",0)),"kick":float(previous.get("kick",0)),"blend":float(previous.get("blend",0))}
 
 func _physics_process(delta:float) -> void:
 	var net:FarmNetwork=game.network
@@ -142,9 +142,7 @@ func _physics_process(delta:float) -> void:
 	send_left-=delta
 	if net.accepted!=0 and send_left<=0:
 		send_left=.05
-		var direction:Vector3=weapons.aim_point()-game.player.position
-		var pitch:=clampf(atan2(direction.y-1.55,Vector2(direction.x,direction.z).length()),-.8,.7)
-		_pose.rpc_id(net.accepted,weapons.armed,weapons.aiming,pitch)
+		_pose.rpc_id(net.accepted,weapons.armed,weapons.aiming,weapons.pose_pitch)
 		if net.hosting:_reload_pose.rpc_id(net.accepted,float(weapons.reload_left),maxf(0,float(int(reloads.get(net.accepted,0))-Time.get_ticks_msec())/1000))
 
 func _process(delta:float) -> void:
@@ -173,15 +171,7 @@ func animate_remote(delta:float) -> void:
 	remote_pistol.visible=true
 	pose.kick=maxf(0,float(pose.get("kick",0))-delta)
 	if net.hosting:pose.reload=maxf(0,float(int(reloads.get(net.accepted,0))-Time.get_ticks_msec())/1000)
-	var actor:FarmAvatar=net.remote_actor
-	var pitch:float=pose.pitch;var kick:float=pose.kick/FarmWeapons.SHOT_INTERVAL
-	var lower:=.6 if float(pose.reload)>0 else 0.0
-	actor.pose_bone("UpperArm.R",Vector3(-1.17-pitch*.65-kick*.15+lower,0,-.08),1)
-	actor.pose_bone("Forearm.R",Vector3(-.25,0,0),1);actor.pose_bone("Hand.R",Vector3(-.1,0,0),1)
-	actor.pose_bone("UpperArm.L",Vector3(-1-pitch*.5+lower,.2,.34),1)
-	actor.pose_bone("Forearm.L",Vector3(-.72-(sin(float(pose.reload)/FarmWeapons.RELOAD_TIME*PI)*.5 if lower>0 else 0),-.28,0),1)
-	actor.can.visible=false;actor.carried_egg.visible=false
-	var hand:Transform3D=actor.skeleton.get_bone_global_pose(actor.bones["Hand.R"])
-	var basis:Basis=(Basis(Vector3.RIGHT,-pitch-kick*.12+lower)*Basis(Vector3.FORWARD,.45 if lower>0 else 0)).scaled(Vector3.ONE*1.1)
-	remote_pistol.transform=hand.affine_inverse()*Transform3D(basis,hand*actor.hand_grip)
+	pose.blend=lerpf(float(pose.get("blend",0)),1.0 if pose.get("aiming",false) else 0.0,1-exp(-delta*14))
+	var kick:float=pose.kick/FarmWeapons.SHOT_INTERVAL
+	FarmPistolPose.apply(net.remote_actor,remote_pistol,float(pose.pitch),maxf(float(pose.blend),kick),float(pose.reload)/FarmWeapons.RELOAD_TIME,kick)
 	remote_flash.visible=float(pose.kick)>FarmWeapons.SHOT_INTERVAL-.055

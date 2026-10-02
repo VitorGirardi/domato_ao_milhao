@@ -11,6 +11,7 @@ var avatar: Node3D
 var actor:=FarmAvatar.new()
 var feedback:=FarmFeedback.new()
 var camera := Camera3D.new()
+var shoulder_camera := FarmShoulderCamera.new()
 var build_mode := true
 var focus := Vector3(4,0,-2)
 var yaw := 0.48
@@ -187,7 +188,7 @@ func _physics_process(delta: float) -> void:
 		player.velocity.x = 0
 		player.velocity.z = 0
 	else:
-		if direction.length() > 0.1:
+		if direction.length() > 0.1 and not weapons.armed:
 			avatar.rotation.y = lerp_angle(avatar.rotation.y,atan2(direction.x,direction.z),delta*12)
 	var was_airborne:=actor.airborne
 	player.velocity=FarmWater.velocity(player.position,player.velocity,direction if not build_mode else Vector3.ZERO,delta,Input.is_action_pressed("run"))
@@ -255,12 +256,16 @@ func _update_camera(delta: float, immediate: bool = false) -> void:
 	var target := focus if build_mode else player.position + Vector3(0,2.0 if _mounted() else 1.1,0)
 	var distance := build_distance if build_mode else (walk_distance+3.0 if _mounted() else walk_distance)
 	var angle := pitch if build_mode else clampf(pitch,0.2,1.0)
-	if weapons.armed and not build_mode:
-		target-=Vector3(cos(yaw),0,-sin(yaw))*.85
-		target+=Vector3.UP*.55
-		distance=5.2 if Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT) else 6.5
-		angle=clampf(pitch,-.35,.80)
-	var desired := target + Vector3(sin(yaw)*cos(angle),sin(angle),cos(yaw)*cos(angle))*distance
+	var aim_value:Variant=weapons.get("aim_blend")
+	var blend:float=clampf(float(aim_value),0,1) if aim_value!=null and not build_mode and not _mounted() else 0.0
+	var side_value:Variant=weapons.get("shoulder_side")
+	var pitch_value:Variant=weapons.get("aim_pitch")
+	var pose:=shoulder_camera.compose(player.position,target,distance,angle,yaw,blend,float(side_value) if side_value!=null else 1.0,float(pitch_value) if pitch_value!=null else .08,delta,immediate)
+	target=pose.target
+	if blend>0.001 and is_inside_tree():
+		# The shoulder pivot cannot cross a wall beside the player's body.
+		target=_camera_clear_position(pose.anchor,target)
+	var desired:Vector3=target+pose.offset
 	if not build_mode and is_inside_tree():
 		desired=_camera_clear_position(target,desired)
 	var next_position:=desired if immediate else camera.position.lerp(desired,1-exp(-delta*10))
@@ -270,14 +275,25 @@ func _update_camera(delta: float, immediate: bool = false) -> void:
 	camera.position=next_position
 	if camera.position.distance_to(target)>0.01:
 		camera.look_at(target)
-	avatar.visible = build_mode or camera.position.distance_to(target)>1.7
+	avatar.visible = build_mode or camera.position.distance_to(target)>(.85 if blend>.01 else 1.7)
 
 func _camera_clear_position(target:Vector3,candidate:Vector3) -> Vector3:
 	if target.distance_squared_to(candidate)<.000001:return candidate
-	var query:=PhysicsRayQueryParameters3D.create(target,candidate,1,[player.get_rid(),horse.obstacle.get_rid()])
+	var exclude:Array[RID]=[player.get_rid(),horse.obstacle.get_rid()]
+	var query:=PhysicsRayQueryParameters3D.create(target,candidate,1,exclude)
 	query.hit_from_inside=true
-	var hit:=get_world_3d().direct_space_state.intersect_ray(query)
-	return candidate if hit.is_empty() else hit.position+hit.normal*.35
+	var space:=get_world_3d().direct_space_state
+	var hit:=space.intersect_ray(query)
+	var safe:Vector3=candidate if hit.is_empty() else hit.position+hit.normal*.35
+	# A volume sweep also protects the near plane at wall edges, where a
+	# center-only ray would allow the view to clip through the corner.
+	var sphere:=SphereShape3D.new();sphere.radius=.24
+	var sweep:=PhysicsShapeQueryParameters3D.new()
+	sweep.shape=sphere;sweep.transform=Transform3D(Basis.IDENTITY,target)
+	sweep.motion=safe-target;sweep.collision_mask=1;sweep.exclude=exclude
+	var fractions:=space.cast_motion(sweep)
+	if fractions[0]<1.0:safe=target+sweep.motion*maxf(0.0,fractions[0]-.015)
+	return safe
 
 func _ensure_player_space() -> void:
 	var start := Vector2(player.position.x,player.position.z)

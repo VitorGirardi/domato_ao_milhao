@@ -6,8 +6,9 @@ static func item_key(state:FarmState,index:int,prefix:String,slot:int=-1) -> Str
 	var key:="%s:%.3f:%.3f"%[prefix,float(item.x),float(item.z)]
 	return key+":%d"%slot if slot>=0 else key
 
-static func add(targets:Dictionary,key:String,body:Node3D,model:Node3D,actor:FarmAvatar,kind:String,radius:float,height:float,index:int=-1) -> void:
-	if not is_instance_valid(body) or not is_instance_valid(model) or not body.is_visible_in_tree() or not model.is_visible_in_tree():return
+static func add(targets:Dictionary,key:String,body:Node3D,model:Node3D,actor:FarmAvatar,kind:String,radius:float,height:float,index:int=-1,include_hidden:bool=false) -> void:
+	if not is_instance_valid(body) or not is_instance_valid(model):return
+	if not include_hidden and (not body.is_visible_in_tree() or not model.is_visible_in_tree()):return
 	targets[key]={"body":body,"model":model,"actor":actor,"kind":kind,"radius":radius,"height":height,"item_index":index}
 
 static func human(targets:Dictionary,key:String,body:Node3D,actor:FarmAvatar) -> void:

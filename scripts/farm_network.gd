@@ -2,7 +2,7 @@ class_name FarmNetwork
 extends Node
 ## Host-authoritative cooperative farm.
 const PORT:=28729
-const PROTOCOL:=13
+const PROTOCOL:=14
 var game:Node3D
 var active:=false
 var ready_session:=false

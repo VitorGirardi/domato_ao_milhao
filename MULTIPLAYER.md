@@ -1,3 +1,9 @@
+# Atualização 0.43 — mira sobre o ombro
+
+Atualizem os dois PCs para **0.43.0, protocolo 14**. Segurar direito aproxima a
+câmera; Q troca o ombro. A pose da pistola com duas mãos, disparos e recarga
+aparecem para o outro jogador. [Guia da mira](MIRA.md).
+
 # Atualização 0.41 — queda e retorno
 
 Atualizem os dois PCs para **0.41.0, protocolo 12**. Pistola, tiros e recuperação
@@ -12,7 +18,7 @@ Atualizem os dois PCs pelo launcher. Protocolo 6, save 18 (carrega fazendas ante
 
 # Fazenda cooperativa — 0.31.0
 
-Dois jogadores por ENet/UDP, sem servidor pago. Os dois usam a **mesma versão 0.41.0**. O anfitrião mantém o jogo aberto e valida as mudanças da fazenda.
+Dois jogadores por ENet/UDP, sem servidor pago. Os dois usam a **mesma versão 0.43.0**. O anfitrião mantém o jogo aberto e valida as mudanças da fazenda.
 
 ## Entrar e jogar
 1. Extraia o pacote em uma pasta nova. Windows: `DoMatoAoMilhao.exe`. Linux/Omarchy: `./jogar.sh`.
