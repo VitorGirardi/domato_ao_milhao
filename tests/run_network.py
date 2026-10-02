@@ -10,6 +10,7 @@ parser.add_argument('--test',default='test_network')
 a=parser.parse_args();root=Path(__file__).resolve().parents[1]
 flags=root/'test-results'/('network-'+str(time.time_ns()));flags.mkdir(parents=True)
 processes=[]
+reported=set()
 try:
     for mode in ['host','client']:
         env=os.environ.copy();isolated=flags/mode;isolated.mkdir()
@@ -25,10 +26,13 @@ try:
                 time.sleep(.1)
     for proc,log,mode in processes:
         proc.wait(timeout=160);log.close();output=(flags/f'{mode}.log').read_text()
-        print(output,flush=True)
+        print(output,flush=True);reported.add(mode)
         assert proc.returncode==0 and ('NETWORK_QA_OK' in output or 'COOP_QA_OK' in output) and 'ERROR' not in output, (mode,flags)
     print('NETWORK_PAIR_OK',flags)
 finally:
     for proc,log,mode in processes:
         if proc.poll() is None:proc.kill();proc.wait()
         log.close()
+        if mode not in reported:
+            print(f'{a.test} {mode} final log ({flags}):',flush=True)
+            print((flags/f'{mode}.log').read_text(encoding='utf-8',errors='replace'),flush=True)

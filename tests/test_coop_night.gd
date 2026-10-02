@@ -5,11 +5,15 @@ func run() -> void:
 	game=load("res://scenes/main.tscn").instantiate();game.name="Main";game.save_path="user://night_solo.json";root.add_child(game);await process_frame
 	game.qa_mode=true;game.state.unlimited_money=true
 	if mode=="host":
-		game.state.claim(Vector2(4,0));game.state.elapsed=300
+		game.state.claim(Vector2(4,0));game.state.elapsed=0
 	game._save_game(false,true);solo=FileAccess.get_file_as_string(game.save_path);n=game.network
 	if mode=="host":
 		n.host("Vitor");game.hud.close_modal();flag("host_ready")
-		await until(func():return n.accepted!=0 and exists("night_seen"))
+		# Start the timed phase only after the other peer has loaded the world.
+		# Starting at 23:00 before connection crossed midnight on slower runners.
+		await until(func():return n.accepted!=0 and exists("clock_ready"))
+		game.state.elapsed=300;n.broadcast_state()
+		await until(func():return exists("night_seen"))
 		game.state.elapsed=320;n.broadcast_state()
 		await until(func():return exists("midnight_seen"))
 		game.state.elapsed=440;n.broadcast_state()
@@ -21,9 +25,9 @@ func run() -> void:
 		n.leave("Fim")
 	else:
 		n.join("127.0.0.1","Ian");await until(func():return n.ready_session)
-		game.hud.close_modal()
-		await until(func():return game.world.day_night.night_amount>0.99)
-		assert(FarmDayNight.hour_at(game.state.elapsed)>23);flag("night_seen")
+		game.hud.close_modal();flag("clock_ready")
+		await until(func():return game.state.elapsed>=300 and game.state.elapsed<320 and game.world.day_night.night_amount>0.99)
+		assert(FarmDayNight.hour_at(game.state.elapsed)>=23);flag("night_seen")
 		await until(func():return game.state.elapsed>=320)
 		assert(FarmDayNight.day_at(game.state.elapsed)==2)
 		assert(game.world.day_night.night_amount>0.99);flag("midnight_seen")
