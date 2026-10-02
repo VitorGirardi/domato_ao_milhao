@@ -11,7 +11,9 @@ var look:=0.0
 var cycles:=0
 var calling:=false
 var call_path:Array[Vector2]=[]
-var call_remaining:=0.0
+var call_remaining:=0.0 # Compatibility with older QA/state users; calls have no expiry.
+var call_blocked:=false
+var call_blocked_at:=Vector2.ZERO
 
 func reset(horse:FarmHorse) -> void:
 	anchor=Vector2(horse.position.x,horse.position.z);anchored=true
@@ -19,33 +21,41 @@ func reset(horse:FarmHorse) -> void:
 
 func safe_step(horse:FarmHorse,point:Vector2,heading:float,state:FarmState,landscape:FarmLandscape) -> bool:
 	if not horse.parking_clear(point,state,landscape):return false
-	var shape:=BoxShape3D.new();shape.size=Vector3(1.22,2.6,3.65)
-	var query:=PhysicsShapeQueryParameters3D.new();query.shape=shape;query.collision_mask=1
+	var query:=PhysicsShapeQueryParameters3D.new();query.collision_mask=1
 	query.exclude=[horse.obstacle.get_rid()]
 	var slope:=Basis(Vector3.UP,heading)*horse.model.basis
-	var start:=horse.position+slope*Vector3(0,1.45,.35)+Vector3(0,horse.model.position.y,0)
-	query.transform=Transform3D(slope,start)
 	query.motion=Vector3(point.x,horse.ground_at(point),point.y)-horse.position
 	var space:=horse.get_world_3d().direct_space_state
-	if not space.intersect_shape(query,1).is_empty():return false
-	return space.cast_motion(query)[0]>=.999
+	# A flat full-length box catches every convex change in the hillside.
+	# Rounded central feet plus an inclined upper body match mounted collision.
+	var capsule:=CapsuleShape3D.new();capsule.radius=.48;capsule.height=2.5
+	query.shape=capsule;query.transform=Transform3D(Basis.IDENTITY,horse.position+Vector3(0,1.45,0))
+	if not space.intersect_shape(query,1).is_empty() or space.cast_motion(query)[0]<.999:return false
+	var upper:=BoxShape3D.new();upper.size=Vector3(1.15,1.5,3.25)
+	query.shape=upper
+	query.transform=Transform3D(slope,horse.position+slope*Vector3(0,1.925,.15)+Vector3(0,horse.model.position.y,0))
+	return space.intersect_shape(query,1).is_empty() and space.cast_motion(query)[0]>=.999
 
 func update(horse:FarmHorse,delta:float,active:bool,state:FarmState,landscape:FarmLandscape,player:CharacterBody3D) -> void:
 	if not anchored:reset(horse)
 	if not active:return
 	if calling:
-		call_remaining=maxf(0,call_remaining-delta)
+		if horse.mounted:calling=false;call_path.clear();return
 		var speed:=0.0
 		if not call_path.is_empty():
 			var at:=Vector2(horse.position.x,horse.position.z)
 			var direction:=call_path[0]-at
 			if direction.length()<.25:call_path.pop_front()
 			else:
-				var heading:=rotate_toward(horse.heading,atan2(direction.x,direction.y),delta*2.5)
-				var point:=at+Vector2(sin(heading),cos(heading))*minf(minf(delta,.1)*2.5,direction.length())
+				var wanted:=atan2(direction.x,direction.y)
+				var heading:=rotate_toward(horse.heading,wanted,delta*4.0)
+				var pace:=7.0 if at.distance_to(call_path[-1])>24 else 2.5
+				if absf(angle_difference(heading,wanted))>.12:pace=0
+				var point:=at+direction.normalized()*minf(minf(delta,.1)*pace,direction.length())
 				if safe_step(horse,point,heading,state,landscape):
-					horse.position=Vector3(point.x,horse.ground_at(point),point.y);horse.heading=heading;horse.rotation.y=heading;speed=2.5
-				else:call_path.clear()
+					horse.position=Vector3(point.x,horse.ground_at(point),point.y);horse.heading=heading;horse.rotation.y=heading;speed=pace
+				else:
+					call_blocked=true;call_blocked_at=at+direction.normalized()*2.0;call_path.clear()
 		horse.speed=speed;horse.animate(delta,speed,false);horse.store(state)
 		return
 	var at:=Vector2(horse.position.x,horse.position.z)

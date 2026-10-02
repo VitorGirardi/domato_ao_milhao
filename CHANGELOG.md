@@ -1,3 +1,12 @@
+# 0.40.0 — Assobio pelo mapa e águas acessíveis
+
+- Assobio chama o cavalo de longe, com navegação por caminhos e pontes. A chamada permanece ativa durante o percurso; o cavalo ocupado não é retirado de outro jogador.
+- Cavalo procura margem segura quando o jogador está na água e espera na entrada quando ele está dentro da mina.
+- Riacho da fazenda liberado para entrar, nadar e sair pelas duas margens. Leito suave e ponte curta de travessia perto do armeiro.
+- Cachoeira revisada no Blender: parede contínua atrás da água, pedras com colisões sólidas e queda terminando dentro de um poço submerso.
+- Controles de natação aparecem ao entrar em água profunda.
+- Save 20 e dinheiro infinito preservados. Protocolo 11: atualizar ambos os PCs no cooperativo.
+
 # 0.39.0 — Terreno, água e cachoeira
 
 - Cascos do cavalo apoiados por contato físico; corpo, sela e cavaleiro acompanham subidas, descidas e inclinações laterais.

@@ -48,7 +48,7 @@ static func legacy_height(p:Vector2) -> float:
 	return result
 
 static func height_at(p:Vector2) -> float:
-	if FarmRegion.on_bridge(p): return 5.0
+	if FarmRegion.on_bridge(p): return FarmRegion.bridge_height(p)
 	return ground_height(p)
 
 static func _grid() -> void:
@@ -86,8 +86,8 @@ static func ground_height(p:Vector2) -> float:
 
 static func terrain_height(p:Vector2) -> float:
 	var river_x:=-42+sin(p.y*.065)*2.6
-	var channel:=1-smoothstep(2.9,4.3,absf(p.x-river_x))
-	return FarmRegion.bed(p, base_height(p)-channel*.65)
+	var channel:=1-smoothstep(0.0,5.0,absf(p.x-river_x))
+	return FarmRegion.bed(p, base_height(p)-channel*2.5)
 
 static func road_distance(p:Vector2) -> float:
 	var trunk:=-27+sin(p.y*.07)*smoothstep(42,66,absf(p.y))*3
@@ -161,9 +161,12 @@ func _river() -> void:
 	for i in range(1300):
 		var z:float=-650+i;var nz:=z+1
 		var x:=-42+sin(z*.065)*2.6;var nx:=-42+sin(nz*.065)*2.6
-		for p in [Vector2(x-5,z),Vector2(x+5,z),Vector2(nx-5,nz),Vector2(x+5,z),Vector2(nx+5,nz),Vector2(nx-5,nz)]:
-			# Bury mesh edges under both banks; terrain defines the visible shoreline.
-			surface.add_vertex(Vector3(p.x,-.10+base_height(Vector2(-42,p.y)),p.y))
+		for strip in range(10):
+			var offset:=-5.0+strip
+			for p in [Vector2(x+offset,z),Vector2(x+offset+1.0,z),Vector2(nx+offset,nz),Vector2(x+offset+1.0,z),Vector2(nx+offset+1.0,nz),Vector2(nx+offset,nz)]:
+				var level:=FarmLandscape.legacy_height(Vector2(-42,p.y))-.10
+				surface.set_color(Color(clampf((level-ground_height(p))/5.0,0,1),0,0,1))
+				surface.add_vertex(Vector3(p.x,level,p.y))
 	surface.generate_normals()
 	var water:=MeshInstance3D.new();water.name="LivingRiver";water.mesh=surface.commit()
 	water_material=ShaderMaterial.new();water_material.shader=load("res://assets/shaders/valley_water.gdshader")
@@ -205,7 +208,9 @@ func _bosques() -> void:
 		var z:=rng.randf_range(-73,75);var x:=-42+sin(z*.065)*2.6
 		var p:=Vector2(x+(1 if i%2==0 else -1)*rng.randf_range(4.4,6.3),z)
 		var scale_value:=rng.randf_range(.3,1.1)
-		scenery.append({"key":"stone","p":p,"scale":scale_value,"angle":rng.randf()*TAU,"radius":scale_value,"bird":false})
+		var angle:=rng.randf()*TAU
+		if absf(z-30)<5:continue
+		scenery.append({"key":"stone","p":p,"scale":scale_value,"angle":angle,"radius":scale_value,"bird":false})
 
 static func cleared(record:Dictionary,state:FarmState) -> bool:
 	for land in state.owned_areas():

@@ -89,11 +89,12 @@ static func objectives(hud:FarmHUD,state:FarmState) -> void:
 	FarmGameUI.action(hud,p,"Voltar ao campo",Rect2(28,326,270,48),"close")
 	if step<FarmState.JOURNEY.size(): FarmGameUI.action(hud,p,hud.quest_button.text,Rect2(312,326,380,48),"journey",true)
 
-func mount_status(mounted:bool,stamina:float,burst:float) -> void:
+func mount_status(mounted:bool,stamina:float,burst:float,swimming:bool=false) -> void:
 	horse_panel.visible=mounted
 	horse_stamina.value=stamina
 	horse_title.text="Pé de Pano · %s · %d%%"%["Galope" if burst>0 else "Fôlego",int(stamina)]
 	controls.text="WASD cavalgar   •   Shift tapinha / galope   •   E desmontar" if mounted else "WASD andar   •   Shift correr   •   Espaço pular   •   Mouse direito girar"
+	if swimming and not mounted:controls.text="WASD nadar   •   Shift nadar rápido   •   Vá até a margem para sair"
 
 func visit_mode(active:bool) -> void:
 	for i in range(shortcuts.size()):

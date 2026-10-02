@@ -18,9 +18,9 @@ void fragment() {
  } else {
   vec2 p=(UV-0.5)*2.0;float r=length(p);
   float fleck=noise(p*7.0+vec2(TIME*.4,-TIME*.7));
-  float ring=pow(max(0.0,sin(r*28.0-TIME*4.2)),9.0);
+  float ring=pow(max(0.0,sin(r*25.0-TIME*4.2+fleck*2.0)),8.0);
   float edge=1.0-smoothstep(.60,1.0,r);
   ALBEDO=vec3(.78,.94,.96);ROUGHNESS=.6;
-  ALPHA=surface_kind==1 ? edge*(.16+ring*.28+fleck*.24) : edge*fleck*.19;
+  ALPHA=surface_kind==1 ? edge*(.09+ring*.20+fleck*.34) : edge*fleck*.19;
  }
 }

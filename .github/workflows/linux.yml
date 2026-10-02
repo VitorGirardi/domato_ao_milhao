@@ -9,7 +9,12 @@ concurrency:
 permissions:
   contents: read
 jobs:
-  linux:
+  validate:
+    name: Linux ${{ matrix.suite }}
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [gameplay, multiplayer, graphics]
     runs-on: ubuntu-24.04
     # Dependency mirrors can take several minutes; keep enough room for the
     # complete graphical/network suite and the native release smoke test.
@@ -48,10 +53,11 @@ jobs:
           timeout 300 godot --headless --editor --path . --import --quit > test-results/linux/import.log 2>&1
           ! grep -E 'SCRIPT ERROR|ERROR:' test-results/linux/import.log
       - name: Linux gameplay and saves
+        if: matrix.suite == 'gameplay'
         shell: bash
         run: |
           set -euo pipefail
-          for entry in 'test_swimming SWIMMING_OK' 'test_waterfall WATERFALL_OK' 'test_horse_grounding HORSE_GROUNDING_OK' 'test_mining_pose MINING_POSE_OK' 'test_mine_exploration MINE_EXPLORATION_OK' 'test_resources RESOURCES_OK' 'test_gathering GATHERING_OK' 'test_resource_world RESOURCE_WORLD_OK' 'test_region REGION_OK' 'test_horse HORSE_STATE_OK' 'test_settings SETTINGS_STATE_OK' 'test_fullscreen FULLSCREEN_QA_OK' 'test_linux LINUX_QA_OK' 'test_coop_save COOP_SAVE_OK' 'test_coop_commands COOP_COMMANDS_OK' 'test_coop_automation COOP_AUTOMATION_OK' 'test_character_choice CHARACTER_CHOICE_OK' 'test_livestock_pose LIVESTOCK_POSE_OK' 'test_day_night DAY_NIGHT_OK' 'test_build_menu BUILD_MENU_OK' 'test_pigsty_assets PIGSTY_ASSETS_OK' 'test_pigs PIGS_GAME_OK' 'test_map_places MAP_PLACES_OK' 'test_cat CAT_OK' 'test_companions COMPANIONS_OK'; do
+          for entry in 'test_horse_route_lifecycle ROUTE_CANCEL_OK' 'test_horse_summon LONG_WHISTLE_OK' 'test_farm_stream FARM_STREAM_OK' 'test_waterfall_region WATERFALL_REGION_OK' 'test_swimming SWIMMING_OK' 'test_waterfall WATERFALL_OK' 'test_horse_grounding HORSE_GROUNDING_OK' 'test_mining_pose MINING_POSE_OK' 'test_mine_exploration MINE_EXPLORATION_OK' 'test_resources RESOURCES_OK' 'test_gathering GATHERING_OK' 'test_resource_world RESOURCE_WORLD_OK' 'test_region REGION_OK' 'test_horse HORSE_STATE_OK' 'test_settings SETTINGS_STATE_OK' 'test_fullscreen FULLSCREEN_QA_OK' 'test_linux LINUX_QA_OK' 'test_coop_save COOP_SAVE_OK' 'test_coop_commands COOP_COMMANDS_OK' 'test_coop_automation COOP_AUTOMATION_OK' 'test_character_choice CHARACTER_CHOICE_OK' 'test_livestock_pose LIVESTOCK_POSE_OK' 'test_day_night DAY_NIGHT_OK' 'test_build_menu BUILD_MENU_OK' 'test_pigsty_assets PIGSTY_ASSETS_OK' 'test_pigs PIGS_GAME_OK' 'test_map_places MAP_PLACES_OK' 'test_cat CAT_OK' 'test_companions COMPANIONS_OK'; do
             read -r test marker <<< "$entry"
             timeout 180 godot --headless --audio-driver Dummy --path . --script "tests/$test.gd" > "test-results/linux/$test.log" 2>&1
             cat "test-results/linux/$test.log"
@@ -59,6 +65,7 @@ jobs:
             if grep -E 'SCRIPT ERROR|ERROR:' "test-results/linux/$test.log"; then exit 1; fi
           done
       - name: Linux multiplayer with two isolated processes
+        if: matrix.suite == 'multiplayer'
         run: |
           python3 tests/run_network.py --godot godot
           python3 tests/run_network.py --godot godot --test test_coop
@@ -67,57 +74,63 @@ jobs:
           python3 tests/run_network.py --godot godot --test test_coop_pigs
           python3 tests/run_network.py --godot godot --test test_coop_cat
           python3 tests/run_network.py --godot godot --test test_coop_companions
+          python3 tests/run_network.py --godot godot --test test_coop_horse_call
           python3 tests/run_network.py --godot godot --test test_coop_map
           python3 tests/run_network.py --godot godot --test test_coop_region
           python3 tests/run_network.py --godot godot --test test_coop_gathering
           python3 tests/run_network.py --godot godot --test test_coop_swimming
-          mkdir -p test-results/linux/network
-          for directory in test-results/network-*; do cp -r "$directory" test-results/linux/network/; done
       - name: X11 graphical gameplay and fullscreen
+        if: matrix.suite == 'graphics'
         run: |
           xvfb-run -a -s '-screen 0 1920x1080x24' bash -c 'openbox >test-results/linux/openbox.log 2>&1 & timeout 180 godot --display-driver x11 --audio-driver Dummy --path . --script tests/test_linux.gd >test-results/linux/x11.log 2>&1'
           cat test-results/linux/x11.log
           grep -q LINUX_QA_OK test-results/linux/x11.log
           ! grep -E 'SCRIPT ERROR|ERROR:' test-results/linux/x11.log
       - name: Day and night graphical review
+        if: matrix.suite == 'graphics'
         run: |
           xvfb-run -a timeout 180 godot --audio-driver Dummy --path . --script tests/test_day_night.gd > test-results/linux/day-night.log 2>&1
           grep -q DAY_NIGHT_OK test-results/linux/day-night.log
           if grep -E 'SCRIPT ERROR|ERROR:' test-results/linux/day-night.log; then exit 1; fi
           cp test-results/night-*.png test-results/linux/
       - name: Authored valley graphical review
+        if: matrix.suite == 'graphics'
         run: |
           xvfb-run -a timeout 180 godot --audio-driver Dummy --path . --script tests/test_region.gd > test-results/linux/region.log 2>&1
           grep -q REGION_OK test-results/linux/region.log
           if grep -E 'SCRIPT ERROR|ERROR:' test-results/linux/region.log; then exit 1; fi
           cp test-results/region-*.png test-results/linux/
       - name: Map visual review
+        if: matrix.suite == 'graphics'
         run: |
           xvfb-run -a timeout 180 godot --audio-driver Dummy --path . --script tests/test_map_places.gd > test-results/linux/map.log 2>&1
           grep -q MAP_PLACES_OK test-results/linux/map.log
           if grep -E 'SCRIPT ERROR|ERROR:' test-results/linux/map.log; then exit 1; fi
           cp test-results/map-places.png test-results/linux/
       - name: Fishing and mining graphical review
+        if: matrix.suite == 'graphics'
         run: |
           xvfb-run -a timeout 180 godot --audio-driver Dummy --path . --script tests/test_resource_world.gd > test-results/linux/resources-world.log 2>&1
           grep -q RESOURCE_WORLD_OK test-results/linux/resources-world.log
           if grep -E 'SCRIPT ERROR|ERROR:' test-results/linux/resources-world.log; then exit 1; fi
           cp test-results/resource-*.png test-results/linux/
       - name: Mine galleries graphical review
+        if: matrix.suite == 'graphics'
         run: |
           xvfb-run -a timeout 180 godot --audio-driver Dummy --path . --script tests/test_mine_exploration.gd > test-results/linux/mine-exploration.log 2>&1
           grep -q MINE_EXPLORATION_OK test-results/linux/mine-exploration.log
           if grep -E 'SCRIPT ERROR|ERROR:' test-results/linux/mine-exploration.log; then exit 1; fi
           cp test-results/mine-*.png test-results/linux/
       - name: Construction menu and mouse building in cooperative play
+        if: matrix.suite == 'graphics'
         run: |
           xvfb-run -a timeout 180 godot --audio-driver Dummy --path . --script tests/test_build_menu.gd > test-results/linux/build-menu.log 2>&1
           grep -q BUILD_MENU_OK test-results/linux/build-menu.log
           if grep -E 'SCRIPT ERROR|ERROR:' test-results/linux/build-menu.log; then exit 1; fi
           cp test-results/build-menu-*.png test-results/linux/
           xvfb-run -a python3 tests/run_network.py --godot godot --gui --test test_coop_build_menu
-          for directory in test-results/network-*; do cp -r "$directory" test-results/linux/network/; done
       - name: Wayland graphical gameplay and fullscreen
+        if: matrix.suite == 'graphics'
         shell: bash
         run: |
           set -euo pipefail
@@ -131,6 +144,7 @@ jobs:
           grep -q LINUX_QA_OK test-results/linux/wayland.log
           ! grep -E 'SCRIPT ERROR|ERROR:' test-results/linux/wayland.log
       - name: Export and run the native release
+        if: matrix.suite == 'graphics'
         shell: bash
         run: |
           set -euo pipefail
@@ -153,11 +167,24 @@ jobs:
       - uses: actions/upload-artifact@v5
         if: always()
         with:
-          name: linux-validation
-          path: test-results/linux/
+          name: linux-validation-${{ matrix.suite }}
+          path: |
+            test-results/linux/
+            test-results/network-*/host.log
+            test-results/network-*/client.log
       - uses: actions/upload-artifact@v5
+        if: matrix.suite == 'graphics'
         with:
           name: DoMatoAoMilhao-Linux-x86_64
           path: |
             exports/DoMatoAoMilhao-Linux-x86_64.tar.gz
             exports/SHA256SUMS
+  linux:
+    if: always()
+    needs: validate
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Require every Linux suite
+        env:
+          SUITE_RESULT: ${{ needs.validate.result }}
+        run: test "$SUITE_RESULT" = success

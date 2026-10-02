@@ -1255,7 +1255,7 @@ func _resource_refresh() -> void:
 func _update_ui() -> void:
 	hud.update(state,build_mode,selected,tool,crop,hover_hint)
 	hud.walking.update(hud,state,_nearby_context(),crop)
-	hud.walking.mount_status(_mounted(),horse.stamina,horse.burst)
+	hud.walking.mount_status(_mounted(),horse.stamina,horse.burst,actor.swimming)
 	hud.walking.visit_mode(network.active)
 	if network.active:hud.mode_label.text="CONSTRUÇÃO · COOPERATIVO" if build_mode else "FAZENDA COOPERATIVA"
 	navigator.refresh()

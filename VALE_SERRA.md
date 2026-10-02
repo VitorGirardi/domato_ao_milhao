@@ -1,4 +1,4 @@
-# O Vale e a Serra — 0.39.0
+# O Vale e a Serra — 0.40.0
 
 ## Explorar
 
@@ -9,8 +9,8 @@ leste permite subir à serra. A linha do mapa indica direção direta: siga as e
 para contornar água e encostas. Use a roda do mouse para aproximar o mapa.
 
 O vale mantém o estilo do jogo: verde, terra batida, céu azul e água azul.
-Há 1.084 × 900 m dentro dos limites exploráveis (975.600 m², aproximadamente
-15,7 vezes os 62.060 m² anteriores). Isso não representa terreno comprável total.
+Há 1.115 × 900 m dentro dos limites exploráveis (1.003.500 m², aproximadamente
+16,2 vezes os 62.060 m² anteriores). Isso não representa terreno comprável total.
 O mirante chega a 120 m; as propriedades compráveis antigas continuam planas.
 
 ## Pesca e mina
@@ -35,6 +35,14 @@ O rio tem correnteza leve. Cavalo e gato permanecem nas margens. A cachoeira fic
 ao norte do Lago da Serra, em (810, -266), com queda, espuma e som ambiente.
 O cavalo ajusta cascos, corpo e sela à inclinação do chão.
 
+O riacho junto ao armeiro também permite entrar e nadar. As duas margens são
+acessíveis, com uma ponte curta em z=30 para atravessar a pé ou a cavalo.
+O poço da cachoeira cobre toda a base da queda; as pedras laterais e o fundo
+rochoso bloqueiam a passagem para dentro da montanha.
+
+Assobie com C para chamar o cavalo desocupado de qualquer distância. Ele vem
+por caminhos e pontes; na água espera na margem, e na mina espera na entrada.
+
 As áreas novas não se tornam
 automaticamente propriedades construíveis. O mapa continua finito e desenhado à
 mão. Há separação entre dados de região e cenário, mas streaming de terrenos e
@@ -47,7 +55,7 @@ Construções, produção, funcionários, animais, cavalo e dinheiro infinito s�
 preservados. O save 20 lê as versões anteriores. Ao migrar o save 19, mantém
 ferramentas, mina, estoque e a renovação dos três veios antigos; as novas galerias
 começam fechadas. Saves mais antigos recebem recursos vazios quando ausentes.
-O protocolo é 10: atualize os dois PCs para 0.39 antes de hospedar/entrar.
+O protocolo é 11: atualize os dois PCs para 0.40 antes de hospedar/entrar.
 As posições remotas aceitam toda a região e suas altitudes. Estoque de recursos,
 mina e galerias abertas são compartilhados; o save cooperativo continua separado
 do solo. Depois de salvar na 0.38, use esta versão ou posterior, pois versões

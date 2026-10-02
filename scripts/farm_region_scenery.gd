@@ -45,6 +45,15 @@ func _water() -> void:
 				var center:=Vector2(lake.x,lake.y);var va:=Vector2(cos(a)*lake.z,sin(a)*lake.w);var vb:=Vector2(cos(b)*lake.z,sin(b)*lake.w)
 				for p in [center+va*inner,center+vb*outer,center+va*outer,center+va*inner,center+vb*inner,center+vb*outer]:
 					_water_vertex(surface,p,FarmRegion.LAKE_LEVELS[i])
+	# A single connected surface: extend the lake footprint beneath the fall.
+	# Only add triangles outside the existing lake ellipse to avoid z-fighting.
+	for z in range(-278,-248):
+		for x in range(791,829):
+			for tri in [[Vector2(x,z),Vector2(x+1,z),Vector2(x,z+1)],[Vector2(x+1,z),Vector2(x+1,z+1),Vector2(x,z+1)]]:
+				var center:Vector2=(tri[0]+tri[1]+tri[2])/3.0
+				if FarmRegion.plunge_distance(center)>1.15:continue
+				if ((center-Vector2(810,-235))/Vector2(56,38)).length()<1.13:continue
+				for p in tri:_water_vertex(surface,p,68)
 	surface.generate_normals()
 	var water := MeshInstance3D.new(); water.name = "RioAzulELagos"; water.mesh = surface.commit()
 	water.material_override = landscape.water_material; water.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
@@ -104,6 +113,10 @@ func _bridge() -> void:
 	var model:=_model("region_bridge",Vector3(420,5,0))
 	_collision(model,Vector3(0,-.3,0),Vector3(46,.6,8))
 	for z in [-4.0,4.0]: _collision(model,Vector3(0,.7,z),Vector3(46,1.4,.25))
+	var local_bridge:=_model("region_bridge",Vector3(FarmRegion.legacy_river_x(30),.05,30))
+	local_bridge.scale=Vector3(14.0/46.0,1,.75)
+	_collision(local_bridge,Vector3(0,-.3,0),Vector3(46,.6,8))
+	for z in [-4.0,4.0]:_collision(local_bridge,Vector3(0,.7,z),Vector3(46,1.4,.25))
 
 func _lookout() -> void:
 	var p:Vector2=FarmRegion.PLACES.serra_view.at

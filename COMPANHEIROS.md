@@ -2,7 +2,7 @@
 
 - **E perto do gato:** o personagem se agacha e passa a mão na cabeça; o gato reage e ronrona por cerca de três segundos. Funciona com fazendeiro e fazendeira. O gesto interrompe ferramentas/emotes e segura o movimento durante a animação.
 - **V perto do gato:** alterna acompanhar/ficar. Para começar, aproxime-se a até 2,2 m. Quem está sendo acompanhado pode mandar ficar mesmo à distância. Uma única pessoa conduz o gato por vez.
-- **C a pé:** assobio com mão junto à boca e som espacial. O cavalo desocupado se aproxima e para a cerca de 3,5 m; alcance de 60 m, intervalo de quatro segundos e tentativa de até 25 segundos. Não desmonta outro jogador.
+- **C a pé:** assobio com mão junto à boca e som espacial. O cavalo desocupado vem mesmo de longe, percorrendo caminhos e pontes até você, sem limite de 60 m nem prazo de 25 segundos. Se você estiver nadando, ele espera em uma margem segura; dentro da mina, espera na entrada. O intervalo entre assobios continua em quatro segundos. Não desmonta outro jogador.
 
 As rotas contornam obstáculos numa busca limitada. O passo do cavalo também testa o volume físico. Sem caminho livre os animais aguardam; não atravessam paredes nem são teleportados. O gato pode acompanhar pelo vale e ficar no local indicado. Não há viagem instantânea quando o jogador se afasta demais.
 
