@@ -55,9 +55,12 @@ static func apply(entry:Dictionary,age:float,recovery:bool=false) -> void:
 	var cache:Dictionary=entry.fall_pose
 	var base:Transform3D=entry.base_transform
 	var frame:=30.0+clampf(age,0,2)*30.0 if recovery else clampf(age,0,1)*30.0
-	var body_transform:Transform3D=entry.body.global_transform
-	if cache.get("last_frame",-1.0)==frame and cache.get("body_transform",Transform3D.IDENTITY)==body_transform:return
-	cache.last_frame=frame;cache.body_transform=body_transform
+	# Model may itself be the animal's body. Use the unposed parent + saved
+	# transform as the anchor, never the already rolled presentation transform.
+	var parent:=model.get_parent_node_3d()
+	var anchor:Transform3D=parent.global_transform*base if parent else base
+	var terrain_key:float=float(entry.get("ground_y",INF))
+	var fitted:bool=cache.get("fit_frame",-1.0)==frame and cache.get("fit_anchor",Transform3D.IDENTITY)==anchor and cache.get("fit_ground",-INF)==terrain_key
 	var tracks:Dictionary=CURVES.DATA[species(entry)]
 	model.transform=base
 	var actor:FarmAvatar=entry.get("actor")
@@ -83,14 +86,18 @@ static func apply(entry:Dictionary,age:float,recovery:bool=false) -> void:
 	model.basis=base.basis*Basis.from_euler(angles)
 	# Fit every support to its own terrain sample, so a side-lying body follows
 	# slopes rather than rotating around its feet and hanging above the ground.
-	var lift:float=-INF
-	for mesh in cache.meshes:
-		for vertex in mesh.vertices:
-			var p:Vector3=mesh.node.to_global(vertex)
-			lift=maxf(lift,ground(entry,p)-p.y+.018)
-	for bone in cache.bones:
-		var p:Vector3=bone.skin.to_global(bone.skin.get_bone_global_pose(bone.index).origin)
-		lift=maxf(lift,ground(entry,p)-p.y+bone.radius)
+	var lift:float=cache.get("lift",0.0)
+	if not fitted:
+		lift=-INF
+		for mesh in cache.meshes:
+			for vertex in mesh.vertices:
+				var p:Vector3=mesh.node.to_global(vertex)
+				lift=maxf(lift,ground(entry,p)-p.y+.018)
+		for bone in cache.bones:
+			var p:Vector3=bone.skin.to_global(bone.skin.get_bone_global_pose(bone.index).origin)
+			lift=maxf(lift,ground(entry,p)-p.y+bone.radius)
+		cache.lift=lift;cache.fit_frame=frame;cache.fit_anchor=anchor;cache.fit_ground=terrain_key
+		cache.fit_passes=int(cache.get("fit_passes",0))+1
 	if is_finite(lift):
 		var weight:=smoothstep(0,.28,age) if not recovery else 1.0-smoothstep(1.65,2,age)
 		model.global_position.y+=lift*weight

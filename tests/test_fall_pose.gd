@@ -22,7 +22,7 @@ func run() -> void:
 			model=load("res://assets/models/"+("farmer" if kinds[i]=="human" else kinds[i])+".glb").instantiate();body.add_child(model)
 		var actor:FarmAvatar=null
 		if kinds[i]=="human":actor=FarmAvatar.new();actor.setup(model)
-		entries.append({"body":body,"model":model,"actor":actor,"kind":kinds[i],"base_transform":model.transform,"ground_y":0.0})
+		entries.append({"body":model if kinds[i] in ["cow","pig","chicken"] else body,"model":model,"actor":actor,"kind":kinds[i],"base_transform":model.transform,"ground_y":0.0})
 	var camera:=Camera3D.new();stage.add_child(camera);camera.position=Vector3(12,13,18);camera.look_at(Vector3(4,.5,2))
 	camera.projection=Camera3D.PROJECTION_ORTHOGONAL;camera.size=15
 	for phase in ["impact","collapse","down","recover","standing"]:
@@ -37,7 +37,25 @@ func run() -> void:
 		if DisplayServer.get_name()!="headless":
 			await RenderingServer.frame_post_draw
 			root.get_texture().get_image().save_png("res://test-results/fall/"+phase+".png")
+	# Animation/blinking may run between presentation passes. Reassert the pose
+	# each call, but expensive terrain fitting must happen only once at rest.
 	for entry in entries:
+		FarmFallPose.apply(entry,10.0)
+		var expected:Transform3D=entry.model.transform
+		var fits:int=entry.fall_pose.fit_passes
+		for i in range(120):
+			entry.model.transform=entry.base_transform
+			if entry.actor:
+				entry.actor.animate(.016,true,false)
+				entry.actor.face_mesh.set_blend_shape_value(entry.actor.blink_index,0)
+			FarmFallPose.apply(entry,10.0+i*.016)
+			assert(entry.model.transform.is_equal_approx(expected))
+			assert(entry.fall_pose.fit_passes==fits)
+			if entry.actor:assert(entry.actor.face_mesh.get_blend_shape_value(entry.actor.blink_index)>.99)
+		if entry.body==entry.model:entry.model.get_parent_node_3d().position.x+=.3
+		else:entry.body.position.x+=.3
+		FarmFallPose.apply(entry,15.0)
+		assert(entry.fall_pose.fit_passes==fits+1)
 		FarmFallPose.reset(entry)
 		assert(entry.model.transform.is_equal_approx(entry.base_transform))
 	print("FALL_POSE_OK")
