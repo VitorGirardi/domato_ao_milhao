@@ -18,7 +18,7 @@ Atualizem os dois PCs pelo launcher. Protocolo 6, save 18 (carrega fazendas ante
 
 # Fazenda cooperativa — 0.31.0
 
-Dois jogadores por ENet/UDP, sem servidor pago. Os dois usam a **mesma versão 0.41.0**. O anfitrião mantém o jogo aberto e valida as mudanças da fazenda.
+Dois jogadores por ENet/UDP, sem servidor pago. Os dois usam a **mesma versão 0.42.0**. O anfitrião mantém o jogo aberto e valida as mudanças da fazenda.
 
 ## Entrar e jogar
 1. Extraia o pacote em uma pasta nova. Windows: `DoMatoAoMilhao.exe`. Linux/Omarchy: `./jogar.sh`.
