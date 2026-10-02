@@ -657,7 +657,7 @@ func animate(delta: float, player_pos: Vector3, state: FarmState, event: String 
 	for cow in cows:
 		var data:Dictionary=state.items[cow.index].dairy
 		cow.node.visible=data.owned
-		cow.body.collision_layer=1 if data.owned else 0
+		cow.body.collision_layer=1 if data.owned and not cow.node.get_meta("temporary_down",false) else 0
 		if not data.owned: continue
 		if not cow.node.get_meta("temporary_down",false):FarmCowMotion.animate(cow,delta,player_pos)
 		if cow.feed: cow.feed.visible=data.food>0

@@ -32,7 +32,7 @@ static func update(pen:Dictionary,data:Dictionary) -> void:
 		fill.scale.y=maxf(.01,float(data[part])/100.0)
 	for pig in pen.pigs:
 		pig.node.visible=pig.slot<int(data.count)
-		pig.body.collision_layer=1 if pig.node.visible else 0
+		pig.body.collision_layer=1 if pig.node.visible and not pig.node.get_meta("temporary_down",false) else 0
 
 static func animate(pen:Dictionary,delta:float,player:Vector3) -> void:
 	if delta<=0:return

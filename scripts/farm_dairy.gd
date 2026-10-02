@@ -26,6 +26,7 @@ static func tick(data:Dictionary,delta:float) -> void:
 	data.water=maxf(0,float(data.water)-span/4.8)
 static func care(state:FarmState,index:int,action:String) -> String:
 	if index<0 or index>=state.items.size() or state.items[index].kind!="corral": return "Escolha um curral."
+	if action=="milk" and state.temporary_down.get(FarmFallTargets.item_key(state,index,"cow"),false):return "Espere Mimosa se recuperar para ordenhar."
 	var data:Dictionary=state.items[index].dairy
 	if action=="buy":
 		if data.owned: return "Este curral já tem uma vaca."

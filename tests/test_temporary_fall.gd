@@ -13,7 +13,7 @@ func run() -> void:
 	assert(state.claim(Vector2(4,0)).is_empty());state.land_size=40
 	for row in [["coop",Vector2(-6,-6)],["corral",Vector2(8,-6)],["pigsty",Vector2(-6,6)],["cheesery",Vector2(8,8)]]:
 		assert(state.place(row[0],row[1],0).is_empty(),"Fixture placement failed")
-	state.items[1].dairy.owned=true;state.items[2].pigs.count=3
+	state.items[1].dairy.owned=true;state.items[1].dairy.milk=4;state.items[2].pigs.count=3
 	state.staff.hired=true;state.staff.coop=0;state.field_staff.hired=true
 	state.dairy_worker.hired=true;state.dairy_worker.site=1;state.cheese_worker.hired=true;state.cheese_worker.site=3
 	game.state=state;game.world.rebuild(state);falls.last_state=state;falls.refresh_targets()
@@ -46,7 +46,13 @@ func run() -> void:
 	for key in keys:transforms[key]=falls.records[key].entry.model.global_transform
 	game.world.animate(.2,game.player.position,state);game.world.update_staff(state,.2);game.horse.life.update(game.horse,.2,true,state,game.world.landscape,game.player)
 	for key in keys:assert(falls.records[key].entry.model.global_transform.is_equal_approx(transforms[key]),"Routine overwrote down pose: "+key)
-	assert(state.serialize()==save_before,"Fall changed saved economy/ownership")
+	game.world.update_animals(state)
+	for cow in game.world.cows:assert(cow.body.collision_layer==0,"Down cow collision was re-enabled")
+	for pen in game.world.pigsties:
+		for pig in pen.pigs:assert(pig.body.collision_layer==0,"Down pig collision was re-enabled")
+	assert(not FarmCoopCommands.run(state,{"action":"dairy:milk","index":1}).is_empty(),"Coop milk action ignored down cow")
+	game.selected=1;game._action("dairy:milk");game.hud.close_modal()
+	assert(state.serialize()==save_before,"Fall or blocked milking changed saved economy/ownership")
 	var production_before:Array=state.items.duplicate(true)
 	state.tick(1)
 	assert(state.items==production_before,"Down animals continued production or consumption")
@@ -55,6 +61,9 @@ func run() -> void:
 	falls.advance(.01);assert(is_equal_approx(falls.records[keys[0]].age,60))
 	falls.advance(1.99);assert(falls.records.size()==keys.size())
 	falls.advance(.01);assert(falls.records.is_empty() and state.temporary_down.is_empty())
+	for cow in game.world.cows:assert(cow.body.collision_layer==1)
+	for pen in game.world.pigsties:
+		for pig in pen.pigs:assert(pig.body.collision_layer==1)
 	for key in keys:
 		assert(not falls.knock_down(key),"Missing recovery protection")
 		assert(falls.targets[key].model.global_transform.is_equal_approx(standing[key]),"Standing transform not restored: "+key)
@@ -78,6 +87,15 @@ func run() -> void:
 	assert(game._save_game(false))
 	falls.advance(60);assert(not FarmRegion.water_blocked(Vector2(game.player.position.x,game.player.position.z)),"Water recovery stayed wet")
 	falls.advance(2);assert(not falls.local_down());falls.reset()
+	# A hit during a jump must finish recovery on the physical support, including bridges.
+	for point in [Vector2(20,25),Vector2(420,0)]:
+		var support_y:=FarmLandscape.height_at(point)
+		game.player.position=Vector3(point.x,support_y+2,point.y)
+		game.actor.airborne=true
+		assert(falls.knock_down("player:1"))
+		falls.advance(60)
+		assert(absf(game.player.position.y-support_y)<.2,"Airborne recovery missed ground/bridge: "+str(game.player.position))
+		falls.advance(2);falls.reset()
 	# Horse impact unseats its rider; rider impact also releases the mount.
 	game.horse.restore({"x":20.0,"z":25.0,"angle":0.0});game.player.position=game.horse.position+Vector3(2,.1,0)
 	await physics_frame;await physics_frame
