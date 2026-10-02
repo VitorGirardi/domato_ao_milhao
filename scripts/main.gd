@@ -3249,6 +3249,9 @@ func _qa_v025() -> void:
 	print("V025_INTEGRATION_OK: stable render/menu/map, graze, bounded walking, obstacle sweep, pause, recovery, approach/mount/dismount")
 
 func _reset_farm(next_state:FarmState=null) -> void:
+	_cancel_route();move_index=-1;turn=0;crop="carrot"
+	resource_panel_state.clear();gathering.reset()
+	navigator.selected_item={}
 	falls.reset()
 	actor.stop_emote();weapons.holster();player.velocity=Vector3.ZERO
 	navigator.waypoint_name="";navigator.target_key="";navigator.stable_target={}

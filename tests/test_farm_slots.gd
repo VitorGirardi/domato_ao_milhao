@@ -50,7 +50,9 @@ func run() -> void:
 	game._action("front:title");game._action("front:farms")
 	assert(game.hud.modal_kind=="farms" and game.front_end.listed_paths.size()>=3)
 	await capture("list")
+	game.move_index=3;game.dragging=true;game.crop="corn"
 	game.front_end.open_farm(survival_path)
+	assert(game.move_index==-1 and not game.dragging and game.crop=="carrot")
 	assert(not game.state.unlimited_money and game.state.money==1200 and game.state.claimed)
 	assert(game.avatar.get_meta("character_id")=="farmer_woman")
 	assert(game.farm_saves.active_path()==survival_path)
