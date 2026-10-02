@@ -29,6 +29,8 @@ var aim_blend:=0.0
 var shoulder_side:=1.0
 var aim_pitch:=.08
 var pose_pitch:=0.0
+var cursor_owned:=false
+var previous_mouse_mode:=Input.MOUSE_MODE_VISIBLE
 var combat:=FarmCombatNet.new()
 
 func setup(host:Node3D) -> void:
@@ -122,12 +124,25 @@ func shop_has_priority() -> bool:
 	return true
 
 func holster() -> void:
-	armed=false;aiming=false;reload_left=0;recoil=0
+	_end_aim();armed=false;reload_left=0;recoil=0
 	if pistol:pistol.visible=false
+
+func _begin_aim() -> void:
+	aiming=true
+	if not cursor_owned:
+		previous_mouse_mode=Input.mouse_mode;cursor_owned=true
+		Input.mouse_mode=Input.MOUSE_MODE_CAPTURED
+
+func _end_aim() -> void:
+	aiming=false
+	if cursor_owned:Input.mouse_mode=previous_mouse_mode;cursor_owned=false
+
+func _exit_tree() -> void:
+	_end_aim()
 
 func _input(event:InputEvent) -> void:
 	# A release over a HUD panel must still end the aim.
-	if event is InputEventMouseButton and event.button_index==MOUSE_BUTTON_RIGHT and not event.pressed:aiming=false
+	if event is InputEventMouseButton and event.button_index==MOUSE_BUTTON_RIGHT and not event.pressed:_end_aim()
 
 func handle_input(event:InputEvent) -> bool:
 	if not active():return false
@@ -155,7 +170,9 @@ func handle_input(event:InputEvent) -> bool:
 			KEY_TAB,KEY_B:holster()
 	if event is InputEventMouseButton and armed:
 		if event.button_index==MOUSE_BUTTON_RIGHT:
-			aiming=event.pressed;return true
+			if event.pressed:_begin_aim()
+			else:_end_aim()
+			return true
 		if event.button_index==MOUSE_BUTTON_LEFT:
 			if event.pressed:shoot()
 			return true
