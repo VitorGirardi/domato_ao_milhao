@@ -92,5 +92,6 @@ func run() -> void:
 	await screenshot("05-shoulder-camera")
 	print("ARMORY_INTEGRATION_OK: shop, purchase, rig/blink, target hit, cooldown, reload, interruption, cover, build mode, reset, persistence")
 	game.session_started=false # Avoid normal autosave during teardown.
+	game.audio.stop_all();await create_timer(.15).timeout
 	game.queue_free();await process_frame
 	quit()

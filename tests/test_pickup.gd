@@ -28,10 +28,12 @@ func run() -> void:
 	assert(not game.weapons.active() and not game._try_jump() and not game.companions.allowed())
 	# Exercise the real input/physics integration, including pause and engine audio.
 	game.set_physics_process(true);truck.set_physics_process(true)
+	var prior_steps:int=game.audio.step_count
 	Input.action_press("forward")
 	for i in range(30):await physics_frame
 	Input.action_release("forward")
 	assert(truck.speed>0)
+	assert(game.audio.step_count==prior_steps,"Driving must not play walking footsteps")
 	game.hud.menu(game.state)
 	for i in range(3):await physics_frame
 	assert(truck.speed==0 and not truck.engine_sound.playing)
