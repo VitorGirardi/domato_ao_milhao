@@ -83,7 +83,7 @@ static func run(s:FarmState,c:Dictionary) -> String:
 		"route_confirm":
 			if not c.get("plan") is Array or c.plan.is_empty() or c.plan.size()>64:return "Traçado inválido."
 			for piece in c.plan:
-				if not piece is Dictionary or piece.get("kind") not in ["path","fence"]:return "Peça inválida."
+				if not piece is Dictionary or piece.get("kind") not in ["path","fence","fence_painted"]:return "Peça inválida."
 				for field in ["x","z","turn"]:
 					if not (piece.get(field) is float or piece.get(field) is int) or not is_finite(float(piece[field])):return "Traçado inválido."
 				if absf(piece.x)>250 or absf(piece.z)>250 or piece.turn not in [0,1,2,3]:return "Traçado fora do mapa."

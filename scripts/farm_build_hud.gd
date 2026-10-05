@@ -4,8 +4,9 @@ extends RefCounted
 const CATEGORIES := {
 	"Lavoura": ["plot"],
 	"Animais": ["coop", "corral", "stable", "pigsty"],
-	"Estruturas": ["barn", "workshop", "cheesery", "garage"],
-	"Decoração": ["fence", "path", "sign"],
+	"Estruturas": ["barn", "workshop", "cheesery", "house","garage"],
+	"Jardim": ["raised_bed", "trellis", "orchard_young", "orchard_mature", "well", "wash_tub", "compost", "produce_crates"],
+	"Decoração": ["fence", "path", "sign", "fence_painted", "gate_rustic", "gate_painted"],
 	"Terrenos": ["expand", "parcels"]
 }
 const ICONS := {"garage":"map_pickup","plot":"seed", "coop":"chicken", "corral":"cow", "stable":"barn", "pigsty":"barn", "barn":"barn", "workshop":"workshop", "cheesery":"cheese", "fence":"build_fence", "path":"build_path", "sign":"book", "expand":"build_expand", "parcels":"build_expand"}
@@ -15,6 +16,9 @@ var catalog: Panel
 var cards := {}
 var tabs := {}
 var category := "Estruturas"
+var page := 0
+var previous_page: Button
+var next_page: Button
 var last_tool := ""
 var last_selection := -1
 var clock: Label
@@ -58,8 +62,13 @@ func setup(owner: FarmHUD) -> void:
 	catalog=hud.panel(root,Rect2(218,678,1004,198),Color("294b3c"))
 	var tab_i := 0
 	for title in CATEGORIES:
-		var tab := FarmGameUI.action(hud,catalog,title,Rect2(14+tab_i*194,12,184,38),"")
+		var tab := FarmGameUI.action(hud,catalog,title,Rect2(14+tab_i*163,12,155,38),"")
 		_disconnect_action(tab);tab.pressed.connect(_choose_category.bind(title));tabs[title]=tab;tab_i+=1
+	previous_page=FarmGameUI.action(hud,catalog,"‹",Rect2(942,62,48,54),"")
+	next_page=FarmGameUI.action(hud,catalog,"›",Rect2(942,128,48,54),"")
+	_disconnect_action(previous_page);previous_page.pressed.connect(_turn_page.bind(-1))
+	_disconnect_action(next_page);next_page.pressed.connect(_turn_page.bind(1))
+	previous_page.tooltip_text="Página anterior";next_page.tooltip_text="Próxima página"
 	seed_panel=Control.new();seed_panel.position=Vector2(270,106);seed_panel.size=Vector2(476,42);seed_panel.mouse_filter=Control.MOUSE_FILTER_IGNORE;catalog.add_child(seed_panel)
 	for i in range(3):
 		var key:String=["carrot","wheat","corn"][i]
@@ -97,8 +106,13 @@ func _disconnect_action(button: Button) -> void:
 	for connection in button.pressed.get_connections():button.pressed.disconnect(connection.callable)
 
 func _choose_category(title: String) -> void:
-	category=title;paint_open=false;paint_panel.visible=false
+	category=title;page=0;paint_open=false;paint_panel.visible=false
 	hud.action.emit("build:clear")
+	_rebuild_cards()
+	if current_state!=null:_refresh_cards(current_state)
+
+func _turn_page(direction:int) -> void:
+	page=clampi(page+direction,0,(CATEGORIES[category].size()-1)/4)
 	_rebuild_cards()
 	if current_state!=null:_refresh_cards(current_state)
 
@@ -110,7 +124,11 @@ func _rebuild_cards() -> void:
 	for card in cards.values():card.free()
 	cards.clear()
 	var i:=0
-	for key in CATEGORIES[category]:
+	previous_page.visible=CATEGORIES[category].size()>4
+	next_page.visible=previous_page.visible
+	previous_page.disabled=page==0
+	next_page.disabled=(page+1)*4>=CATEGORIES[category].size()
+	for key in CATEGORIES[category].slice(page*4,(page+1)*4):
 		if key not in ["expand","parcels"] and not FarmState.ITEMS.has(key):continue
 		var b:=FarmGameUI.action(hud,catalog,"",Rect2(14+i*230,62,218,120),"parcels" if key=="parcels" else "tool:"+key)
 		var picture:=TextureRect.new();picture.expand_mode=TextureRect.EXPAND_IGNORE_SIZE;picture.texture=_texture(key);picture.position=Vector2(8,12)
@@ -137,6 +155,7 @@ func _refresh_cards(state:FarmState) -> void:
 		var active:bool=key==hud.current_tool
 		b.add_theme_stylebox_override("normal",hud.style(Color("7c6536") if active else Color("41634c"),8,Color("f0c466") if active else Color("6d8664")))
 		b.tooltip_text="Requer nível %d"%FarmLevels.required(key) if locked else ("Aumentar a fazenda em 8 metros" if key=="expand" else "")
+		if FarmState.ITEMS.get(key,{}).get("decorative",false): b.tooltip_text+="\nDecoração: não produz recursos."
 
 func update(state:FarmState,selected:int,tool:String,crop:String,hover_hint:String) -> void:
 	current_state=state
@@ -144,7 +163,10 @@ func update(state:FarmState,selected:int,tool:String,crop:String,hover_hint:Stri
 	if tool!=last_tool:
 		last_tool=tool
 		for title in CATEGORIES:
-			if tool in CATEGORIES[title] and category!=title:category=title;_rebuild_cards()
+			if tool in CATEGORIES[title]:
+				var tool_page:int=CATEGORIES[title].find(tool)/4
+				if category!=title or page!=tool_page:
+					category=title;page=tool_page;_rebuild_cards()
 	if selected!=last_selection or tool!="inspect":paint_open=false
 	last_selection=selected
 	catalog.visible=state.claimed;claim_panel.visible=not state.claimed;select_button.visible=state.claimed
@@ -159,7 +181,7 @@ func update(state:FarmState,selected:int,tool:String,crop:String,hover_hint:Stri
 		selected_icon.texture=_texture(key)
 		paint_button.visible=key in ["barn","coop","workshop","fence","sign","stable"]
 		if not paint_button.visible:paint_panel.visible=false
-		open_button.visible=key in ["plot","barn","coop","workshop","corral","cheesery","stable","pigsty","garage"]
+		open_button.visible=key in ["plot","barn","coop","workshop","corral","cheesery","stable","pigsty","house","garage"]
 		open_button.text="Cuidar" if key in ["plot","coop","corral","pigsty"] else "Abrir"
 		sign_button.visible=key=="sign"
 	_refresh_cards(state)

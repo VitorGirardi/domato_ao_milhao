@@ -11,6 +11,14 @@ static func evolution(hud:FarmHUD,p:Control,state:FarmState,index:int,rect:Rect2
 	else:
 		FarmGameUI.action(hud,p,"Evoluir • $%d"%FarmProgression.UPGRADES[item.kind].cost,rect,"evolution:%d"%index)
 
+static func house(hud:FarmHUD,state:FarmState,index:int) -> void:
+	if index<0 or index>=state.items.size() or state.items[index].kind!="house": return
+	hud.building_index=index
+	var p:=FarmGameUI.open(hud,"house","Casa da fazenda","barn",720,370)
+	hud.label(p,"Seu cantinho no vale",Vector2(26,116),Vector2(668,36),25)
+	hud.label(p,"Personalize o quintal e renove a fachada da sua casa.\nConstrução decorativa, sem interior nesta versão.",Vector2(26,166),Vector2(668,70),20)
+	evolution(hud,p,state,index,Rect2(26,266,330,46))
+
 static func barn(hud:FarmHUD,state:FarmState,index:int) -> void:
 	hud.building_index=hud.building_choice(state,index,"barn")
 	var p:=FarmGameUI.open(hud,"barn","Celeiro","barn",840,616)

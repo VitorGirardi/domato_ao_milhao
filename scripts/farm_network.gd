@@ -536,6 +536,7 @@ func refresh_panel() -> void:
 	var s:FarmState=game.state
 	var i:int=game.selected
 	match h.modal_kind:
+		"house":FarmInteractionUI.house(h,s,h.building_index)
 		"market":h.market(s,h.market_tab)
 		"parcels":FarmParcels.show(h,s)
 		"staff","staff_confirm":h.staff_panel(s)

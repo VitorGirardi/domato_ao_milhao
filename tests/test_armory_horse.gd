@@ -47,6 +47,8 @@ func run() -> void:
 		var invalid:=modern.duplicate(true);invalid.merge(damage,true)
 		var snapshot:=disk.serialize();assert(not disk.restore(invalid) and disk.serialize()==snapshot)
 	# Both interactions are in range: the closest physical target owns E.
+	# Nena shares this location; isolate the two targets under test.
+	game.state.chapter.stage=6
 	# Park outside the gunsmith bounds so ensure_parking does not relocate the fixture.
 	game.weapons.holster()
 	game.horse.restore({"x":-28.8,"z":24.0,"angle":0.0})

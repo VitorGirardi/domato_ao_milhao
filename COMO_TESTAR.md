@@ -6,6 +6,15 @@ Também pode sair, abrir a caçamba com V e acessar Garagem.
 Instale melhorias, pinte e dê um nome. Salve e continue para conferir carga e personalização.
 [Roteiro, custos e limites](GARAGEM.md).
 
+# Testar 0.48 — Arte da fazenda
+
+Abra a construção e confira as categorias e páginas do catálogo. Coloque uma casa,
+abra seu painel e compre a melhoria. Confira os dois níveis do celeiro, as cercas e
+os portões, entrando e saindo a pé e a cavalo. Experimente mover e girar as peças.
+Horta, pomar, poço, tanque e caixas desta coleção são decorativos; os canteiros de
+produção continuam em Lavoura. Salve e continue para conferir posição, nível e cores.
+No cooperativo, atualize os dois PCs. [Detalhes](ARTE_FAZENDA.md).
+
 # Testar 0.47 — Caçamba e direção
 
 Entre na camionetinha com E. Confira o painel à direita e o volante ao virar.
