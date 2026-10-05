@@ -1,6 +1,59 @@
 class_name FarmInteractionUI
 extends RefCounted
 
+static func orchard(hud: FarmHUD, state: FarmState, index: int) -> void:
+	if index < 0 or index >= state.items.size() or state.items[index].kind != "orchard": return
+	hud.building_index = index
+	var item: Dictionary = state.items[index]
+	var data: Dictionary = item.get("orchard", {})
+	var mature := float(data.get("growth", 0)) >= FarmOrchard.GROW_SECONDS
+	var ready := int(data.get("ready", 0))
+	var watered := bool(data.get("watered", false))
+	var p := FarmGameUI.open(hud, "orchard", "Laranjeira do pomar", "seed", 760, 470)
+	p.set_meta("orchard_status", hud.label(p, FarmOrchard.status(item), Vector2(26, 118), Vector2(708, 38), 25))
+	var description := "Regue a muda para ela crescer. Depois de adulta, começa a formar frutas."
+	if mature: description = "Regue uma vez por safra. Colha as laranjas maduras e cuide da próxima colheita."
+	var detail := hud.label(p, description, Vector2(26, 172), Vector2(708, 58), 20)
+	detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	p.set_meta("orchard_detail", detail)
+	var progress := float(data.get("fruit_time", 0)) / FarmOrchard.FRUIT_SECONDS if mature else float(data.get("growth", 0)) / FarmOrchard.GROW_SECONDS
+	FarmGameUI.meter(hud, p, Rect2(26, 251, 708, 18), 1.0 if ready > 0 else progress, Color("d4a44d") if mature else Color("759558"))
+	p.set_meta("orchard_meter", p.get_child(-1))
+	p.set_meta("orchard_phase", hud.label(p, "Frutificação" if mature else "Crescimento da árvore", Vector2(26, 282), Vector2(440, 30), 19))
+	hud.label(p, "%d laranjas por safra" % FarmOrchard.YIELD, Vector2(470, 282), Vector2(264, 30), 19)
+	var water := FarmGameUI.action(hud, p, "Já regada" if watered else "Regar • grátis", Rect2(26, 336, 344, 48), "orchard:water")
+	water.disabled = watered or ready > 0
+	var harvest := FarmGameUI.action(hud, p, "Colher %d laranjas" % ready if ready > 0 else "Aguardando frutas", Rect2(390, 336, 344, 48), "orchard:harvest", ready > 0)
+	harvest.disabled = ready <= 0
+	p.set_meta("orchard_water", water)
+	p.set_meta("orchard_harvest", harvest)
+	hud.label(p, "Aproxime-se a pé para regar e colher. As frutas vão para o estoque.", Vector2(26, 412), Vector2(708, 28), 16)
+
+static func update_orchard(hud: FarmHUD, state: FarmState) -> void:
+	if hud.modal_kind != "orchard" or not is_instance_valid(hud.modal): return
+	var index := hud.building_index
+	if index < 0 or index >= state.items.size() or state.items[index].kind != "orchard": return
+	var p := hud.modal
+	if not p.has_meta("orchard_status"): return
+	var item: Dictionary = state.items[index]
+	var data: Dictionary = item.get("orchard", {})
+	var mature := float(data.get("growth", 0)) >= FarmOrchard.GROW_SECONDS
+	var ready := int(data.get("ready", 0))
+	var watered := bool(data.get("watered", false))
+	p.get_meta("orchard_status").text = FarmOrchard.status(item)
+	p.get_meta("orchard_detail").text = "Regue uma vez por safra. Colha as laranjas maduras e cuide da próxima colheita." if mature else "Regue a muda para ela crescer. Depois de adulta, começa a formar frutas."
+	p.get_meta("orchard_phase").text = "Frutificação" if mature else "Crescimento da árvore"
+	var progress := float(data.get("fruit_time", 0)) / FarmOrchard.FRUIT_SECONDS if mature else float(data.get("growth", 0)) / FarmOrchard.GROW_SECONDS
+	var meter: ColorRect = p.get_meta("orchard_meter")
+	meter.size.x = 702 * clampf(1.0 if ready > 0 else progress, 0, 1)
+	meter.color = Color("d4a44d") if mature else Color("759558")
+	var water: Button = p.get_meta("orchard_water")
+	water.text = "Já regada" if watered else "Regar • grátis"
+	water.disabled = watered or ready > 0
+	var harvest: Button = p.get_meta("orchard_harvest")
+	harvest.text = "Colher %d laranjas" % ready if ready > 0 else "Aguardando frutas"
+	harvest.disabled = ready <= 0
+
 static func evolution(hud:FarmHUD,p:Control,state:FarmState,index:int,rect:Rect2) -> void:
 	if index<0: return
 	var item:Dictionary=state.items[index]
@@ -111,7 +164,7 @@ static func workshop(hud:FarmHUD,state:FarmState,index:int) -> void:
 
 static func market(hud:FarmHUD,state:FarmState,tab:String) -> void:
 	hud.market_tab=tab
-	var p:=FarmGameUI.open(hud,"market","Armazém da Lúcia","harvest",940,744 if tab=="orders" else 680)
+	var p:=FarmGameUI.open(hud,"market","Armazém da Lúcia","harvest",940,744 if tab=="orders" else 834)
 	FarmGameUI.action(hud,p,"Vender",Rect2(26,111,208,43),"market_sales",tab=="sales")
 	FarmGameUI.action(hud,p,"Encomendas • %d"%state.active_orders(),Rect2(247,111,254,43),"market_orders",tab=="orders")
 	FarmGameUI.icon(p,"coins",Rect2(698,112,36,36))
@@ -121,11 +174,11 @@ static func market(hud:FarmHUD,state:FarmState,tab:String) -> void:
 		hud._orders(state,p)
 		return
 	hud.sale_quantities.clear(); hud.sale_buttons.clear()
-	var keys:=["carrot","wheat","corn","egg"]
-	for i in range(4):
+	var keys:=["carrot","wheat","corn","egg","orange"]
+	for i in range(keys.size()):
 		var key:String=keys[i]
 		var price:int=FarmTrade.PRICES[key]
-		var c:=FarmGameUI.card(hud,p,Rect2(26+(i%2)*450,179+(i/2)*172,436,156))
+		var c:=FarmGameUI.card(hud,p,Rect2(26+(i%2)*450,170+(i/2)*164,436,156))
 		FarmGameUI.icon(c,key,Rect2(14,12,62,62))
 		hud.label(c,FarmTrade.NAMES[key],Vector2(88,12),Vector2(210,30),22)
 		hud.label(c,"$%d / un."%price,Vector2(88,48),Vector2(156,26),17,FarmHUD.MUTED)
@@ -139,12 +192,17 @@ static func market(hud:FarmHUD,state:FarmState,tab:String) -> void:
 		var sale:=FarmGameUI.action(hud,c,"Vender 1 • $%d"%price,Rect2(114,96,308,43),"sell_product:"+key,true)
 		sale.disabled=state.stock(key)<=0; hud.sale_buttons[key]=sale
 		quantity.value_changed.connect(func(amount:float): sale.text="Vender %d • $%d"%[int(amount),int(amount)*price])
-	var all:=FarmGameUI.action(hud,p,("Vender 1 de cada • $%d" if state.infinite_resources() else "Vender tudo • $%d")%state.sale_value(),Rect2(26,537,436,48),"sell",true)
+	var orchard:=FarmGameUI.card(hud,p,Rect2(476,498,436,156))
+	FarmGameUI.icon(orchard,"orange",Rect2(14,12,62,62))
+	hud.label(orchard,"Primeira colheita",Vector2(88,12),Vector2(330,30),22)
+	hud.label(orchard,"Uma encomenda para o seu pomar",Vector2(88,48),Vector2(330,28),16,FarmHUD.MUTED)
+	FarmGameUI.action(hud,orchard,"Ver missão do pomar",Rect2(14,96,408,43),"orchard:open",true)
+	var all:=FarmGameUI.action(hud,p,("Vender 1 de cada • $%d" if state.infinite_resources() else "Vender tudo • $%d")%state.sale_value(),Rect2(26,678,436,48),"sell",true)
 	all.disabled=state.sale_value()==0
 	all.tooltip_text="Vende apenas o estoque disponível; não inclui reserva nem ovos no ninho."
-	var contract:=FarmGameUI.action(hud,p,"✓ Pedido entregue" if state.contract_done else "Entregar 6 cenouras • $110",Rect2(476,537,436,48),"contract")
+	var contract:=FarmGameUI.action(hud,p,"✓ Pedido entregue" if state.contract_done else "Entregar 6 cenouras • $110",Rect2(476,678,436,48),"contract")
 	contract.disabled=state.contract_done or state.stock("carrot")<6
 	contract.tooltip_text="Entregue 6 cenouras. Sem prazo. Recompensa: $110 e +1 reputação."
-	FarmGameUI.icon(p,"lock",Rect2(26,615,28,28))
-	hud.label(p,"%d produtos protegidos na reserva"%state.reserve_count(),Vector2(67,617),Vector2(530,27),17)
-	FarmGameUI.action(hud,p,"Pesca e mineração",Rect2(636,608,276,43),"resources")
+	FarmGameUI.icon(p,"lock",Rect2(26,771,28,28))
+	hud.label(p,"%d produtos protegidos na reserva"%state.reserve_count(),Vector2(67,773),Vector2(530,27),17)
+	FarmGameUI.action(hud,p,"Pesca e mineração",Rect2(636,764,276,43),"resources")

@@ -6,6 +6,15 @@
 - Pedidos crescem com a confiança, sem prazo de vencimento; novo pedido após abastecer a casa.
 - Progresso por fazenda, Sandbox preservado e ações de camionetinha restritas ao solo. Save 24, protocolo 21.
 
+# 0.50.0 — Pomar e primeira colheita
+
+- Laranjeira produtiva: plantar, regar, crescer e colher seis laranjas por safra.
+- Modelos Blender jovem e adulto, frutos maduros visíveis e painel de cuidados.
+- Encomenda da Nena pelo armazém da Lúcia, com recompensa única e destino no mapa.
+- Laranjas no estoque, nas vendas e na caçamba, mantendo as melhorias da garagem.
+- Pomar e missão sincronizados no cooperativo, com cuidados e entrega por proximidade.
+- Save 23 e protocolo 20; preserva fazendas anteriores, decoração e recursos infinitos do Sandbox.
+
 # 0.49.0 — Garagem da fazenda
 
 - Garagem construível com modelo original Blender, entrada aberta, bancada e marcações de estacionamento; desbloqueada no nível 4 por $700.
