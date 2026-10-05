@@ -21,6 +21,9 @@ func instantiate(item: Dictionary, parent: Node3D) -> Node3D:
 	parent.add_child(visual)
 	visual.set_meta("art_key", key)
 	if kind == "house": visual.position.z = -.4
+	elif kind == "well": visual.position = Vector3(-.1, 0, -.1)
+	elif kind == "wash_tub": visual.position = Vector3(-.26125, 0, .22375)
+	elif kind == "produce_crates": visual.position.z = -.13
 	elif kind == "barn":
 		visual.scale = Vector3.ONE * (.70 if upgraded else .87)
 		visual.position.z = -.2
