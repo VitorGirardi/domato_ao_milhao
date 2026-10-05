@@ -5,6 +5,8 @@ const HOME:=Vector2(-20,27)
 const MAX_SPEED:=20.0
 const REVERSE_SPEED:=6.0
 const BODY_SIZE:=Vector3(2.55,2.3,5.95)
+const MAX_SLOPE:=deg_to_rad(48.0)
+const FORD_DEPTH:=1.0
 var game:Node3D
 var model:Node3D
 var wheels:Dictionary={}
@@ -13,31 +15,35 @@ var speed:=0.0
 var steering:=0.0
 var wheel_spin:=0.0
 var speed_label:Label
+var instruments:=FarmPickupHUD.new()
+var blocked_reason:=""
+var cargo_visual:=Node3D.new()
+var cargo_stamp:=""
 var collision_box:BoxShape3D
 var body_shell:CollisionShape3D
 var engine_sound:AudioStreamPlayer3D
 var engine_playback:AudioStreamGeneratorPlayback
 var sound_phase:=0.0
 
-static func defaults() -> Dictionary:return {"x":HOME.x,"z":HOME.y,"angle":PI*.5}
+static func defaults() -> Dictionary:return {"x":HOME.x,"z":HOME.y,"angle":PI*.5,"cargo":{}}
 static func valid(value:Variant) -> bool:
 	if not value is Dictionary:return false
 	for key in ["x","z","angle"]:
 		if not (value.get(key) is float or value.get(key) is int) or not is_finite(float(value[key])):return false
+	if not FarmPickupCargo.valid(value.get("cargo",{})):return false
 	return value.x>=FarmLandscape.WALK_MIN.x+4 and value.x<=FarmLandscape.WALK_MAX.x-4 and value.z>=FarmLandscape.WALK_MIN.y+4 and value.z<=FarmLandscape.WALK_MAX.y-4 and absf(value.angle)<=PI
 
 func setup(owner_game:Node3D) -> void:
 	game=owner_game;name="FarmPickup"
 	model=load("res://assets/models/farm_pickup.glb").instantiate();add_child(model)
+	cargo_visual.name="Cargo";model.add_child(cargo_visual)
 	for key in ["FL","FR","RL","RR"]:wheels[key]=model.find_child("Wheel_"+key,true,false)
 	var support:=CollisionShape3D.new();var capsule:=CapsuleShape3D.new()
 	capsule.radius=.65;capsule.height=2.7;support.shape=capsule;support.position.y=1.35;add_child(support)
 	body_shell=CollisionShape3D.new();collision_box=BoxShape3D.new();collision_box.size=BODY_SIZE
 	body_shell.shape=collision_box;body_shell.position.y=2.05;add_child(body_shell)
-	floor_snap_length=.8;floor_stop_on_slope=true;floor_max_angle=deg_to_rad(28);floor_constant_speed=true
-	speed_label=game.hud.label(game.hud.walking.root,"",Vector2(440,675),Vector2(560,42),21,FarmHUD.CREAM)
-	speed_label.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;speed_label.visible=false
-	speed_label.add_theme_color_override("font_shadow_color",Color("20392a"));speed_label.add_theme_constant_override("shadow_offset_y",2)
+	floor_snap_length=1.2;floor_stop_on_slope=true;floor_max_angle=MAX_SLOPE;floor_constant_speed=true
+	instruments.setup(game.hud);speed_label=instruments.speed
 	engine_sound=AudioStreamPlayer3D.new();engine_sound.bus=FarmAudio.EFFECTS_BUS;engine_sound.volume_db=-22;engine_sound.max_distance=35
 	var generator:=AudioStreamGenerator.new();generator.mix_rate=22050;generator.buffer_length=.15;engine_sound.stream=generator;add_child(engine_sound)
 	restore(game.state.pickup)
@@ -46,14 +52,14 @@ func restore(data:Dictionary) -> void:
 	reset_driver()
 	var saved:Dictionary=data if valid(data) else defaults()
 	var point:=Vector2(saved.x,saved.z)
-	if FarmRegion.water_blocked(point):saved=defaults();point=HOME
+	if water_depth(point)>FORD_DEPTH:saved=defaults();point=HOME
 	rotation=Vector3(0,saved.angle,0);position=Vector3(point.x,FarmLandscape.height_at(point)+.06,point.y)
-	velocity=Vector3.ZERO;speed=0;steering=0;wheel_spin=0
-	_animate(0)
+	velocity=Vector3.ZERO;speed=0;steering=0;wheel_spin=0;blocked_reason=""
+	cargo_stamp="";refresh_cargo();_animate(0)
 
 func store() -> void:
 	if game.network.active:return
-	game.state.pickup={"x":position.x,"z":position.z,"angle":wrapf(rotation.y,-PI,PI)}
+	game.state.pickup.x=position.x;game.state.pickup.z=position.z;game.state.pickup.angle=wrapf(rotation.y,-PI,PI)
 
 func available() -> bool:
 	return game!=null and not game.network.active and game.session_started
@@ -90,21 +96,30 @@ func reset_driver() -> void:
 		game.avatar.position=Vector3.ZERO;game.avatar.rotation=Vector3(0,rotation.y,0);game.actor.animate(0,false,false)
 		game.player.velocity=Vector3.ZERO
 	mounted=false;speed=0;velocity=Vector3.ZERO
-	if is_instance_valid(speed_label):speed_label.visible=false
+	if is_instance_valid(instruments):instruments.visible=false
 	if is_instance_valid(engine_sound):engine_sound.stop();engine_playback=null
 
-func surface_allowed(at:Vector3,angle:float) -> bool:
-	# Every reachable parking position must also be valid when loading its save.
-	if not valid({"x":at.x,"z":at.z,"angle":wrapf(angle,-PI,PI)}):return false
+static func water_depth(point:Vector2) -> float:
+	if FarmRegion.on_bridge(point):return 0.0
+	var level:=FarmRegion.water_level(point)
+	return maxf(0,level-FarmLandscape.ground_height(point)) if level>-INF else 0.0
+
+func surface_problem(at:Vector3,angle:float) -> String:
+	if not valid({"x":at.x,"z":at.z,"angle":wrapf(angle,-PI,PI)}):return "Limite do vale"
 	var basis:=Basis(Vector3.UP,angle)
-	var low:=INF;var high:=-INF
-	for x in [-1.3,0.0,1.3]:
-		for z in [-3.1,0.0,3.1]:
+	if water_depth(Vector2(at.x,at.z))>FORD_DEPTH:return "Água profunda · procure uma ponte"
+	# Tires may ford shallow water. Deep water is communicated rather than an
+	# invisible stop several meters before the bumper reaches the shoreline.
+	for x in [-1.18,0.0,1.18]:
+		for z in [-1.85,0.0,1.84]:
 			var sample:=at+basis*Vector3(x,0,z);var point:=Vector2(sample.x,sample.z)
-			if point.x<FarmLandscape.WALK_MIN.x+1 or point.x>FarmLandscape.WALK_MAX.x-1 or point.y<FarmLandscape.WALK_MIN.y+1 or point.y>FarmLandscape.WALK_MAX.y-1:return false
-			if FarmRegion.water_blocked(point):return false
-			var height:=FarmLandscape.height_at(point);low=minf(low,height);high=maxf(high,height)
-	return high-low<2.5
+			if water_depth(point)>FORD_DEPTH+.75:return "Água profunda · procure uma ponte"
+	var tilt:=ground_tilt(at,angle)
+	if (Basis.from_euler(tilt)*Vector3.UP).dot(Vector3.UP)<cos(MAX_SLOPE):return "Terreno muito íngreme · use a estrada"
+	return ""
+
+func surface_allowed(at:Vector3,angle:float) -> bool:
+	return surface_problem(at,angle).is_empty()
 
 func turn_clear(angle:float) -> bool:
 	return clear_at(position,angle)
@@ -120,7 +135,7 @@ func ground_tilt(at:Vector3,angle:float) -> Vector3:
 	var center:=Vector2(at.x,at.z)
 	var forward:=Vector2(sin(angle),cos(angle))*1.85
 	var side:=Vector2(cos(angle),-sin(angle))*1.18
-	return Vector3(clampf(atan2(FarmLandscape.height_at(center-forward)-FarmLandscape.height_at(center+forward),3.7),-.38,.38),0,clampf(atan2(FarmLandscape.height_at(center+side)-FarmLandscape.height_at(center-side),2.36),-.32,.32))
+	return Vector3(clampf(atan2(FarmLandscape.height_at(center-forward)-FarmLandscape.height_at(center+forward),3.7),-1.3,1.3),0,clampf(atan2(FarmLandscape.height_at(center+side)-FarmLandscape.height_at(center-side),2.36),-1.3,1.3))
 
 func parking_clear(at:Vector3) -> bool:
 	if not surface_allowed(at,rotation.y):return false
@@ -148,17 +163,22 @@ func drive(delta:float,throttle:float,turn:float,brake:bool,active:bool) -> void
 	steering=move_toward(steering,clampf(turn,-1,1)*.5,delta*1.8)
 	var target:=MAX_SPEED*throttle if throttle>=0 else REVERSE_SPEED*throttle
 	speed=move_toward(speed,0 if brake else target,delta*(22 if brake else 7 if throttle!=0 else 4))
+	blocked_reason=""
 	var before:=global_transform
 	var candidate:=wrapf(rotation.y-steering*speed/3.7*delta,-PI,PI)
 	if turn_clear(candidate):rotation.y=candidate
 	var forward:=global_basis.z
 	velocity.x=forward.x*speed;velocity.z=forward.z*speed;velocity.y-=22*delta
+	# Align the collision shell before movement, not one physics frame behind it.
+	_animate(0)
 	move_and_slide()
-	if not surface_allowed(position,rotation.y):
+	blocked_reason=surface_problem(position,rotation.y)
+	if not blocked_reason.is_empty():
 		global_transform=before;velocity=Vector3.ZERO;speed=0
 	elif get_slide_collision_count()>0:
 		for i in range(get_slide_collision_count()):
-			if absf(get_slide_collision(i).get_normal().y)<.65:speed=0;break
+			if get_slide_collision(i).get_normal().y<cos(MAX_SLOPE):
+				speed=0;blocked_reason="Obstáculo à frente · recue ou contorne";break
 	var travel:=position.distance_to(before.origin)
 	wheel_spin+=travel*signf(speed)/.65
 	_pose_driver(delta);_animate(delta);store()
@@ -183,9 +203,13 @@ func _animate(_delta:float) -> void:
 		body_shell.basis=model.basis;body_shell.position=model.basis*Vector3.UP*2.05
 	for key in wheels:
 		if is_instance_valid(wheels[key]):wheels[key].rotation=Vector3(wheel_spin,-steering if key.begins_with("F") else 0,0)
-	if is_instance_valid(speed_label):
-		speed_label.visible=mounted and game.hud.modal_kind.is_empty() and game.session_started
-		speed_label.text="CAMIONETINHA · %d km/h%s"%[roundi(absf(speed)*3.6)," · RÉ" if speed<-.2 else ""]
+	update_hud()
+
+func update_hud() -> void:
+	if game==null:return
+	game.hud.walking.controls.visible=not mounted
+	if mounted:game.hud.walking.interaction.visible=false
+	if is_instance_valid(instruments):instruments.update_drive(self)
 
 func _physics_process(delta:float) -> void:
 	if game==null:return
@@ -196,6 +220,7 @@ func _physics_process(delta:float) -> void:
 		velocity=Vector3(0,velocity.y-22*delta,0);move_and_slide()
 	_animate(delta)
 	_update_sound()
+	refresh_cargo()
 
 func _update_sound() -> void:
 	var playing:bool=mounted and available() and game.hud.modal_kind.is_empty()
@@ -209,3 +234,75 @@ func _update_sound() -> void:
 		sound_phase=fmod(sound_phase+rpm/22050,1)
 		var sample:=sin(sound_phase*TAU)*.24+sin(sound_phase*TAU*2)*.12+sin(sound_phase*TAU*5)*.045
 		engine_playback.push_frame(Vector2.ONE*sample)
+
+func cargo_access() -> bool:
+	return available() and game.state.claimed and (mounted or nearby()) and absf(speed)<=1.2 and not game.build_mode and not game.falls.local_down()
+
+func near_market() -> bool:
+	return Vector2(position.x,position.z).distance_to(Vector2(-24,15))<=15
+
+func cargo_action(action:String) -> void:
+	if not cargo_access():
+		game.hud.toast("Estacione e aproxime-se da camionetinha para acessar a caçamba.");return
+	if action=="pickup:cargo":FarmPickupCargo.show(self);return
+	if game.hud.modal_kind!="pickup_cargo":return
+	var key:=action.get_slice(":",2);var error:=""
+	if action.begins_with("pickup:load:"):
+		var amount:=mini(10,mini(game.state.stock(key),FarmPickupCargo.CAPACITY-FarmPickupCargo.count(FarmPickupCargo.contents(game.state))))
+		error=FarmPickupCargo.transfer(game.state,key,amount,true)
+	elif action.begins_with("pickup:unload:"):
+		error=FarmPickupCargo.transfer(game.state,key,mini(10,int(FarmPickupCargo.contents(game.state).get(key,0))),false)
+	elif action=="pickup:sell":
+		if not near_market():error="Leve a camionetinha ao armazém da Lúcia."
+		else:
+			var total:=FarmPickupCargo.sell(game.state)
+			if total>0:game.hud.toast("Carga vendida · $%d"%total)
+	else:return
+	if not error.is_empty():game.hud.toast(error)
+	refresh_cargo();FarmPickupCargo.show(self)
+	game._save_game(false)
+
+func cargo_box(parent:Node3D,at:Vector3,size:Vector3,color:Color) -> void:
+	var mesh:=MeshInstance3D.new();var box:=BoxMesh.new();box.size=size;mesh.mesh=box;mesh.position=at
+	var mat:=StandardMaterial3D.new();mat.albedo_color=color;mat.roughness=.9;mesh.material_override=mat;parent.add_child(mesh)
+
+func refresh_cargo() -> void:
+	if game==null or not cargo_visual.is_inside_tree():return
+	var cargo:=FarmPickupCargo.contents(game.state);var stamp:=str(cargo)
+	if stamp==cargo_stamp:return
+	cargo_stamp=stamp
+	for child in cargo_visual.get_children():child.free()
+	var units:Array[String]=[]
+	for key in FarmPickupCargo.KEYS:
+		for i in range(int(cargo.get(key,0))):units.append(key)
+	for index in range(ceili(units.size()/10.0)):
+		var crate:=Node3D.new();crate.position=Vector3(-.52+(index%2)*1.04,1.53,-1.32-(index/2)*.58);cargo_visual.add_child(crate)
+		var wood:=Color("946238")
+		cargo_box(crate,Vector3(0,.035,0),Vector3(.88,.07,.51),wood)
+		for side in [-1,1]:
+			for y in [.13,.3]:
+				cargo_box(crate,Vector3(side*.42,y,0),Vector3(.055,.12,.51),wood)
+				cargo_box(crate,Vector3(0,y,side*.23),Vector3(.87,.12,.055),wood)
+		for i in range(mini(10,units.size()-index*10)):
+			var key:String=units[index*10+i];var color:Color=Color("de943c")
+			if key in ["wheat","corn","cheese"]:color=Color("e2c96b")
+			elif key in ["egg","milk","quartz"]:color=Color("eee6cc")
+			elif key in FarmResources.FISH_KEYS:color=Color("7396a1")
+			elif key in FarmResources.ORE_KEYS:color=Color("816e64")
+			cargo_product(crate,key,Vector3(-.3+(i%5)*.15,.17+(i%3)*.025,-.11+(i/5)*.22),color)
+
+func cargo_product(parent:Node3D,key:String,at:Vector3,color:Color) -> void:
+	var node:=MeshInstance3D.new();node.position=at
+	if key in ["carrot","milk","cheese"]:
+		var cylinder:=CylinderMesh.new();cylinder.radial_segments=10;cylinder.height=.20
+		cylinder.top_radius=.055;cylinder.bottom_radius=.012 if key=="carrot" else .055
+		if key=="cheese":cylinder.top_radius=.075;cylinder.bottom_radius=.075;cylinder.height=.12
+		node.mesh=cylinder
+		if key=="carrot":cargo_box(parent,at+Vector3(0,.13,0),Vector3(.04,.08,.05),Color("628d44"))
+		elif key=="milk":cargo_box(parent,at+Vector3(0,.12,0),Vector3(.07,.04,.07),Color("81958f"))
+	else:
+		var sphere:=SphereMesh.new();sphere.radius=.065;sphere.height=.20;sphere.radial_segments=8;sphere.rings=4
+		if key in FarmResources.ORE_KEYS:sphere.radial_segments=5;sphere.rings=2;sphere.height=.16
+		node.mesh=sphere
+		if key in FarmResources.FISH_KEYS:node.rotation.x=PI/2
+	var mat:=StandardMaterial3D.new();mat.albedo_color=color;mat.roughness=.85;node.material_override=mat;parent.add_child(node)

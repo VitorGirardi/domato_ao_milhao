@@ -59,6 +59,10 @@ jobs:
           cat test-results/linux/pickup.log
           grep -q PICKUP_OK test-results/linux/pickup.log
           ! grep -E 'SCRIPT ERROR|ERROR:' test-results/linux/pickup.log
+          timeout 240 godot --headless --audio-driver Dummy --path . --script tests/test_pickup_cargo.gd > test-results/linux/pickup-cargo.log 2>&1
+          cat test-results/linux/pickup-cargo.log
+          grep -q PICKUP_CARGO_OK test-results/linux/pickup-cargo.log
+          ! grep -E 'SCRIPT ERROR|ERROR:' test-results/linux/pickup-cargo.log
       - name: Linux gameplay and saves
         if: matrix.suite == 'gameplay'
         shell: bash
@@ -111,6 +115,9 @@ jobs:
           xvfb-run -a timeout 180 godot --audio-driver Dummy --path . --script tests/test_pickup.gd > test-results/linux/pickup-visual.log 2>&1
           grep -q PICKUP_OK test-results/linux/pickup-visual.log
           ! grep -E 'SCRIPT ERROR|ERROR:' test-results/linux/pickup-visual.log
+          xvfb-run -a timeout 240 godot --audio-driver Dummy --path . --script tests/test_pickup_cargo.gd > test-results/linux/pickup-cargo-visual.log 2>&1
+          grep -q PICKUP_CARGO_OK test-results/linux/pickup-cargo-visual.log
+          ! grep -E 'SCRIPT ERROR|ERROR:' test-results/linux/pickup-cargo-visual.log
           cp test-results/pickup-*.png test-results/linux/
       - name: Living shore graphical review
         if: matrix.suite == 'graphics'
