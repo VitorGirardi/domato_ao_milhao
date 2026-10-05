@@ -10,7 +10,7 @@ Os testes de economia usam FarmState com dinheiro limitado por padrão, em arqui
 
 ## Direção do mapa
 
-O cenário natural ocupa terrenos ainda não comprados. Comprar ou expandir limpa apenas elementos naturais que interferem na área adquirida, preservando construções do jogador e marcos públicos. Cavalo como transporte foi implementado na 0.23; preservar montaria, desmontagem segura, tapinha para galopar e fôlego. Camionetinha de roça é um protótipo solo na 0.45; preservar direção e posição por fazenda. Carga de até 60 unidades e painel com volante foram adicionados na 0.47; preservar carga por fazenda e os recursos infinitos do Sandbox. Cuidados/progressão do cavalo e veículos cooperativos são planos futuros; manter caminhos largos.
+O cenário natural ocupa terrenos ainda não comprados. Comprar ou expandir limpa apenas elementos naturais que interferem na área adquirida, preservando construções do jogador e marcos públicos. Cavalo como transporte foi implementado na 0.23; preservar montaria, desmontagem segura, tapinha para galopar e fôlego. Camionetinha de roça é um protótipo solo na 0.45; preservar direção e posição por fazenda. Carga de até 60 unidades e painel com volante foram adicionados na 0.47; preservar carga por fazenda e os recursos infinitos do Sandbox. A garagem da 0.49 oferece melhorias permanentes (caçamba de 120, pneus, motor e bagageiro), pintura e nome; preservar essa configuração por fazenda. Cuidados/progressão do cavalo e veículos cooperativos são planos futuros; manter caminhos largos.
 
 ## Coordenação entre sessões
 

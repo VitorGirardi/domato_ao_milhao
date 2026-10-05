@@ -14,7 +14,7 @@ Até 72 km/h, aceleração gradual, rodas animadas, motor sintetizado e carrocer
 
 ## Carga
 
-A caçamba leva **60 unidades**, divididas entre cenoura, trigo, milho, ovos, leite, queijo, peixes e minérios. Cada clique transfere até dez unidades. Carregar retira do estoque; descarregar devolve ao estoque. Até seis caixas aparecem na carroceria, com produtos visíveis.
+A caçamba leva **60 unidades**, ou **120 com a melhoria da garagem**, divididas entre cenoura, trigo, milho, ovos, leite, queijo, peixes e minérios. Cada clique transfere até dez unidades. Carregar retira do estoque; descarregar devolve ao estoque. Até seis caixas (doze com a melhoria) aparecem na carroceria, com produtos visíveis.
 
 Estacione perto do armazém da Lúcia para vender toda a carga pelo preço normal de cada produto. Vender longe do armazém não é permitido. A carga fica separada do estoque disponível para produção e missões, portanto descarregue os produtos que deseja usar nessas atividades.
 
@@ -34,3 +34,7 @@ O veículo funciona apenas no solo. Não aparece nem bloqueia caminhos no cooper
 8. Crie e saia do cooperativo: produtos disponíveis no estoque cooperativo, carga solo preservada.
 
 Testes automáticos: `tests/test_pickup.gd` e `tests/test_pickup_cargo.gd`, sempre com APPDATA/XDG_DATA_HOME isolados sob `test-results`. Cobrem direção, todas as rotas nos dois sentidos, ambas as pontes, desembarque, carga, capacidade, venda por proximidade, saves inválidos, modos e cópia cooperativa. O CI também executa revisão gráfica no Linux.
+
+## Garagem e melhorias
+
+Na 0.49, construa a garagem para ampliar a caçamba, melhorar pneus e motor, instalar bagageiro e escolher nome e pintura. [Custos e instruções](GARAGEM.md).

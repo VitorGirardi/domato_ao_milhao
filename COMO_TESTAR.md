@@ -1,3 +1,11 @@
+# Testar 0.49 — Garagem
+
+TAB → Estruturas → Garagem. No Survival, alcance o nível 4 e reserve $700.
+Estacione a camionetinha no vão aberto e clique em Garagem no painel de direção.
+Também pode sair, abrir a caçamba com V e acessar Garagem.
+Instale melhorias, pinte e dê um nome. Salve e continue para conferir carga e personalização.
+[Roteiro, custos e limites](GARAGEM.md).
+
 # Testar 0.47 — Caçamba e direção
 
 Entre na camionetinha com E. Confira o painel à direita e o volante ao virar.

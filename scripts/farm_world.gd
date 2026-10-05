@@ -48,6 +48,7 @@ func _ready() -> void:
 	models["helper"]=load("res://assets/models/helper.glb")
 	models["vendor"]=load("res://assets/models/vendor.glb")
 	for asset in ["cheesemaker","milk_can","cheese_tray","feed_sack"]:models[asset]=load("res://assets/models/%s.glb"%asset)
+	models["garage"]=load("res://assets/models/garage.glb")
 	models["stable"]=load("res://assets/models/stable.glb")
 	models["cheesery"]=load("res://assets/models/cheesery.glb")
 	models["dairyman"]=load("res://assets/models/dairyman.glb")
@@ -302,7 +303,7 @@ func rebuild(state: FarmState) -> void:
 				entry.font_size=26
 				entry.pixel_size=0.008
 				root.add_child(entry)
-			if item.kind in ["barn", "coop", "workshop", "corral", "cheesery", "stable", "fence", "sign"]:
+			if item.kind in ["barn", "coop", "workshop", "corral", "cheesery", "stable", "garage", "fence", "sign"]:
 				var body := StaticBody3D.new()
 				body.set_meta("item_index",i)
 				var shape := CollisionShape3D.new()
@@ -313,6 +314,11 @@ func rebuild(state: FarmState) -> void:
 				shape.shape = box_shape
 				shape.position.y = height / 2
 				body.add_child(shape)
+				if item.kind=="garage":
+					# Clear central bay: collision follows only actual walls, roof and bench.
+					box_shape.size=Vector3(7.4,3.6,.2);shape.position=Vector3(0,1.8,-4.5)
+					for wall in [[Vector3(-3.6,1.8,0),Vector3(.2,3.6,9)],[Vector3(3.6,1.8,0),Vector3(.2,3.6,9)],[Vector3(0,4.75,0),Vector3(7.8,.5,9.7)],[Vector3(-2.8,.6,-3.6),Vector3(1.1,1.2,1.2)]]:
+						var part:=CollisionShape3D.new();var volume:=BoxShape3D.new();volume.size=wall[1];part.shape=volume;part.position=wall[0];body.add_child(part)
 				if item.kind=="stable":
 					# Open entrance: solid side/back walls, roof and back-row supplies.
 					box_shape.size=Vector3(5.5,2.8,.2);shape.position=Vector3(0,1.4,-2.55)

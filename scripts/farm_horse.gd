@@ -94,6 +94,7 @@ func safe_spot(p:Vector2,player:CharacterBody3D,state:FarmState,landscape:FarmLa
 	if p.x<FarmLandscape.WALK_MIN.x+.6 or p.x>FarmLandscape.WALK_MAX.x-.6 or p.y<FarmLandscape.WALK_MIN.y+.6 or p.y>FarmLandscape.WALK_MAX.y-.6:return false
 	if FarmRegion.water_blocked(p) or not landscape.clear_for_player(p):return false
 	for item in state.items:
+		if item.kind=="garage" and FarmGarage.inside_bay(item,p):continue
 		if item.kind not in ["plot","path"] and state.item_rect(item.kind,Vector2(item.x,item.z),item.turn).grow(.5).has_point(p):return false
 	var query:=PhysicsShapeQueryParameters3D.new();var capsule:=CapsuleShape3D.new();capsule.radius=.39;capsule.height=2.58
 	query.shape=capsule;query.transform=Transform3D(Basis.IDENTITY,Vector3(p.x,ground_at(p)+1.40,p.y));query.exclude=[player.get_rid()];query.collision_mask=1

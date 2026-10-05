@@ -313,7 +313,7 @@ func _ensure_player_space() -> void:
 				continue
 			var valid := world.landscape.clear_for_player(candidate)
 			for item in state.items:
-				if item.kind in ["plot","path"]: continue
+				if item.kind in ["plot","path"] or (item.kind=="garage" and FarmGarage.inside_bay(item,candidate)): continue
 				if state.item_rect(item.kind,Vector2(item.x,item.z),item.turn).grow(0.5).has_point(candidate):
 					valid=false
 					break
@@ -646,8 +646,8 @@ func _find_item(at: Vector2) -> int:
 
 func _distance_to_item(i: int) -> float:
 	var item:Dictionary=state.items[i]
-	if item.kind in ["barn","workshop","corral","cheesery","stable","pigsty"]:
-		var door:=Vector3(item.x,0,item.z)+Vector3(0,0,3.0 if item.kind in ["barn","corral","cheesery","stable","pigsty"] else 1.9).rotated(Vector3.UP,item.turn*PI/2)
+	if item.kind in ["barn","workshop","corral","cheesery","stable","pigsty","garage"]:
+		var door:=Vector3(item.x,0,item.z)+Vector3(0,0,5.5 if item.kind=="garage" else 3.0 if item.kind in ["barn","corral","cheesery","stable","pigsty","garage"] else 1.9).rotated(Vector3.UP,item.turn*PI/2)
 		return Vector2(player.position.x-door.x,player.position.z-door.z).length()
 	var area:=state.item_rect(item.kind,Vector2(item.x,item.z),item.turn)
 	var position_2d:=Vector2(player.position.x,player.position.z)
@@ -658,13 +658,13 @@ func _nearest() -> int:
 	nearby_hen=-1
 	var best:=-1
 	var distance:=2.6
-	if selected>=0 and selected<state.items.size() and state.items[selected].kind in ["plot","sign","barn","coop","workshop","corral","cheesery","stable","pigsty"]:
+	if selected>=0 and selected<state.items.size() and state.items[selected].kind in ["plot","sign","barn","coop","workshop","corral","cheesery","stable","pigsty","garage"]:
 		var current_distance:=_distance_to_item(selected)
 		if current_distance<distance:
 			best=selected
 			distance=current_distance
 	for i in range(state.items.size()):
-		if state.items[i].kind not in ["plot","sign","barn","coop","workshop","corral","cheesery","stable","pigsty"]: continue
+		if state.items[i].kind not in ["plot","sign","barn","coop","workshop","corral","cheesery","stable","pigsty","garage"]: continue
 		var d:=_distance_to_item(i)
 		if d<distance and (best<0 or d+0.05<distance):
 			best=i
@@ -707,6 +707,7 @@ func _nearby_context() -> Dictionary:
 		"pigsty": context.text="Cuidar dos porcos"
 		"workshop": context.text="Abrir oficina"
 		"stable": context.text="Ver estrebaria"
+		"garage": context.text="Abrir garagem"
 		"sign": context.text="Editar placa"
 		"plot":
 			if not item.planted:
@@ -806,8 +807,10 @@ func _tend_selected() -> void:
 	elif item.kind=="corral": FarmDairyHUD.show(hud,state,selected)
 	elif item.kind=="pigsty": FarmPigHUD.show(hud,state,selected)
 	elif item.kind=="stable": FarmStable.show(hud,state,horse,selected)
+	elif item.kind=="garage":FarmGarage.show(self)
 
 func _action(value: String) -> void:
+	if value.begins_with("garage:"):FarmGarage.handle(self,value);return
 	if value.begins_with("pickup:"):pickup.cargo_action(value);return
 	if pickup.mounted:
 		if value in ["mode","emotes","move"] or value.begins_with("tool:") or value.begins_with("emote:") or value.begins_with("resource:") or value.begins_with("gather:"):

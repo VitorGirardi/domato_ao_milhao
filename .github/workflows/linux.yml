@@ -63,6 +63,10 @@ jobs:
           cat test-results/linux/pickup-cargo.log
           grep -q PICKUP_CARGO_OK test-results/linux/pickup-cargo.log
           ! grep -E 'SCRIPT ERROR|ERROR:' test-results/linux/pickup-cargo.log
+          timeout 240 godot --headless --audio-driver Dummy --path . --script tests/test_garage.gd > test-results/linux/garage.log 2>&1
+          cat test-results/linux/garage.log
+          grep -q GARAGE_OK test-results/linux/garage.log
+          ! grep -E 'SCRIPT ERROR|ERROR:' test-results/linux/garage.log
       - name: Linux gameplay and saves
         if: matrix.suite == 'gameplay'
         shell: bash
@@ -94,6 +98,7 @@ jobs:
           python3 tests/run_network.py --godot godot --test test_coop_combat
           python3 tests/run_network.py --godot godot --test test_coop_fall
           python3 tests/run_network.py --godot godot --test test_coop_aim
+          python3 tests/run_network.py --godot godot --test test_coop_garage
           python3 tests/run_network.py --godot godot --test test_coop_chapter
       - name: X11 graphical gameplay and fullscreen
         if: matrix.suite == 'graphics'
@@ -109,6 +114,13 @@ jobs:
           grep -q CHAPTER_WORLD_OK test-results/linux/chapter-world.log
           ! grep -E 'SCRIPT ERROR|ERROR:' test-results/linux/chapter-world.log
           cp test-results/chapter-*.png test-results/linux/
+      - name: Garage and customized pickup graphical review
+        if: matrix.suite == 'graphics'
+        run: |
+          xvfb-run -a timeout 240 godot --audio-driver Dummy --path . --script tests/test_garage.gd > test-results/linux/garage-visual.log 2>&1
+          grep -q GARAGE_OK test-results/linux/garage-visual.log
+          ! grep -E 'SCRIPT ERROR|ERROR:' test-results/linux/garage-visual.log
+          cp test-results/garage-*.png test-results/linux/
       - name: Pickup prototype graphical review
         if: matrix.suite == 'graphics'
         run: |

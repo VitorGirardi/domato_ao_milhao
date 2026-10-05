@@ -36,7 +36,7 @@ func destinations() -> Array:
 	if game.chapter_world.game!=null and game.state.claimed:
 		var chapter_destination:Dictionary=game.chapter_world.destination()
 		if not chapter_destination.is_empty():values.append(chapter_destination)
-	if not game.network.active:values.append({"key":"pickup","name":"Camionetinha · protótipo","at":Vector2(game.pickup.position.x,game.pickup.position.z),"icon":"map_pickup","group":"Companhia"})
+	if not game.network.active:values.append({"key":"pickup","name":FarmGarage.config(game.state).name,"at":Vector2(game.pickup.position.x,game.pickup.position.z),"icon":"map_pickup","group":"Companhia"})
 	if game.state.claimed:values.append({"key":"home","name":"Minha fazenda","at":game.state.center,"icon":"barn","group":"Locais"})
 	values.append({"key":"horse","name":"Pé de Pano","at":Vector2(game.horse.position.x,game.horse.position.z),"icon":"map_horse","group":"Companhia"})
 	values.append({"key":"market","name":"Armazém da Lúcia","at":Vector2(-24,15),"icon":"coins","group":"Locais"})
@@ -50,7 +50,7 @@ func destinations() -> Array:
 	for i in range(game.state.items.size()):
 		var item:Dictionary=game.state.items[i]
 		if item.kind in FarmMapPlaces.ICONS:
-			values.append({"key":"%s:%d"%[item.kind,i],"name":FarmState.ITEMS[item.kind].name,"at":FarmStable.entrance(item) if item.kind=="stable" else Vector2(item.x,item.z),"icon":FarmMapPlaces.ICONS[item.kind],"group":"Fazenda","notice":FarmMapPlaces.notices(item)})
+			values.append({"key":"%s:%d"%[item.kind,i],"name":FarmState.ITEMS[item.kind].name,"at":FarmGarage.entrance(item) if item.kind=="garage" else FarmStable.entrance(item) if item.kind=="stable" else Vector2(item.x,item.z),"icon":FarmMapPlaces.ICONS[item.kind],"group":"Fazenda","notice":FarmMapPlaces.notices(item)})
 	for key in FarmParcels.LOTS:
 		var lot:Dictionary=FarmParcels.LOTS[key]
 		values.append({"key":key,"name":lot.name+(" · seu" if key in game.state.owned_parcels else " · à venda"),"at":lot.center,"group":"Locais"})

@@ -4,11 +4,11 @@ extends RefCounted
 const CATEGORIES := {
 	"Lavoura": ["plot"],
 	"Animais": ["coop", "corral", "stable", "pigsty"],
-	"Estruturas": ["barn", "workshop", "cheesery"],
+	"Estruturas": ["barn", "workshop", "cheesery", "garage"],
 	"Decoração": ["fence", "path", "sign"],
 	"Terrenos": ["expand", "parcels"]
 }
-const ICONS := {"plot":"seed", "coop":"chicken", "corral":"cow", "stable":"barn", "pigsty":"barn", "barn":"barn", "workshop":"workshop", "cheesery":"cheese", "fence":"build_fence", "path":"build_path", "sign":"book", "expand":"build_expand", "parcels":"build_expand"}
+const ICONS := {"garage":"map_pickup","plot":"seed", "coop":"chicken", "corral":"cow", "stable":"barn", "pigsty":"barn", "barn":"barn", "workshop":"workshop", "cheesery":"cheese", "fence":"build_fence", "path":"build_path", "sign":"book", "expand":"build_expand", "parcels":"build_expand"}
 var hud: FarmHUD
 var root: Control
 var catalog: Panel
@@ -159,7 +159,7 @@ func update(state:FarmState,selected:int,tool:String,crop:String,hover_hint:Stri
 		selected_icon.texture=_texture(key)
 		paint_button.visible=key in ["barn","coop","workshop","fence","sign","stable"]
 		if not paint_button.visible:paint_panel.visible=false
-		open_button.visible=key in ["plot","barn","coop","workshop","corral","cheesery","stable","pigsty"]
+		open_button.visible=key in ["plot","barn","coop","workshop","corral","cheesery","stable","pigsty","garage"]
 		open_button.text="Cuidar" if key in ["plot","coop","corral","pigsty"] else "Abrir"
 		sign_button.visible=key=="sign"
 	_refresh_cards(state)

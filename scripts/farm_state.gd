@@ -8,6 +8,7 @@ const CROPS = {
 	"corn": {"name": "Milho", "seconds": 62.0, "seed": 8, "price": 24, "yield": 3}
 }
 const ITEMS = {
+	"garage": {"name":"Garagem", "cost":700, "size":Vector2(8,10)},
 	"pigsty": {"name":"Chiqueiro","cost":500,"size":Vector2(8,6)},
 	"stable": {"name":"Estrebaria", "cost":550, "size":Vector2(6,6)},
 	"cheesery": {"name":"Queijaria","cost":900,"size":Vector2(6,6)},

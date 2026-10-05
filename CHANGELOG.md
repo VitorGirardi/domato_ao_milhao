@@ -1,3 +1,12 @@
+# 0.49.0 — Garagem da fazenda
+
+- Garagem construível com modelo original Blender, entrada aberta, bancada e marcações de estacionamento; desbloqueada no nível 4 por $700.
+- Caçamba reforçada de 120 unidades, pneus de roça com frenagem reforçada, motor mais forte e bagageiro visual.
+- Cinco pinturas e nome próprio para a camionetinha, exibido no painel e no mapa.
+- Melhorias custam dinheiro e minérios no Survival; Sandbox preserva recursos e dinheiro infinitos.
+- Estacione na garagem para comprar e personalizar; posição, carga e melhorias persistem por fazenda.
+- Garagem construível e replicada no cooperativo; melhorias da camionetinha continuam solo. Protocolo 19.
+
 # 0.47.0 — Caçamba cheia, estrada livre
 
 - Camionetinha acompanha as subidas das estradas, atravessa as duas pontes e entra em trechos rasos; água profunda e obstáculos reais continuam bloqueados, com aviso no painel.

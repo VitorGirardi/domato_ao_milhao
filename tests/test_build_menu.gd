@@ -20,7 +20,7 @@ func run() -> void:
 	game.hud.toast_time=0;game._update_ui();game.hud.toast_time=0
 	var menu:FarmBuildHUD=game.hud.construction
 	assert(not game.hud.legacy_build.visible and not menu.selection.visible)
-	assert(menu.cards.size()==3 and menu.category=="Estruturas")
+	assert(menu.cards.size()==4 and menu.cards.has("garage") and menu.category=="Estruturas")
 	assert(not menu.seed_panel.visible and not menu.paint_panel.visible and not menu.help_panel.visible)
 	await process_frame
 	assert(menu.cards["barn"].get_meta("picture").size==Vector2(90,90))
