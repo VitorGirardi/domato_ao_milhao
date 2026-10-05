@@ -247,6 +247,7 @@ func _process(delta: float) -> void:
 			_save_game(false)
 	_update_pointer()
 	world.update_animals(state)
+	world.update_orchards(state)
 	world.day_night.update_cycle(state.elapsed,player.position)
 	ui_timer += delta
 	if ui_timer >= 0.15:
@@ -665,13 +666,13 @@ func _nearest() -> int:
 	nearby_hen=-1
 	var best:=-1
 	var distance:=2.6
-	if selected>=0 and selected<state.items.size() and state.items[selected].kind in ["plot","sign","barn","coop","workshop","corral","cheesery","stable","pigsty","house","garage"]:
+	if selected>=0 and selected<state.items.size() and state.items[selected].kind in ["plot","sign","barn","coop","workshop","corral","cheesery","stable","pigsty","house","garage","orchard"]:
 		var current_distance:=_distance_to_item(selected)
 		if current_distance<distance:
 			best=selected
 			distance=current_distance
 	for i in range(state.items.size()):
-		if state.items[i].kind not in ["plot","sign","barn","coop","workshop","corral","cheesery","stable","pigsty","house","garage"]: continue
+		if state.items[i].kind not in ["plot","sign","barn","coop","workshop","corral","cheesery","stable","pigsty","house","garage","orchard"]: continue
 		var d:=_distance_to_item(i)
 		if d<distance and (best<0 or d+0.05<distance):
 			best=i
@@ -707,6 +708,7 @@ func _nearby_context() -> Dictionary:
 	var item:Dictionary=state.items[index]
 	var context:Dictionary={"text":"","action":"item","index":index,"hen":nearby_hen,"ready":true,"seeds":false}
 	match item.kind:
+		"orchard": context.text="Cuidar da laranjeira"
 		"house": context.text="Ver casa e melhorias"
 		"barn": context.text="Abrir celeiro"
 		"coop": context.text="Cuidar das galinhas"
@@ -810,6 +812,7 @@ func _tend_selected() -> void:
 		hud.editor_dialog("sign",item.text)
 	elif item.kind=="barn": hud.barn(state,selected)
 	elif item.kind=="house": FarmInteractionUI.house(hud,state,selected)
+	elif item.kind=="orchard": FarmInteractionUI.orchard(hud,state,selected)
 	elif item.kind=="workshop": hud.workshop(state,selected)
 	elif item.kind=="coop": hud.coop(state,selected,selected_hen)
 	elif item.kind=="cheesery": FarmCheeseHUD.show(hud,state,selected)
@@ -830,6 +833,10 @@ func _action(value: String) -> void:
 	if value in ["market","market_orders"] and falls.is_down("npc:vendor"):return
 	if value=="armory" and falls.is_down("npc:armorer"):return
 	if quitting:return
+	if value=="orchard:open":
+		FarmOrchardMission.show(hud,state);return
+	if value=="orchard:mark":
+		navigator.select(Vector2(-24,14),"Entrega de laranjas · Lúcia","orchard_delivery");hud.close_modal();return
 	if value=="chapter":
 		FarmChapterHUD.show(self);return
 	if value=="chapter:mark":
@@ -844,6 +851,17 @@ func _action(value: String) -> void:
 		FarmResourceHUD.show(self);return
 	if gathering.handle(value):return
 	if network.handle(value):return
+	if value in FarmOrchardActions.MUTATIONS:
+		var command:Dictionary=FarmCoopCommands.capture(self,value)
+		var error:=FarmOrchardActions.proximity_error(self,command)
+		if error.is_empty():error=FarmCoopCommands.run(state,command)
+		if not error.is_empty():hud.toast(error);return
+		world.update_orchards(state)
+		FarmOrchardActions.feedback(self,value,selected)
+		if value in ["orchard:accept","orchard:deliver"]:FarmOrchardMission.show(hud,state)
+		else:hud.close_modal()
+		hud.toast("Encomenda concluída! +$220 e 30 XP." if value=="orchard:deliver" else "Encomenda aceita: colha seis laranjas no seu pomar." if value=="orchard:accept" else "Laranjeira regada!" if value=="orchard:water" else "Seis laranjas colhidas!")
+		_save_game(false);_update_ui();return
 	if quitting:return
 	if value=="close" and front_end.escape():return
 	if value.begins_with("front:"):
@@ -1337,6 +1355,7 @@ func _resource_refresh() -> void:
 
 func _update_ui() -> void:
 	hud.update(state,build_mode,selected,tool,crop,hover_hint)
+	FarmInteractionUI.update_orchard(hud,state)
 	hud.walking.update(hud,state,_nearby_context(),crop)
 	hud.walking.mount_status(_mounted(),horse.stamina,horse.burst,actor.swimming)
 	pickup.update_hud()

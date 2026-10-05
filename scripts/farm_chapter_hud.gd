@@ -22,6 +22,6 @@ static func show(game:Node3D) -> void:
 	body.text=STEPS[stage]
 	var progress:String="Encomenda %s    •    Resgate %s    •    Pesqueiro %s"%["✓" if stage>=2 else "○","✓" if stage>=4 else "○","✓" if stage>=6 else "○"]
 	hud.label(p,progress,Vector2(28,325),Vector2(724,35),19)
-	hud.label(p,"Sem prazo. O progresso fica salvo nesta fazenda.",Vector2(28,371),Vector2(724,28),16,FarmHUD.MUTED)
+	FarmGameUI.action(hud,p,"Primeira colheita · Pomar",Rect2(28,368,345,42),"orchard:open")
 	FarmGameUI.action(hud,p,"Voltar ao campo",Rect2(28,428,345,46),"close")
 	if stage<6:FarmGameUI.action(hud,p,"Marcar próximo destino",Rect2(391,428,361,46),"chapter:mark",true)

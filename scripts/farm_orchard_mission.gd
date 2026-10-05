@@ -8,7 +8,7 @@ static func show(hud:FarmHUD,state:FarmState) -> void:
 	var p:=FarmGameUI.open(hud,"orchard_mission","Primeira colheita · Dona Lúcia","orange",860,684)
 	hud.label(p,"A padaria da Nena quer laranjas frescas do seu pomar!",Vector2(26,112),Vector2(808,32),23)
 	hud.label(p,"Lúcia recebe a encomenda no armazém. Sem prazo para entregar.",Vector2(26,150),Vector2(808,30),18,FarmHUD.MUTED)
-	var steps:=["Aceite a encomenda e plante uma laranjeira jovem em Jardim.","Regue a árvore e acompanhe o crescimento na sua fazenda.","Colha 6 laranjas após aceitar a missão e traga 6 no estoque."]
+	var steps:=["Aceite e plante uma laranjeira produtiva em Lavoura.","Regue a árvore e acompanhe o crescimento na sua fazenda.","Colha 6 laranjas após aceitar a missão e traga 6 no estoque."]
 	for i in range(steps.size()):
 		var c:=FarmGameUI.card(hud,p,Rect2(26,198+i*62,808,54))
 		hud.label(c,"%d. %s"%[i+1,steps[i]],Vector2(14,12),Vector2(780,30),18)
