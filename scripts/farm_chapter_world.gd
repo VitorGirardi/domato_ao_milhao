@@ -114,6 +114,8 @@ func apply(id:int,action:String) -> String:
 	if not authority() or not game.session_started or (game.network.active and not game.network.ready_session):return "Aguarde a fazenda carregar."
 	if id!=own_id() and id!=game.network.accepted:return "Jogador desconectado."
 	if not _valid_actor(id):return "Aproxime-se a pé para ajudar."
+	if action in ["accept","deliver","return_animal"] and nena.get_meta("temporary_down",false):return "Espere Dona Nena se recuperar."
+	if action in ["rescue","return_animal"] and hen.get_meta("temporary_down",false):return "Espere Pipoca se recuperar."
 	if action not in ["accept","deliver","rescue","return_animal","repair"]:return "Ação inválida."
 	var at:=REPAIR_AT if action=="repair" else (Vector2(hen.position.x,hen.position.z) if action=="rescue" else NENA_AT)
 	if not _near(id,at):return "Aproxime-se do objetivo da missão."
@@ -140,7 +142,7 @@ func _refresh() -> void:
 	nena_label.text="Dona Nena\n"+({0:"! Primeiros laços",1:"6 cenouras para a entrega",2:"Pipoca se perdeu!",3:"Traga Pipoca para casa",4:"Vamos recuperar o pesqueiro",5:"Experimente sua vara nova",6:"Obrigada pela ajuda!"}[current])
 	hen_label.text="Pipoca · E para chamar" if current in [2,3] else "Pipoca · de volta ao lar"
 	repair_label.text="Pesqueiro · E para recuperar" if current==4 else ("Pesqueiro recuperado" if current>=5 else "Pesqueiro precisando de cuidado")
-	if current>=4 and follow_peer==0:hen.position=_ground(NENA_AT+Vector2(1.6,1.4));hen_target=hen.position
+	if current>=4 and follow_peer==0 and not hen.get_meta("temporary_down",false):hen.position=_ground(NENA_AT+Vector2(1.6,1.4));hen_target=hen.position
 
 func _walkable(at:Vector3) -> bool:
 	var point:=Vector2(at.x,at.z)
@@ -153,7 +155,7 @@ func _walkable(at:Vector3) -> bool:
 	return true
 
 func _escort(delta:float) -> bool:
-	if follow_peer==0:return false
+	if follow_peer==0 or hen.get_meta("temporary_down",false):return false
 	if not _valid_actor(follow_peer):return false
 	var player_at:=_position(follow_peer)
 	var distance:=hen.position.distance_to(player_at)
@@ -196,9 +198,7 @@ func _process(delta:float) -> void:
 		if stage()==3:moving=_escort(minf(delta,.05))
 		sync_clock+=delta
 		if sync_clock>=.1:sync_clock=0;_send_motion()
-	else:
+	elif not hen.get_meta("temporary_down",false):
 		moving=hen.position.distance_to(hen_target)>.04
 		hen.position=hen.position.lerp(hen_target,1-exp(-delta*12))
-	if hen.visible:FarmHenMotion.pose(hen,clock,delta,moving,not moving)
-
-
+	if hen.visible and not hen.get_meta("temporary_down",false):FarmHenMotion.pose(hen,clock,delta,moving,not moving)
