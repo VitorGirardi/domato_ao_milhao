@@ -3,6 +3,7 @@ extends SceneTree
 func _farm(mode:String="survival") -> FarmState:
 	var farm:=FarmState.new_farm(mode)
 	assert(farm.claim(Vector2(4,-2)).is_empty())
+	farm.farm_xp=30 # Productive trees unlock at farm level 2.
 	assert(farm.place("orchard",Vector2(4,-2),0).is_empty())
 	return farm
 
