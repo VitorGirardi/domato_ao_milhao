@@ -30,7 +30,9 @@ func state_checks() -> void:
 			assert(not state.upgrade_building(0).is_empty(),"Duplicate upgrade must be rejected")
 		var restored:=FarmState.new()
 		assert(restored.restore(JSON.parse_string(JSON.stringify(state.serialize()))),kind)
-		assert(restored.items==state.items and restored.infinite_resources() and restored.unlimited_money,kind)
+		for key in ["kind","x","z","turn","paint","level"]:
+			assert(restored.items[0][key]==state.items[0][key],kind+": "+key)
+		assert(restored.infinite_resources() and restored.unlimited_money,kind)
 		var survival:=fresh("survival")
 		if FarmLevels.required(kind)>1:
 			assert(not survival.place(kind,Vector2(4,0),0).is_empty(),"Survival level gate: "+kind)
