@@ -137,7 +137,8 @@ func run() -> void:
 	quit()
 
 func gate_hit(world:FarmWorld,gate:Node3D) -> bool:
-	var start:Vector3=gate.to_global(Vector3(0,.75,-2))
-	var end:Vector3=gate.to_global(Vector3(0,.75,2))
+	# Probe a solid horizontal rail, not the intentional gap between leaves.
+	var start:Vector3=gate.to_global(Vector3(.5,1.04,-2))
+	var end:Vector3=gate.to_global(Vector3(.5,1.04,2))
 	var query:=PhysicsRayQueryParameters3D.create(start,end,1)
 	return not world.get_world_3d().direct_space_state.intersect_ray(query).is_empty()
