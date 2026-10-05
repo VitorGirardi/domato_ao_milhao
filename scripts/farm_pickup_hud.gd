@@ -30,6 +30,7 @@ func update_drive(vehicle:FarmPickup) -> void:
 	title.text=FarmGarage.config(vehicle.game.state).name.to_upper()
 	title.text_overrun_behavior=TextServer.OVERRUN_TRIM_ELLIPSIS
 	service.disabled=not FarmGarage.can_service(vehicle)
+	service.tooltip_text="Estacione junto de uma garagem para melhorar o carro."
 	speed.text=str(roundi(absf(vehicle.speed)*3.6))
 	gear.text="RÉ" if vehicle.speed<-.2 else "D" if vehicle.speed>.2 else "N"
 	status.text=vehicle.blocked_reason if not vehicle.blocked_reason.is_empty() else "Carga · %d / %d unidades"%[FarmPickupCargo.count(FarmPickupCargo.contents(vehicle.game.state)),FarmGarage.capacity(vehicle.game.state)]

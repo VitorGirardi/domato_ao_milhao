@@ -9,7 +9,7 @@ func run() -> void:
 	assert(OS.get_user_data_dir().contains("test-results"))
 	game=load("res://scenes/main.tscn").instantiate()
 	game.save_path="user://qa_armory_horse.json"
-	root.add_child(game);await process_frame
+	root.add_child(game);await process_frame;game.qa_mode=true
 	game.session_started=true;game.build_mode=false;game.hud.close_modal()
 	game.state=FarmState.new();game.state.unlimited_money=true
 	game.state.claim(Vector2(4,-2));game.world.rebuild(game.state)
@@ -38,7 +38,7 @@ func run() -> void:
 	assert(game.weapons.start_reload());await create_timer(1.4).timeout
 	assert(game.state.armory.magazine==8 and game.state.armory.reserve==23)
 	var modern:Dictionary=game.state.serialize()
-	assert(modern.version==20 and modern.has("horse") and modern.has("armory"))
+	assert(modern.version==FarmState.SAVE_VERSION and modern.has("horse") and modern.has("armory"))
 	var old:=modern.duplicate(true);old.version=15;old.erase("resources");old.erase("horse")
 	assert(disk.restore(old) and disk.armory==game.state.armory and disk.horse==FarmHorse.defaults())
 	old=modern.duplicate(true);old.erase("armory")
@@ -50,7 +50,7 @@ func run() -> void:
 	# Park outside the gunsmith bounds so ensure_parking does not relocate the fixture.
 	game.weapons.holster()
 	game.horse.restore({"x":-28.8,"z":24.0,"angle":0.0})
-	game.player.position=Vector3(-29.8,.12,23)
+	game.player.position=Vector3(-30.0,.12,24) # Outside Nena's chapter interaction radius.
 	await create_timer(.4).timeout
 	assert(game.weapons.near_shop() and game.horse.can_mount(game.player))
 	game._update_ui()

@@ -13,7 +13,7 @@ Entre pelo vão aberto com a camionetinha e pare. O botão **Garagem** no painel
 
 Cada melhoria é permanente e comprada uma única vez. Cinco pinturas e nome de até 24 caracteres não têm custo. O nome aparece no painel e no mapa. Remover a garagem não apaga melhorias nem carga; reconstruir permite personalizar novamente. Nenhuma melhoria permite atravessar paredes ou água profunda.
 
-No Sandbox, dinheiro e materiais permanecem infinitos. Saves anteriores recebem o carro básico, mantendo posição e carga. Cada fazenda conserva sua configuração. A garagem pode ser construída e movida no cooperativo, mas a camionetinha e suas melhorias continuam exclusivas do solo. Use a mesma versão nos dois PCs (protocolo 19).
+No Sandbox, dinheiro e materiais permanecem infinitos. O formato de save 22 identifica as melhorias e continua lendo os saves anteriores. Saves anteriores recebem o carro básico, mantendo posição e carga. Cada fazenda conserva sua configuração. A garagem pode ser construída e movida no cooperativo, mas a camionetinha e suas melhorias continuam exclusivas do solo. Use a mesma versão nos dois PCs (protocolo 19).
 
 ## Conferência
 

@@ -21,6 +21,7 @@ func run() -> void:
 	assert(FarmGarage.personalize(state,"name","Trovão da Roça").is_empty())
 	assert(FarmGarage.personalize(state,"paint",1).is_empty())
 	state.inventory.carrot=120;assert(FarmPickupCargo.transfer(state,"carrot",120,true).is_empty())
+	assert(state.serialize().version==22)
 	var restored:=FarmState.new();assert(restored.restore(JSON.parse_string(JSON.stringify(state.serialize()))))
 	assert(FarmGarage.capacity(restored)==120 and FarmGarage.config(restored).name=="Trovão da Roça" and FarmPickupCargo.count(restored.pickup.cargo)==120)
 	before=restored.serialize()
@@ -28,7 +29,7 @@ func run() -> void:
 		var data:=state.serialize()
 		for key in bad:data.pickup.garage[key]=bad[key]
 		assert(not restored.restore(data) and restored.serialize()==before)
-	var old:=state.serialize();old.pickup.erase("garage");old.pickup.cargo={};assert(restored.restore(old) and FarmGarage.capacity(restored)==60)
+	var old:=state.serialize();old.version=20;old.pickup.erase("garage");old.pickup.cargo={};assert(restored.restore(old) and FarmGarage.capacity(restored)==60)
 	var sandbox:=FarmState.new_farm("sandbox");sandbox.claim(Vector2(4,-2));assert(sandbox.place("garage",Vector2(4,-2),0).is_empty())
 	for key in FarmGarage.UPGRADES:assert(FarmGarage.purchase(sandbox,key).is_empty())
 	assert(sandbox.resources.stock.iron==0 and sandbox.resources.stock.copper==0)

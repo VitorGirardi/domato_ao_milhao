@@ -62,6 +62,7 @@ static func show(game:Node3D) -> void:
 	var p:=FarmGameUI.open(h,"garage","Garagem da fazenda","map_pickup",1000,780)
 	var ready:=can_service(game.pickup)
 	var hint:="Estacionada · melhorias permanentes desta fazenda" if ready else "Traga o carro até a garagem, pare e fique perto dele para personalizar."
+	if game.build_mode:hint="Feche este painel, volte a caminhar com TAB e aproxime-se do carro na garagem."
 	if game.network.active:hint="A garagem aparece no cooperativo; a camionetinha e suas melhorias são do solo."
 	h.label(p,hint,Vector2(26,106),Vector2(948,46),18)
 	var i:=0

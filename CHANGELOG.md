@@ -5,7 +5,7 @@
 - Cinco pinturas e nome próprio para a camionetinha, exibido no painel e no mapa.
 - Melhorias custam dinheiro e minérios no Survival; Sandbox preserva recursos e dinheiro infinitos.
 - Estacione na garagem para comprar e personalizar; posição, carga e melhorias persistem por fazenda.
-- Garagem construível e replicada no cooperativo; melhorias da camionetinha continuam solo. Protocolo 19.
+- Garagem construível e replicada no cooperativo; melhorias da camionetinha continuam solo. Protocolo 19 e save 22, com leitura das fazendas anteriores.
 
 # 0.47.0 — Caçamba cheia, estrada livre
 
