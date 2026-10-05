@@ -148,12 +148,15 @@ func _process(delta:float) -> void:
 		var error:=_can(job.kind,job.index)
 		if not error.is_empty():_stop(id,error);continue
 		var before:Dictionary=game.state.serialize().duplicate(true)
-		if job.kind=="fish":FarmResources.catch_fish(game.state,job.index)
+		if job.kind=="fish":
+			FarmResources.catch_fish(game.state,job.index)
+			if job.index==3 and int(game.state.chapter.stage)==5:
+				FarmChapter.act(game.state,"catch_fish")
 		else:FarmResources.extract(game.state,job.index)
 		var reward:=""
 		for key in game.state.resources.stock:
 			var count:int=int(game.state.resources.stock[key])-int(before.resources.stock[key])
 			if count>0:reward="%s x %d no estoque."%[FarmResources.NAMES[key],count]
 		var saved:=_commit(before)
+		if saved and int(before.chapter.stage)==5 and int(game.state.chapter.stage)==6:reward+=" Primeiros laços concluídos · +$200!"
 		_stop(id,reward if saved else "Falha ao salvar. Nenhum recurso foi alterado.")
-
