@@ -111,7 +111,7 @@ static func workshop(hud:FarmHUD,state:FarmState,index:int) -> void:
 
 static func market(hud:FarmHUD,state:FarmState,tab:String) -> void:
 	hud.market_tab=tab
-	var p:=FarmGameUI.open(hud,"market","Armazém da Lúcia","harvest",940,744 if tab=="orders" else 680)
+	var p:=FarmGameUI.open(hud,"market","Armazém da Lúcia","harvest",940,744 if tab=="orders" else 834)
 	FarmGameUI.action(hud,p,"Vender",Rect2(26,111,208,43),"market_sales",tab=="sales")
 	FarmGameUI.action(hud,p,"Encomendas • %d"%state.active_orders(),Rect2(247,111,254,43),"market_orders",tab=="orders")
 	FarmGameUI.icon(p,"coins",Rect2(698,112,36,36))
@@ -121,11 +121,11 @@ static func market(hud:FarmHUD,state:FarmState,tab:String) -> void:
 		hud._orders(state,p)
 		return
 	hud.sale_quantities.clear(); hud.sale_buttons.clear()
-	var keys:=["carrot","wheat","corn","egg"]
-	for i in range(4):
+	var keys:=["carrot","wheat","corn","egg","orange"]
+	for i in range(keys.size()):
 		var key:String=keys[i]
 		var price:int=FarmTrade.PRICES[key]
-		var c:=FarmGameUI.card(hud,p,Rect2(26+(i%2)*450,179+(i/2)*172,436,156))
+		var c:=FarmGameUI.card(hud,p,Rect2(26+(i%2)*450,170+(i/2)*164,436,156))
 		FarmGameUI.icon(c,key,Rect2(14,12,62,62))
 		hud.label(c,FarmTrade.NAMES[key],Vector2(88,12),Vector2(210,30),22)
 		hud.label(c,"$%d / un."%price,Vector2(88,48),Vector2(156,26),17,FarmHUD.MUTED)
@@ -139,12 +139,17 @@ static func market(hud:FarmHUD,state:FarmState,tab:String) -> void:
 		var sale:=FarmGameUI.action(hud,c,"Vender 1 • $%d"%price,Rect2(114,96,308,43),"sell_product:"+key,true)
 		sale.disabled=state.stock(key)<=0; hud.sale_buttons[key]=sale
 		quantity.value_changed.connect(func(amount:float): sale.text="Vender %d • $%d"%[int(amount),int(amount)*price])
-	var all:=FarmGameUI.action(hud,p,("Vender 1 de cada • $%d" if state.infinite_resources() else "Vender tudo • $%d")%state.sale_value(),Rect2(26,537,436,48),"sell",true)
+	var orchard:=FarmGameUI.card(hud,p,Rect2(476,498,436,156))
+	FarmGameUI.icon(orchard,"orange",Rect2(14,12,62,62))
+	hud.label(orchard,"Primeira colheita",Vector2(88,12),Vector2(330,30),22)
+	hud.label(orchard,"Uma encomenda para o seu pomar",Vector2(88,48),Vector2(330,28),16,FarmHUD.MUTED)
+	FarmGameUI.action(hud,orchard,"Ver missão do pomar",Rect2(14,96,408,43),"orchard:open",true)
+	var all:=FarmGameUI.action(hud,p,("Vender 1 de cada • $%d" if state.infinite_resources() else "Vender tudo • $%d")%state.sale_value(),Rect2(26,678,436,48),"sell",true)
 	all.disabled=state.sale_value()==0
 	all.tooltip_text="Vende apenas o estoque disponível; não inclui reserva nem ovos no ninho."
-	var contract:=FarmGameUI.action(hud,p,"✓ Pedido entregue" if state.contract_done else "Entregar 6 cenouras • $110",Rect2(476,537,436,48),"contract")
+	var contract:=FarmGameUI.action(hud,p,"✓ Pedido entregue" if state.contract_done else "Entregar 6 cenouras • $110",Rect2(476,678,436,48),"contract")
 	contract.disabled=state.contract_done or state.stock("carrot")<6
 	contract.tooltip_text="Entregue 6 cenouras. Sem prazo. Recompensa: $110 e +1 reputação."
-	FarmGameUI.icon(p,"lock",Rect2(26,615,28,28))
-	hud.label(p,"%d produtos protegidos na reserva"%state.reserve_count(),Vector2(67,617),Vector2(530,27),17)
-	FarmGameUI.action(hud,p,"Pesca e mineração",Rect2(636,608,276,43),"resources")
+	FarmGameUI.icon(p,"lock",Rect2(26,771,28,28))
+	hud.label(p,"%d produtos protegidos na reserva"%state.reserve_count(),Vector2(67,773),Vector2(530,27),17)
+	FarmGameUI.action(hud,p,"Pesca e mineração",Rect2(636,764,276,43),"resources")

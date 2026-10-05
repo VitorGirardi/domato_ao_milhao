@@ -3,8 +3,8 @@ extends RefCounted
 ## Offers are deterministic; accepting freezes the tier and starts active-play time.
 
 const KEYS := ["nena","bento","lola"]
-const PRICES := {"carrot":12,"wheat":17,"corn":24,"egg":10}
-const NAMES := {"carrot":"Cenouras","wheat":"Trigo","corn":"Milho","egg":"Ovos"}
+const PRICES := {"carrot":12,"wheat":17,"corn":24,"egg":10,"orange":16}
+const NAMES := {"carrot":"Cenouras","wheat":"Trigo","corn":"Milho","egg":"Ovos","orange":"Laranjas"}
 const NEIGHBORS := {
 	"nena":{"name":"Dona Nena","ranch":"Padaria do Pomar","specialty":"Bolos, pães e café fresquinho", "quote":"O segredo do bolo é não contar o segredo.","color":"c78069"},
 	"bento":{"name":"Seu Bento","ranch":"Moinho das Colinas","specialty":"Grãos e farinha para o vale", "quote":"Aqui a gente trabalha até o milho virar assunto.","color":"799384"},
