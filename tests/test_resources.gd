@@ -61,7 +61,8 @@ func run() -> void:
 		assert(FarmResources.sell(state,key)>0)
 		assert(FarmResources.sell(state,key)==0)
 	assert(state.money==initial_money+expected and state.revenue==initial_revenue+expected and FarmResources.value(state)==0)
-	assert(FarmResources.sell(state,"rod")==0 and state.inventory.size()==4)
+	var inventory_before:=state.inventory.duplicate()
+	assert(FarmResources.sell(state,"rod")==0 and state.inventory==inventory_before)
 	# Invalid payloads must leave the entire live farm untouched, including money.
 	var invalid:Array=[]
 	var missing:=saved.duplicate(true);missing.erase("resources");invalid.append(missing)

@@ -1,3 +1,12 @@
+# Testar 0.50 — Pomar
+
+TAB → Lavoura → Laranjeira produtiva. No Survival, alcance o nível 2 e reserve $100.
+Aceite a Primeira colheita pelo armazém ou diário. Aproxime-se da muda e pressione E
+para regar; aguarde três minutos de crescimento e dois de amadurecimento.
+Colha seis laranjas, leve ao armazém da Lúcia e entregue a encomenda.
+Confira também venda, transporte na caçamba e persistência ao salvar e continuar.
+[Roteiro, tempos e limites](POMAR.md).
+
 # Testar 0.49 — Garagem
 
 TAB → Estruturas → Garagem. No Survival, alcance o nível 4 e reserve $700.
