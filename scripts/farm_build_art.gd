@@ -27,10 +27,25 @@ func instantiate(item: Dictionary, parent: Node3D) -> Node3D:
 	if upgraded and kind in ["house", "barn"]: visual.name = "Level2Details"
 	if kind.begins_with("gate_"):
 		# The exported sliding latch was static; carry it with the left leaf.
-		var hinge := visual.find_child("GateHingeLeft", true, false) as Node3D
+		var hinge := visual.find_child("GateHingeLeft*", true, false) as Node3D
+		hinge.name = "GateHingeLeft"
+		var right := visual.find_child("GateHingeRight*", true, false) as Node3D
+		right.name = "GateHingeRight"
 		for child in visual.find_children("*", "MeshInstance3D", true, false):
-			if "latch" in child.name.to_lower(): child.reparent(hinge, true)
+			if "latch" in child.name.to_lower():
+				var relative := _relative_transform(hinge, visual).affine_inverse() * _relative_transform(child, visual)
+				child.owner = null
+				child.reparent(hinge, false)
+				child.transform = relative
 	return visual
+
+func _relative_transform(node: Node3D, ancestor: Node3D) -> Transform3D:
+	var result := Transform3D.IDENTITY
+	var current := node
+	while current != ancestor:
+		result = current.transform * result
+		current = current.get_parent() as Node3D
+	return result
 
 func add_collision(item: Dictionary, visual: Node3D, index: int) -> void:
 	var kind: String = item.kind
