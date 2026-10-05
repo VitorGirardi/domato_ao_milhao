@@ -53,7 +53,10 @@ func run() -> void:
 	assert(truck.accessories.get_child_count()>0)
 	assert(FarmPickupCargo.transfer(game.state,"carrot",120,true).is_empty());truck.refresh_cargo();assert(truck.cargo_visual.get_child_count()==12)
 	assert(game._save_game(false,true));assert(game._load_game());assert(FarmGarage.config(game.state).name=="Trovão" and FarmGarage.capacity(game.state)==120)
-	game._action("garage:open");game.hud.toast_time=0;game.hud.toast_panel.visible=false;await capture("menu");game.hud.close_modal()
+	game.hud.close_modal();game.actor.airborne=false;assert(truck.enter());game._update_ui();game._update_camera(1,true)
+	assert(truck.instruments.title.text=="TROVÃO" and not truck.instruments.service.disabled)
+	game.hud.toast_time=0;game.hud.toast_panel.visible=false;await capture("parked-dashboard")
+	truck.instruments.service.pressed.emit();assert(game.hud.modal_kind=="garage");game.hud.toast_time=0;game.hud.toast_panel.visible=false;await capture("menu");game.hud.close_modal()
 	game.camera.position=Vector3(12,6,9);game.camera.look_at(Vector3(4,2,-2));game.hud.visible=false;await capture("world")
 	truck.position=Vector3(4,.06,5);truck.rotation.y=PI;truck._animate(0)
 	game.camera.position=Vector3(11,5,9);game.camera.look_at(truck.position+Vector3.UP*1.7);await capture("customized");game.hud.visible=true
