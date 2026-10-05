@@ -20,6 +20,10 @@ static func collect(game:Node3D) -> Dictionary:
 	var state:FarmState=game.state
 	if world.vendor_actor:human(result,"npc:vendor",world.vendor_actor.root,world.vendor_actor)
 	if game.weapons:human(result,"npc:armorer",game.weapons.npc,game.weapons.npc_actor)
+	var chapter:Variant=game.get("chapter_world")
+	if chapter!=null:
+		human(result,"npc:nena",chapter.nena,chapter.nena_actor)
+		add(result,"chapter:hen",chapter.hen,chapter.hen,null,"chicken",.32,.85)
 	human(result,"npc:staff",world.staff_root,world.staff_actor)
 	human(result,"npc:field",world.field_root,world.field_actor)
 	human(result,"npc:dairy",world.raul_motion.node,world.raul_motion.actor)

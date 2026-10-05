@@ -64,6 +64,7 @@ var companions:=FarmCompanions.new()
 var gathering:=FarmGathering.new()
 var resource_view:=FarmResourceView.new()
 var falls:=FarmTemporaryFall.new()
+var chapter_world:=FarmChapterWorld.new()
 var resource_panel_state:Dictionary={}
 var windowed_rect:=Rect2i()
 var windowed_mode:=Window.MODE_WINDOWED
@@ -114,6 +115,7 @@ func _ready() -> void:
 	add_child(resource_view);resource_view.setup(self)
 	add_child(falls);falls.setup(self)
 	add_child(pickup);pickup.setup(self)
+	add_child(chapter_world);chapter_world.setup(self)
 	preferences.load_preferences();preferences.apply(self)
 	front_end.show_title()
 	_update_camera(1.0, true)
@@ -679,6 +681,8 @@ func _nearby_context() -> Dictionary:
 	if pickup.mounted:return {"text":"Sair da camionetinha" if absf(pickup.speed)<1.2 else "Frear para sair · Espaço","action":"pickup","ready":absf(pickup.speed)<1.2}
 	if pickup.nearby():return {"text":"Dirigir camionetinha","action":"pickup"}
 	if _mounted():return {"text":"Desmontar · Pé de Pano","action":"horse"}
+	var chapter_context:=chapter_world.nearby()
+	if not chapter_context.is_empty():return chapter_context
 	var resource_context:=FarmResourceSites.nearby(self)
 	if not resource_context.is_empty():return resource_context
 	if not falls.is_down("npc:armorer") and weapons.shop_has_priority():return {"text":"Conversar com Damião","action":"armory"}
@@ -721,6 +725,9 @@ func _interact_nearest() -> void:
 	var context:=_nearby_context()
 	if context.is_empty(): return
 	match context.action:
+		"chapter":
+			weapons.holster()
+			chapter_world.request(context.value)
 		"pickup":
 			if pickup.mounted:pickup.exit_vehicle()
 			else:pickup.enter()
@@ -808,6 +815,12 @@ func _action(value: String) -> void:
 	if value in ["market","market_orders"] and falls.is_down("npc:vendor"):return
 	if value=="armory" and falls.is_down("npc:armorer"):return
 	if quitting:return
+	if value=="chapter":
+		FarmChapterHUD.show(self);return
+	if value=="chapter:mark":
+		var destination:=chapter_world.destination()
+		if not destination.is_empty():navigator.select(destination.at,destination.name,destination.key)
+		hud.close_modal();return
 	if value=="mine_gallery":
 		gathering.handle("gather:cancel")
 		FarmResourceHUD.show_galleries(self);return

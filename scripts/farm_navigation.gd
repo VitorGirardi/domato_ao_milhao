@@ -33,6 +33,9 @@ func setup(owner_game:Node3D) -> void:
 
 func destinations() -> Array:
 	var values:Array=[]
+	if game.chapter_world.game!=null and game.state.claimed:
+		var chapter_destination:Dictionary=game.chapter_world.destination()
+		if not chapter_destination.is_empty():values.append(chapter_destination)
 	if not game.network.active:values.append({"key":"pickup","name":"Camionetinha · protótipo","at":Vector2(game.pickup.position.x,game.pickup.position.z),"icon":"map_pickup","group":"Companhia"})
 	if game.state.claimed:values.append({"key":"home","name":"Minha fazenda","at":game.state.center,"icon":"barn","group":"Locais"})
 	values.append({"key":"horse","name":"Pé de Pano","at":Vector2(game.horse.position.x,game.horse.position.z),"icon":"map_horse","group":"Companhia"})

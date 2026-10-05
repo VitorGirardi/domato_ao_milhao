@@ -33,6 +33,7 @@ func setup(g:Node3D) -> void:
 	hen=_model("chicken",RESCUE_AT)
 	fence=_model("chapter_rescue_fence",RESCUE_AT+Vector2(-1.5,0));fence.rotation.y=PI/2
 	bench=_model("chapter_fishing_bench",REPAIR_AT)
+	bench.rotation.y=-PI/2
 	debris=_model("chapter_fishing_debris",REPAIR_AT)
 	nena_label=_label(nena,2.5)
 	hen_label=_label(hen,1.5)
@@ -47,7 +48,7 @@ func _model(key:String,at:Vector2) -> Node3D:
 
 func _label(parent:Node3D,height:float) -> Label3D:
 	var label:=Label3D.new();parent.add_child(label);label.position.y=height
-	label.billboard=BaseMaterial3D.BILLBOARD_ENABLED;label.font_size=42;label.pixel_size=.009
+	label.billboard=BaseMaterial3D.BILLBOARD_ENABLED;label.font_size=42;label.pixel_size=.0055
 	label.modulate=Color("fff0b4");label.outline_modulate=Color("26372d")
 	label.visibility_range_end=30;label.visibility_range_end_margin=5
 	return label

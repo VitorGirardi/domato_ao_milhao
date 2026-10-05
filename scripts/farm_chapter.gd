@@ -33,4 +33,5 @@ static func act(state:FarmState, action:String) -> String:
 	state.chapter.stage=stage+1
 	state.money+=reward
 	state.revenue+=reward
+	state.refresh_journey()
 	return ""

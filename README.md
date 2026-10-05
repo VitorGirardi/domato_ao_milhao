@@ -1,3 +1,7 @@
+# Primeiros laços — 0.46.0
+
+Ajude Dona Nena, acompanhe Pipoca de volta e recupere o cantinho de pesca. Abra **História** durante a caminhada para acompanhar o objetivo e marcar o destino. [Missões e controles](PRIMEIROS_LACOS.md).
+
 # Ponte e Sandbox — 0.45.1
 
 Ponte do Rio Azul sem terreno sobreposto às tábuas e com entradas niveladas para caminhar, cavalgar e dirigir. No Sandbox, todos os produtos, peixes e minérios aparecem como ∞ e não se esgotam; reserva de munição infinita e equipamentos/galerias liberados também nos saves antigos desse modo. Survival preservado. [Modos e saves](FAZENDAS.md).

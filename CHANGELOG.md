@@ -1,3 +1,10 @@
+# 0.46.0 — Primeiros laços
+
+- Três missões pelo vale: entrega para Dona Nena, resgate de Pipoca e recuperação do pesqueiro.
+- Galinha acompanha o jogador pela estrada; banco e lanterna permanecem na margem após o reparo.
+- Modelos originais Blender, objetivos e destino no mapa, recompensas únicas e progresso por fazenda.
+- Survival, Sandbox e saves antigos preservados; cooperativo com autoridade do anfitrião. Protocolo 17.
+
 # 0.45.0 — Camionetinha de roça
 
 - Picape original verde e creme com caçamba de madeira, rodas animadas e motorista sentado ao volante.
