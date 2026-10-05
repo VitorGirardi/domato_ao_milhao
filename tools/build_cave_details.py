@@ -129,6 +129,9 @@ for name,col in assets.items():
     else:
         dz=-high[2] if name in ('stalactites','roots') else -low[2]
         for o in col.objects: o.location.z+=dz
+# Full-size sealed backing closes irregular border gaps when tiled or used as roof.
+current=assets['wall']
+cube('Continuous seam sealing rock backing',(0,.21,2.5),(8,.18,5),stone[0])
 # Exports are selection-only. Explicitly forbid camera/light export.
 report={}
 for name,col in assets.items():
