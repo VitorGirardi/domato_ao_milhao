@@ -110,6 +110,7 @@ static func water_blocked(p: Vector2) -> bool:
 	return level > FarmLandscape.ground_height(p)+.3
 
 static func reserved(p: Vector2) -> bool:
+	if FarmResidents.reserved(p,3):return true
 	if Rect2(795,-284,30,27).has_point(p):return true
 	if FarmMineLayout.inside(p,7):return true
 	if road_sample(p).x < 8 or water_level(p) > -INF: return true

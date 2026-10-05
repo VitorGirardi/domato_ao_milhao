@@ -65,6 +65,7 @@ var gathering:=FarmGathering.new()
 var resource_view:=FarmResourceView.new()
 var falls:=FarmTemporaryFall.new()
 var chapter_world:=FarmChapterWorld.new()
+var residents_world:=FarmResidentsWorld.new()
 var resource_panel_state:Dictionary={}
 var windowed_rect:=Rect2i()
 var windowed_mode:=Window.MODE_WINDOWED
@@ -116,6 +117,7 @@ func _ready() -> void:
 	add_child(falls);falls.setup(self)
 	add_child(pickup);pickup.setup(self)
 	add_child(chapter_world);chapter_world.setup(self)
+	add_child(residents_world);residents_world.setup(self)
 	preferences.load_preferences();preferences.apply(self)
 	front_end.show_title()
 	_update_camera(1.0, true)
@@ -691,6 +693,8 @@ func _nearby_context() -> Dictionary:
 	if pickup.mounted:return {"text":"Sair da camionetinha" if absf(pickup.speed)<1.2 else "Frear para sair · Espaço","action":"pickup","ready":absf(pickup.speed)<1.2}
 	if pickup.nearby():return {"text":"Dirigir · V abre a caçamba","action":"pickup"}
 	if _mounted():return {"text":"Desmontar · Pé de Pano","action":"horse"}
+	var resident_context:=residents_world.nearby()
+	if not resident_context.is_empty():return resident_context
 	var chapter_context:=chapter_world.nearby()
 	if not chapter_context.is_empty():return chapter_context
 	var resource_context:=FarmResourceSites.nearby(self)
@@ -738,6 +742,8 @@ func _interact_nearest() -> void:
 	var context:=_nearby_context()
 	if context.is_empty(): return
 	match context.action:
+		"resident":
+			weapons.holster();residents_world.handle("resident:talk:"+context.value)
 		"chapter":
 			weapons.holster()
 			chapter_world.request(context.value)
@@ -822,6 +828,7 @@ func _tend_selected() -> void:
 	elif item.kind=="garage":FarmGarage.show(self)
 
 func _action(value: String) -> void:
+	if value=="residents" or value.begins_with("resident:"):residents_world.handle(value);return
 	if value.begins_with("garage:"):FarmGarage.handle(self,value);return
 	if value.begins_with("pickup:"):pickup.cargo_action(value);return
 	if pickup.mounted:

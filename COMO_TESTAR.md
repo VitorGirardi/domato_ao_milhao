@@ -1,3 +1,9 @@
+# Testar 0.51 — Vizinhos e entregas
+
+Abra **Entregas · Influência** na lateral esquerda. Encontre Dona Rosa pela estrada norte, além do moinho; E conversa e aceita o primeiro pedido. Carregue 8 cenouras com V, estacione perto da casa, saia e entregue conversando com E. Confira pagamento, +5 influência e sobras na caçamba. Salve e continue: casa descoberta, confiança e espera devem permanecer.
+
+Com 10 influência, Seu Bento aceita pedidos; com 25, Lia aceita. As pistas das outras casas ficam no painel. **Marcar casa** fecha a tela e marca o caminho no mapa. Detalhes: [ENTREGAS.md](ENTREGAS.md).
+
 # Testar 0.50 — Pomar
 
 TAB → Lavoura → Laranjeira produtiva. No Survival, alcance o nível 2 e reserve $100.

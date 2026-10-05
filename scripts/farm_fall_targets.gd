@@ -24,6 +24,9 @@ static func collect(game:Node3D) -> Dictionary:
 	if chapter!=null:
 		human(result,"npc:nena",chapter.nena,chapter.nena_actor)
 		add(result,"chapter:hen",chapter.hen,chapter.hen,null,"chicken",.32,.85)
+	var residents:Variant=game.get("residents_world")
+	if residents!=null:
+		for key in residents.people:human(result,"resident:"+key,residents.people[key],residents.actors[key])
 	human(result,"npc:staff",world.staff_root,world.staff_actor)
 	human(result,"npc:field",world.field_root,world.field_actor)
 	human(result,"npc:dairy",world.raul_motion.node,world.raul_motion.actor)

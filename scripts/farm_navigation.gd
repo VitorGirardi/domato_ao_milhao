@@ -33,6 +33,8 @@ func setup(owner_game:Node3D) -> void:
 
 func destinations() -> Array:
 	var values:Array=[]
+	for key in FarmResidents.PEOPLE:
+		if game.state.residents[key].known:values.append({"key":"resident_"+key,"name":"Casa de "+FarmResidents.PEOPLE[key].name,"at":FarmResidents.entry(key),"icon":"barn","group":"Locais","notice":"Entrega aguardada" if game.state.residents[key].active else FarmResidents.trust(game.state,key)})
 	if game.state.claimed and int(game.state.orchard_journey.stage)<2:
 		values.append({"key":"orchard_delivery","name":"Primeira colheita · Lúcia","at":Vector2(-24,14),"icon":"orange","group":"Locais","notice":"Encomenda de laranjas do seu pomar"})
 	if game.chapter_world.game!=null and game.state.claimed:

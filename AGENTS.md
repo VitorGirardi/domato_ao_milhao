@@ -27,3 +27,7 @@ Ao concluir uma tarefa solicitada por Vitor:
 5. Informe a versão efetivamente publicada, como atualizar/testar e qualquer pendência real. Preserve saves, backups e dinheiro infinito. Nunca anuncie uma atualização disponível antes de verificar a publicação.
 
 Esta é autorização permanente para integrar/mesclar PRs das tarefas do jogo solicitadas por Vitor e publicar suas versões após validação, sem pedir confirmação novamente a cada entrega. Não autoriza integrar indiscriminadamente todas as PRs históricas nem trabalho alheio ao escopo. Não cria monitoramento periódico: a conferência acontece na conclusão das tarefas e nas entregas coordenadas.
+
+## Vizinhos e entregas
+
+As casas fixas dos moradores ficam fora dos terrenos compráveis. Preserve descobertas, pedidos, confiança e influência por fazenda. Entregas consomem carga real da camionetinha, com validação de proximidade e gravação antes da confirmação; permanecem solo enquanto o veículo for solo. No Sandbox, o estoque é infinito, a caçamba continua finita.

@@ -1,6 +1,6 @@
 class_name FarmState
 extends RefCounted
-const SAVE_VERSION:=23
+const SAVE_VERSION:=24
 ## Pure simulation. Coordinates are X/Z in meters; all persistence is JSON.
 
 const CROPS = {
@@ -56,6 +56,7 @@ var armory:Dictionary=FarmArmory.fresh()
 var horse:Dictionary=FarmHorse.defaults()
 var pickup:Dictionary=FarmPickup.defaults()
 var chapter:Dictionary=FarmChapter.fresh()
+var residents:Dictionary=FarmResidents.fresh()
 var orchard_journey:Dictionary=FarmOrchard.fresh_journey()
 var game_mode:="legacy"
 var character_id:=""
@@ -731,7 +732,7 @@ func expand() -> String:
 	return ""
 
 func serialize() -> Dictionary:
-	return {"version": SAVE_VERSION, "orchard_journey":orchard_journey.duplicate(), "chapter":chapter.duplicate(), "pickup":pickup.duplicate(true), "game_mode":game_mode, "character_id":character_id, "resources":resources.duplicate(true), "horse":horse.duplicate(), "armory":armory.duplicate(), "owned_parcels":owned_parcels.duplicate(), "unlimited_money":unlimited_money, "farm_xp":farm_xp, "dairy_worker":dairy_worker.duplicate(), "cheese_worker":cheese_worker.duplicate(), "cheese_stock":cheese_stock, "cheese_order":cheese_order.duplicate(), "milk_stock":milk_stock, "cultivation":cultivation.duplicate(true), "field_staff":field_staff.duplicate(true), "professional_watering":professional_watering, "irrigation":irrigation.duplicate(true), "money": _money, "claimed": claimed,
+	return {"version": SAVE_VERSION, "orchard_journey":orchard_journey.duplicate(), "residents":residents.duplicate(true), "chapter":chapter.duplicate(), "pickup":pickup.duplicate(true), "game_mode":game_mode, "character_id":character_id, "resources":resources.duplicate(true), "horse":horse.duplicate(), "armory":armory.duplicate(), "owned_parcels":owned_parcels.duplicate(), "unlimited_money":unlimited_money, "farm_xp":farm_xp, "dairy_worker":dairy_worker.duplicate(), "cheese_worker":cheese_worker.duplicate(), "cheese_stock":cheese_stock, "cheese_order":cheese_order.duplicate(), "milk_stock":milk_stock, "cultivation":cultivation.duplicate(true), "field_staff":field_staff.duplicate(true), "professional_watering":professional_watering, "irrigation":irrigation.duplicate(true), "money": _money, "claimed": claimed,
 		"center": [center.x, center.y], "land_size": land_size,
 		"items": items.duplicate(true), "inventory": inventory.duplicate(),
 		"elapsed": elapsed, "revenue": revenue, "harvests": harvests,
@@ -759,6 +760,7 @@ func restore(data: Variant) -> bool:
 	if data.has("resources") and (not _number(data.get("elapsed")) or not FarmResources.valid(data.resources,float(data.elapsed))):return false
 	if data.get("game_mode","legacy")!="sandbox" and data.has("resources") and not data.get("claimed",false) and FarmResources.normalized(data.resources)!=FarmResources.fresh():return false
 	if data.has("pickup") and not FarmPickup.valid(data.pickup):return false
+	if data.has("residents") and not FarmResidents.valid(data.residents):return false
 	if data.has("chapter"):
 		if not FarmChapter.valid(data.chapter):return false
 		if data.chapter.stage>0 and not data.get("claimed",false):return false
@@ -894,6 +896,7 @@ func restore(data: Variant) -> bool:
 	horse=data.get("horse",FarmHorse.defaults()).duplicate()
 	pickup=data.get("pickup",FarmPickup.defaults()).duplicate(true)
 	chapter={"stage":int(data.get("chapter",FarmChapter.fresh()).stage)}
+	residents=FarmResidents.normalized(data.get("residents",FarmResidents.fresh()))
 	var saved_orchard:Dictionary=data.get("orchard_journey",FarmOrchard.fresh_journey())
 	orchard_journey={"stage":int(saved_orchard.stage),"harvested":int(saved_orchard.harvested)}
 	owned_parcels=data.get("owned_parcels",[]).duplicate()
