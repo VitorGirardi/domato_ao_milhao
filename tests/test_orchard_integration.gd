@@ -5,7 +5,9 @@ func _initialize() -> void: call_deferred("run")
 
 func capture(label: String) -> void:
 	if DisplayServer.get_name() == "headless": return
+	game.hud.toast_time = 0
 	game.hud.toast_panel.visible = false
+	if label in ["adult", "ripe"]: await create_timer(1.6).timeout
 	await process_frame
 	await RenderingServer.frame_post_draw
 	root.get_texture().get_image().save_png("res://test-results/orchard-" + label + ".png")
@@ -98,7 +100,15 @@ func run() -> void:
 	assert(game._save_game(false, true))
 	assert(game._load_game())
 	assert(game.state.orchard_journey.stage == 2 and game.state.items[0].orchard.growth == 180)
+	# Fast headless runners can finish before harvest/watering feedback expires.
+	# Stop new ambient work and allow the existing tweens to release their targets.
+	game.session_started = false
+	game.audio.set_process(false)
+	game.audio.stop_all()
+	await create_timer(1.6).timeout
 	game.queue_free()
 	await process_frame
+	game = null
+	await create_timer(.2).timeout
 	print("ORCHARD_INTEGRATION_OK: real world, E care, watering, growth, harvest, Lucia delivery, proximity/mount gates and save roundtrip")
 	quit()
