@@ -1,4 +1,4 @@
-﻿name: Linux compatibility
+name: Linux compatibility
 on:
   pull_request:
     paths: ['scripts/**', 'assets/**', 'project.godot', 'export_presets.cfg', 'tests/**', 'tools/linux/**', '.github/workflows/linux.yml']
