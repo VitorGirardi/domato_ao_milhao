@@ -98,6 +98,13 @@ jobs:
           cat test-results/linux/x11.log
           grep -q LINUX_QA_OK test-results/linux/x11.log
           ! grep -E 'SCRIPT ERROR|ERROR:' test-results/linux/x11.log
+      - name: First chapter graphical review
+        if: matrix.suite == 'graphics'
+        run: |
+          xvfb-run -a timeout 180 godot --audio-driver Dummy --path . --script tests/test_chapter_world.gd > test-results/linux/chapter-world.log 2>&1
+          grep -q CHAPTER_WORLD_OK test-results/linux/chapter-world.log
+          ! grep -E 'SCRIPT ERROR|ERROR:' test-results/linux/chapter-world.log
+          cp test-results/chapter-*.png test-results/linux/
       - name: Pickup prototype graphical review
         if: matrix.suite == 'graphics'
         run: |
@@ -200,7 +207,7 @@ jobs:
           git rev-parse HEAD > exports/linux/COMMIT.txt
           cp tools/linux/jogar.sh exports/linux/
           cp LINUX.md exports/linux/LEIA-ME.md
-          cp CAMIONETINHA.md GODOT_LICENSE.txt AUDIO.md AUDIO_CREDITS.md MULTIPLAYER.md AGUAS_VIVAS.md FAZENDAS.md QUEDA_RETORNO.md MIRA.md MAPA.md VALE_SERRA.md PESCA_MINERACAO.md exports/linux/
+          cp PRIMEIROS_LACOS.md CAMIONETINHA.md GODOT_LICENSE.txt AUDIO.md AUDIO_CREDITS.md MULTIPLAYER.md AGUAS_VIVAS.md FAZENDAS.md QUEDA_RETORNO.md MIRA.md MAPA.md VALE_SERRA.md PESCA_MINERACAO.md exports/linux/
           chmod +x exports/linux/jogar.sh
           tar -czf exports/DoMatoAoMilhao-Linux-x86_64.tar.gz -C exports/linux .
           sha256sum exports/DoMatoAoMilhao-Linux-x86_64.tar.gz | tee exports/SHA256SUMS
