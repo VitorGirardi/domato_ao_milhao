@@ -402,7 +402,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_TAB: _action("mode")
 			KEY_E: _interact_nearest()
 			KEY_C: companions.request("whistle")
-			KEY_V: companions.request("follow")
+			KEY_V:
+				if pickup.mounted or pickup.nearby():_action("pickup:cargo")
+				else:companions.request("follow")
 			KEY_F: _action("market")
 			KEY_J: _action("market_orders")
 			KEY_H: _action("staff")
@@ -679,7 +681,7 @@ func _nearby_context() -> Dictionary:
 	if falls.local_down():return {}
 	if build_mode or not state.claimed: return {}
 	if pickup.mounted:return {"text":"Sair da camionetinha" if absf(pickup.speed)<1.2 else "Frear para sair · Espaço","action":"pickup","ready":absf(pickup.speed)<1.2}
-	if pickup.nearby():return {"text":"Dirigir camionetinha","action":"pickup"}
+	if pickup.nearby():return {"text":"Dirigir · V abre a caçamba","action":"pickup"}
 	if _mounted():return {"text":"Desmontar · Pé de Pano","action":"horse"}
 	var chapter_context:=chapter_world.nearby()
 	if not chapter_context.is_empty():return chapter_context
@@ -806,6 +808,7 @@ func _tend_selected() -> void:
 	elif item.kind=="stable": FarmStable.show(hud,state,horse,selected)
 
 func _action(value: String) -> void:
+	if value.begins_with("pickup:"):pickup.cargo_action(value);return
 	if pickup.mounted:
 		if value in ["mode","emotes","move"] or value.begins_with("tool:") or value.begins_with("emote:") or value.begins_with("resource:") or value.begins_with("gather:"):
 			hud.toast("Estacione e saia com E para fazer isso.");return
@@ -1323,7 +1326,7 @@ func _update_ui() -> void:
 	hud.update(state,build_mode,selected,tool,crop,hover_hint)
 	hud.walking.update(hud,state,_nearby_context(),crop)
 	hud.walking.mount_status(_mounted(),horse.stamina,horse.burst,actor.swimming)
-	if pickup.mounted:hud.walking.controls.text="W acelerar · S frear / ré · A/D virar · Espaço freio · E sair"
+	pickup.update_hud()
 	hud.walking.visit_mode(network.active)
 	if network.active:hud.mode_label.text="CONSTRUÇÃO · COOPERATIVO" if build_mode else "FAZENDA COOPERATIVA"
 	navigator.refresh()

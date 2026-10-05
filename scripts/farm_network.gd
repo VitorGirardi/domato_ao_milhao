@@ -158,6 +158,13 @@ func host(who:String) -> void:
 	if restored!=null:game.state=restored
 	elif FileAccess.file_exists(coop_path) or FileAccess.file_exists(coop_path+".bak"):
 		hosting=false;leave("Não foi possível ler o cooperativo. Os arquivos foram preservados.");return
+	# A new cooperative copy has no drivable pickup: keep its products usable.
+	# The solo state is a separate object and retains its loaded cargo.
+	if restored==null:
+		var cargo:=FarmPickupCargo.contents(game.state).duplicate()
+		for key in cargo:
+			if not FarmPickupCargo.transfer(game.state,key,int(cargo[key]),false).is_empty():
+				hosting=false;leave("Libere espaço no estoque para levar a carga ao novo cooperativo.");return
 	if not save_coop():
 		hosting=false;leave("Não foi possível criar/salvar o cooperativo. Nada foi substituído.");return
 	game.world.rebuild(game.state);game.horse.restore(game.state.horse)

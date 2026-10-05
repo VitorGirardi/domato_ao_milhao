@@ -1,3 +1,11 @@
+# Testar 0.47 — Caçamba e direção
+
+Entre na camionetinha com E. Confira o painel à direita e o volante ao virar.
+Teste as subidas das estradas e as duas pontes. Água profunda mostra um aviso.
+Com o carro parado, V abre a caçamba: carregue até 60 unidades e confira as caixas.
+Estacione perto da Lúcia para vender, ou descarregue para devolver ao estoque.
+Salve e continue: posição e carga devem permanecer. [Roteiro completo](CAMIONETINHA.md).
+
 # Testar 0.45 — Camionetinha de roça
 
 No solo, procure a camionetinha perto do armazém da Lúcia ou em Mapa → Companhia.
