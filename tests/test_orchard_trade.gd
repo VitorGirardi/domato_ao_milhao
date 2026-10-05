@@ -23,6 +23,8 @@ func check_panel(panel:Panel) -> void:
 		if child is Panel and child.position.y>=150:
 			for previous in cards:assert(not previous.intersects(bounds),"Overlapping cards")
 			cards.append(bounds)
+			for nested in child.get_children():
+				if nested is Control:assert(Rect2(Vector2.ZERO,child.size).encloses(Rect2(nested.position,nested.size)),"Control outside card: "+str(nested))
 
 func run() -> void:
 	var state:=FarmState.new_farm("survival")
@@ -64,6 +66,8 @@ func run() -> void:
 	var truck:=ParkedPickup.new();truck.game=host
 	FarmPickupCargo.show(truck);await process_frame
 	check_panel(hud.modal);await capture("cargo")
+	# This UI-only pickup never runs setup(), which normally parents these nodes.
+	truck.instruments.free();truck.cargo_visual.free();truck.accessories.free()
 	truck.free();host.free();hud.queue_free();await process_frame
 	print("ORCHARD_TRADE_OK: orange sales, cargo roundtrip, saves, Sandbox and expanded UI")
 	quit()

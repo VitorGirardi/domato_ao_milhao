@@ -69,6 +69,12 @@ static func show(vehicle:FarmPickup) -> void:
 		put.disabled=load_count<=0
 		var take:=FarmGameUI.action(h,card,"− %d"%mini(10,amount),Rect2(158,49,132,29),"pickup:unload:"+key)
 		take.disabled=amount==0
+		for button in [put,take]:
+			for style_name in ["normal","hover","pressed","disabled"]:
+				var compact := button.get_theme_stylebox(style_name) as StyleBoxFlat
+				compact.content_margin_top=4
+				compact.content_margin_bottom=4
+			button.size.y=29
 	h.label(p,"Vender perto da Lúcia. Descarregar devolve ao estoque, sem perder produtos.",Vector2(26,618),Vector2(916,28),17,FarmHUD.MUTED)
 	var sell_button:=FarmGameUI.action(h,p,"Vender carga · $%d"%value(state) if vehicle.near_market() else "Leve a carga ao armazém da Lúcia",Rect2(26,669,600,48),"pickup:sell",true)
 	sell_button.disabled=not vehicle.near_market() or count(contents(state))==0
