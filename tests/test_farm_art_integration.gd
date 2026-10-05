@@ -64,6 +64,7 @@ func run() -> void:
 	root.add_child(world)
 	await process_frame
 	var display:=fresh()
+	assert(display.expand().is_empty() and display.expand().is_empty())
 	var variants:Array=[]
 	for kind in NEW_KINDS+["barn","fence"]:
 		var state:=fresh()
@@ -122,7 +123,7 @@ func run() -> void:
 	if DisplayServer.get_name()!="headless":
 		var camera:=Camera3D.new()
 		world.add_child(camera)
-		camera.position=Vector3(43,48,55)
+		camera.position=Vector3(30,32,40)
 		camera.look_at(Vector3(4,0,2))
 		camera.current=true
 		world.day_night.update_cycle(180,Vector3.ZERO)
