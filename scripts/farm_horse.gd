@@ -298,10 +298,31 @@ func reset_rider(player:CharacterBody3D,avatar:Node3D,actor:FarmAvatar) -> void:
 func parking_clear(p:Vector2,state:FarmState,landscape:FarmLandscape) -> bool:
 	if FarmRegion.water_blocked(p):return false
 	if p.x<FarmLandscape.WALK_MIN.x+2 or p.x>FarmLandscape.WALK_MAX.x-2 or p.y<FarmLandscape.WALK_MIN.y+2 or p.y>FarmLandscape.WALK_MAX.y-2:return false
-	for item in state.items:
-		if item.kind not in ["plot","path"] and state.item_rect(item.kind,Vector2(item.x,item.z),item.turn).grow(1.8).has_point(p):return false
+	if not structures_clear(p, state): return false
 	for i in range(8):
 		if not landscape.clear_for_player(p+Vector2(sin(i*TAU/8),cos(i*TAU/8))*1.4):return false
+	return true
+
+static func structures_clear(p: Vector2, state: FarmState) -> bool:
+	# A gate's clear opening is 2.8 m. Reserve .65 m for each horse flank;
+	# unlike a broad parking radius, this leaves a real route between the posts.
+	var gate_corridor := false
+	for item in state.items:
+		if str(item.kind).begins_with("gate_"):
+			var local := Vector3(p.x - float(item.x), 0, p.y - float(item.z)).rotated(Vector3.UP, -int(item.turn) * PI / 2)
+			if absf(local.x) < .70 and absf(local.z) < 3.2:
+				gate_corridor = true
+				break
+	for item in state.items:
+		if item.kind in ["plot", "path"]: continue
+		if str(item.kind).begins_with("gate_"):
+			var local := Vector3(p.x - float(item.x), 0, p.y - float(item.z)).rotated(Vector3.UP, -int(item.turn) * PI / 2)
+			if absf(local.x) < .70: continue
+			for side in [-1, 1]:
+				if Rect2(Vector2(side * 1.52 - .12, -.14), Vector2(.24, .28)).grow(.65).has_point(Vector2(local.x, local.z)): return false
+			continue
+		var clearance := .65 if gate_corridor and item.kind in ["fence", "fence_painted"] else 1.8
+		if state.item_rect(item.kind, Vector2(item.x, item.z), item.turn).grow(clearance).has_point(p): return false
 	return true
 
 func ensure_parking(state:FarmState,landscape:FarmLandscape) -> void:
