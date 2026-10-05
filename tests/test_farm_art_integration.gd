@@ -18,6 +18,7 @@ func state_checks() -> void:
 		assert(state.serialize()==before,"Placement preview mutated state")
 		FarmCoopCommands.run(state,{"action":"place","kind":kind,"at":Vector2(4,0),"turn":1,"crop":"carrot"})
 		assert(state.items.size()==1 and state.items[0].kind==kind and state.items[0].turn==1,kind)
+		assert(state.items[0].paint==-1,"New art must preserve its authored palette")
 		assert(not state.items[0].planted,"Decorative garden must not produce invisible crops")
 		before=state.serialize()
 		assert(not state.place(kind,Vector2(4,0),0).is_empty())
@@ -99,12 +100,23 @@ func run() -> void:
 	var hinge:Node3D=gate.find_child("GateHingeLeft",true,false)
 	assert(hinge!=null)
 	var rest:=hinge.rotation
+	assert(gate_hit(world,gate),"Closed gate has no physical barrier")
 	var near:Array[Vector3]=[gate.global_position+Vector3(0,0,1)]
 	for step in 100:world.update_art_gates(near,.05)
+	await physics_frame
 	assert(hinge.rotation.distance_to(rest)>.5,"Nearby actor cannot open gate")
+	assert(not gate_hit(world,gate),"Open gate still blocks the passage")
 	var far:Array[Vector3]=[Vector3(200,0,200)]
 	for step in 200:world.update_art_gates(far,.05)
+	await physics_frame
 	assert(hinge.rotation.distance_to(rest)<.05,"Gate did not close after actor left")
+	assert(gate_hit(world,gate),"Closed gate did not restore its physical barrier")
+	gate.rotation.y=PI/2
+	await physics_frame
+	assert(gate_hit(world,gate),"Rotated closed gate lost its collision")
+	for step in 100:world.update_art_gates(near,.05)
+	await physics_frame
+	assert(not gate_hit(world,gate),"Rotated open gate still blocks passage")
 	if DisplayServer.get_name()!="headless":
 		var camera:=Camera3D.new()
 		world.add_child(camera)
@@ -121,3 +133,9 @@ func run() -> void:
 	await process_frame
 	print("FARM_ART_INTEGRATION_OK: placement, cooperative commands, costs, upgrades, save roundtrip, footprints, collision and automatic gates")
 	quit()
+
+func gate_hit(world:FarmWorld,gate:Node3D) -> bool:
+	var start:Vector3=gate.to_global(Vector3(0,.75,-2))
+	var end:Vector3=gate.to_global(Vector3(0,.75,2))
+	var query:=PhysicsRayQueryParameters3D.create(start,end,1)
+	return not world.get_world_3d().direct_space_state.intersect_ray(query).is_empty()
