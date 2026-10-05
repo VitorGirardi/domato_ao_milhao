@@ -8,6 +8,7 @@ var clock:Label
 var wallet:Label
 var objective:Button
 var chapter:Button
+var residents:Button
 var interaction:Button
 var seed_panel:Panel
 var seeds:Dictionary={}
@@ -31,6 +32,8 @@ func setup(hud:FarmHUD) -> void:
 	objective=FarmGameUI.action(hud,root,"Objetivo",Rect2(24,86,335,43),"objectives")
 	objective.add_theme_font_size_override("font_size",16)
 	chapter=FarmGameUI.action(hud,root,"Histórias do vale",Rect2(24,600,335,48),"chapter")
+	residents=FarmGameUI.action(hud,root,"Vizinhos e entregas",Rect2(24,655,335,43),"residents")
+	residents.add_theme_font_size_override("font_size",16)
 	chapter.add_theme_font_size_override("font_size",16)
 	chapter.text_overrun_behavior=TextServer.OVERRUN_TRIM_ELLIPSIS
 	attention=FarmGameUI.action(hud,root,"",Rect2(986,343,430,48),"field_attention",true)
@@ -58,6 +61,7 @@ func setup(hud:FarmHUD) -> void:
 
 func update(hud:FarmHUD,state:FarmState,context:Dictionary,crop:String) -> void:
 	farm_levels.update(state)
+	residents.text="Entregas · Influência %d"%FarmResidents.influence(state)
 	chapter.text="História · "+FarmChapterHUD.TITLES[int(state.chapter.stage)]
 	chapter.tooltip_text=FarmChapterHUD.STEPS[int(state.chapter.stage)]
 	target=context

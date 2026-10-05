@@ -1,3 +1,11 @@
+# 0.51.0 — Vizinhos e entregas
+
+- Três casas no vale com Dona Rosa, Seu Bento e Lia, conversas e pedidos próprios.
+- Descoberta das casas, marcadores no mapa e painel de entregas/influência.
+- Entregas reais pela caçamba, pagamento, confiança por morador e influência que libera novos clientes.
+- Pedidos crescem com a confiança, sem prazo de vencimento; novo pedido após abastecer a casa.
+- Progresso por fazenda, Sandbox preservado e ações de camionetinha restritas ao solo. Save 24, protocolo 21.
+
 # 0.49.0 — Garagem da fazenda
 
 - Garagem construível com modelo original Blender, entrada aberta, bancada e marcações de estacionamento; desbloqueada no nível 4 por $700.

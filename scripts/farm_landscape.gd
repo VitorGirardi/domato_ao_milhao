@@ -91,13 +91,13 @@ static func ground_height(p:Vector2) -> float:
 static func terrain_height(p:Vector2) -> float:
 	var river_x:=-42+sin(p.y*.065)*2.6
 	var channel:=1-smoothstep(0.0,5.0,absf(p.x-river_x))
-	return FarmRegion.bed(p, base_height(p)-channel*2.5)
+	return FarmResidents.ground(p,FarmRegion.bed(p, base_height(p)-channel*2.5))
 
 static func road_distance(p:Vector2) -> float:
 	var trunk:=-27+sin(p.y*.07)*smoothstep(42,66,absf(p.y))*3
 	var lane:=30+sin(p.x*.09)*smoothstep(44,75,p.x)*3
 	var regional := FarmRegion.road_sample(p).x
-	return regional if FarmRegion.weight(p)>0 else minf(regional,minf(minf(absf(p.x-trunk),absf(p.y-lane)),FarmTrails.distance_to_path(p)))
+	return minf(regional,FarmTrails.distance_to_path(p)) if FarmRegion.weight(p)>0 else minf(regional,minf(minf(absf(p.x-trunk),absf(p.y-lane)),FarmTrails.distance_to_path(p)))
 
 func setup(world:FarmWorld) -> void:
 	name="ValleyLandscape";rng.seed=202020
@@ -119,7 +119,7 @@ func setup(world:FarmWorld) -> void:
 	add_child(meadow)
 	for i in range(65000):
 		var p:=Vector2(rng.randf_range(-34,184),rng.randf_range(-149,149))
-		if road_distance(p)<3.15 or FarmTrails.reserved(p) or Rect2(-27,10,7,9).has_point(p): continue
+		if FarmResidents.reserved(p) or road_distance(p)<3.15 or FarmTrails.reserved(p) or Rect2(-27,10,7,9).has_point(p): continue
 		# Islands of vegetation rather than evenly scattered dots.
 		if rng.randf()<.15:continue
 		decoration_points.append(p)
@@ -197,7 +197,7 @@ func _bosques() -> void:
 	for center in centers:
 		for i in range(22):
 			var p:Vector2=center+Vector2(rng.randfn(0,7),rng.randfn(0,6))
-			if road_distance(p)<4.8 or FarmTrails.reserved(p,3) or p.distance_to(Vector2(57,38))<5 or Rect2(-28,9,9,12).has_point(p):continue
+			if FarmResidents.reserved(p,3) or road_distance(p)<4.8 or FarmTrails.reserved(p,3) or p.distance_to(Vector2(57,38))<5 or Rect2(-28,9,9,12).has_point(p):continue
 			if p.distance_to(Vector2(4,-2))<4:continue
 			if absf(p.x-(-42+sin(p.y*.065)*2.6))<6:continue
 			var blocked:=false

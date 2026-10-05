@@ -2,6 +2,9 @@ class_name FarmTrails
 extends RefCounted
 ## Shared route geometry feeds ground shading and vegetation clearance.
 const ROUTES:=[
+	[Vector2(36,-112),Vector2(38,-119)],
+	[Vector2(172,-17),Vector2(176,-22),Vector2(176,-29)],
+	[Vector2(322,314),Vector2(314,318),Vector2(314,325)],
 	[Vector2(-27,-42),Vector2(-26,-50),Vector2(-19,-55),Vector2(-10,-58),Vector2(-3,-58)],
 	[Vector2(-10,-58),Vector2(-9,-70),Vector2(-12,-78),Vector2(-10,-82)],
 	[Vector2(-26,44),Vector2(-25,51),Vector2(-18,58),Vector2(-9,60),Vector2(-3,60)],

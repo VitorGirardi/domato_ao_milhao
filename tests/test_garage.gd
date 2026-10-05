@@ -21,7 +21,7 @@ func run() -> void:
 	assert(FarmGarage.personalize(state,"name","Trovão da Roça").is_empty())
 	assert(FarmGarage.personalize(state,"paint",1).is_empty())
 	state.inventory.carrot=120;assert(FarmPickupCargo.transfer(state,"carrot",120,true).is_empty())
-	assert(state.serialize().version==22)
+	assert(state.serialize().version==FarmState.SAVE_VERSION)
 	var restored:=FarmState.new();assert(restored.restore(JSON.parse_string(JSON.stringify(state.serialize()))))
 	assert(FarmGarage.capacity(restored)==120 and FarmGarage.config(restored).name=="Trovão da Roça" and FarmPickupCargo.count(restored.pickup.cargo)==120)
 	before=restored.serialize()

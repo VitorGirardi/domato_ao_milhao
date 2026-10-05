@@ -33,6 +33,8 @@ func setup(owner_game:Node3D) -> void:
 
 func destinations() -> Array:
 	var values:Array=[]
+	for key in FarmResidents.PEOPLE:
+		if game.state.residents[key].known:values.append({"key":"resident_"+key,"name":"Casa de "+FarmResidents.PEOPLE[key].name,"at":FarmResidents.entry(key),"icon":"barn","group":"Locais","notice":"Entrega aguardada" if game.state.residents[key].active else FarmResidents.trust(game.state,key)})
 	if game.chapter_world.game!=null and game.state.claimed:
 		var chapter_destination:Dictionary=game.chapter_world.destination()
 		if not chapter_destination.is_empty():values.append(chapter_destination)
