@@ -25,6 +25,10 @@ func run() -> void:
 	await process_frame
 	assert(menu.cards["barn"].get_meta("picture").size==Vector2(90,90))
 	await capture("catalog")
+	menu.next_page.pressed.emit()
+	assert(menu.cards.size()==1 and menu.cards.has("garage") and menu.next_page.disabled)
+	menu.previous_page.pressed.emit()
+	assert(menu.cards.has("house") and menu.previous_page.disabled)
 	menu.tabs["Jardim"].pressed.emit()
 	assert(menu.cards.size()==4 and menu.cards.has("raised_bed") and menu.next_page.visible)
 	menu.next_page.pressed.emit()

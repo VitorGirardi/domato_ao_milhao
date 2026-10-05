@@ -19,24 +19,29 @@ var instruments:=FarmPickupHUD.new()
 var blocked_reason:=""
 var cargo_visual:=Node3D.new()
 var cargo_stamp:=""
+var custom_stamp:=""
+var accessories:=Node3D.new()
 var collision_box:BoxShape3D
 var body_shell:CollisionShape3D
 var engine_sound:AudioStreamPlayer3D
 var engine_playback:AudioStreamGeneratorPlayback
 var sound_phase:=0.0
 
-static func defaults() -> Dictionary:return {"x":HOME.x,"z":HOME.y,"angle":PI*.5,"cargo":{}}
+static func defaults() -> Dictionary:return {"x":HOME.x,"z":HOME.y,"angle":PI*.5,"cargo":{},"garage":FarmGarage.defaults()}
 static func valid(value:Variant) -> bool:
 	if not value is Dictionary:return false
 	for key in ["x","z","angle"]:
 		if not (value.get(key) is float or value.get(key) is int) or not is_finite(float(value[key])):return false
-	if not FarmPickupCargo.valid(value.get("cargo",{})):return false
+	var custom:Dictionary=value.get("garage",FarmGarage.defaults()) if value.get("garage",{}) is Dictionary else {}
+	if not FarmGarage.valid(custom):return false
+	if not FarmPickupCargo.valid(value.get("cargo",{}),120 if custom.bed else 60):return false
 	return value.x>=FarmLandscape.WALK_MIN.x+4 and value.x<=FarmLandscape.WALK_MAX.x-4 and value.z>=FarmLandscape.WALK_MIN.y+4 and value.z<=FarmLandscape.WALK_MAX.y-4 and absf(value.angle)<=PI
 
 func setup(owner_game:Node3D) -> void:
 	game=owner_game;name="FarmPickup"
 	model=load("res://assets/models/farm_pickup.glb").instantiate();add_child(model)
 	cargo_visual.name="Cargo";model.add_child(cargo_visual)
+	accessories.name="CustomParts";model.add_child(accessories)
 	for key in ["FL","FR","RL","RR"]:wheels[key]=model.find_child("Wheel_"+key,true,false)
 	var support:=CollisionShape3D.new();var capsule:=CapsuleShape3D.new()
 	capsule.radius=.65;capsule.height=2.7;support.shape=capsule;support.position.y=1.35;add_child(support)
@@ -55,7 +60,7 @@ func restore(data:Dictionary) -> void:
 	if water_depth(point)>FORD_DEPTH:saved=defaults();point=HOME
 	rotation=Vector3(0,saved.angle,0);position=Vector3(point.x,FarmLandscape.height_at(point)+.06,point.y)
 	velocity=Vector3.ZERO;speed=0;steering=0;wheel_spin=0;blocked_reason=""
-	cargo_stamp="";refresh_cargo();_animate(0)
+	cargo_stamp="";custom_stamp="";refresh_customization();refresh_cargo();_animate(0)
 
 func store() -> void:
 	if game.network.active:return
@@ -115,7 +120,7 @@ func surface_problem(at:Vector3,angle:float) -> String:
 			var sample:=at+basis*Vector3(x,0,z);var point:=Vector2(sample.x,sample.z)
 			if water_depth(point)>FORD_DEPTH+.75:return "Água profunda · procure uma ponte"
 	var tilt:=ground_tilt(at,angle)
-	if (Basis.from_euler(tilt)*Vector3.UP).dot(Vector3.UP)<cos(MAX_SLOPE):return "Terreno muito íngreme · use a estrada"
+	if (Basis.from_euler(tilt)*Vector3.UP).dot(Vector3.UP)<cos(slope_limit()):return "Terreno muito íngreme · use a estrada"
 	return ""
 
 func surface_allowed(at:Vector3,angle:float) -> bool:
@@ -142,7 +147,7 @@ func parking_clear(at:Vector3) -> bool:
 	var half:=Vector2(absf(cos(rotation.y))*1.4+absf(sin(rotation.y))*3.2,absf(sin(rotation.y))*1.4+absf(cos(rotation.y))*3.2)
 	var area:=Rect2(Vector2(at.x,at.z)-half,half*2)
 	for item in game.state.items:
-		if item.kind not in ["plot","path"] and game.state.item_rect(item.kind,Vector2(item.x,item.z),item.turn).intersects(area):return false
+		if item.kind not in ["plot","path","garage"] and game.state.item_rect(item.kind,Vector2(item.x,item.z),item.turn).intersects(area):return false
 	return clear_at(at,rotation.y)
 
 func ensure_parking() -> void:
@@ -161,8 +166,9 @@ func drive(delta:float,throttle:float,turn:float,brake:bool,active:bool) -> void
 		speed=0;velocity=Vector3.ZERO;steering=move_toward(steering,0,delta*2)
 		_pose_driver(delta);_animate(0);return
 	steering=move_toward(steering,clampf(turn,-1,1)*.5,delta*1.8)
-	var target:=MAX_SPEED*throttle if throttle>=0 else REVERSE_SPEED*throttle
-	speed=move_toward(speed,0 if brake else target,delta*(22 if brake else 7 if throttle!=0 else 4))
+	var custom:=FarmGarage.config(game.state)
+	var target:=(22.0 if custom.engine else MAX_SPEED)*throttle if throttle>=0 else REVERSE_SPEED*throttle
+	speed=move_toward(speed,0 if brake else target,delta*((30 if custom.tires else 22) if brake else (10 if custom.engine else 7) if throttle!=0 else 4))
 	blocked_reason=""
 	var before:=global_transform
 	var candidate:=wrapf(rotation.y-steering*speed/3.7*delta,-PI,PI)
@@ -177,7 +183,7 @@ func drive(delta:float,throttle:float,turn:float,brake:bool,active:bool) -> void
 		global_transform=before;velocity=Vector3.ZERO;speed=0
 	elif get_slide_collision_count()>0:
 		for i in range(get_slide_collision_count()):
-			if get_slide_collision(i).get_normal().y<cos(MAX_SLOPE):
+			if get_slide_collision(i).get_normal().y<cos(slope_limit()):
 				speed=0;blocked_reason="Obstáculo à frente · recue ou contorne";break
 	var travel:=position.distance_to(before.origin)
 	wheel_spin+=travel*signf(speed)/.65
@@ -248,7 +254,7 @@ func cargo_action(action:String) -> void:
 	if game.hud.modal_kind!="pickup_cargo":return
 	var key:=action.get_slice(":",2);var error:=""
 	if action.begins_with("pickup:load:"):
-		var amount:=mini(10,mini(game.state.stock(key),FarmPickupCargo.CAPACITY-FarmPickupCargo.count(FarmPickupCargo.contents(game.state))))
+		var amount:=mini(10,mini(game.state.stock(key),FarmGarage.capacity(game.state)-FarmPickupCargo.count(FarmPickupCargo.contents(game.state))))
 		error=FarmPickupCargo.transfer(game.state,key,amount,true)
 	elif action.begins_with("pickup:unload:"):
 		error=FarmPickupCargo.transfer(game.state,key,mini(10,int(FarmPickupCargo.contents(game.state).get(key,0))),false)
@@ -276,7 +282,7 @@ func refresh_cargo() -> void:
 	for key in FarmPickupCargo.KEYS:
 		for i in range(int(cargo.get(key,0))):units.append(key)
 	for index in range(ceili(units.size()/10.0)):
-		var crate:=Node3D.new();crate.position=Vector3(-.52+(index%2)*1.04,1.53,-1.32-(index/2)*.58);cargo_visual.add_child(crate)
+		var crate:=Node3D.new();crate.position=Vector3(-.52+(index%2)*1.04,1.53+(index/6)*.44,-1.32-((index%6)/2)*.58);cargo_visual.add_child(crate)
 		var wood:=Color("946238")
 		cargo_box(crate,Vector3(0,.035,0),Vector3(.88,.07,.51),wood)
 		for side in [-1,1]:
@@ -306,3 +312,29 @@ func cargo_product(parent:Node3D,key:String,at:Vector3,color:Color) -> void:
 		node.mesh=sphere
 		if key in FarmResources.FISH_KEYS:node.rotation.x=PI/2
 	var mat:=StandardMaterial3D.new();mat.albedo_color=color;mat.roughness=.85;node.material_override=mat;parent.add_child(node)
+
+func slope_limit() -> float:
+	return deg_to_rad(55.0) if game!=null and FarmGarage.config(game.state).tires else MAX_SLOPE
+
+func refresh_customization() -> void:
+	if game==null or not is_instance_valid(model):return
+	var data:=FarmGarage.config(game.state);var stamp:=str(data)
+	if stamp==custom_stamp:return
+	custom_stamp=stamp;floor_max_angle=slope_limit()
+	for mesh in model.find_children("*","MeshInstance3D",true,false):
+		if mesh.get_parent()==accessories or mesh.mesh==null:continue
+		for surface in range(mesh.mesh.get_surface_count()):
+			var original:Material=mesh.mesh.surface_get_material(surface)
+			if original!=null and original.resource_name.begins_with("Faded pasture green"):
+				var paint:=original.duplicate() as StandardMaterial3D;paint.albedo_color=Color(FarmGarage.COLORS[int(data.paint)]);mesh.set_surface_override_material(surface,paint)
+	for wheel in wheels.values():wheel.scale.x=1.22 if data.tires else 1.0
+	for child in accessories.get_children():child.free()
+	if data.bed:
+		for side in [-1,1]:cargo_box(accessories,Vector3(side*1.12,2.05,-1.9),Vector3(.1,.15,1.95),Color("5b665e"))
+		cargo_box(accessories,Vector3(0,2.05,-2.85),Vector3(2.24,.15,.1),Color("5b665e"))
+	if data.engine:
+		cargo_box(accessories,Vector3(0,2.12,1.6),Vector3(.72,.22,.75),Color("404d44"))
+		for i in range(4):cargo_box(accessories,Vector3(-.24+i*.16,2.25,1.6),Vector3(.06,.035,.54),Color("c6c7b4"))
+	if data.rack:
+		for side in [-1,1]:cargo_box(accessories,Vector3(side*.85,3.48,.1),Vector3(.09,.25,1.8),Color("4c5c50"))
+		for z in [-.65,-.15,.35,.85]:cargo_box(accessories,Vector3(0,3.58,z),Vector3(1.8,.09,.12),Color("9c794d"))

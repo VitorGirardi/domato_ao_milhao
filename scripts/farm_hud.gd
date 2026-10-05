@@ -358,6 +358,8 @@ func update(state: FarmState, build_mode: bool, selected: int, tool: String, cro
 			details_label.text='“%s”\n\nPinte ou escreva sua mensagem.'%item.text
 		elif item.kind=="barn":
 			details_label.text="Estoque e reserva de produtos\nReserva: %d / %d unidades\n\n[E] Conferir estoque pela porta."%[state.reserve_count(),state.reserve_capacity()]
+		elif item.kind=="garage":
+			details_label.text="Estacione a camionetinha e abra Garagem.\nMelhorias, pintura e nome.\nDisponível para o carro solo."
 		elif item.kind=="stable":
 			details_label.text="Descanso para o Pé de Pano\nFôlego recupera 2× mais rápido\nperto da entrada.\n\n[E] Ver estrebaria."
 		elif item.kind=="workshop":

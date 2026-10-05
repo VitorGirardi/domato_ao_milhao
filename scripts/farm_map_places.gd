@@ -1,7 +1,7 @@
 class_name FarmMapPlaces
 extends RefCounted
 ## A shared, read-only view of the simulation for both maps.
-const ICONS={"house":"barn","barn":"barn","coop":"chicken","corral":"cow","pigsty":"pig","stable":"map_horse","workshop":"workshop","cheesery":"cheese"}
+const ICONS={"house":"barn","garage":"map_pickup","barn":"barn","coop":"chicken","corral":"cow","pigsty":"pig","stable":"map_horse","workshop":"workshop","cheesery":"cheese"}
 
 static func notices(item:Dictionary) -> String:
 	var notes:PackedStringArray=[]

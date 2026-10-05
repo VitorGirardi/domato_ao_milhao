@@ -19,7 +19,7 @@ static func level(xp:int) -> int:
 static func required(kind:String) -> int:
 	if kind in ["house","fence_painted","gate_painted","trellis","orchard_young"]: return 2
 	if kind=="orchard_mature": return 3
-	return 3 if kind=="pigsty" else 5 if kind=="stable" else maxi(1,BUILDINGS.find(kind)+1)
+	return 4 if kind=="garage" else 3 if kind=="pigsty" else 5 if kind=="stable" else maxi(1,BUILDINGS.find(kind)+1)
 
 static func unlocked(state:FarmState,kind:String) -> bool:
 	return state.game_mode=="sandbox" or level(state.farm_xp)>=required(kind)
@@ -27,7 +27,7 @@ static func unlocked(state:FarmState,kind:String) -> bool:
 static func next_text(xp:int) -> String:
 	var current:=level(xp)
 	if current==THRESHOLDS.size(): return "Todas as construções liberadas"
-	return "%s em %d XP"%["Curral e estrebaria" if current==4 else FarmState.ITEMS[BUILDINGS[current]].name,THRESHOLDS[current]-xp]
+	return "%s em %d XP"%["Curral e estrebaria" if current==4 else "Oficina e garagem" if current==3 else FarmState.ITEMS[BUILDINGS[current]].name,THRESHOLDS[current]-xp]
 
 static func legacy_xp(state:FarmState) -> int:
 	# Old saves already had an unrestricted catalog. Recognize evidence of ownership,

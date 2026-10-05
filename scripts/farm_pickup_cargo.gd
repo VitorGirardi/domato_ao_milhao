@@ -9,11 +9,11 @@ static func count(cargo:Dictionary) -> int:
 	for amount in cargo.values():total+=int(amount)
 	return total
 
-static func valid(cargo:Variant) -> bool:
+static func valid(cargo:Variant,limit:int=CAPACITY) -> bool:
 	if not cargo is Dictionary:return false
 	for key in cargo:
-		if key not in KEYS or not FarmResources._integer(cargo[key],CAPACITY):return false
-	return count(cargo)<=CAPACITY
+		if key not in KEYS or not FarmResources._integer(cargo[key],limit):return false
+	return count(cargo)<=limit
 
 static func contents(state:FarmState) -> Dictionary:
 	return state.pickup.get("cargo",{})
@@ -23,7 +23,7 @@ static func transfer(state:FarmState,key:String,amount:int,loading:bool) -> Stri
 	var cargo:=contents(state).duplicate()
 	if loading:
 		if amount>state.stock(key):return "Não há essa quantidade no estoque."
-		if count(cargo)+amount>CAPACITY:return "A caçamba está cheia."
+		if count(cargo)+amount>FarmGarage.capacity(state):return "A caçamba está cheia."
 		state.consume_stock(key,amount);cargo[key]=int(cargo.get(key,0))+amount
 	else:
 		if amount>int(cargo.get(key,0)):return "Essa quantidade não está na caçamba."
@@ -58,13 +58,13 @@ static func sell(state:FarmState) -> int:
 static func show(vehicle:FarmPickup) -> void:
 	var h:FarmHUD=vehicle.game.hud;var state:FarmState=vehicle.game.state
 	var p:=FarmGameUI.open(h,"pickup_cargo","Caçamba da camionetinha","barn",970,760)
-	h.label(p,"%d / %d unidades · Estoque → caçamba → armazém"%[count(contents(state)),CAPACITY],Vector2(26,107),Vector2(920,30),20)
+	h.label(p,"%d / %d unidades · Estoque → caçamba → armazém"%[count(contents(state)),FarmGarage.capacity(state)],Vector2(26,107),Vector2(920,30),20)
 	for i in range(KEYS.size()):
 		var key:String=KEYS[i];var amount:=int(contents(state).get(key,0))
 		var card:=FarmGameUI.card(h,p,Rect2(26+(i%2)*462,151+(i/2)*76,450,69))
 		h.label(card,TITLES[i],Vector2(12,5),Vector2(190,24),18)
 		h.label(card,"Estoque %s · Carga %d"%[state.stock_text(key),amount],Vector2(12,34),Vector2(230,23),15,FarmHUD.MUTED)
-		var load_count:=mini(10,mini(state.stock(key),CAPACITY-count(contents(state))))
+		var load_count:=mini(10,mini(state.stock(key),FarmGarage.capacity(state)-count(contents(state))))
 		var put:=FarmGameUI.action(h,card,"+ %d"%load_count,Rect2(248,14,86,39),"pickup:load:"+key)
 		put.disabled=load_count<=0
 		var take:=FarmGameUI.action(h,card,"− %d"%mini(10,amount),Rect2(344,14,94,39),"pickup:unload:"+key)
@@ -72,4 +72,5 @@ static func show(vehicle:FarmPickup) -> void:
 	h.label(p,"Vender perto da Lúcia. Descarregar devolve ao estoque, sem perder produtos.",Vector2(26,618),Vector2(916,28),17,FarmHUD.MUTED)
 	var sell_button:=FarmGameUI.action(h,p,"Vender carga · $%d"%value(state) if vehicle.near_market() else "Leve a carga ao armazém da Lúcia",Rect2(26,669,600,48),"pickup:sell",true)
 	sell_button.disabled=not vehicle.near_market() or count(contents(state))==0
-	FarmGameUI.action(h,p,"Voltar",Rect2(642,669,302,48),"close")
+	FarmGameUI.action(h,p,"Garagem",Rect2(642,669,145,48),"garage:open").disabled=not FarmGarage.can_service(vehicle)
+	FarmGameUI.action(h,p,"Voltar",Rect2(799,669,145,48),"close")
