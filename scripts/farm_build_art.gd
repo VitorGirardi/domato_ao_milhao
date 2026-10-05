@@ -7,10 +7,11 @@ var shapes: Dictionary = {}
 var gates: Array[Dictionary] = []
 
 func handles(kind: String) -> bool:
-	return kind in KINDS
+	return kind == "orchard" or kind in KINDS
 
 func instantiate(item: Dictionary, parent: Node3D) -> Node3D:
 	var kind: String = item.kind
+	if kind == "orchard": return FarmOrchardView.create(self, parent, item)
 	var upgraded: bool = int(item.get("level", 1)) >= 2
 	var key := "farm_art_" + kind
 	if kind == "house": key = "farm_house_upgrade" if upgraded else "farm_house_starter"
@@ -52,6 +53,9 @@ func _relative_transform(node: Node3D, ancestor: Node3D) -> Transform3D:
 
 func add_collision(item: Dictionary, visual: Node3D, index: int) -> void:
 	var kind: String = item.kind
+	if kind == "orchard":
+		FarmOrchardView.add_collision(visual, index)
+		return
 	var key: String = visual.get_meta("art_key")
 	_add_body(visual, key, index, kind, true)
 	if kind.begins_with("gate_"):

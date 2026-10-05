@@ -33,6 +33,8 @@ func setup(owner_game:Node3D) -> void:
 
 func destinations() -> Array:
 	var values:Array=[]
+	if game.state.claimed and int(game.state.orchard_journey.stage)<2:
+		values.append({"key":"orchard_delivery","name":"Primeira colheita · Lúcia","at":Vector2(-24,14),"icon":"orange","group":"Locais","notice":"Encomenda de laranjas do seu pomar"})
 	if game.chapter_world.game!=null and game.state.claimed:
 		var chapter_destination:Dictionary=game.chapter_world.destination()
 		if not chapter_destination.is_empty():values.append(chapter_destination)

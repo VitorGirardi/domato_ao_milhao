@@ -2,7 +2,7 @@ class_name FarmBuildHUD
 extends RefCounted
 ## A small categorized palette; actions belong to the selected object.
 const CATEGORIES := {
-	"Lavoura": ["plot"],
+	"Lavoura": ["plot", "orchard"],
 	"Animais": ["coop", "corral", "stable", "pigsty"],
 	"Estruturas": ["barn", "workshop", "cheesery", "house","garage"],
 	"Jardim": ["raised_bed", "trellis", "orchard_young", "orchard_mature", "well", "wash_tub", "compost", "produce_crates"],
@@ -69,7 +69,7 @@ func setup(owner: FarmHUD) -> void:
 	_disconnect_action(previous_page);previous_page.pressed.connect(_turn_page.bind(-1))
 	_disconnect_action(next_page);next_page.pressed.connect(_turn_page.bind(1))
 	previous_page.tooltip_text="Página anterior";next_page.tooltip_text="Próxima página"
-	seed_panel=Control.new();seed_panel.position=Vector2(270,106);seed_panel.size=Vector2(476,42);seed_panel.mouse_filter=Control.MOUSE_FILTER_IGNORE;catalog.add_child(seed_panel)
+	seed_panel=Control.new();seed_panel.position=Vector2(270,-106);seed_panel.size=Vector2(476,42);seed_panel.mouse_filter=Control.MOUSE_FILTER_IGNORE;catalog.add_child(seed_panel)
 	for i in range(3):
 		var key:String=["carrot","wheat","corn"][i]
 		var b:=FarmGameUI.action(hud,seed_panel,FarmState.CROPS[key].name,Rect2(i*158,0,150,40),"crop:"+key)
@@ -117,6 +117,7 @@ func _turn_page(direction:int) -> void:
 	if current_state!=null:_refresh_cards(current_state)
 
 func _texture(key:String) -> Texture2D:
+	if key=="orchard": key="orchard_young"
 	var path:="res://assets/ui/build/%s.png"%key
 	return load(path) if ResourceLoader.exists(path) else load("res://assets/ui/%s.svg"%ICONS.get(key,"barn"))
 
@@ -181,8 +182,8 @@ func update(state:FarmState,selected:int,tool:String,crop:String,hover_hint:Stri
 		selected_icon.texture=_texture(key)
 		paint_button.visible=key in ["barn","coop","workshop","fence","sign","stable"]
 		if not paint_button.visible:paint_panel.visible=false
-		open_button.visible=key in ["plot","barn","coop","workshop","corral","cheesery","stable","pigsty","house","garage"]
-		open_button.text="Cuidar" if key in ["plot","coop","corral","pigsty"] else "Abrir"
+		open_button.visible=key in ["plot","orchard","barn","coop","workshop","corral","cheesery","stable","pigsty","house","garage"]
+		open_button.text="Cuidar" if key in ["plot","orchard","coop","corral","pigsty"] else "Abrir"
 		sign_button.visible=key=="sign"
 	_refresh_cards(state)
 	if not state.claimed:hint.text="WASD mover câmera · Scroll aproximar"

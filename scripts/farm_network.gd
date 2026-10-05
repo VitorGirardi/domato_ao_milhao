@@ -2,7 +2,7 @@ class_name FarmNetwork
 extends Node
 ## Host-authoritative cooperative farm.
 const PORT:=28729
-const PROTOCOL:=19
+const PROTOCOL:=20
 var game:Node3D
 var active:=false
 var ready_session:=false
@@ -265,6 +265,7 @@ func _process(delta:float) -> void:
 		if Time.get_ticks_msec()-int(pending_peers[id])>12000:peer.disconnect_peer(id);pending_peers.erase(id)
 	if hosting:
 		game.state.tick(delta);game.world.update_staff(game.state,delta);track_plots();game.world.animate(delta,game.player.position,game.state);game.world.update_crops(game.state)
+		game.world.update_orchards(game.state)
 		sync_timer-=delta
 		if sync_timer<=0:
 			sync_timer=.5;broadcast_state()
@@ -438,22 +439,23 @@ func refresh_crops() -> void:
 		if crop_visuals.get(i,"")!=item.crop:
 			game.world.replace_crop(i,item.crop);crop_visuals[i]=item.crop
 	game.world.update_crops(game.state)
+	game.world.update_orchards(game.state)
 
 func show_stock() -> void:
-	var p:=FarmGameUI.open(game.hud,"coop_stock","Estoque compartilhado","barn",900,480)
+	var p:=FarmGameUI.open(game.hud,"coop_stock","Estoque compartilhado","barn",900,560)
 	stock_labels.clear()
-	var products:=["carrot","wheat","corn","egg","milk","cheese"]
-	var names:=["Cenoura","Trigo","Milho","Ovos","Leite","Queijo"]
+	var products:=["carrot","wheat","corn","egg","milk","cheese","orange"]
+	var names:=["Cenoura","Trigo","Milho","Ovos","Leite","Queijo","Laranjas"]
 	for i in range(products.size()):
 		var key:String=products[i]
-		var x:=32+(i/3)*430
-		var y:=120+(i%3)*76
+		var x:=32+(i/4)*430
+		var y:=120+(i%4)*76
 		FarmGameUI.icon(p,key,Rect2(x,y,44,44))
 		game.hud.label(p,names[i],Vector2(x+58,y+4),Vector2(210,35),23)
 		stock_labels[key]=game.hud.label(p,game.state.stock_text(key)+" un.",Vector2(x+275,y+4),Vector2(120,35),24)
-	game.hud.label(p,"Produção e vendas dos dois usam este estoque.",Vector2(32,355),Vector2(836,30),18)
-	FarmGameUI.action(game.hud,p,"Voltar ao campo",Rect2(32,410,408,44),"close",true)
-	FarmGameUI.action(game.hud,p,"Peixes e minérios",Rect2(460,410,408,44),"resources")
+	game.hud.label(p,"Produção e vendas dos dois usam este estoque.",Vector2(32,435),Vector2(836,30),18)
+	FarmGameUI.action(game.hud,p,"Voltar ao campo",Rect2(32,490,408,44),"close",true)
+	FarmGameUI.action(game.hud,p,"Peixes e minérios",Rect2(460,490,408,44),"resources")
 
 func stock_count(key:String) -> int:
 	return game.state.stock(key)
@@ -491,6 +493,8 @@ func apply_command(sender:int,seq:int,topology:int,command:Dictionary) -> void:
 		command_result(sender,false,"Aguarde a recuperacao antes dessa acao.",command);return
 	if var_to_bytes(command).size()>32000:command_result(sender,false,"Pedido muito grande.",command);return
 	if topology!=structure_version:command_result(sender,false,"A fazenda mudou. Confira a seleção e tente novamente.",command);return
+	var proximity:=FarmOrchardActions.proximity_error(game,command,sender)
+	if not proximity.is_empty():command_result(sender,false,proximity,command);return
 	var before:Dictionary=game.state.serialize()
 	var message:=FarmCoopCommands.run(game.state,command)
 	var changed:bool=game.state.serialize()!=before
@@ -515,6 +519,8 @@ func _command_done(success:bool,message:String,command:Dictionary) -> void:
 	command_busy=false
 	if success:
 		var action:String=command.get("action","")
+		if action in ["orchard:water","orchard:harvest"]:
+			FarmOrchardActions.feedback(game,action,int(command.get("index",-1)));game.hud.close_modal()
 		if action in ["place","move_item","remove","claim","route_confirm","apply_text","apply_hen_name"]:
 			game.move_index=-1;game._cancel_route();game.hud.close_modal()
 			if action=="claim":game.build_mode=true;game.tool="plot";game.focus=Vector3(game.state.center.x,0,game.state.center.y)
@@ -536,6 +542,8 @@ func refresh_panel() -> void:
 	var s:FarmState=game.state
 	var i:int=game.selected
 	match h.modal_kind:
+		"orchard":FarmInteractionUI.orchard(h,s,h.building_index)
+		"orchard_mission":FarmOrchardMission.show(h,s)
 		"house":FarmInteractionUI.house(h,s,h.building_index)
 		"market":h.market(s,h.market_tab)
 		"parcels":FarmParcels.show(h,s)
