@@ -1,6 +1,59 @@
 class_name FarmInteractionUI
 extends RefCounted
 
+static func orchard(hud: FarmHUD, state: FarmState, index: int) -> void:
+	if index < 0 or index >= state.items.size() or state.items[index].kind != "orchard": return
+	hud.building_index = index
+	var item: Dictionary = state.items[index]
+	var data: Dictionary = item.get("orchard", {})
+	var mature := float(data.get("growth", 0)) >= FarmOrchard.GROW_SECONDS
+	var ready := int(data.get("ready", 0))
+	var watered := bool(data.get("watered", false))
+	var p := FarmGameUI.open(hud, "orchard", "Laranjeira do pomar", "seed", 760, 470)
+	p.set_meta("orchard_status", hud.label(p, FarmOrchard.status(item), Vector2(26, 118), Vector2(708, 38), 25))
+	var description := "Regue a muda para ela crescer. Depois de adulta, começa a formar frutas."
+	if mature: description = "Regue uma vez por safra. Colha as laranjas maduras e cuide da próxima colheita."
+	var detail := hud.label(p, description, Vector2(26, 172), Vector2(708, 58), 20)
+	detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	p.set_meta("orchard_detail", detail)
+	var progress := float(data.get("fruit_time", 0)) / FarmOrchard.FRUIT_SECONDS if mature else float(data.get("growth", 0)) / FarmOrchard.GROW_SECONDS
+	FarmGameUI.meter(hud, p, Rect2(26, 251, 708, 18), 1.0 if ready > 0 else progress, Color("d4a44d") if mature else Color("759558"))
+	p.set_meta("orchard_meter", p.get_child(-1))
+	p.set_meta("orchard_phase", hud.label(p, "Frutificação" if mature else "Crescimento da árvore", Vector2(26, 282), Vector2(440, 30), 19))
+	hud.label(p, "%d laranjas por safra" % FarmOrchard.YIELD, Vector2(470, 282), Vector2(264, 30), 19)
+	var water := FarmGameUI.action(hud, p, "Já regada" if watered else "Regar • grátis", Rect2(26, 336, 344, 48), "orchard:water")
+	water.disabled = watered or ready > 0
+	var harvest := FarmGameUI.action(hud, p, "Colher %d laranjas" % ready if ready > 0 else "Aguardando frutas", Rect2(390, 336, 344, 48), "orchard:harvest", ready > 0)
+	harvest.disabled = ready <= 0
+	p.set_meta("orchard_water", water)
+	p.set_meta("orchard_harvest", harvest)
+	hud.label(p, "Aproxime-se a pé para regar e colher. As frutas vão para o estoque.", Vector2(26, 412), Vector2(708, 28), 16)
+
+static func update_orchard(hud: FarmHUD, state: FarmState) -> void:
+	if hud.modal_kind != "orchard" or not is_instance_valid(hud.modal): return
+	var index := hud.building_index
+	if index < 0 or index >= state.items.size() or state.items[index].kind != "orchard": return
+	var p := hud.modal
+	if not p.has_meta("orchard_status"): return
+	var item: Dictionary = state.items[index]
+	var data: Dictionary = item.get("orchard", {})
+	var mature := float(data.get("growth", 0)) >= FarmOrchard.GROW_SECONDS
+	var ready := int(data.get("ready", 0))
+	var watered := bool(data.get("watered", false))
+	p.get_meta("orchard_status").text = FarmOrchard.status(item)
+	p.get_meta("orchard_detail").text = "Regue uma vez por safra. Colha as laranjas maduras e cuide da próxima colheita." if mature else "Regue a muda para ela crescer. Depois de adulta, começa a formar frutas."
+	p.get_meta("orchard_phase").text = "Frutificação" if mature else "Crescimento da árvore"
+	var progress := float(data.get("fruit_time", 0)) / FarmOrchard.FRUIT_SECONDS if mature else float(data.get("growth", 0)) / FarmOrchard.GROW_SECONDS
+	var meter: ColorRect = p.get_meta("orchard_meter")
+	meter.size.x = 702 * clampf(1.0 if ready > 0 else progress, 0, 1)
+	meter.color = Color("d4a44d") if mature else Color("759558")
+	var water: Button = p.get_meta("orchard_water")
+	water.text = "Já regada" if watered else "Regar • grátis"
+	water.disabled = watered or ready > 0
+	var harvest: Button = p.get_meta("orchard_harvest")
+	harvest.text = "Colher %d laranjas" % ready if ready > 0 else "Aguardando frutas"
+	harvest.disabled = ready <= 0
+
 static func evolution(hud:FarmHUD,p:Control,state:FarmState,index:int,rect:Rect2) -> void:
 	if index<0: return
 	var item:Dictionary=state.items[index]

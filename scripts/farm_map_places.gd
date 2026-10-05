@@ -1,12 +1,14 @@
 class_name FarmMapPlaces
 extends RefCounted
 ## A shared, read-only view of the simulation for both maps.
-const ICONS={"house":"barn","garage":"map_pickup","barn":"barn","coop":"chicken","corral":"cow","pigsty":"pig","stable":"map_horse","workshop":"workshop","cheesery":"cheese"}
+const ICONS={"orchard":"seed","house":"barn","garage":"map_pickup","barn":"barn","coop":"chicken","corral":"cow","pigsty":"pig","stable":"map_horse","workshop":"workshop","cheesery":"cheese"}
 
 static func notices(item:Dictionary) -> String:
 	var notes:PackedStringArray=[]
 	var data:Dictionary={}
 	match item.kind:
+		"orchard":
+			return FarmOrchard.status(item)
 		"coop":
 			data=item.get("flock",{})
 			if data.get("nest",0)>0:notes.append("%d ovos prontos"%data.nest)

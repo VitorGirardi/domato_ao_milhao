@@ -135,6 +135,12 @@ func model_item(item: Dictionary, parent: Node3D) -> Node3D:
 func update_art_gates(positions: Array[Vector3], delta: float) -> void:
 	build_art.update_gates(positions, delta)
 
+func update_orchards(state: FarmState) -> void:
+	for i in range(mini(state.items.size(), item_nodes.size())):
+		if state.items[i].kind != "orchard": continue
+		var visual := item_nodes[i].get_node_or_null("OrchardVisual") as Node3D
+		if is_instance_valid(visual): FarmOrchardView.update(visual, state.items[i])
+
 func model(key: String, parent: Node3D, pos: Vector3 = Vector3.ZERO) -> Node3D:
 	if build_art.handles(key):
 		var art := build_art.instantiate({"kind": key, "level": 1}, parent)
