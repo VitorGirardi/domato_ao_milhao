@@ -38,7 +38,7 @@ func run() -> void:
 	assert(game.weapons.start_reload());await create_timer(1.4).timeout
 	assert(game.state.armory.magazine==8 and game.state.armory.reserve==23)
 	var modern:Dictionary=game.state.serialize()
-	assert(modern.version==20 and modern.has("horse") and modern.has("armory"))
+	assert(modern.version==21 and modern.has("horse") and modern.has("armory"))
 	var old:=modern.duplicate(true);old.version=15;old.erase("resources");old.erase("horse")
 	assert(disk.restore(old) and disk.armory==game.state.armory and disk.horse==FarmHorse.defaults())
 	old=modern.duplicate(true);old.erase("armory")
@@ -47,6 +47,8 @@ func run() -> void:
 		var invalid:=modern.duplicate(true);invalid.merge(damage,true)
 		var snapshot:=disk.serialize();assert(not disk.restore(invalid) and disk.serialize()==snapshot)
 	# Both interactions are in range: the closest physical target owns E.
+	# Nena shares this location; isolate the two targets under test.
+	game.state.chapter.stage=6
 	# Park outside the gunsmith bounds so ensure_parking does not relocate the fixture.
 	game.weapons.holster()
 	game.horse.restore({"x":-28.8,"z":24.0,"angle":0.0})

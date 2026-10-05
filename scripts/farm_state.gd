@@ -8,6 +8,18 @@ const CROPS = {
 	"corn": {"name": "Milho", "seconds": 62.0, "seed": 8, "price": 24, "yield": 3}
 }
 const ITEMS = {
+	"house": {"name":"Casa da fazenda","cost":520,"size":Vector2(8,8)},
+	"fence_painted": {"name":"Cerca pintada","cost":20,"size":Vector2(2,0.4)},
+	"gate_rustic": {"name":"Portão rústico","cost":35,"size":Vector2(3.4,0.5)},
+	"gate_painted": {"name":"Portão pintado","cost":55,"size":Vector2(3.4,0.5)},
+	"well": {"name":"Poço ornamental","cost":100,"size":Vector2(3,2.5),"decorative":true},
+	"wash_tub": {"name":"Tanque de quintal","cost":60,"size":Vector2(2.4,1.6),"decorative":true},
+	"raised_bed": {"name":"Horta ornamental","cost":45,"size":Vector2(2.6,1.6),"decorative":true},
+	"trellis": {"name":"Treliça verde","cost":45,"size":Vector2(2.2,0.8),"decorative":true},
+	"orchard_young": {"name":"Laranjeira jovem","cost":65,"size":Vector2(2,2),"decorative":true},
+	"orchard_mature": {"name":"Laranjeira adulta","cost":180,"size":Vector2(4,4),"decorative":true},
+	"compost": {"name":"Composteira decorativa","cost":35,"size":Vector2(1.6,1.6),"decorative":true},
+	"produce_crates": {"name":"Caixas de feira","cost":25,"size":Vector2(1.8,1.2),"decorative":true},
 	"pigsty": {"name":"Chiqueiro","cost":500,"size":Vector2(8,6)},
 	"stable": {"name":"Estrebaria", "cost":550, "size":Vector2(6,6)},
 	"cheesery": {"name":"Queijaria","cost":900,"size":Vector2(6,6)},
@@ -21,6 +33,7 @@ const ITEMS = {
 	"path": {"name": "Caminho", "cost": 5, "size": Vector2(2, 2)}
 }
 const PALETTE = ["#ca6244", "#4e8f87", "#ddb65d", "#e8dfc2", "#7b83a6", "#344d52", "#785239"]
+const ART_KINDS = ["house","barn","fence","fence_painted","gate_rustic","gate_painted","well","wash_tub","raised_bed","trellis","orchard_young","orchard_mature","compost","produce_crates"]
 const JOURNEY = [
 	{"key":"land", "title":"Um lugar para chamar de seu", "body":"Escolha uma área do vale.\nSeu primeiro terreno custa $400.", "button":"Escolher meu terreno", "action":"land"},
 	{"key":"plots", "title":"Raízes no chão", "body":"Construa 3 canteiros.\nCada um já vem com sementes.\nCenouras crescem mais rápido!", "button":"Plantar meus canteiros", "action":"plots"},
@@ -307,7 +320,7 @@ func sell_product(key: String, quantity: int) -> int:
 	return total
 
 func line_plan(kind: String, start: Vector2, finish: Vector2, rotation: int = 0) -> Array:
-	if kind not in ["fence","path"]: return []
+	if kind not in ["fence","fence_painted","path"]: return []
 	start=start.snapped(Vector2(2,2))
 	finish=finish.snapped(Vector2(2,2))
 	var offset:=finish-start
@@ -327,7 +340,7 @@ func batch_error(plan: Array) -> String:
 	var cost:=0
 	for i in range(plan.size()):
 		var piece:Dictionary=plan[i]
-		if piece.get("kind","") not in ["fence","path"]: return "Traçado inválido."
+		if piece.get("kind","") not in ["fence","fence_painted","path"]: return "Traçado inválido."
 		var error:=can_place(piece.kind,Vector2(piece.x,piece.z),piece.turn,-2)
 		if not error.is_empty(): return "Peça %d: %s"%[i+1,error]
 		var area:=item_rect(piece.kind,Vector2(piece.x,piece.z),piece.turn).grow(-0.05)
@@ -370,7 +383,7 @@ func transfer_reserve(key: String, deposit: bool) -> int:
 	return amount
 
 func upgrade_building(index:int) -> String:
-	if index<0 or index>=items.size() or not FarmProgression.UPGRADES.has(items[index].kind): return "Escolha celeiro, galinheiro ou oficina."
+	if index<0 or index>=items.size() or not FarmProgression.UPGRADES.has(items[index].kind): return "Escolha casa, celeiro, galinheiro ou oficina."
 	var item:Dictionary=items[index]
 	if FarmProgression.level(item)>=2: return "Esta construção já está no nível máximo desta versão."
 	var price:int=FarmProgression.UPGRADES[item.kind].cost
@@ -591,6 +604,7 @@ func place(kind: String, at: Vector2, turn: int, crop: String = "carrot") -> Str
 		"level":1, "paint": 0, "text": "Aqui o fiado só amanhã", "crop": crop,
 		"growth": 0.0, "watered": false, "planted": kind == "plot", "egg_time": 0.0})
 	if kind=="stable":items[-1].paint=6
+	if kind in ART_KINDS:items[-1].paint=-1 # Preserve authored Blender materials until painted.
 	if kind=="coop": items[-1].flock=FarmAnimals.fresh()
 	if kind=="cheesery": items[-1].cheese=FarmCheese.fresh()
 	if kind=="corral": items[-1].dairy=FarmDairy.fresh()
@@ -711,7 +725,7 @@ func expand() -> String:
 	return ""
 
 func serialize() -> Dictionary:
-	return {"version": 20, "chapter":chapter.duplicate(), "pickup":pickup.duplicate(true), "game_mode":game_mode, "character_id":character_id, "resources":resources.duplicate(true), "horse":horse.duplicate(), "armory":armory.duplicate(), "owned_parcels":owned_parcels.duplicate(), "unlimited_money":unlimited_money, "farm_xp":farm_xp, "dairy_worker":dairy_worker.duplicate(), "cheese_worker":cheese_worker.duplicate(), "cheese_stock":cheese_stock, "cheese_order":cheese_order.duplicate(), "milk_stock":milk_stock, "cultivation":cultivation.duplicate(true), "field_staff":field_staff.duplicate(true), "professional_watering":professional_watering, "irrigation":irrigation.duplicate(true), "money": _money, "claimed": claimed,
+	return {"version": 21, "chapter":chapter.duplicate(), "pickup":pickup.duplicate(true), "game_mode":game_mode, "character_id":character_id, "resources":resources.duplicate(true), "horse":horse.duplicate(), "armory":armory.duplicate(), "owned_parcels":owned_parcels.duplicate(), "unlimited_money":unlimited_money, "farm_xp":farm_xp, "dairy_worker":dairy_worker.duplicate(), "cheese_worker":cheese_worker.duplicate(), "cheese_stock":cheese_stock, "cheese_order":cheese_order.duplicate(), "milk_stock":milk_stock, "cultivation":cultivation.duplicate(true), "field_staff":field_staff.duplicate(true), "professional_watering":professional_watering, "irrigation":irrigation.duplicate(true), "money": _money, "claimed": claimed,
 		"center": [center.x, center.y], "land_size": land_size,
 		"items": items.duplicate(true), "inventory": inventory.duplicate(),
 		"elapsed": elapsed, "revenue": revenue, "harvests": harvests,
@@ -721,7 +735,7 @@ func serialize() -> Dictionary:
 func restore(data: Variant) -> bool:
 	# Validate before mutating live state. Invalid files never partially replace it.
 	if data is Dictionary and data.has("armory") and not FarmArmory.valid(data.armory):return false
-	if not data is Dictionary or not _number(data.get("version")) or data.version<1 or data.version>20 or float(data.version)!=floorf(float(data.version)):
+	if not data is Dictionary or not _number(data.get("version")) or data.version<1 or data.version>21 or float(data.version)!=floorf(float(data.version)):
 		return false
 	if data.version>=19 and not data.has("resources"):return false
 	if data.version<20 and data.has("resources"):
@@ -799,7 +813,7 @@ func restore(data: Variant) -> bool:
 			return false
 		if item.text.length() > 40 or item.growth < 0 or item.growth > 1 or item.egg_time < 0 or item.egg_time >= 45:
 			return false
-		if item.paint < 0 or item.paint >= PALETTE.size() or item.turn < 0 or item.turn > 3:
+		if item.paint < (-1 if item.kind in ART_KINDS else 0) or item.paint >= PALETTE.size() or item.turn < 0 or item.turn > 3:
 			return false
 		for part in ["roof_paint","door_paint"]:
 			var color:Variant=item.get(part,-1)

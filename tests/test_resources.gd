@@ -92,7 +92,7 @@ func run() -> void:
 	legacy19.resources.node_ready=legacy19.resources.node_ready.slice(0,3)
 	var legacy_before:=legacy19.duplicate(true)
 	assert(restored.restore(legacy19) and restored.resources==FarmResources.normalized(saved.resources))
-	assert(legacy19==legacy_before and restored.serialize().version==20)
+	assert(legacy19==legacy_before and restored.serialize().version==21)
 	var old_empty:=empty.duplicate(true);old_empty.version=19
 	old_empty.resources.erase("gallery_level");old_empty.resources.node_ready=[0.0,0.0,0.0]
 	assert(empty_copy.restore(JSON.parse_string(JSON.stringify(old_empty))))

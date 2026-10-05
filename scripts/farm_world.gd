@@ -7,6 +7,7 @@ var landscape:=FarmLandscape.new()
 var day_night:=FarmDayNight.new()
 var cat:=FarmCat.new()
 var models: Dictionary = {}
+var build_art := FarmBuildArt.new()
 var cows:Array[Dictionary]=[]
 var pigsties:Array[Dictionary]=[]
 var raul_motion:=FarmDairyWorkerMotion.new()
@@ -125,7 +126,19 @@ func box(parent: Node3D, pos: Vector3, size: Vector3, mat: Material) -> MeshInst
 	parent.add_child(node)
 	return node
 
+func model_item(item: Dictionary, parent: Node3D) -> Node3D:
+	var visual: Node3D = build_art.instantiate(item, parent) if build_art.handles(item.kind) else model(item.kind, parent)
+	paint(visual, item)
+	return visual
+
+func update_art_gates(positions: Array[Vector3], delta: float) -> void:
+	build_art.update_gates(positions, delta)
+
 func model(key: String, parent: Node3D, pos: Vector3 = Vector3.ZERO) -> Node3D:
+	if build_art.handles(key):
+		var art := build_art.instantiate({"kind": key, "level": 1}, parent)
+		art.position += pos
+		return art
 	var node: Node3D = models[key].instantiate()
 	if key in ["farmer","helper","vendor"]: FarmAvatar.prepare_model(node)
 	node.position = pos
@@ -249,6 +262,7 @@ func rebuild(state: FarmState) -> void:
 	day_night.update_cycle(state.elapsed,day_night.last_position)
 	for node in structures.get_children():
 		node.free()
+	build_art.gates.clear()
 	item_nodes.clear()
 	chickens.clear()
 	cows.clear()
@@ -288,9 +302,9 @@ func rebuild(state: FarmState) -> void:
 		elif item.kind == "path":
 			box(root, Vector3(0,0.025,0), Vector3(1.98,0.05,1.98), material("c2a574"))
 		else:
-			var visual := model(item.kind, root)
-			paint(visual,item)
-			if FarmProgression.level(item)==2 and FarmProgression.UPGRADES.has(item.kind):
+			var visual := model_item(item, root)
+			if build_art.handles(item.kind): build_art.add_collision(item, visual, i)
+			if FarmProgression.level(item)==2 and FarmProgression.UPGRADES.has(item.kind) and not build_art.handles(item.kind):
 				var extension:=model(item.kind+"_level2",root)
 				extension.name="Level2Details"
 				paint(extension,item)
@@ -302,7 +316,7 @@ func rebuild(state: FarmState) -> void:
 				entry.font_size=26
 				entry.pixel_size=0.008
 				root.add_child(entry)
-			if item.kind in ["barn", "coop", "workshop", "corral", "cheesery", "stable", "fence", "sign"]:
+			if item.kind in ["coop", "workshop", "corral", "cheesery", "stable", "sign"]:
 				var body := StaticBody3D.new()
 				body.set_meta("item_index",i)
 				var shape := CollisionShape3D.new()
@@ -594,6 +608,10 @@ func paint(root: Node, item: Dictionary) -> void:
 			var source: Material = root.mesh.surface_get_material(i)
 			if source==null: continue
 			var index:=-1
+			var art_slot := FarmBuildArt.paint_slot(source.resource_name, str(item.kind))
+			if item.kind in ["house", "barn"] and str(root.name).begins_with("Closed") and "door" in str(root.name).to_lower(): art_slot = "door_paint"
+			if not art_slot.is_empty(): index = int(item.get(art_slot, -1))
+			if art_slot == "door_paint" and index < 0 and item.kind == "barn": index = int(item.get("paint", -1))
 			if source.resource_name.begins_with("Paint"): index=int(item.paint)
 			elif source.resource_name.begins_with("Roof"): index=int(item.get("roof_paint",-1))
 			elif source.resource_name.begins_with("Door"):

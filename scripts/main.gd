@@ -236,6 +236,11 @@ func _process(delta: float) -> void:
 			_start_silly()
 		world.animate(delta,player.position,state,silly_kind if silly_timer>0 else "")
 	if session_started:
+		var gate_visitors:Array[Vector3]=[player.global_position]
+		if is_instance_valid(horse) and horse.visible:gate_visitors.append(horse.global_position)
+		if is_instance_valid(pickup) and pickup.visible:gate_visitors.append(pickup.global_position)
+		if network.active and is_instance_valid(network.remote):gate_visitors.append(network.remote.global_position)
+		world.update_art_gates(gate_visitors,delta)
 		save_timer += delta
 		if save_timer >= 30:
 			save_timer=0
@@ -440,7 +445,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			else: walk_distance=clampf(walk_distance+0.7,3,14)
 		if event.button_index==MOUSE_BUTTON_LEFT:
 			_update_pointer()
-			if build_mode and tool in ["fence","path"] and move_index<0 and state.claimed:
+			if build_mode and tool in ["fence","fence_painted","path"] and move_index<0 and state.claimed:
 				_begin_route()
 			else: _click_world()
 
@@ -528,23 +533,25 @@ func _update_pointer() -> void:
 		if error.is_empty():
 			hover_hint="Mover %s • Grátis • Clique confirma • Esc cancela"%FarmState.ITEMS[kind].name if move_index>=0 else "%s • $%d • Clique para colocar • R gira"%[FarmState.ITEMS[kind].name,FarmState.ITEMS[kind].cost]
 		else: hover_hint=error
-		if tool in ["fence","path"] and move_index<0 and error.is_empty():
+		if tool in ["fence","fence_painted","path"] and move_index<0 and error.is_empty():
 			hover_hint="Segure e arraste em linha • Solte para conferir o custo"
 	elif not build_mode:
 		var context:=_nearby_context()
 		hover_hint=str(context.get("text",""))
 
 func _preview(kind: String) -> void:
-	if ghost_key==kind:
+	var preview_item:Dictionary=state.items[move_index] if move_index>=0 and move_index<state.items.size() else {"kind":kind,"level":1,"paint":0}
+	var preview_key:="%s:%d:%d"%[kind,int(preview_item.get("level",1)),move_index]
+	if ghost_key==preview_key:
 		return
-	ghost_key=kind
+	ghost_key=preview_key
 	for child in ghost.get_children(): child.free()
 	if kind=="land":
 		world.box(ghost,Vector3.ZERO,Vector3(24,0.05,24),ghost_mat)
 	elif kind in ["plot","path"]:
 		world.box(ghost,Vector3.ZERO,Vector3(2,0.1,2),ghost_mat)
 	else:
-		var visual:=world.model(kind,ghost)
+		var visual:=world.model_item(preview_item,ghost)
 		_ghost_material(visual)
 
 func _ghost_material(node: Node) -> void:
@@ -658,13 +665,13 @@ func _nearest() -> int:
 	nearby_hen=-1
 	var best:=-1
 	var distance:=2.6
-	if selected>=0 and selected<state.items.size() and state.items[selected].kind in ["plot","sign","barn","coop","workshop","corral","cheesery","stable","pigsty"]:
+	if selected>=0 and selected<state.items.size() and state.items[selected].kind in ["plot","sign","barn","coop","workshop","corral","cheesery","stable","pigsty","house"]:
 		var current_distance:=_distance_to_item(selected)
 		if current_distance<distance:
 			best=selected
 			distance=current_distance
 	for i in range(state.items.size()):
-		if state.items[i].kind not in ["plot","sign","barn","coop","workshop","corral","cheesery","stable","pigsty"]: continue
+		if state.items[i].kind not in ["plot","sign","barn","coop","workshop","corral","cheesery","stable","pigsty","house"]: continue
 		var d:=_distance_to_item(i)
 		if d<distance and (best<0 or d+0.05<distance):
 			best=i
@@ -700,6 +707,7 @@ func _nearby_context() -> Dictionary:
 	var item:Dictionary=state.items[index]
 	var context:Dictionary={"text":"","action":"item","index":index,"hen":nearby_hen,"ready":true,"seeds":false}
 	match item.kind:
+		"house": context.text="Ver casa e melhorias"
 		"barn": context.text="Abrir celeiro"
 		"coop": context.text="Cuidar das galinhas"
 		"cheesery": context.text="Queijo pronto · Recolher" if item.cheese.ready>0 else ("Queijo · faltam %ds"%ceili(item.cheese.remaining) if item.cheese.batch>0 else "Fazer queijo")
@@ -800,6 +808,7 @@ func _tend_selected() -> void:
 	elif item.kind=="sign":
 		hud.editor_dialog("sign",item.text)
 	elif item.kind=="barn": hud.barn(state,selected)
+	elif item.kind=="house": FarmInteractionUI.house(hud,state,selected)
 	elif item.kind=="workshop": hud.workshop(state,selected)
 	elif item.kind=="coop": hud.coop(state,selected,selected_hen)
 	elif item.kind=="cheesery": FarmCheeseHUD.show(hud,state,selected)
@@ -1056,6 +1065,7 @@ func _action(value: String) -> void:
 		if index<0 or index>=state.items.size(): hud.close_modal(); return
 		selected=index
 		match state.items[index].kind:
+			"house": FarmInteractionUI.house(hud,state,index)
 			"barn": hud.barn(state,index)
 			"coop": hud.coop(state,index,selected_hen)
 			"workshop": hud.workshop(state,index)

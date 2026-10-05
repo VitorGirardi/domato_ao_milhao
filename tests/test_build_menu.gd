@@ -20,11 +20,17 @@ func run() -> void:
 	game.hud.toast_time=0;game._update_ui();game.hud.toast_time=0
 	var menu:FarmBuildHUD=game.hud.construction
 	assert(not game.hud.legacy_build.visible and not menu.selection.visible)
-	assert(menu.cards.size()==3 and menu.category=="Estruturas")
+	assert(menu.cards.size()==4 and menu.category=="Estruturas" and menu.cards.has("house"))
 	assert(not menu.seed_panel.visible and not menu.paint_panel.visible and not menu.help_panel.visible)
 	await process_frame
 	assert(menu.cards["barn"].get_meta("picture").size==Vector2(90,90))
 	await capture("catalog")
+	menu.tabs["Jardim"].pressed.emit()
+	assert(menu.cards.size()==4 and menu.cards.has("raised_bed") and menu.next_page.visible)
+	menu.next_page.pressed.emit()
+	assert(menu.cards.has("well") and menu.cards.has("produce_crates") and menu.next_page.disabled)
+	menu.previous_page.pressed.emit()
+	assert(menu.cards.has("orchard_mature") and menu.previous_page.disabled)
 	menu.tabs["Animais"].pressed.emit()
 	assert(menu.cards.has("coop") and menu.cards.has("corral") and menu.cards.has("stable") and menu.cards.has("pigsty"))
 	assert(not menu.cards.has("barn"))
