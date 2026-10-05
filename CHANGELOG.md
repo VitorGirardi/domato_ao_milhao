@@ -1,3 +1,11 @@
+# 0.48.0 — Uma fazenda com a sua cara
+
+- 16 artes originais Blender integradas: casas e celeiros em dois níveis, cercas e portões, poço, tanque, horta, pomar e detalhes.
+- Casa construível com melhoria visual; celeiros existentes preservam área, estoque, nível e pintura.
+- Portões abrem por proximidade; colisões acompanham as novas peças.
+- Catálogo com páginas, miniaturas dos modelos e indicação das peças decorativas.
+- Fazendas anteriores e camionetinha preservadas. Save 21; cooperativo exige protocolo 18 nos dois PCs.
+
 # 0.47.0 — Caçamba cheia, estrada livre
 
 - Camionetinha acompanha as subidas das estradas, atravessa as duas pontes e entra em trechos rasos; água profunda e obstáculos reais continuam bloqueados, com aviso no painel.
