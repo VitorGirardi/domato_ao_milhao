@@ -27,7 +27,7 @@ static func feedback(game:Node3D,action:String,index:int) -> void:
 	if action not in ["orchard:water","orchard:harvest"] or index<0 or index>=game.state.items.size():return
 	var item:Dictionary=game.state.items[index]
 	var at:=Vector3(item.x,0,item.z)
-	var direction:=at-game.player.position
+	var direction:Vector3=at-game.player.position
 	if direction.length_squared()>.001:game.avatar.rotation.y=atan2(direction.x,direction.z)
 	var kind:="water" if action=="orchard:water" else "harvest"
 	game.actor.play(kind)
