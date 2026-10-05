@@ -86,5 +86,18 @@ func _initialize() -> void:
 	assert(FarmOrchard.deliver(sandbox).is_empty())
 	assert(sandbox.inventory.orange==6 and sandbox.orchard_journey.stage==2)
 	assert(loaded.restore(sandbox.serialize()) and loaded.infinite_resources())
+	# A full physical counter must never make the next save invalid, in either mode.
+	for mode in ["survival","sandbox"]:
+		var full:=_farm(mode)
+		FarmOrchard.accept(full);FarmOrchard.water(full,0);full.tick(300)
+		full.inventory.orange=1000000000-5
+		before=full.serialize()
+		assert(not FarmOrchard.harvest(full,0).is_empty())
+		assert(full.serialize()==before) # Fruit, mission, XP and counters remain intact.
+		assert(loaded.restore(full.serialize()))
+		full.inventory.orange-=1
+		assert(FarmOrchard.harvest(full,0).is_empty())
+		assert(full.inventory.orange==1000000000 and full.orchard_journey.harvested==6)
+		assert(loaded.restore(full.serialize()))
 	print("ORCHARD_OK: growth, watering, harvest, mission, migration, atomic validation and modes")
 	quit()

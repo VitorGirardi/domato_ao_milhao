@@ -49,6 +49,7 @@ static func harvest(state:FarmState,index:int) -> String:
 	if not _available(state,index):return "Escolha uma laranjeira produtiva da fazenda."
 	var tree:Dictionary=state.items[index].orchard
 	if tree.ready!=YIELD:return "As laranjas ainda não estão maduras."
+	if int(state.inventory.orange)>1000000000-YIELD:return "Seu estoque de laranjas está cheio. Venda ou transporte algumas antes de colher."
 	state.inventory.orange+=YIELD
 	tree.ready=0;tree.fruit_time=0.0;tree.watered=false
 	if state.orchard_journey.stage==1:state.orchard_journey.harvested=mini(YIELD,int(state.orchard_journey.harvested)+YIELD)
@@ -65,7 +66,7 @@ static func accept(state:FarmState) -> String:
 	return ""
 
 static func deliver(state:FarmState) -> String:
-	if not state.claimed or state.orchard_journey.stage!=1:return "Aceite a primeira colheita com Dona Nena."
+	if not state.claimed or state.orchard_journey.stage!=1:return "Aceite a encomenda de Dona Nena com Lúcia no armazém."
 	if state.orchard_journey.harvested<YIELD:return "Colha 6 laranjas do seu pomar depois de aceitar o pedido."
 	if state.stock("orange")<YIELD:return "Separe 6 laranjas no estoque para Dona Nena."
 	state.consume_stock("orange",YIELD)
