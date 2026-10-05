@@ -1,3 +1,12 @@
+# 0.47.0 — Caçamba cheia, estrada livre
+
+- Camionetinha acompanha as subidas das estradas, atravessa as duas pontes e entra em trechos rasos; água profunda e obstáculos reais continuam bloqueados, com aviso no painel.
+- Painel à direita com volante animado, velocidade, marcha e botões de caçamba e desembarque.
+- Caçamba de 60 unidades para produtos, peixes e minérios; caixas e produtos aparecem no carro conforme a carga.
+- V abre a caçamba com o carro parado: carregar, devolver ao estoque e vender perto do armazém da Lúcia.
+- Carga salva por fazenda; Survival, recursos infinitos do Sandbox e missões da 0.46 preservados.
+- Veículo continua solo. Ao criar uma cópia cooperativa, sua carga volta ao estoque dessa cópia, sem alterar a fazenda solo.
+
 # 0.46.0 — Primeiros laços
 
 - Três missões pelo vale: entrega para Dona Nena, resgate de Pipoca e recuperação do pesqueiro.

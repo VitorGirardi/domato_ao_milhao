@@ -69,11 +69,13 @@ func run() -> void:
 	assert(shallow_found,"Vehicle should reach water deeper than the old 30 cm limit")
 	assert(truck.surface_problem(Vector3(285,0,260),0).contains("Água profunda"))
 	place(FarmPickup.HOME,PI/2);game.state.inventory.carrot=30;game.state.milk_stock=20;game.state.resources.stock.copper=10
-	game._action("pickup:cargo");assert(game.hud.modal_kind=="pickup_cargo")
+	var cargo_key:=InputEventKey.new();cargo_key.physical_keycode=KEY_V;cargo_key.pressed=true
+	game._unhandled_input(cargo_key);assert(game.hud.modal_kind=="pickup_cargo")
+	game.state.chapter.stage=1
 	for key in ["carrot","carrot","carrot","milk","milk","copper"]:game._action("pickup:load:"+key)
 	assert(FarmPickupCargo.count(FarmPickupCargo.contents(game.state))==60 and truck.cargo_visual.get_child_count()==6)
 	assert(game.state.inventory.carrot==0 and game.state.milk_stock==0 and game.state.resources.stock.copper==0)
-	assert(game._save_game(false,true));assert(game._load_game())
+	assert(game._save_game(false,true));assert(game._load_game());assert(game.state.chapter.stage==1)
 	assert(FarmPickupCargo.count(FarmPickupCargo.contents(game.state))==60 and truck.cargo_visual.get_child_count()==6)
 	await screenshot("cargo-menu")
 	# A newly created coop receives the cargo in its own stock; the solo load survives.
