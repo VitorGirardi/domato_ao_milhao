@@ -1,6 +1,6 @@
 class_name FarmState
 extends RefCounted
-const SAVE_VERSION:=22
+const SAVE_VERSION:=23
 ## Pure simulation. Coordinates are X/Z in meters; all persistence is JSON.
 
 const CROPS = {
@@ -9,6 +9,7 @@ const CROPS = {
 	"corn": {"name": "Milho", "seconds": 62.0, "seed": 8, "price": 24, "yield": 3}
 }
 const ITEMS = {
+	"orchard": {"name":"Laranjeira produtiva","cost":100,"size":Vector2(4,4)},
 	"garage": {"name":"Garagem", "cost":700, "size":Vector2(8,10)},
 	"house": {"name":"Casa da fazenda","cost":520,"size":Vector2(8,8)},
 	"fence_painted": {"name":"Cerca pintada","cost":20,"size":Vector2(2,0.4)},
@@ -35,7 +36,7 @@ const ITEMS = {
 	"path": {"name": "Caminho", "cost": 5, "size": Vector2(2, 2)}
 }
 const PALETTE = ["#ca6244", "#4e8f87", "#ddb65d", "#e8dfc2", "#7b83a6", "#344d52", "#785239"]
-const ART_KINDS = ["house","barn","fence","fence_painted","gate_rustic","gate_painted","well","wash_tub","raised_bed","trellis","orchard_young","orchard_mature","compost","produce_crates"]
+const ART_KINDS = ["orchard","house","barn","fence","fence_painted","gate_rustic","gate_painted","well","wash_tub","raised_bed","trellis","orchard_young","orchard_mature","compost","produce_crates"]
 const JOURNEY = [
 	{"key":"land", "title":"Um lugar para chamar de seu", "body":"Escolha uma área do vale.\nSeu primeiro terreno custa $400.", "button":"Escolher meu terreno", "action":"land"},
 	{"key":"plots", "title":"Raízes no chão", "body":"Construa 3 canteiros.\nCada um já vem com sementes.\nCenouras crescem mais rápido!", "button":"Plantar meus canteiros", "action":"plots"},
@@ -55,6 +56,7 @@ var armory:Dictionary=FarmArmory.fresh()
 var horse:Dictionary=FarmHorse.defaults()
 var pickup:Dictionary=FarmPickup.defaults()
 var chapter:Dictionary=FarmChapter.fresh()
+var orchard_journey:Dictionary=FarmOrchard.fresh_journey()
 var game_mode:="legacy"
 var character_id:=""
 var unlimited_money:=false
@@ -67,7 +69,7 @@ var claimed: bool = false
 var center: Vector2 = Vector2(4, -2)
 var land_size: float = 24.0
 var items: Array = []
-var inventory: Dictionary = {"carrot": 0, "wheat": 0, "corn": 0, "egg": 0}
+var inventory: Dictionary = {"carrot": 0, "wheat": 0, "corn": 0, "egg": 0, "orange": 0}
 var milk_stock:int=0
 var cheese_stock:int=0
 var dairy_worker:Dictionary=FarmDairyWorker.fresh()
@@ -611,6 +613,7 @@ func place(kind: String, at: Vector2, turn: int, crop: String = "carrot") -> Str
 	if kind=="cheesery": items[-1].cheese=FarmCheese.fresh()
 	if kind=="corral": items[-1].dairy=FarmDairy.fresh()
 	if kind=="pigsty": items[-1].pigs=FarmPigs.fresh()
+	if kind=="orchard": items[-1].orchard=FarmOrchard.fresh_item()
 	refresh_journey()
 	return ""
 
@@ -659,6 +662,7 @@ func active_animals(kind:String,index:int,count:int) -> float:
 func tick(delta: float) -> bool:
 	if not claimed:
 		return false
+	FarmOrchard.tick(self,delta)
 	var eggs := false
 	var remaining:=maxf(0,delta)
 	# Split at service boundaries so large and small simulation steps agree.
@@ -686,8 +690,8 @@ func tick(delta: float) -> bool:
 	return eggs
 
 func sale_value() -> int:
-	if infinite_resources():return 10+12+17+24+FarmDairy.MILK_PRICE+FarmCheese.PRICE
-	var total: int = int(inventory.egg) * 10 + milk_stock*FarmDairy.MILK_PRICE+cheese_stock*FarmCheese.PRICE
+	if infinite_resources():return 10+12+17+24+FarmDairy.MILK_PRICE+FarmCheese.PRICE+FarmOrchard.PRICE
+	var total: int = int(inventory.orange)*FarmOrchard.PRICE + int(inventory.egg) * 10 + milk_stock*FarmDairy.MILK_PRICE+cheese_stock*FarmCheese.PRICE
 	for key in CROPS:
 		total += int(inventory[key]) * int(CROPS[key].price)
 	return total
@@ -727,7 +731,7 @@ func expand() -> String:
 	return ""
 
 func serialize() -> Dictionary:
-	return {"version": SAVE_VERSION, "chapter":chapter.duplicate(), "pickup":pickup.duplicate(true), "game_mode":game_mode, "character_id":character_id, "resources":resources.duplicate(true), "horse":horse.duplicate(), "armory":armory.duplicate(), "owned_parcels":owned_parcels.duplicate(), "unlimited_money":unlimited_money, "farm_xp":farm_xp, "dairy_worker":dairy_worker.duplicate(), "cheese_worker":cheese_worker.duplicate(), "cheese_stock":cheese_stock, "cheese_order":cheese_order.duplicate(), "milk_stock":milk_stock, "cultivation":cultivation.duplicate(true), "field_staff":field_staff.duplicate(true), "professional_watering":professional_watering, "irrigation":irrigation.duplicate(true), "money": _money, "claimed": claimed,
+	return {"version": SAVE_VERSION, "orchard_journey":orchard_journey.duplicate(), "chapter":chapter.duplicate(), "pickup":pickup.duplicate(true), "game_mode":game_mode, "character_id":character_id, "resources":resources.duplicate(true), "horse":horse.duplicate(), "armory":armory.duplicate(), "owned_parcels":owned_parcels.duplicate(), "unlimited_money":unlimited_money, "farm_xp":farm_xp, "dairy_worker":dairy_worker.duplicate(), "cheese_worker":cheese_worker.duplicate(), "cheese_stock":cheese_stock, "cheese_order":cheese_order.duplicate(), "milk_stock":milk_stock, "cultivation":cultivation.duplicate(true), "field_staff":field_staff.duplicate(true), "professional_watering":professional_watering, "irrigation":irrigation.duplicate(true), "money": _money, "claimed": claimed,
 		"center": [center.x, center.y], "land_size": land_size,
 		"items": items.duplicate(true), "inventory": inventory.duplicate(),
 		"elapsed": elapsed, "revenue": revenue, "harvests": harvests,
@@ -739,6 +743,10 @@ func restore(data: Variant) -> bool:
 	if data is Dictionary and data.has("armory") and not FarmArmory.valid(data.armory):return false
 	if not data is Dictionary or not _number(data.get("version")) or data.version<1 or data.version>SAVE_VERSION or float(data.version)!=floorf(float(data.version)):
 		return false
+	if data.version>=23 and (not data.has("orchard_journey") or not data.get("inventory") is Dictionary):return false
+	if data.version>=23 and not data.inventory.has("orange"):return false
+	if not FarmOrchard.valid_journey(data.get("orchard_journey",FarmOrchard.fresh_journey())):return false
+	if data.get("orchard_journey",FarmOrchard.fresh_journey()).stage>0 and not data.get("claimed",false):return false
 	if data.version>=19 and not data.has("resources"):return false
 	if data.version<20 and data.has("resources"):
 		# Validate the exact previous schema before expanding it. Work on a copy so
@@ -803,8 +811,10 @@ func restore(data: Variant) -> bool:
 		if not _number(saved_reserve.get(key)) or saved_reserve[key]<0 or float(saved_reserve[key])!=floorf(float(saved_reserve[key])): return false
 		stored_total+=int(saved_reserve[key])
 	for key in inventory:
+		if key=="orange" and data.version<23 and not data.inventory.has(key):continue
 		if not _number(data.inventory.get(key)) or float(data.inventory[key]) < 0:
 			return false
+	if data.inventory.has("orange") and (data.inventory.orange>1000000000 or data.inventory.orange!=floorf(float(data.inventory.orange))):return false
 	for item in data.items:
 		if not item is Dictionary or not ITEMS.has(item.get("kind", "")) or not CROPS.has(item.get("crop", "")):
 			return false
@@ -827,6 +837,7 @@ func restore(data: Variant) -> bool:
 		if item.kind=="cheesery" and (data.version<11 or not FarmCheese.valid(item.get("cheese"))): return false
 		if item.kind=="pigsty" and (data.version<18 or not FarmPigs.valid(item.get("pigs"))): return false
 		if item.kind=="corral" and (data.version<10 or not FarmDairy.valid(item.get("dairy"))): return false
+		if item.kind=="orchard" and not FarmOrchard.valid_item(item.get("orchard")):return false
 		if item.kind=="barn": barn_count+=FarmProgression.reserve_slots(item)
 		if item.kind=="coop":
 			if data.version>=3 and not item.has("flock"): return false
@@ -883,6 +894,8 @@ func restore(data: Variant) -> bool:
 	horse=data.get("horse",FarmHorse.defaults()).duplicate()
 	pickup=data.get("pickup",FarmPickup.defaults()).duplicate(true)
 	chapter={"stage":int(data.get("chapter",FarmChapter.fresh()).stage)}
+	var saved_orchard:Dictionary=data.get("orchard_journey",FarmOrchard.fresh_journey())
+	orchard_journey={"stage":int(saved_orchard.stage),"harvested":int(saved_orchard.harvested)}
 	owned_parcels=data.get("owned_parcels",[]).duplicate()
 	claimed = data.claimed
 	center = Vector2(data.center[0], data.center[1])
@@ -890,6 +903,10 @@ func restore(data: Variant) -> bool:
 	items = data.items.duplicate(true)
 	for item in items:
 		item.level=int(item.get("level",1))
+		if item.kind=="orchard":
+			item.orchard.growth=float(item.orchard.growth)
+			item.orchard.fruit_time=float(item.orchard.fruit_time)
+			item.orchard.ready=int(item.orchard.ready)
 		if item.kind=="coop":
 			if not item.has("flock"): item.flock=FarmAnimals.fresh()
 			item.flock.nest=int(item.flock.nest)
@@ -900,6 +917,7 @@ func restore(data: Variant) -> bool:
 	cheese_stock=int(data.get("cheese_stock",0));cheese_order=data.get("cheese_order",{"active":false,"cycle":0}).duplicate()
 	milk_stock=int(data.get("milk_stock",0))
 	inventory = data.inventory.duplicate()
+	inventory.orange=int(data.inventory.get("orange",0))
 	for key in inventory:
 		inventory[key] = int(inventory[key])
 	elapsed = float(data.elapsed)
