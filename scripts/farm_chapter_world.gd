@@ -7,6 +7,7 @@ const REPAIR_AT:=FarmResourceSites.FISH_SPOTS[3]+Vector2(3,3)
 var game:Node3D
 var hen:Node3D
 var nena:Node3D
+var nena_actor:=FarmAvatar.new()
 var fence:Node3D
 var bench:Node3D
 var debris:Node3D
@@ -27,7 +28,7 @@ func setup(g:Node3D) -> void:
 	game=g;name="ChapterWorld";process_priority=14
 	nena=_model("vendor",NENA_AT)
 	nena.rotation.y=PI
-	FarmAvatar.prepare_model(nena)
+	FarmAvatar.prepare_model(nena);nena_actor.setup(nena)
 	basket=_model("chapter_delivery_basket",NENA_AT+Vector2(1.1,.1))
 	hen=_model("chicken",RESCUE_AT)
 	fence=_model("chapter_rescue_fence",RESCUE_AT+Vector2(-1.5,0));fence.rotation.y=PI/2
@@ -192,6 +193,7 @@ func _process(delta:float) -> void:
 	if not game.session_started:return
 	if last_stage!=stage():_refresh()
 	clock+=delta
+	if not nena.get_meta("temporary_down",false):nena_actor.update_blink(delta)
 	var moving:=false
 	if authority():
 		if follow_peer!=0 and follow_peer!=own_id() and follow_peer!=game.network.accepted:follow_peer=0;trail.clear()
