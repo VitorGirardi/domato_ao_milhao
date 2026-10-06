@@ -107,7 +107,7 @@ func run() -> void:
 		game.player.velocity=Vector3.ZERO;game.yaw=0
 		await settle()
 		assert(game.actor.root.position.length()<.1)
-		await walk(15)
+		await walk(70) # Move clear of the market canopy before the review capture.
 		assert(game.actor.locomotion.active)
 		await capture(character+"-resumed")
 	assert(game.state.money==money and FileAccess.get_file_as_string(game.save_path)==disk)
