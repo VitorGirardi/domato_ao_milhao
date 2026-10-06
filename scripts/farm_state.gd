@@ -764,7 +764,9 @@ func restore(data: Variant) -> bool:
 	if data.get("game_mode","legacy")!="sandbox" and data.has("resources") and not data.get("claimed",false) and FarmResources.normalized(data.resources)!=FarmResources.fresh():return false
 	if data.has("pickup") and not FarmPickup.valid(data.pickup):return false
 	if data.has("residents") and not FarmResidents.valid(data.residents):return false
-	if data.has("rosa_story") and not FarmRosa.valid(data.rosa_story):return false
+	if data.has("rosa_story"):
+		if not FarmRosa.valid(data.rosa_story):return false
+		if (data.rosa_story.active or data.rosa_story.stage>0) and (not data.get("claimed",false) or not data.get("residents",FarmResidents.fresh()).rosa.met):return false
 	if data.has("chapter"):
 		if not FarmChapter.valid(data.chapter):return false
 		if data.chapter.stage>0 and not data.get("claimed",false):return false

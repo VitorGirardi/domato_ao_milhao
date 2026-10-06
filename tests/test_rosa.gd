@@ -25,6 +25,7 @@ func run() -> void:
 	var saved:=state.serialize();var bad:=saved.duplicate(true);bad.rosa_story.stage=4
 	assert(not state.restore(bad) and state.serialize()==saved)
 	bad=saved.duplicate(true);bad.rosa_story.active=true;assert(not state.restore(bad) and state.serialize()==saved)
+	bad=saved.duplicate(true);bad.residents.rosa=FarmResidents.fresh().rosa;assert(not state.restore(bad) and state.serialize()==saved)
 	var old:=original.duplicate(true);old.version=24;old.erase("rosa_story");assert(state.restore(old) and state.rosa_story==FarmRosa.fresh() and state.residents.rosa.active)
 	var sandbox:=FarmState.new_farm("sandbox");sandbox.claim(Vector2(4,-2));FarmResidents.act(sandbox,"rosa","meet");FarmRosa.act(sandbox,"story_accept")
 	assert(FarmLevels.unlocked(sandbox,"rosa_bed") and not FarmRosa.act(sandbox,"story_deliver").is_empty())

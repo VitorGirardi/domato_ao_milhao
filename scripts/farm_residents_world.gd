@@ -79,10 +79,14 @@ func handle(action:String) -> void:
 		if actor_ready() and near(key):FarmRosaHUD.show(game)
 		return
 	if key=="rosa" and verb in ["story_accept","story_deliver"]:
+		var previous_influence:=FarmResidents.influence(game.state)
 		var story_error:=transact(key,verb)
 		if not story_error.is_empty():game.hud.toast(story_error);return
 		FarmRosaHUD.show(game)
-		game.hud.toast("Ajuda combinada! Traga os produtos na caçamba, sem prazo." if verb=="story_accept" else "A horta ganhou vida! +5 influência." if game.state.rosa_story.stage<3 else "Amizade floresceu! Canteiro da amizade liberado em TAB → Jardim.")
+		var story_message:="Ajuda combinada! Traga os produtos na caçamba, sem prazo." if verb=="story_accept" else "A horta ganhou vida! +5 influência." if game.state.rosa_story.stage<3 else "Amizade floresceu! Canteiro da amizade liberado em TAB → Jardim."
+		for person in FarmResidents.PEOPLE.values():
+			if previous_influence<int(person.need) and FarmResidents.influence(game.state)>=int(person.need):story_message+=" %s agora aceita pedidos!"%person.name
+		game.hud.toast(story_message)
 		return
 	if verb not in ["accept","deliver"]:return
 	var payment:=FarmResidents.reward(game.state,key);var old_influence:=FarmResidents.influence(game.state)
