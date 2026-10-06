@@ -27,9 +27,10 @@ func run() -> void:
 	assert(game._save_game(false,true))
 	solo=FileAccess.get_file_as_string(game.save_path);n=game.network
 	if mode=="host":
-		n.host("Vitor");n.set_process(false);game.hud.close_modal();flag("host_ready")
-		await until(func():return n.accepted!=0 and exists("client_ready"))
+		n.host("Vitor");n.set_process(false);game.hud.close_modal()
 		var initial:int=game.state.money
+		flag("host_ready")
+		await until(func():return n.accepted!=0 and exists("client_ready"))
 		await until(func():return exists("applied"))
 		assert(game.state.money==initial-120 and game.state.staff.hired)
 		assert(game.state.orchard_staff.enabled and game.state.staff.paused)
