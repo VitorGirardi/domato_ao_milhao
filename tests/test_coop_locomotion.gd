@@ -41,7 +41,7 @@ func run() -> void:
 	await sync_step("walk")
 	await until(func():return n.remote_actor.locomotion.active and n.remote_actor.locomotion.gait_weight>.2)
 	var phase:float=n.remote_actor.locomotion.phase
-	await create_timer(.2).timeout
+	await motion(4.5,0,20)
 	assert(absf(n.remote_actor.locomotion.phase-phase)>.001)
 	await motion(7.5,0,65)
 	await sync_step("run")
@@ -69,6 +69,7 @@ func run() -> void:
 	await sync_step("resumed")
 	await until(func():return n.remote_actor.locomotion.active and n.remote_actor.locomotion.gait_weight>.2)
 	assert(n.motion_count>5 and not game.state.serialize().has("locomotion"))
+	await sync_step("resumed_seen")
 	Input.action_release("run");game.player.velocity=Vector3.ZERO
 	if mode=="host":
 		await until(func():return exists("client_done") and n.accepted==0)
