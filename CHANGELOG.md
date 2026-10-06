@@ -1,3 +1,12 @@
+# 0.52.0 — Zeca cuida do pomar
+
+- Escolha as laranjeiras em H → Equipe → Pomar; Zeca caminha, rega e colhe com animação.
+- Rotina liberada após a missão Primeira colheita; disponível desde o início no Sandbox.
+- Aproveita a contratação e o treinamento existentes, com cobrança somente por serviço concluído e pausa do galinheiro enquanto cuida do pomar.
+- Caminhos bloqueados, falta de dinheiro, pausas e quedas interrompem o trabalho sem cobrança indevida.
+- Seleção, histórico e rotina salvos por fazenda e sincronizados no cooperativo. Save 25 e protocolo 22.
+- Preserva camionetinha, garagem, vizinhos e entregas da 0.51.
+
 # 0.51.0 — Vizinhos e entregas
 
 - Três casas no vale com Dona Rosa, Seu Bento e Lia, conversas e pedidos próprios.

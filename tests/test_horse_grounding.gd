@@ -66,4 +66,7 @@ func run() -> void:
 	await ride(Vector2(650,-277.5),Vector2(630,-267.5))
 	RenderingServer.set_render_loop_enabled(true)
 	print("HORSE_GROUNDING_OK: four planted feet, uphill/downhill/crosshill/bridge/flat, mounted floor, saddle and replicated pose")
-	game.session_started=false;game.queue_free();await process_frame;quit()
+	# Drain audio before freeing the fixture, including on fast headless runners.
+	game.session_started=false;game.audio.stop_all()
+	await create_timer(.2).timeout
+	game.queue_free();await process_frame;await create_timer(.2).timeout;quit()
