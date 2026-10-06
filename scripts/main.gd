@@ -524,7 +524,7 @@ func _update_pointer() -> void:
 		return
 	if get_viewport().gui_get_hovered_control()!=null:
 		return
-	if state.claimed and build_mode and tool=="inspect":
+	if state.claimed and build_mode and tool in ["inspect","select_move","select_sell"]:
 		var hovered:=_pick_item(mouse,Vector2(at.x,at.z))
 		world.show_selection(state,hovered if hovered>=0 else selected)
 		if picked_trade_board: hover_hint="Quadro dos vizinhos • Clique para ver encomendas • J"
@@ -581,10 +581,13 @@ func _click_world() -> void:
 		return
 	if move_index>=0:
 		if falls.blocks_command({"action":"move_item","index":move_index}):return
+		var before:=state.serialize()
 		var error:=state.move_item(move_index,pointer,turn)
 		if not error.is_empty():
 			hud.toast(error)
 			return
+		if not _save_game(false,true):
+			state.restore(before);hud.toast("Não foi possível salvar. A construção continua no lugar anterior.");return
 		selected=move_index
 		move_index=-1
 		tool="inspect"
@@ -628,6 +631,10 @@ func _click_world() -> void:
 		var at:Vector3=ray+direction*(-ray.y/direction.y)
 		selected=_pick_item(mouse,Vector2(at.x,at.z))
 		selected_hen=picked_hen
+		if build_mode and tool in ["select_move","select_sell"]:
+			if selected>=0:_action("move" if tool=="select_move" else "build:sell_review")
+			else:hud.toast("Clique em uma construção da sua fazenda.")
+			return
 		if picked_trade_board:
 			if build_mode or player.position.distance_to(FarmWorld.TRADE_BOARD_AT)<3:
 				hud.market(state,"orders")
@@ -868,6 +875,7 @@ func _action(value: String) -> void:
 		gathering.handle("gather:cancel")
 		FarmResourceHUD.show(self);return
 	if gathering.handle(value):return
+	if FarmBuildActions.handle(self,value):return
 	if network.handle(value):return
 	if FarmAnimalCareActions.handle(self,value):return
 	if FarmYoungActions.handle(self,value):return
@@ -1291,7 +1299,7 @@ func _action(value: String) -> void:
 			hud.toast("Regador melhorado! Até 5 canteiros por rega." if error.is_empty() else error)
 		"move":
 			if selected<0 or selected>=state.items.size():
-				hud.toast("Selecione uma construção com Cuidar para mover.")
+				hud.toast("Clique em Mover construção e escolha uma peça no mapa.")
 				return
 			if not build_mode:
 				focus=Vector3(state.items[selected].x,0,state.items[selected].z)
@@ -1350,13 +1358,17 @@ func _action(value: String) -> void:
 			hud.close_modal()
 		"remove":
 			if selected>=0:
+				var before:=state.serialize()
+				var refund:=state.removal_refund(selected)
 				var error:=state.remove_item(selected)
 				if not error.is_empty():
 					hud.toast(error)
 					return
-				selected=-1
+				if not _save_game(false,true):
+					state.restore(before);hud.toast("Não foi possível salvar. A venda foi desfeita.");return
+				selected=-1;tool="inspect"
 				world.rebuild(state)
-				hud.toast("Espaço livre. Metade do custo voltou para você.")
+				hud.toast("Construção vendida. +$%d (50%% do valor)."%refund)
 		"reset_ask": hud.confirm_reset()
 		"reset_confirm":
 			var fresh:=FarmState.new_farm(state.game_mode,state.character_id)

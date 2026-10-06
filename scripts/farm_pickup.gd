@@ -26,6 +26,10 @@ var body_shell:CollisionShape3D
 var engine_sound:AudioStreamPlayer3D
 var engine_playback:AudioStreamGeneratorPlayback
 var sound_phase:=0.0
+var airborne:=false
+var suspension:=0.0
+var suspension_speed:=0.0
+const GRAVITY:=22.0
 
 static func defaults() -> Dictionary:return {"x":HOME.x,"z":HOME.y,"angle":PI*.5,"cargo":{},"garage":FarmGarage.defaults()}
 static func valid(value:Variant) -> bool:
@@ -47,7 +51,7 @@ func setup(owner_game:Node3D) -> void:
 	capsule.radius=.65;capsule.height=2.7;support.shape=capsule;support.position.y=1.35;add_child(support)
 	body_shell=CollisionShape3D.new();collision_box=BoxShape3D.new();collision_box.size=BODY_SIZE
 	body_shell.shape=collision_box;body_shell.position.y=2.05;add_child(body_shell)
-	floor_snap_length=1.2;floor_stop_on_slope=true;floor_max_angle=MAX_SLOPE;floor_constant_speed=true
+	floor_snap_length=.25;floor_stop_on_slope=true;floor_max_angle=MAX_SLOPE;floor_constant_speed=false
 	instruments.setup(game.hud);speed_label=instruments.speed
 	engine_sound=AudioStreamPlayer3D.new();engine_sound.bus=FarmAudio.EFFECTS_BUS;engine_sound.volume_db=-22;engine_sound.max_distance=35
 	var generator:=AudioStreamGenerator.new();generator.mix_rate=22050;generator.buffer_length=.15;engine_sound.stream=generator;add_child(engine_sound)
@@ -60,6 +64,8 @@ func restore(data:Dictionary) -> void:
 	if water_depth(point)>FORD_DEPTH:saved=defaults();point=HOME
 	rotation=Vector3(0,saved.angle,0);position=Vector3(point.x,FarmLandscape.height_at(point)+.06,point.y)
 	velocity=Vector3.ZERO;speed=0;steering=0;wheel_spin=0;blocked_reason=""
+	airborne=false;suspension=0;suspension_speed=0
+	model.rotation=ground_tilt(position,rotation.y)
 	cargo_stamp="";custom_stamp="";refresh_customization();refresh_cargo();_animate(0)
 
 func store() -> void:
@@ -84,7 +90,7 @@ func enter() -> bool:
 
 func exit_vehicle() -> bool:
 	if not mounted:return true
-	if absf(speed)>1.2:
+	if airborne or absf(speed)>1.2:
 		game.hud.toast("Pare a camionetinha antes de sair. Espaço freia.");return false
 	for radius in [2.2,3.4,4.6,6.0]:
 		for angle in [-PI/2,PI/2,PI*.75,-PI*.75,PI,0.0]:
@@ -168,13 +174,21 @@ func drive(delta:float,throttle:float,turn:float,brake:bool,active:bool) -> void
 	steering=move_toward(steering,clampf(turn,-1,1)*.5,delta*1.8)
 	var custom:=FarmGarage.config(game.state)
 	var target:=(22.0 if custom.engine else MAX_SPEED)*throttle if throttle>=0 else REVERSE_SPEED*throttle
-	speed=move_toward(speed,0 if brake else target,delta*((30 if custom.tires else 22) if brake else (10 if custom.engine else 7) if throttle!=0 else 4))
+	var grounded:=is_on_floor() and not airborne
+	if grounded or not airborne:
+		speed=move_toward(speed,0 if brake else target,delta*((30 if custom.tires else 22) if brake else (10 if custom.engine else 7) if throttle!=0 else 4))
 	blocked_reason=""
 	var before:=global_transform
 	var candidate:=wrapf(rotation.y-steering*speed/3.7*delta,-PI,PI)
-	if turn_clear(candidate):rotation.y=candidate
+	if not airborne and turn_clear(candidate):rotation.y=candidate
 	var forward:=global_basis.z
-	velocity.x=forward.x*speed;velocity.z=forward.z*speed;velocity.y-=22*delta
+	velocity.x=forward.x*speed;velocity.z=forward.z*speed
+	# Carry the upward speed actually acquired on the slope across its crest.
+	# Snapping at speed erased that momentum and glued the truck to downhill roads.
+	if grounded:velocity.y=get_real_velocity().y
+	velocity.y-=GRAVITY*delta
+	floor_snap_length=.25 if absf(speed)<7 else 0.0
+	var impact_speed:=velocity.y
 	# Align the collision shell before movement, not one physics frame behind it.
 	_animate(0)
 	move_and_slide()
@@ -185,9 +199,12 @@ func drive(delta:float,throttle:float,turn:float,brake:bool,active:bool) -> void
 		for i in range(get_slide_collision_count()):
 			if get_slide_collision(i).get_normal().y<cos(slope_limit()):
 				speed=0;blocked_reason="Obstáculo à frente · recue ou contorne";break
+	if is_on_floor() and airborne and impact_speed < -2:
+		suspension_speed=-minf(impact_speed*-0.32,3.0)
+	airborne=not is_on_floor() and position.y-FarmLandscape.height_at(Vector2(position.x,position.z))>.18
 	var travel:=position.distance_to(before.origin)
 	wheel_spin+=travel*signf(speed)/.65
-	_pose_driver(delta);_animate(delta);store()
+	_animate(delta);_pose_driver(delta);store()
 
 func _pose_driver(delta:float) -> void:
 	game.player.position=position;game.player.velocity=Vector3.ZERO
@@ -203,9 +220,17 @@ func _pose_driver(delta:float) -> void:
 		game.actor.pose_bone("Forearm."+side,Vector3(-1,0,0))
 		game.actor.reach_rein_hand(side,model.to_global(Vector3(-.53+sign_value*.22,2.30,.50)),1)
 
-func _animate(_delta:float) -> void:
+func _animate(delta:float) -> void:
 	if is_instance_valid(model):
-		model.rotation=ground_tilt(position,rotation.y)
+		if not airborne:
+			var tilt:=ground_tilt(position,rotation.y)
+			model.rotation=model.rotation.lerp(tilt,1.0-exp(-delta*12)) if delta>0 else model.rotation
+		elif delta>0:
+			model.rotation.x=move_toward(model.rotation.x,.22*signf(speed),delta*.35)
+		if delta>0:
+			suspension_speed+=(-suspension*85-suspension_speed*12)*delta
+			suspension=clampf(suspension+suspension_speed*delta,-.22,.12)
+		model.position.y=suspension
 		body_shell.basis=model.basis;body_shell.position=model.basis*Vector3.UP*2.05
 	for key in wheels:
 		if is_instance_valid(wheels[key]):wheels[key].rotation=Vector3(wheel_spin,-steering if key.begins_with("F") else 0,0)
@@ -224,7 +249,7 @@ func _physics_process(delta:float) -> void:
 	if mounted and (game.falls.local_down() or game.network.active):reset_driver()
 	if not mounted and visible:
 		velocity=Vector3(0,velocity.y-22*delta,0);move_and_slide()
-	_animate(delta)
+	if not mounted:_animate(delta)
 	_update_sound()
 	refresh_cargo()
 

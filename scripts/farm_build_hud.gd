@@ -28,6 +28,13 @@ var selection: Panel
 var selected_name: Label
 var selected_icon: TextureRect
 var select_button: Button
+var move_button: Button
+var sell_button: Button
+var move_tool: Button
+var sell_tool: Button
+var cancel_move: Button
+var review_index:=-1
+var review_stamp:=""
 var open_button: Button
 var paint_button: Button
 var sign_button: Button
@@ -57,6 +64,9 @@ func setup(owner: FarmHUD) -> void:
 	FarmGameUI.action(hud,root,"Voltar  [TAB]",Rect2(1184,22,232,56),"mode",true)
 	select_button=FarmGameUI.action(hud,root,"Selecionar",Rect2(24,94,170,44),"tool:inspect")
 	select_button.tooltip_text="Clique em uma construção para mover, pintar ou remover. Atalho: 1"
+	move_tool=FarmGameUI.action(hud,root,"Mover construção",Rect2(204,94,200,44),"tool:select_move")
+	sell_tool=FarmGameUI.action(hud,root,"Vender / remover",Rect2(414,94,210,44),"tool:select_sell")
+	cancel_move=FarmGameUI.action(hud,root,"Cancelar [Esc]",Rect2(634,94,200,44),"build:clear")
 	help_panel=FarmGameUI.card(hud,root,Rect2(1040,94,376,155));help_panel.visible=false
 	hud.label(help_panel,"WASD mover câmera · Scroll zoom\nBotão direito girar câmera\nR / Q girar peça · Esc cancelar\nTAB voltar ao fazendeiro",Vector2(16,14),Vector2(344,124),17)
 	catalog=hud.panel(root,Rect2(218,678,1004,198),Color("294b3c"))
@@ -83,11 +93,12 @@ func setup(owner: FarmHUD) -> void:
 	selected_icon=FarmGameUI.icon(selection,"barn",Rect2(14,12,64,64))
 	selected_name=hud.label(selection,"",Vector2(88,14),Vector2(211,57),21)
 	selected_name.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
-	FarmGameUI.action(hud,selection,"Mover [M]",Rect2(14,90,140,42),"move")
+	move_button=FarmGameUI.action(hud,selection,"Mover [M]",Rect2(14,90,140,42),"move")
 	paint_button=FarmGameUI.action(hud,selection,"Pintar",Rect2(162,90,140,42),"")
 	_disconnect_action(paint_button);paint_button.pressed.connect(func():paint_open=not paint_open;paint_panel.visible=paint_open)
 	open_button=FarmGameUI.action(hud,selection,"Abrir",Rect2(14,143,140,42),"build:open",true)
-	FarmGameUI.action(hud,selection,"Remover",Rect2(162,143,140,42),"remove").tooltip_text="Devolve metade do custo da construção."
+	sell_button=FarmGameUI.action(hud,selection,"Vender",Rect2(162,143,140,42),"build:sell_review")
+	sell_button.tooltip_text="Vende a construção por metade do valor, incluindo melhorias. Confirme antes de remover."
 	sign_button=FarmGameUI.action(hud,selection,"Editar texto",Rect2(14,143,140,42),"edit_sign")
 	hud.label(selection,"Clique no terreno para selecionar outra peça.",Vector2(14,197),Vector2(288,24),12,FarmHUD.MUTED)
 	paint_panel=FarmGameUI.card(hud,root,Rect2(1100,404,316,135));paint_panel.visible=false
@@ -173,6 +184,10 @@ func update(state:FarmState,selected:int,tool:String,crop:String,hover_hint:Stri
 	if selected!=last_selection or tool!="inspect":paint_open=false
 	last_selection=selected
 	catalog.visible=state.claimed;claim_panel.visible=not state.claimed;select_button.visible=state.claimed
+	move_tool.visible=state.claimed;sell_tool.visible=state.claimed
+	cancel_move.visible=state.claimed and tool in ["move","select_move","select_sell"]
+	for pair in [[select_button,"inspect"],[move_tool,"select_move"],[sell_tool,"select_sell"]]:
+		pair[0].modulate=Color("f6d581") if tool==pair[1] else Color.WHITE
 	selection.visible=state.claimed and selected>=0 and selected<state.items.size() and tool=="inspect"
 	paint_panel.visible=selection.visible and paint_open
 	seed_panel.visible=category=="Lavoura" and tool=="plot"
@@ -181,6 +196,8 @@ func update(state:FarmState,selected:int,tool:String,crop:String,hover_hint:Stri
 	if selection.visible:
 		var key:String=state.items[selected].kind
 		selected_name.text=FarmState.ITEMS[key].name
+		sell_button.text="Vender $%d"%state.removal_refund(selected)
+		sell_button.add_theme_font_size_override("font_size",15)
 		selected_icon.texture=_texture(key)
 		paint_button.visible=key in ["barn","coop","workshop","fence","sign","stable"]
 		if not paint_button.visible:paint_panel.visible=false
@@ -189,6 +206,8 @@ func update(state:FarmState,selected:int,tool:String,crop:String,hover_hint:Stri
 		sign_button.visible=key=="sign"
 	_refresh_cards(state)
 	if not state.claimed:hint.text="WASD mover câmera · Scroll aproximar"
+	elif tool=="select_move":hint.text="Clique na construção que deseja mover · Mudança grátis · Esc cancela"
+	elif tool=="select_sell":hint.text="Clique na construção para ver a venda · Devolução de 50% · Esc cancela"
 	elif tool=="inspect":hint.text="Selecione uma construção no mapa para editar."
 	else:hint.text=hover_hint if not hover_hint.is_empty() else "Clique para colocar · R / Q girar · Esc cancelar"
 	help_panel.visible=help_panel.visible and hud.build_hud.visible

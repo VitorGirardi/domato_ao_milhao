@@ -534,6 +534,7 @@ func _command_done(success:bool,message:String,command:Dictionary) -> void:
 func rebuild_shared() -> void:
 	visual_state.clear()
 	game.selected=-1;game.selected_hen=-1;game.move_index=-1;game._cancel_route()
+	if game.tool=="move":game.tool="inspect"
 	game.world.rebuild(game.state);crop_visuals.clear()
 	if not game.horse.mounted:game._ensure_player_space()
 	# An index-based editor must never silently retarget another building after removal.

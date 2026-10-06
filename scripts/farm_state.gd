@@ -439,7 +439,11 @@ func water_targets(index: int) -> Array:
 		if i==index or (watering_upgrade and offset.length()<=2.01) or (professional_watering and maxf(absf(offset.x),absf(offset.y))<=2.01): result.append(i)
 	return result
 
-func remove_item(index: int) -> String:
+func removal_refund(index:int) -> int:
+	if index<0 or index>=items.size():return 0
+	return (int(ITEMS[items[index].kind].cost)+FarmProgression.investment(items[index]))/2
+
+func removal_error(index:int) -> String:
 	if index<0 or index>=items.size(): return "Selecione uma construção."
 	if items[index].kind=="cheesery" and (items[index].cheese.batch>0 or items[index].cheese.ready>0):
 		return "Recolha a produção antes de remover a queijaria."
@@ -451,7 +455,12 @@ func remove_item(index: int) -> String:
 		return "Colete os ovos antes de remover o galinheiro."
 	if items[index].kind=="barn" and reserve_count()>reserve_capacity()-FarmProgression.reserve_slots(items[index]):
 		return "Retire a reserva do celeiro antes de removê-lo."
-	money+=(int(ITEMS[items[index].kind].cost)+FarmProgression.investment(items[index]))/2
+	return ""
+
+func remove_item(index: int) -> String:
+	var error:=removal_error(index)
+	if not error.is_empty():return error
+	money+=removal_refund(index)
 	FarmOrchardStaff.remove(self,index)
 	FarmCultivation.remove(self,index)
 	FarmCheeseWorker.remove(self,index)

@@ -1,3 +1,7 @@
+# Construção e física da camionetinha — 0.58.0
+
+Mova construções de graça ou venda por metade do valor, com confirmação e salvamento imediato. A camionetinha conserva o embalo ao passar por morros e amortece a aterrissagem. [Como usar](CONSTRUCAO.md).
+
 # Filhotes e crescimento — 0.57.0
 
 Crie pintinhos, uma bezerra e leitões. Crescimento gradual, proporções próprias e passadas que acompanham o movimento. **E → Filhotes e crescimento**. [Guia e custos](FILHOTES.md).
