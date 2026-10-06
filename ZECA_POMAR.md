@@ -21,4 +21,4 @@ No cooperativo, o anfitrião executa os serviços e os dois jogadores veem o Zec
 trabalhar, com estoque e pagamentos compartilhados.
 
 As entregas de camionetinha, moradores, influência, garagem e saves existentes
-da versão 0.51 são preservados.
+são preservados, incluindo a história, a rotina e a recompensa da Dona Rosa da 0.53.
