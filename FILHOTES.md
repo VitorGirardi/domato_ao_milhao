@@ -23,4 +23,3 @@ Use APPDATA/XDG_DATA_HOME isolados sob test-results, nunca saves pessoais.
 - `tests/test_young.gd`: aquisição, recursos, alternativas adultas, produção, suprimentos, maturidade em passos pequenos/grandes, save antigo/inválido, movimento da construção e Sandbox.
 - `tests/test_young_life.gd`: painéis, compra próxima a pé, rollback de disco, recarga, movimento nas quatro rotações, descanso, prioridade de atendimento/quedas e capturas dos estágios 0/25/50/75/100%.
 - `tests/test_coop_young.gd`, via `tests/run_network.py`: dois processos, compra remota, distância, rollback, repetição/replay, bezerra/leitão replicados e saves individuais preservados.
-

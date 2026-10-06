@@ -22,8 +22,12 @@ func run() -> void:
 	assert(not combat.apply_request(1,"fire",origin,end))
 	assert(combat.bag_for(99).magazine==0 and not combat.bag_for(99).pistol)
 	assert(game.state.armory.magazine==7)
-	await create_timer(1.4).timeout
-	assert(game.state.armory.magazine==8 and game.state.armory.reserve==23)
+	# Reload uses a monotonic deadline, while SceneTreeTimer uses frame delta.
+	# An expensive startup frame may finish a scene timer before that deadline.
+	var limit:=Time.get_ticks_msec()+5000
+	while combat.reloads.has(1) and Time.get_ticks_msec()<limit:await process_frame
+	assert(not combat.reloads.has(1),"Authoritative reload must finish within five seconds")
+	assert(game.state.armory.magazine==8 and game.state.armory.reserve==23,str(game.state.armory))
 	game.network.leave();assert(game.state.armory==solo)
 	print("COMBAT_AUTHORITY_OK");game.queue_free();await process_frame;quit()
 
