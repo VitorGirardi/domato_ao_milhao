@@ -1,3 +1,11 @@
+# 0.58.0 — Construção e física da camionetinha
+
+- Ferramentas explícitas para mover e vender construções; prévia de destino e cancelamento.
+- Venda confirmada por 50% do valor da obra e melhorias. Mudanças/vendas salvas imediatamente, com rollback em falha.
+- Validação cooperativa e fechamento de confirmação quando a construção muda remotamente.
+- Camionetinha conserva embalo vertical em morros, cai por gravidade e amortece aterrissagens. Sem volante/freio no ar.
+- Saves 30 e protocolo 27 preservados. [Controles e detalhes](CONSTRUCAO.md).
+
 # 0.57.0 — Filhotes e crescimento
 
 - Pintinhos na ampliação do galinheiro, bezerra no curral vazio e leitões nas vagas do chiqueiro.
