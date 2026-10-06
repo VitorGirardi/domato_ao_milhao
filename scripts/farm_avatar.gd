@@ -25,6 +25,8 @@ var blink_index:=-1
 var blink_wait:=2.0
 var blink_elapsed:=-1.0
 var blink_rng:=RandomNumberGenerator.new()
+var locomotion:=FarmLocomotion.new()
+var locomotion_allowed:Callable
 
 static func prepare_model(node: Node) -> void:
 	# Small facial patches should remain readable beneath the hat and moustache.
@@ -145,6 +147,8 @@ func animate(delta: float, moving: bool, running: bool, blink:bool=true) -> void
 	time+=delta
 	landing=maxf(0,landing-delta)
 	action_time=maxf(0,action_time-delta)
+	var use_locomotion:bool=locomotion.enabled and not locomotion.suspended and (not locomotion_allowed.is_valid() or locomotion_allowed.call()) and not swimming and not airborne and landing<=0 and action_time<=0 and emote_time<=0
+	if not use_locomotion: locomotion.release(self)
 	var phase:=time*(11 if running else 8)
 	var stride:=sin(phase)*(0.60 if running else 0.40) if moving else 0.0
 	var blend:=1-exp(-delta*16)
@@ -168,6 +172,10 @@ func animate(delta: float, moving: bool, running: bool, blink:bool=true) -> void
 		return
 	if emote_time>0:
 		FarmEmotes.pose(self,emote_kind,emote_elapsed,blend)
+		can.visible=false;carried_egg.visible=false
+		return
+	if use_locomotion:
+		locomotion.apply(self,delta,running)
 		can.visible=false;carried_egg.visible=false
 		return
 	var active:=action_time>0
