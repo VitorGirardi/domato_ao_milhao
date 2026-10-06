@@ -1,3 +1,11 @@
+# Testar 0.55 — Movimento do personagem
+
+Ande com WASD, acelere com Shift e solte os controles. Observe a passada, os braços
+e a transição até parar. Faça curvas para os dois lados e alterne andar/correr sem
+interromper o deslocamento. Confira também a fazendeira na escolha de personagem.
+Depois teste pulo, nado, arma, ferramentas, cavalo e camionetinha. No cooperativo,
+observe os movimentos do visitante. [Fonte Blender e funcionamento](MOVIMENTO.md).
+
 # Testar 0.54 — Zeca no pomar
 
 Conclua a missão Primeira colheita (ou use Sandbox). Abra H → Equipe → Pomar,
