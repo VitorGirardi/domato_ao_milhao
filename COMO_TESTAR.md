@@ -2,6 +2,14 @@
 
 A pé, aproxime-se de um galinheiro, curral com vaca ou chiqueiro com porcos. Abra com E e escolha **Bem-estar**. Reponha água/ração se estiverem abaixo de 25% e faça o cuidado gratuito. Confira o coração sobre o cercado, o histórico e o bônus de oito minutos. Salve e continue: o conforto deve permanecer. À noite, observe as pausas; durante o dia os três porcos passeiam. [Regras completas](ANIMAIS.md).
 
+# Testar 0.55 — Movimento do personagem
+
+Ande com WASD, acelere com Shift e solte os controles. Observe a passada, os braços
+e a transição até parar. Faça curvas para os dois lados e alterne andar/correr sem
+interromper o deslocamento. Confira também a fazendeira na escolha de personagem.
+Depois teste pulo, nado, arma, ferramentas, cavalo e camionetinha. No cooperativo,
+observe os movimentos do visitante. [Fonte Blender e funcionamento](MOVIMENTO.md).
+
 # Testar 0.54 — Zeca no pomar
 
 Conclua a missão Primeira colheita (ou use Sandbox). Abra H → Equipe → Pomar,

@@ -7,6 +7,14 @@
 - Cooperativo com validação de proximidade e rollback em falha de save. Save 29, protocolo 26.
 - Preserva animais e companheiros existentes, trabalho do Raul, Survival/Sandbox e saves antigos.
 
+# 0.55.0 — Movimento com mais vida
+
+- Ciclos de caminhada e corrida trabalhados no Blender, com flexão dos joelhos, apoio dos pés e movimento do quadril e dos ombros.
+- Passadas acompanhando o deslocamento real, transições graduais e corpo reagindo às curvas.
+- Respiração discreta em repouso, sem deslocar o personagem do chão.
+- Locomoção aplicada ao fazendeiro e à fazendeira, no solo e no cooperativo, preservando as poses de ferramentas, armas, montaria e direção.
+- Sem mudança de controles, velocidade, formato dos saves ou mensagens de rede.
+
 # 0.54.0 — Zeca cuida do pomar
 
 - Escolha as laranjeiras em H → Equipe → Pomar; Zeca caminha, rega e colhe com animação.

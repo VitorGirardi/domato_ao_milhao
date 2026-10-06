@@ -33,6 +33,7 @@ static func apply_to_game(game:Node3D,id:String) -> void:
 	var replacement:=instantiate_model(id)
 	game.player.add_child(replacement);replacement.transform=previous.transform;replacement.visible=previous.visible
 	var next_actor:=FarmAvatar.new();next_actor.setup(replacement,game.world)
+	game._configure_locomotion(next_actor)
 	game.weapons.pistol.reparent(next_actor.hand_socket,false)
 	game.avatar=replacement;game.actor=next_actor
 	game.horse.rider_actor=next_actor

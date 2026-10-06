@@ -225,6 +225,7 @@ func _spawn_remote(who:String,pos:Vector3) -> void:
 	remote=CharacterBody3D.new();game.add_child(remote);remote.position=pos;target=pos
 	var collider:=CollisionShape3D.new();var capsule:=CapsuleShape3D.new();capsule.radius=.37;capsule.height=2.58;collider.shape=capsule;collider.position.y=1.29;remote.add_child(collider);remote.collision_layer=0;remote.collision_mask=1
 	remote_model=FarmCharacters.instantiate_model(remote_character);remote.add_child(remote_model);remote_actor=FarmAvatar.new();remote_actor.setup(remote_model,game.world)
+	game._configure_locomotion(remote_actor,true)
 	var title:=Label3D.new();title.text=who;title.position.y=3.5;title.billboard=BaseMaterial3D.BILLBOARD_ENABLED;title.font_size=42;title.pixel_size=.008;title.modulate=Color("ffe6a0");remote.add_child(title)
 
 func _remove_remote() -> void:
