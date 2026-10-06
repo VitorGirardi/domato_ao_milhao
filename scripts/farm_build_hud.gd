@@ -5,7 +5,7 @@ const CATEGORIES := {
 	"Lavoura": ["plot", "orchard"],
 	"Animais": ["coop", "corral", "stable", "pigsty"],
 	"Estruturas": ["barn", "workshop", "cheesery", "house","garage"],
-	"Jardim": ["raised_bed", "trellis", "orchard_young", "orchard_mature", "well", "wash_tub", "compost", "produce_crates"],
+	"Jardim": ["raised_bed", "trellis", "orchard_young", "orchard_mature", "well", "wash_tub", "compost", "produce_crates", "rosa_bed"],
 	"Decoração": ["fence", "path", "sign", "fence_painted", "gate_rustic", "gate_painted"],
 	"Terrenos": ["expand", "parcels"]
 }
@@ -117,6 +117,7 @@ func _turn_page(direction:int) -> void:
 	if current_state!=null:_refresh_cards(current_state)
 
 func _texture(key:String) -> Texture2D:
+	if key=="rosa_bed":key="raised_bed"
 	if key=="orchard": key="orchard_young"
 	var path:="res://assets/ui/build/%s.png"%key
 	return load(path) if ResourceLoader.exists(path) else load("res://assets/ui/%s.svg"%ICONS.get(key,"barn"))
@@ -148,7 +149,7 @@ func _refresh_cards(state:FarmState) -> void:
 		var b:Button=cards[key]
 		var locked:=not FarmLevels.unlocked(state,key)
 		var text:="Ver lotes" if key=="parcels" else ("$900" if key=="expand" else "$%d"%int(FarmState.ITEMS[key].cost))
-		if locked:text="Nível %d"%FarmLevels.required(key)
+		if locked:text="Dona Rosa" if key=="rosa_bed" else "Nível %d"%FarmLevels.required(key)
 		if key=="expand" and state.land_size>=40:text="Máximo"
 		b.get_meta("price").text=text
 		b.disabled=key=="expand" and state.land_size>=40
@@ -156,6 +157,7 @@ func _refresh_cards(state:FarmState) -> void:
 		var active:bool=key==hud.current_tool
 		b.add_theme_stylebox_override("normal",hud.style(Color("7c6536") if active else Color("41634c"),8,Color("f0c466") if active else Color("6d8664")))
 		b.tooltip_text="Requer nível %d"%FarmLevels.required(key) if locked else ("Aumentar a fazenda em 8 metros" if key=="expand" else "")
+		if key=="rosa_bed" and locked:b.tooltip_text="Complete a história da horta de Dona Rosa."
 		if FarmState.ITEMS.get(key,{}).get("decorative",false): b.tooltip_text+="\nDecoração: não produz recursos."
 
 func update(state:FarmState,selected:int,tool:String,crop:String,hover_hint:String) -> void:

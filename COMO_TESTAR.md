@@ -1,4 +1,4 @@
-# Testar 0.52 — Zeca no pomar
+# Testar 0.54 — Zeca no pomar
 
 Conclua a missão Primeira colheita (ou use Sandbox). Abra H → Equipe → Pomar,
 marque as laranjeiras e aplique a rotina. Feche o painel: Zeca deve caminhar até
@@ -571,3 +571,7 @@ T continua abrindo os terrenos; F5 salva. O cavalo ainda não foi implementado.
 7. Abra um menu durante a montaria: o deslocamento e o impulso devem pausar. Feche para continuar.
 
 O cavalo ainda não tem compra, alimentação ou evolução; este bloco entrega montaria e exploração. Seu dinheiro infinito continua ativo.
+
+## 0.53 — Dona Rosa
+
+Na casa de Dona Rosa, E → A horta de Dona Rosa. Aceite, carregue com V e entregue estacionado. Complete as três etapas, confira o quintal e TAB → Jardim → Canteiro da amizade. A caixa na entrada funciona durante a rotina. Veja ROSA.md.

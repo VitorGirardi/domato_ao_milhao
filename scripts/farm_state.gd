@@ -1,6 +1,6 @@
 class_name FarmState
 extends RefCounted
-const SAVE_VERSION:=25
+const SAVE_VERSION:=27
 ## Pure simulation. Coordinates are X/Z in meters; all persistence is JSON.
 
 const CROPS = {
@@ -17,6 +17,7 @@ const ITEMS = {
 	"gate_painted": {"name":"Portão pintado","cost":55,"size":Vector2(3.4,0.5)},
 	"well": {"name":"Poço ornamental","cost":100,"size":Vector2(3,2.5),"decorative":true},
 	"wash_tub": {"name":"Tanque de quintal","cost":60,"size":Vector2(2.4,1.6),"decorative":true},
+	"rosa_bed": {"name":"Canteiro da amizade","cost":45,"size":Vector2(2.6,1.6),"decorative":true},
 	"raised_bed": {"name":"Horta ornamental","cost":45,"size":Vector2(2.6,1.6),"decorative":true},
 	"trellis": {"name":"Treliça verde","cost":45,"size":Vector2(2.2,0.8),"decorative":true},
 	"orchard_young": {"name":"Laranjeira jovem","cost":65,"size":Vector2(2,2),"decorative":true},
@@ -36,7 +37,7 @@ const ITEMS = {
 	"path": {"name": "Caminho", "cost": 5, "size": Vector2(2, 2)}
 }
 const PALETTE = ["#ca6244", "#4e8f87", "#ddb65d", "#e8dfc2", "#7b83a6", "#344d52", "#785239"]
-const ART_KINDS = ["orchard","house","barn","fence","fence_painted","gate_rustic","gate_painted","well","wash_tub","raised_bed","trellis","orchard_young","orchard_mature","compost","produce_crates"]
+const ART_KINDS = ["rosa_bed","orchard","house","barn","fence","fence_painted","gate_rustic","gate_painted","well","wash_tub","raised_bed","trellis","orchard_young","orchard_mature","compost","produce_crates"]
 const JOURNEY = [
 	{"key":"land", "title":"Um lugar para chamar de seu", "body":"Escolha uma área do vale.\nSeu primeiro terreno custa $400.", "button":"Escolher meu terreno", "action":"land"},
 	{"key":"plots", "title":"Raízes no chão", "body":"Construa 3 canteiros.\nCada um já vem com sementes.\nCenouras crescem mais rápido!", "button":"Plantar meus canteiros", "action":"plots"},
@@ -58,6 +59,7 @@ var pickup:Dictionary=FarmPickup.defaults()
 var chapter:Dictionary=FarmChapter.fresh()
 var residents:Dictionary=FarmResidents.fresh()
 var orchard_staff:Dictionary=FarmOrchardStaff.fresh()
+var rosa_story:Dictionary=FarmRosa.fresh()
 var orchard_journey:Dictionary=FarmOrchard.fresh_journey()
 var game_mode:="legacy"
 var character_id:=""
@@ -551,6 +553,7 @@ func can_place(kind: String, at: Vector2, turn: int, ignore_index: int = -1) -> 
 		return "Escolha seu terreno primeiro."
 	if not ITEMS.has(kind):
 		return "Construção desconhecida."
+	if ignore_index<0 and kind=="rosa_bed" and not FarmLevels.unlocked(self,kind):return "Ajude Dona Rosa a recuperar a horta para liberar este canteiro."
 	if ignore_index<0 and not FarmLevels.unlocked(self,kind):
 		return "%s libera no nível %d da fazenda."%[ITEMS[kind].name,FarmLevels.required(kind)]
 	var area := item_rect(kind, at, turn)
@@ -738,7 +741,7 @@ func expand() -> String:
 	return ""
 
 func serialize() -> Dictionary:
-	return {"version": SAVE_VERSION, "orchard_staff":orchard_staff.duplicate(true), "orchard_journey":orchard_journey.duplicate(), "residents":residents.duplicate(true), "chapter":chapter.duplicate(), "pickup":pickup.duplicate(true), "game_mode":game_mode, "character_id":character_id, "resources":resources.duplicate(true), "horse":horse.duplicate(), "armory":armory.duplicate(), "owned_parcels":owned_parcels.duplicate(), "unlimited_money":unlimited_money, "farm_xp":farm_xp, "dairy_worker":dairy_worker.duplicate(), "cheese_worker":cheese_worker.duplicate(), "cheese_stock":cheese_stock, "cheese_order":cheese_order.duplicate(), "milk_stock":milk_stock, "cultivation":cultivation.duplicate(true), "field_staff":field_staff.duplicate(true), "professional_watering":professional_watering, "irrigation":irrigation.duplicate(true), "money": _money, "claimed": claimed,
+	return {"version": SAVE_VERSION, "rosa_story":rosa_story.duplicate(), "orchard_staff":orchard_staff.duplicate(true), "orchard_journey":orchard_journey.duplicate(), "residents":residents.duplicate(true), "chapter":chapter.duplicate(), "pickup":pickup.duplicate(true), "game_mode":game_mode, "character_id":character_id, "resources":resources.duplicate(true), "horse":horse.duplicate(), "armory":armory.duplicate(), "owned_parcels":owned_parcels.duplicate(), "unlimited_money":unlimited_money, "farm_xp":farm_xp, "dairy_worker":dairy_worker.duplicate(), "cheese_worker":cheese_worker.duplicate(), "cheese_stock":cheese_stock, "cheese_order":cheese_order.duplicate(), "milk_stock":milk_stock, "cultivation":cultivation.duplicate(true), "field_staff":field_staff.duplicate(true), "professional_watering":professional_watering, "irrigation":irrigation.duplicate(true), "money": _money, "claimed": claimed,
 		"center": [center.x, center.y], "land_size": land_size,
 		"items": items.duplicate(true), "inventory": inventory.duplicate(),
 		"elapsed": elapsed, "revenue": revenue, "harvests": harvests,
@@ -750,7 +753,7 @@ func restore(data: Variant) -> bool:
 	if data is Dictionary and data.has("armory") and not FarmArmory.valid(data.armory):return false
 	if not data is Dictionary or not _number(data.get("version")) or data.version<1 or data.version>SAVE_VERSION or float(data.version)!=floorf(float(data.version)):
 		return false
-	if data.version>=25 and not data.has("orchard_staff"):return false
+	if data.version>=27 and not data.has("orchard_staff"):return false
 	if data.version>=23 and (not data.has("orchard_journey") or not data.get("inventory") is Dictionary):return false
 	if data.version>=23 and not data.inventory.has("orange"):return false
 	if not FarmOrchard.valid_journey(data.get("orchard_journey",FarmOrchard.fresh_journey())):return false
@@ -768,6 +771,9 @@ func restore(data: Variant) -> bool:
 	if data.get("game_mode","legacy")!="sandbox" and data.has("resources") and not data.get("claimed",false) and FarmResources.normalized(data.resources)!=FarmResources.fresh():return false
 	if data.has("pickup") and not FarmPickup.valid(data.pickup):return false
 	if data.has("residents") and not FarmResidents.valid(data.residents):return false
+	if data.has("rosa_story"):
+		if not FarmRosa.valid(data.rosa_story):return false
+		if (data.rosa_story.active or data.rosa_story.stage>0) and (not data.get("claimed",false) or not data.get("residents",FarmResidents.fresh()).rosa.met):return false
 	if data.has("chapter"):
 		if not FarmChapter.valid(data.chapter):return false
 		if data.chapter.stage>0 and not data.get("claimed",false):return false
@@ -911,6 +917,7 @@ func restore(data: Variant) -> bool:
 	pickup=data.get("pickup",FarmPickup.defaults()).duplicate(true)
 	chapter={"stage":int(data.get("chapter",FarmChapter.fresh()).stage)}
 	residents=FarmResidents.normalized(data.get("residents",FarmResidents.fresh()))
+	rosa_story=data.get("rosa_story",FarmRosa.fresh()).duplicate();rosa_story.stage=int(rosa_story.stage)
 	var saved_orchard:Dictionary=data.get("orchard_journey",FarmOrchard.fresh_journey())
 	orchard_journey={"stage":int(saved_orchard.stage),"harvested":int(saved_orchard.harvested)}
 	orchard_staff=saved_orchard_staff.duplicate(true)
