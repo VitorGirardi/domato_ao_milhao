@@ -1,7 +1,7 @@
 class_name FarmCoopCommands
 extends RefCounted
 ## Only this allowlist may mutate the authoritative cooperative farm.
-const SIMPLE:=["tool:expand","remove","route_confirm","apply_text","apply_hen_name","upgrade","professional_watering","sell","contract","sell_milk","staff_hire","staff_assign","staff_pause","staff_dismiss","crew_hire","crew_pause","crew_dismiss","irrigation_apply","cultivation_apply","cultivation_renew","raul:confirm","raul:pause","chico:confirm","chico:pause","cheese:start","cheese:collect","cheese:sell","cheese:accept","cheese:cancel","cheese:deliver"]
+const SIMPLE:=["animal:care","tool:expand","remove","route_confirm","apply_text","apply_hen_name","upgrade","professional_watering","sell","contract","sell_milk","staff_hire","staff_assign","staff_pause","staff_dismiss","crew_hire","crew_pause","crew_dismiss","irrigation_apply","cultivation_apply","cultivation_renew","raul:confirm","raul:pause","chico:confirm","chico:pause","cheese:start","cheese:collect","cheese:sell","cheese:accept","cheese:cancel","cheese:deliver"]
 const PREFIXES:=["pigs:buy","pigs:food","pigs:water","parcel_buy:","evolution_buy:","paint:","deposit:","withdraw:","sell_product:","accept_order:","deliver_order:","cancel_order:","care:","dairy:buy","dairy:milk","dairy:food","dairy:water","crew_train:"]
 
 static func mutates(value:String) -> bool:
@@ -53,7 +53,7 @@ static func run(s:FarmState,c:Dictionary) -> String:
 	var item:Dictionary=s.items[i] if i>=0 and i<s.items.size() else {}
 	var key:=action.get_slice(":",1)
 	var q:int=c.get("quantity",0)
-	var needs_item:=action in ["move_item","remove","apply_text","apply_hen_name","cheese:start","cheese:collect"] or action.begins_with("evolution_buy:") or action.begins_with("paint:") or action.begins_with("care:") or action.begins_with("dairy:") or action.begins_with("pigs:")
+	var needs_item:=action in ["animal:care","move_item","remove","apply_text","apply_hen_name","cheese:start","cheese:collect"] or action.begins_with("evolution_buy:") or action.begins_with("paint:") or action.begins_with("care:") or action.begins_with("dairy:") or action.begins_with("pigs:")
 	if action in ["orchard:water","orchard:harvest"]:needs_item=true
 	if needs_item and item.is_empty():return "Essa construção não existe mais."
 	if action in ["claim","place","move_item"]:
@@ -64,6 +64,7 @@ static func run(s:FarmState,c:Dictionary) -> String:
 		if action=="move_item":return s.move_item(i,c.at,turn)
 		if not FarmState.ITEMS.has(c.get("kind","")) or not FarmState.CROPS.has(c.get("crop","carrot")):return "Construção ou cultura inválida."
 		return s.place(c.kind,c.at,turn,c.get("crop","carrot"))
+	if action=="animal:care":return FarmAnimalCare.care(s,i)
 	if action=="orchard:water":return FarmOrchard.water(s,i)
 	if action=="orchard:harvest":return FarmOrchard.harvest(s,i)
 	if action=="orchard:accept":return FarmOrchard.accept(s)

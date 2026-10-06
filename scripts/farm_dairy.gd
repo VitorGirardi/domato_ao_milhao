@@ -13,12 +13,12 @@ static func valid(data:Variant) -> bool:
 		if not FarmCultivation.integer(data.get(key)) and (key=="milk" or not (data.get(key) is float or data.get(key) is int)): return false
 		if not is_finite(float(data[key])) or data[key]<0: return false
 	return data.food<=100 and data.water<=100 and data.milk<=CAPACITY and data.timer<CYCLE and (data.owned or (data.milk==0 and data.timer==0))
-static func tick(data:Dictionary,delta:float) -> void:
+static func tick(data:Dictionary,delta:float,bonus:float=1.0) -> void:
 	if not data.owned: return
 	var span:=maxf(0,delta)
 	var productive:=minf(span,minf(float(data.food)*6,float(data.water)*4.8))
 	if data.milk<CAPACITY:
-		var progress:float=data.timer+productive
+		var progress:float=data.timer+productive*bonus
 		var cycles:=int(floorf((progress+0.00000001)/CYCLE))
 		data.milk=mini(CAPACITY,int(data.milk)+cycles*2)
 		data.timer=0.0 if data.milk==CAPACITY else maxf(0,progress-cycles*CYCLE)

@@ -858,6 +858,7 @@ func _action(value: String) -> void:
 		FarmResourceHUD.show(self);return
 	if gathering.handle(value):return
 	if network.handle(value):return
+	if FarmAnimalCareActions.handle(self,value):return
 	if FarmOrchardStaffActions.handle(self,value):return
 	if value in FarmOrchardActions.MUTATIONS:
 		var command:Dictionary=FarmCoopCommands.capture(self,value)
@@ -1364,6 +1365,7 @@ func _resource_refresh() -> void:
 func _update_ui() -> void:
 	hud.update(state,build_mode,selected,tool,crop,hover_hint)
 	FarmInteractionUI.update_orchard(hud,state)
+	FarmAnimalCareHUD.update(hud,state)
 	FarmOrchardStaffHUD.update(hud,state)
 	hud.walking.update(hud,state,_nearby_context(),crop)
 	hud.walking.mount_status(_mounted(),horse.stamina,horse.burst,actor.swimming)

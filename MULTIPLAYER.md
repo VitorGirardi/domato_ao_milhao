@@ -1,3 +1,7 @@
+# Atualização 0.56 — bem-estar dos animais
+
+Atualizem os dois PCs para **0.56.0, protocolo 26**. O cuidado dos cercados exige proximidade a pé e é salvo pelo anfitrião antes de confirmar. O conforto é compartilhado, dura oito minutos de simulação da fazenda e não acumula. Posições/poses dos animais vêm do anfitrião. [Guia](ANIMAIS.md).
+
 # Atualização 0.43 — mira sobre o ombro
 
 Atualizem os dois PCs para **0.44.0, protocolo 15**. Segurar direito aproxima a

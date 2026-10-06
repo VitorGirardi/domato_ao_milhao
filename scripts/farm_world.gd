@@ -611,6 +611,9 @@ func _color_hen(node: Node, color_index: int) -> void:
 	for child in node.get_children(): _color_hen(child,color_index)
 
 func update_animals(state: FarmState) -> void:
+	for i in range(state.items.size()):
+		var item:Dictionary=state.items[i]
+		if item.kind in FarmAnimalCare.KINDS and i<item_nodes.size():FarmAnimalCareVisual.update(item_nodes[i],item,state.elapsed,highlighted_index==i)
 	for pen in pigsties:FarmPigPen.update(pen,state.items[pen.index].pigs)
 	for index in coop_views:
 		var flock:Dictionary=state.items[index].flock
@@ -700,13 +703,13 @@ func animate(delta: float, player_pos: Vector3, state: FarmState, event: String 
 	cat.update(delta,player_pos,state)
 	for pen in pigsties:
 		FarmPigPen.update(pen,state.items[pen.index].pigs)
-		FarmPigPen.animate(pen,delta,player_pos)
+		FarmPigPen.animate(pen,delta,player_pos,state.items[pen.index],state.elapsed)
 	for cow in cows:
 		var data:Dictionary=state.items[cow.index].dairy
 		cow.node.visible=data.owned
 		cow.body.collision_layer=1 if data.owned and not cow.node.get_meta("temporary_down",false) else 0
 		if not data.owned: continue
-		if not cow.node.get_meta("temporary_down",false):FarmCowMotion.animate(cow,delta,player_pos)
+		if not cow.node.get_meta("temporary_down",false):FarmCowMotion.animate(cow,delta,player_pos,state.items[cow.index],state.elapsed)
 		if cow.feed: cow.feed.visible=data.food>0
 		if cow.water: cow.water.visible=data.water>0
 
@@ -717,6 +720,11 @@ func animate(delta: float, player_pos: Vector3, state: FarmState, event: String 
 		var local:=Vector3(sin(clock*0.30+phase)*2.5,0,2.8+cos(clock*0.22+phase)*0.6)
 		var resting:=sin(clock*0.55+phase)>0.35
 		if chicken.hen==1 and resting: local=Vector3(-2.0,0,1.7)
+		var flock:Dictionary=state.items[chicken.coop].flock
+		var sleeping:bool=FarmAnimalCare.night(state.elapsed) and minf(flock.food,flock.water)>=25 and event.is_empty()
+		var need:bool=minf(flock.food,flock.water)<25 and event.is_empty()
+		if sleeping:local=Vector3((chicken.hen%3-1)*.8,0,2.6+int(chicken.hen/3)*.75)
+		elif need:local=Vector3(2.5+int(chicken.hen/3)*.7,0,-.8+(chicken.hen%3-1)*.7) if flock.water<25 else Vector3(-1.4+(chicken.hen%3-1)*.6,0,2.6+int(chicken.hen/3)*.7)
 		var target:Vector3=chicken.home+local.rotated(Vector3.UP,chicken.turn)
 		var is_manager:bool=chicken.coop==chickens[0].coop and chicken.hen==0
 		if event=="inspect" and is_manager:
@@ -725,8 +733,8 @@ func animate(delta: float, player_pos: Vector3, state: FarmState, event: String 
 			target=chicken.home+Vector3((chicken.hen-1)*0.75,0,2.3).rotated(Vector3.UP,chicken.turn)
 		var direction := target - hen.position
 		# Feet pivot at the hips; keep them planted when the hen stops.
-		var foraging:bool=fposmod(clock+phase,11.6)<5.8 and event.is_empty()
-		var paused:bool=foraging or (resting and chicken.hen==2 and event.is_empty())
+		var foraging:bool=fposmod(clock+phase,11.6)<5.8 and event.is_empty() and not sleeping and not need
+		var paused:bool=foraging or (resting and chicken.hen==2 and event.is_empty() and not sleeping and not need) or ((sleeping or need) and direction.length()<.18)
 		var stepping:bool=direction.length()>0.12 and not paused
 		FarmHenMotion.pose(hen,clock+phase,delta,stepping,foraging)
 		direction.y = 0
@@ -740,7 +748,13 @@ func animate(delta: float, player_pos: Vector3, state: FarmState, event: String 
 			var step:=direction.normalized()*minf(direction.length(),delta*(2.0 if event=="inspect" and is_manager else 0.65))
 			for angle in [0.0,PI/4,-PI/4,PI/2,-PI/2]:
 				var candidate:=hen.position+step.rotated(Vector3.UP,angle)
-				if _hen_walkable(candidate,state):
+				var clear:=Vector2(candidate.x-player_pos.x,candidate.z-player_pos.z).length()>.8
+				for neighbor in chickens:
+					if neighbor.node==hen:continue
+					var other:Vector3=neighbor.node.position
+					var gap:=Vector2(candidate.x-other.x,candidate.z-other.z).length()
+					if gap<.70 and gap<=Vector2(hen.position.x-other.x,hen.position.z-other.z).length():clear=false
+				if clear and _hen_walkable(candidate,state):
 					hen.position.x=candidate.x
 					hen.position.z=candidate.z
 					break
