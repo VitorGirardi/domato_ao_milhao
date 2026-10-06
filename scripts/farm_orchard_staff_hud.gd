@@ -47,7 +47,7 @@ static func show(hud:FarmHUD,state:FarmState) -> void:
 		list.add_child(check);checks[index]=check
 		check.toggled.connect(func(_pressed:bool):_update_selection(hud,hud.modal.get_meta("orchard_staff_state",state)))
 	if checks.is_empty():
-		var empty:=Label.new();empty.text="Construa uma Laranjeira produtiva em Tab → Jardim."
+		var empty:=Label.new();empty.text="Construa uma Laranjeira produtiva em Tab → Lavoura."
 		empty.custom_minimum_size=Vector2(740,60);empty.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
 		list.add_child(empty)
 	p.set_meta("orchard_staff_checks",checks);p.set_meta("orchard_staff_signatures",signatures)

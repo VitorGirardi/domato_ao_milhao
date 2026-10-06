@@ -5,7 +5,7 @@ const SIMPLE:=["tool:expand","remove","route_confirm","apply_text","apply_hen_na
 const PREFIXES:=["pigs:buy","pigs:food","pigs:water","parcel_buy:","evolution_buy:","paint:","deposit:","withdraw:","sell_product:","accept_order:","deliver_order:","cancel_order:","care:","dairy:buy","dairy:milk","dairy:food","dairy:water","crew_train:"]
 
 static func mutates(value:String) -> bool:
-	if value in SIMPLE or value in FarmOrchardActions.MUTATIONS:return true
+	if value in SIMPLE or value in FarmOrchardActions.MUTATIONS or value in FarmOrchardStaffActions.MUTATIONS:return true
 	for prefix in PREFIXES:
 		if value.begins_with(prefix):return true
 	return false
@@ -15,6 +15,12 @@ static func capture(game:Node3D,value:String) -> Dictionary:
 	var c:Dictionary={"action":value,"index":game.selected,"hen":game.selected_hen}
 	if value in ["apply_text","apply_hen_name"]:c.text=h.text_input.text if is_instance_valid(h.text_input) else ""
 	if value=="route_confirm":c.plan=game.route.duplicate(true)
+	if value=="orchard_staff:apply":
+		c.trees=[]
+		if is_instance_valid(h.modal):
+			for index in h.modal.get_meta("orchard_staff_checks",{}):
+				var check:CheckButton=h.modal.get_meta("orchard_staff_checks")[index]
+				if is_instance_valid(check) and check.button_pressed:c.trees.append(int(index))
 	if value.begins_with("evolution_buy:"):c.index=int(value.get_slice(":",1))
 	if value.begins_with("paint:"):c.part=["walls","roof","door"][h.paint_selector.selected]
 	if value.begins_with("sell_product:"):
@@ -62,6 +68,13 @@ static func run(s:FarmState,c:Dictionary) -> String:
 	if action=="orchard:harvest":return FarmOrchard.harvest(s,i)
 	if action=="orchard:accept":return FarmOrchard.accept(s)
 	if action=="orchard:deliver":return FarmOrchard.deliver(s)
+	if action=="orchard_staff:apply":
+		if not c.get("trees") is Array:return "Escolha as laranjeiras para o Zeca."
+		return FarmOrchardStaff.configure(s,c.trees)
+	if action=="orchard_staff:pause":return FarmOrchardStaff.pause(s)
+	if action=="orchard_staff:stop":
+		FarmOrchardStaff.stop(s)
+		return ""
 	if action.begins_with("parcel_buy:"):return FarmParcels.buy(s,key)
 	if action.begins_with("evolution_buy:"):return s.upgrade_building(i)
 	if action.begins_with("paint:"):return s.paint_item(i,c.get("part",""),int(key))
