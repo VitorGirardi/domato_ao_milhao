@@ -39,7 +39,15 @@ func run() -> void:
 		var result:=world.transact("rosa","story_deliver");assert(result.is_empty(),result);FarmRosaHUD.show(game);assert(game.state.rosa_story.stage==stage+1 and world.rosa_stage==stage+1)
 		before=game.state.serialize();world.handle("resident:story_deliver:rosa");assert(game.state.serialize()==before)
 		assert(game._load_game() and game.state.rosa_story.stage==stage+1)
-	await capture("complete");game.hud.close_modal();game.hud.visible=false;await capture("garden");game.hud.visible=true
+	await capture("complete");game.hud.close_modal();game.hud.visible=false
+	game.state.elapsed=0
+	for frame in range(600):world.animate_rosa(1.0/60)
+	assert(world.actors.rosa.can.visible,"Morning care must hold watering can")
+	await capture("garden")
+	game.state.elapsed=240
+	for frame in range(600):world.animate_rosa(1.0/60)
+	assert(not world.actors.rosa.can.visible and world.people.rosa.position.distance_to(world.ground(FarmResidents.PEOPLE.rosa.at+FarmRosa.routine(240).at))<.1)
+	await capture("porch");game.hud.visible=true
 	assert(game.state.place("rosa_bed",Vector2(8,6),0).is_empty());game.world.rebuild(game.state)
 	game.player.position=Vector3.ZERO;var before:Dictionary=game.state.serialize();world.handle("resident:story_accept:rosa");assert(game.state.serialize()==before)
 	game.session_started=false;game.audio.set_process(false);game.audio.stop_all();await create_timer(1.6).timeout;game.queue_free();await process_frame;game=null;await create_timer(.2).timeout
