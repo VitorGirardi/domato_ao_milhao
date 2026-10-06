@@ -12,6 +12,7 @@ static func board(game:Node3D) -> void:
 		var text:String=person.hint
 		if row.active:text="Pedido aceito · "+summary(state,key)
 		elif row.met:text="Requer %d influência"%person.need if FarmResidents.influence(state)<person.need else "Próxima entrega em %ds"%ceili(maxf(0,row.ready_at-state.elapsed)) if state.elapsed<row.ready_at else "Pedido disponível · visite a casa"
+		if key=="rosa" and row.met:text+=" · Horta recuperada" if state.rosa_story.stage==3 else " · Horta: etapa %d/3"%(int(state.rosa_story.stage)+1)
 		h.label(card,text,Vector2(18,54),Vector2(660,62),18).autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
 		var button:=FarmGameUI.action(h,card,"Marcar casa" if row.known else "Explore o vale",Rect2(710,43,218,46),"resident:mark:"+key)
 		button.disabled=not row.known;i+=1
@@ -25,8 +26,8 @@ static func summary(state:FarmState,key:String) -> String:
 static func visit(game:Node3D,key:String) -> void:
 	var h:FarmHUD=game.hud;var state:FarmState=game.state;var person:Dictionary=FarmResidents.PEOPLE[key];var row:Dictionary=state.residents[key]
 	var p:=FarmGameUI.open(h,"resident_"+key,person.name,"barn",960,660)
-	h.label(p,person.quote,Vector2(26,110),Vector2(908,48),21).autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
-	h.label(p,"%s · %d entregas · Influência %d"%[FarmResidents.trust(state,key),row.done,FarmResidents.influence(state)],Vector2(26,170),Vector2(908,32),19)
+	h.label(p,FarmRosa.quote(state) if key=="rosa" else person.quote,Vector2(26,110),Vector2(908,48),21).autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+	h.label(p,"%s · %d entregas · Influência %d"%[FarmResidents.trust(state,key),int(row.done)+(int(state.rosa_story.stage) if key=="rosa" else 0),FarmResidents.influence(state)],Vector2(26,170),Vector2(908,32),19)
 	var card:=FarmGameUI.card(h,p,Rect2(26,220,908,192))
 	h.label(card,"Pedido aceito · sem prazo" if row.active else "Pedido da casa",Vector2(18,12),Vector2(860,32),23)
 	var i:=0
@@ -43,4 +44,5 @@ static func visit(game:Node3D,key:String) -> void:
 	h.label(p,hint,Vector2(26,438),Vector2(908,65),19).autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
 	FarmGameUI.action(h,p,caption,Rect2(26,535,440,50),"resident:"+("deliver:" if row.active else "accept:")+key,true).disabled=not enabled
 	FarmGameUI.action(h,p,"Vizinhos e influência",Rect2(482,535,452,50),"residents")
-	FarmGameUI.action(h,p,"Até mais",Rect2(330,604,300,36),"close")
+	if key=="rosa":FarmGameUI.action(h,p,"A horta de Dona Rosa",Rect2(26,604,440,36),"resident:story:rosa",true)
+	FarmGameUI.action(h,p,"Até mais",Rect2(482 if key=="rosa" else 330,604,300,36),"close")

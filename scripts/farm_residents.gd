@@ -29,11 +29,11 @@ static func normalized(data:Dictionary) -> Dictionary:
 		result[key]={"known":bool(row.known),"met":bool(row.met),"done":int(row.done),"active":bool(row.active),"ready_at":float(row.ready_at)}
 	return result
 static func influence(state:FarmState) -> int:
-	var total:=0
+	var total:=int(state.rosa_story.stage)*5
 	for row in state.residents.values():total+=int(row.done)*5
 	return total
 static func trust(state:FarmState,key:String) -> String:
-	var done:=int(state.residents[key].done)
+	var done:=int(state.residents[key].done)+(int(state.rosa_story.stage) if key=="rosa" else 0)
 	return "Amigo da casa" if done>=3 else "De confiança" if done>=1 else "Primeira visita"
 static func order(state:FarmState,key:String) -> Dictionary:
 	return PEOPLE[key].orders[mini(int(state.residents[key].done),2)]

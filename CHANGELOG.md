@@ -1,3 +1,9 @@
+# 0.53 — A horta de Dona Rosa
+
+- Rotina diária no quintal, conversa que acompanha a história e atendimento fixo na entrada.
+- Três ajudas restauram visualmente a horta, rendem dinheiro e influência e liberam o Canteiro da amizade.
+- Pedidos comuns e saves existentes preservados; progresso por fazenda, cópia cooperativa e ações solo.
+
 # 0.51.0 — Vizinhos e entregas
 
 - Três casas no vale com Dona Rosa, Seu Bento e Lia, conversas e pedidos próprios.
