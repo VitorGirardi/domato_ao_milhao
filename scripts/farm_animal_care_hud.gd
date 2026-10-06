@@ -17,7 +17,7 @@ static func show(hud:FarmHUD,state:FarmState,index:int) -> void:
 	p.set_meta("care_status",hud.label(p,status,Vector2(28,263),Vector2(744,34),21))
 	FarmGameUI.meter(hud,p,Rect2(28,310,744,14),seconds/FarmAnimalCare.DURATION,Color("83ae72"))
 	p.set_meta("care_meter",p.get_child(-1))
-	var reward:="Ovos e leite: +20% de velocidade, sem gastar mais ração." if item.kind!="pigsty" else "Porquinhos confortáveis. Companhia, sem produção."
+	var reward:=("Ovos deste galinheiro" if item.kind=="coop" else "Leite desta vaca")+": +20% de velocidade, sem ração extra." if item.kind!="pigsty" else "Porquinhos confortáveis. Companhia, sem produção."
 	hud.label(p,reward+"\nDura 8 minutos ativos. O tempo para quando o jogo fecha.\nGrátis · água e ração a partir de 25% · aproxime-se a pé.",Vector2(28,343),Vector2(744,88),18)
 	hud.label(p,"Cuidados realizados: %d · sem doença ou punição por ausência"%visits,Vector2(28,443),Vector2(744,29),16,FarmHUD.MUTED)
 	FarmGameUI.action(hud,p,"Voltar ao cercado",Rect2(28,507,264,49),"animal:back")

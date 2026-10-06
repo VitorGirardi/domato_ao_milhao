@@ -23,6 +23,10 @@ static func seconds(item:Dictionary) -> float:
 static func multiplier(item:Dictionary) -> float:
 	return MULTIPLIER if seconds(item)>0 else 1.0
 
+static func production_wait(item:Dictionary,progress:float) -> float:
+	var boosted:=minf(seconds(item),maxf(0,progress)/MULTIPLIER)
+	return boosted+maxf(0,progress-boosted*MULTIPLIER)
+
 static func needs(item:Dictionary) -> Dictionary:
 	return item.flock if item.kind=="coop" else item.dairy if item.kind=="corral" else item.pigs
 

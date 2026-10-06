@@ -40,6 +40,8 @@ func run() -> void:
 			assert(a.animal_care==b.animal_care)
 			if i==0:assert(a.flock.nest==b.flock.nest and is_equal_approx(a.egg_time,b.egg_time))
 			if i==1:assert(a.dairy.milk==b.dairy.milk and is_equal_approx(a.dairy.timer,b.dairy.timer))
+	assert(is_equal_approx(FarmAnimalCare.production_wait({"animal_care":{"seconds":5}},60),59))
+	assert(is_equal_approx(FarmAnimalCare.production_wait({"animal_care":{"seconds":100}},60),50))
 	# Save/load never applies wall-clock decay. Old farms acquire no mandatory new fields.
 	assert(FarmCoop.save_farm("user://animals.json",s))
 	var loaded:=FarmCoop.load_farm("user://animals.json");assert(loaded!=null)

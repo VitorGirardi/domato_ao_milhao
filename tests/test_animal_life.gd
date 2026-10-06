@@ -5,12 +5,14 @@ func capture(key:String) -> void:
 	if DisplayServer.get_name()=="headless":return
 	game.hud.toast_time=0;game.hud.toast_panel.visible=false
 	await create_timer(.1).timeout;await RenderingServer.frame_post_draw
+	assert(root.get_texture().get_image().get_width()==root.size.x)
 	root.get_texture().get_image().save_png("res://test-results/animals-"+key+".png")
 func run() -> void:
 	assert(OS.get_user_data_dir().contains("test-results"))
 	root.mode=Window.MODE_WINDOWED;root.size=Vector2i(1280,720)
 	game=load("res://scenes/main.tscn").instantiate();game.save_path="user://animal_life.json";root.add_child(game)
 	await process_frame;game.qa_mode=true;game.set_process(false);game.set_physics_process(false);game.residents_world.set_process(false);game.pickup.set_physics_process(false)
+	root.mode=Window.MODE_WINDOWED;root.size=Vector2i(1280,720);await create_timer(.3).timeout
 	game.state=FarmState.new_farm("survival");game.state.money=20000;game.state.farm_xp=950
 	assert(game.state.claim(Vector2(4,0)).is_empty());game.state.land_size=40
 	for e in [["coop",Vector2(-6,0)],["corral",Vector2(3,0)],["pigsty",Vector2(13,0)]]:assert(game.state.place(e[0],e[1],0).is_empty())
