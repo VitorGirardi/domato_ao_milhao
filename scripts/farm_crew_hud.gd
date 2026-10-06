@@ -10,10 +10,11 @@ static func show(hud:FarmHUD,state:FarmState) -> void:
 		var c:=FarmGameUI.card(hud,p,Rect2(26+i*412,118,396,397))
 		FarmGameUI.icon(c,"seed" if field else "chicken",Rect2(18,20,60,60))
 		hud.label(c,"Bento" if field else "Zeca",Vector2(94,21),Vector2(280,35),29)
-		hud.label(c,"Plantação" if field else "Galinheiro",Vector2(94,60),Vector2(280,28),18)
+		hud.label(c,"Plantação" if field else ("Pomar" if state.orchard_staff.enabled else "Galinheiro"),Vector2(94,60),Vector2(280,28),18)
 		var status:="Disponível para contratar"
 		if worker.hired: status="Pausado" if worker.paused else "Em serviço"
 		if field and worker.hired and not state.irrigation.enabled: status="Escolha uma rotina"
+		if not field and state.orchard_staff.enabled:status="Pomar pausado" if state.orchard_staff.paused else "Cuidando do pomar"
 		hud.label(c,status,Vector2(20,112),Vector2(356,29),21)
 		hud.label(c,"Nível %d • $%d por serviço"%[FarmCrew.level(worker),FarmCrew.fee(worker)],Vector2(20,151),Vector2(356,28),18)
 		hud.label(c,"+ sementes" if field else "+ ração utilizada",Vector2(20,183),Vector2(356,25),16,FarmHUD.MUTED)
@@ -27,7 +28,8 @@ static func show(hud:FarmHUD,state:FarmState) -> void:
 			var dismiss:=FarmGameUI.action(hud,c,"Dispensar…",Rect2(204,345,176,36),"crew_dismiss_review")
 			dismiss.disabled=not worker.hired
 		else:
-			hud.label(c,"Uma tarefa por vez",Vector2(20,349),Vector2(356,26),16,FarmHUD.MUTED)
+			FarmGameUI.action(hud,c,"Pomar",Rect2(16,345,176,36),"orchard_staff:open")
+			hud.label(c,"Uma tarefa por vez",Vector2(204,351),Vector2(176,26),15,FarmHUD.MUTED)
 	FarmGameUI.icon(p,"coins",Rect2(28,544,38,38))
 	hud.label(p,hud.money_text(state),Vector2(78,548),Vector2(245,33),25)
 	FarmGameUI.action(hud,p,"Raul · Curral",Rect2(326,538,246,48),"raul")
