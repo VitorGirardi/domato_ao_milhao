@@ -524,7 +524,7 @@ func _update_pointer() -> void:
 		return
 	if get_viewport().gui_get_hovered_control()!=null:
 		return
-	if state.claimed and build_mode and tool=="inspect":
+	if state.claimed and build_mode and tool in ["inspect","select_move","select_sell"]:
 		var hovered:=_pick_item(mouse,Vector2(at.x,at.z))
 		world.show_selection(state,hovered if hovered>=0 else selected)
 		if picked_trade_board: hover_hint="Quadro dos vizinhos • Clique para ver encomendas • J"
