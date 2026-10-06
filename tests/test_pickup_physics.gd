@@ -24,6 +24,7 @@ func run() -> void:
 		place(Vector2(580,-250),1.86)
 		var peak:=0.0;var air:=0;var landed:=false;var captured:=false
 		for frame in range(1500 if throttle<1 else 460):
+			await physics_frame
 			truck.drive(1.0/60,throttle,0,false,true)
 			var clearance:=truck.position.y-FarmLandscape.height_at(Vector2(truck.position.x,truck.position.z))
 			peak=maxf(peak,clearance)
