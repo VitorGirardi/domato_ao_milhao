@@ -5,7 +5,7 @@ func _initialize() -> void:call_deferred("run")
 func run() -> void:
 	assert(OS.get_user_data_dir().contains("test-results"))
 	game=load("res://scenes/main.tscn").instantiate();game.save_path="user://temporary_fall.json";root.add_child(game);await process_frame
-	game.qa_mode=true;game.set_process(false);game.set_physics_process(false);game.companions.set_process(false);game.world.set_process(false);game.audio.set_process(false);game.weapons.set_physics_process(false)
+	game.qa_mode=true;game.set_process(false);game.set_physics_process(false);game.residents_world.set_process(false);game.companions.set_process(false);game.world.set_process(false);game.audio.set_process(false);game.weapons.set_physics_process(false)
 	game.session_started=true;game.build_mode=false;game.hud.close_modal()
 	falls=game.falls;falls.set_process(false);falls.set_physics_process(false)
 	RenderingServer.set_render_loop_enabled(false)
@@ -44,6 +44,7 @@ func run() -> void:
 		assert(is_equal_approx(falls.records[key].age,1.5))
 	var transforms:Dictionary={}
 	for key in keys:transforms[key]=falls.records[key].entry.model.global_transform
+	game.residents_world._process(.2)
 	game.world.animate(.2,game.player.position,state);game.world.update_staff(state,.2);game.horse.life.update(game.horse,.2,true,state,game.world.landscape,game.player)
 	for key in keys:assert(falls.records[key].entry.model.global_transform.is_equal_approx(transforms[key]),"Routine overwrote down pose: "+key)
 	game.world.update_animals(state)
@@ -67,6 +68,9 @@ func run() -> void:
 	for key in keys:
 		assert(not falls.knock_down(key),"Missing recovery protection")
 		assert(falls.targets[key].model.global_transform.is_equal_approx(standing[key]),"Standing transform not restored: "+key)
+	var rosa_before:Vector3=game.residents_world.people.rosa.position
+	game.residents_world._process(.2)
+	assert(game.residents_world.people.rosa.position!=rosa_before,"Recovered Rosa did not resume her routine")
 	falls.advance(3.0);assert(falls.knock_down("npc:vendor"));falls.reset()
 	# Rebuilding an unrelated object preserves logical identity and recovery.
 	var cow_key:=FarmFallTargets.item_key(state,1,"cow")
