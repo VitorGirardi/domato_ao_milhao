@@ -10,7 +10,8 @@ func capture(label:String) -> void:
 func check_bounds(control:Control) -> void:
 	for child in control.get_children():
 		if not child is Control or not child.visible:continue
-		if control is ScrollContainer:continue # Its content deliberately scrolls.
+		if control is ScrollContainer:
+			check_bounds(child);continue # Content may exceed the viewport, rows must fit it.
 		var available:=Rect2(Vector2.ZERO,control.size).grow(.5)
 		assert(available.encloses(Rect2(child.position,child.size)),"%s child outside %s: %s / %s"%[child.get_class(),control.get_class(),Rect2(child.position,child.size),control.size])
 		check_bounds(child)
@@ -33,6 +34,10 @@ func run() -> void:
 	checks[0].button_pressed=true
 	assert(not hud.modal.get_meta("orchard_staff_apply").disabled)
 	assert(hud.modal.get_meta("orchard_staff_apply").text.contains("$120"))
+	var draft_check:CheckButton=checks[0]
+	var snapshot:=FarmState.new();assert(snapshot.restore(state.serialize()))
+	FarmOrchardStaffHUD.update(hud,snapshot)
+	assert(hud.modal.get_meta("orchard_staff_checks")[0]==draft_check and draft_check.button_pressed)
 	# A network refresh must keep an unsubmitted choice, not restore saved trees.
 	FarmOrchardStaffHUD.show(hud,state);await process_frame
 	checks=hud.modal.get_meta("orchard_staff_checks")
@@ -58,6 +63,17 @@ func run() -> void:
 	assert(not hud.modal.get_meta("orchard_staff_apply").disabled)
 	assert(not hud.modal.get_meta("orchard_staff_apply").text.contains("$120"))
 	check_bounds(hud.modal);await capture("sandbox")
+	# The scroll list can show a large farm, but one routine selects at most 64.
+	for i in range(64):sandbox.items.append(sandbox.items[0].duplicate(true))
+	hud.close_modal();FarmOrchardStaffHUD.show(hud,sandbox);await process_frame
+	checks=hud.modal.get_meta("orchard_staff_checks")
+	assert(checks.size()==65)
+	for index in range(64):checks[index].button_pressed=true
+	assert(checks[64].disabled and not hud.modal.get_meta("orchard_staff_apply").disabled)
+	var scroll:ScrollContainer=hud.modal.get_meta("orchard_staff_scroll")
+	scroll.scroll_vertical=1000
+	await process_frame
+	check_bounds(hud.modal);await capture("large")
 	hud.queue_free();await process_frame
 	print("ORCHARD_STAFF_HUD_OK: locked, choices, retained draft, hired, paused, Sandbox and child bounds")
 	quit()

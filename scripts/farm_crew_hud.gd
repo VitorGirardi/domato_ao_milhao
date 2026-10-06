@@ -6,9 +6,10 @@ static func show(hud:FarmHUD,state:FarmState) -> void:
 	for i in range(2):
 		var field:=i==1
 		var worker:Dictionary=state.field_staff if field else state.staff
+		var orchard:bool=not field and state.orchard_staff.enabled
 		var kind:="field" if field else "coop"
 		var c:=FarmGameUI.card(hud,p,Rect2(26+i*412,118,396,397))
-		FarmGameUI.icon(c,"seed" if field else "chicken",Rect2(18,20,60,60))
+		FarmGameUI.icon(c,"seed" if field else ("orange" if orchard else "chicken"),Rect2(18,20,60,60))
 		hud.label(c,"Bento" if field else "Zeca",Vector2(94,21),Vector2(280,35),29)
 		hud.label(c,"Plantação" if field else ("Pomar" if state.orchard_staff.enabled else "Galinheiro"),Vector2(94,60),Vector2(280,28),18)
 		var status:="Disponível para contratar"
@@ -16,8 +17,8 @@ static func show(hud:FarmHUD,state:FarmState) -> void:
 		if field and worker.hired and not state.irrigation.enabled: status="Escolha uma rotina"
 		if not field and state.orchard_staff.enabled:status="Pomar pausado" if state.orchard_staff.paused else "Cuidando do pomar"
 		hud.label(c,status,Vector2(20,112),Vector2(356,29),21)
-		hud.label(c,"Nível %d • $%d por serviço"%[FarmCrew.level(worker),FarmCrew.fee(worker)],Vector2(20,151),Vector2(356,28),18)
-		hud.label(c,"+ sementes" if field else "+ ração utilizada",Vector2(20,183),Vector2(356,25),16,FarmHUD.MUTED)
+		hud.label(c,"Grátis no Sandbox" if orchard and state.infinite_resources() else "Nível %d • $%d por serviço"%[FarmCrew.level(worker),FarmCrew.fee(worker)],Vector2(20,151),Vector2(356,28),18)
+		hud.label(c,"+ sementes" if field else ("Rega e colheita sem insumos" if orchard else "+ ração utilizada"),Vector2(20,183),Vector2(356,25),16,FarmHUD.MUTED)
 		var manage:=FarmGameUI.action(hud,c,("Rotina e orçamento" if worker.hired else "Contratar • $120") if field else ("Cuidar do galinheiro" if worker.hired else "Contratar • $120"),Rect2(16,226,364,47),("cultivation" if worker.hired else "crew_hire_review") if field else "staff",true)
 		manage.disabled=not worker.hired and state.money<120
 		var train:=FarmGameUI.action(hud,c,"✓ Treinado" if FarmCrew.level(worker)==2 else "Treinar • $240",Rect2(16,287,364,43),"crew_train_review:"+kind)
