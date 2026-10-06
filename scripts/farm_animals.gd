@@ -47,7 +47,7 @@ static func status(flock: Dictionary) -> String:
 static func food_cost(flock: Dictionary) -> int:
 	return maxi(0,ceili((100.0-float(flock.food))*0.08-0.000001))
 
-static func tick(item: Dictionary, delta: float) -> bool:
+static func tick(item: Dictionary, delta: float, bonus:float=1.0) -> bool:
 	var flock:Dictionary=item.flock
 	var before:=int(flock.nest)
 	var remaining:=maxf(0,delta)
@@ -59,7 +59,7 @@ static func tick(item: Dictionary, delta: float) -> bool:
 		if flock.food>0: span=minf(span,float(flock.food)*FOOD_SECONDS/(100.0*consumption))
 		if flock.water>0: span=minf(span,float(flock.water)*WATER_SECONDS/(100.0*consumption))
 		if flock.nest<limit:
-			var progress:float=float(item.egg_time)+span*rate(flock)
+			var progress:float=float(item.egg_time)+span*rate(flock)*bonus
 			var cycles:=int(floorf((progress+0.0000001)/45.0))
 			flock.nest=mini(limit,int(flock.nest)+cycles*eggs_per_cycle(flock))
 			item.egg_time=0.0 if flock.nest==limit else maxf(0,progress-cycles*45.0)

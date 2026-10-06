@@ -1,3 +1,7 @@
+# Animais e bem-estar — 0.56.0
+
+Cuide do ninho, escove a vaca e prepare a lama dos porquinhos. Rotinas no cercado, descanso noturno e um bônus opcional de ovos/leite. Abra **E → Bem-estar** perto dos animais. [Como funciona](ANIMAIS.md).
+
 # Primeiros laços — 0.46.0
 
 Ajude Dona Nena, acompanhe Pipoca de volta e recupere o cantinho de pesca. Abra **História** durante a caminhada para acompanhar o objetivo e marcar o destino. [Missões e controles](PRIMEIROS_LACOS.md).

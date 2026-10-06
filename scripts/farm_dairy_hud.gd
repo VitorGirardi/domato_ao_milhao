@@ -4,7 +4,7 @@ static func show(hud:FarmHUD,state:FarmState,index:int) -> void:
 	if index<0 or index>=state.items.size() or state.items[index].kind!="corral": return
 	hud.building_index=index
 	var data:Dictionary=state.items[index].dairy
-	var p:=FarmGameUI.open(hud,"dairy","Curral · "+(str(data.name) if data.owned else "Uma nova companhia"),"cow",840,584)
+	var p:=FarmGameUI.open(hud,"dairy","Curral · "+(str(data.name) if data.owned else "Uma nova companhia"),"cow",840,650)
 	if not data.owned:
 		FarmGameUI.icon(p,"cow",Rect2(315,122,210,175))
 		hud.label(p,"Uma vaga esperando pela Mimosa",Vector2(28,317),Vector2(784,36),27).horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
@@ -24,10 +24,11 @@ static func show(hud:FarmHUD,state:FarmState,index:int) -> void:
 		var text:String=("Coletar %d L"%data.milk if data.milk>0 else "Produzindo…") if i==0 else ("Repor · $%d"%cost if i==1 else "Encher · grátis")
 		var b:=FarmGameUI.action(hud,c,text,Rect2(14,244,222,44),"dairy:"+["milk","food","water"][i],i==0)
 		b.disabled=data.milk==0 if i==0 else (cost==0 or state.money<cost if i==1 else data.water>=100)
-	var status:="Leite cheio · colete para produzir mais" if data.milk==8 else ("Reponha água e ração para produzir" if minf(data.food,data.water)<=0 else "Próximos 2 L em %ds"%ceili(60-data.timer))
+	var status:="Leite cheio · colete para produzir mais" if data.milk==8 else ("Reponha água e ração para produzir" if minf(data.food,data.water)<=0 else "Próximos 2 L em %ds"%ceili(FarmAnimalCare.production_wait(state.items[index],60-data.timer)))
 	hud.label(p,status,Vector2(28,449),Vector2(784,30),22)
 	FarmGameUI.action(hud,p,"Estoque de leite · %s L"%state.stock_text("milk"),Rect2(28,511,380,45),"milk_market")
 	FarmGameUI.action(hud,p,"Raul · Cuidar do curral",Rect2(430,511,380,45),"raul")
+	FarmGameUI.action(hud,p,"Bem-estar · escovação e conforto",Rect2(28,579,784,44),"animal:open")
 static func confirm(hud:FarmHUD,state:FarmState,index:int) -> void:
 	var p:=FarmGameUI.open(hud,"dairy_confirm","Comprar Mimosa","cow",740,414)
 	hud.label(p,"$480 · uma vaca para este curral",Vector2(28,125),Vector2(684,40),27)

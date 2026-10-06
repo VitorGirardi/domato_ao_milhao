@@ -20,7 +20,7 @@ static func setup(cow:Dictionary,pen:Node3D) -> void:
 			tuft.rotation.y=i*1.3
 			pen.add_child(tuft)
 
-static func animate(cow:Dictionary,delta:float,player_pos:Vector3) -> void:
+static func animate(cow:Dictionary,delta:float,player_pos:Vector3,item:Dictionary={},elapsed:float=0) -> void:
 	if delta<=0: return
 	cow["dock_ready"]=false
 	var motion:Dictionary=cow.motion
@@ -36,6 +36,15 @@ static func animate(cow:Dictionary,delta:float,player_pos:Vector3) -> void:
 			node.position+=direction.normalized()*minf(delta*.42,direction.length());walking=true
 		cow["dock_ready"]=direction.length()<.07 and absf(angle_difference(node.rotation.y,0))<.06 and motion.graze<.05
 		motion.phase="rest";motion.wait=3
+	elif not item.is_empty() and (FarmAnimalCare.night(elapsed) or minf(item.dairy.food,item.dairy.water)<25):
+		var thirsty:bool=item.dairy.water<25
+		var hungry:bool=item.dairy.food<25
+		motion.phase="rest";motion.wait=1.0
+		# Pause and look toward the troughs. Never leave the tested turning corridor.
+		if (thirsty or hungry) and node.global_position.distance_to(player_pos)>1.9:
+			var at:=Vector3(3,0,1.45) if thirsty else Vector3(2.65,0,-2.25)
+			var direction:=at-node.position
+			node.rotation.y=rotate_toward(node.rotation.y,atan2(direction.x,direction.z),delta*.6)
 	elif motion.phase=="walk" and motion.graze<.05:
 		var direction:Vector3=SPOTS[motion.target]-node.position
 		if direction.length()<.08:
@@ -76,4 +85,6 @@ static func animate(cow:Dictionary,delta:float,player_pos:Vector3) -> void:
 			axis=Vector3.UP;angle=sin(motion.time*2)*.18
 		var target:Basis=bone.rest*Basis(axis,angle)
 		bone.node.basis=bone.node.basis.slerp(target,1-exp(-delta*10))
-	FarmLivestockPose.cow(node,motion.time,motion.graze,walking)
+	var sleeping:bool=not item.is_empty() and FarmAnimalCare.night(elapsed) and minf(item.dairy.food,item.dairy.water)>=25 and not cow.get("attending",false)
+	FarmLivestockPose.cow(node,motion.time*.25 if sleeping else motion.time,motion.graze,walking)
+	if sleeping:FarmLivestockPose.joint(node,"CowHead",Vector3.RIGHT,.16+.015*sin(motion.time*.8))

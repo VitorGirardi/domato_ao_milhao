@@ -136,7 +136,7 @@ func _test_rosa_save26() -> void:
 		assert(FarmOrchardStaff.configure(upgraded,[0]).is_empty())
 		assert(FarmOrchardStaff.complete(upgraded,0,"water").is_empty())
 		var saved:=upgraded.serialize()
-		assert(saved.version==27 and saved.orchard_staff.enabled)
+		assert(saved.version==FarmState.SAVE_VERSION and saved.orchard_staff.enabled)
 		var reloaded:=FarmState.new()
 		assert(reloaded.restore(JSON.parse_string(JSON.stringify(saved))))
 		assert(reloaded.orchard_staff==upgraded.orchard_staff)
@@ -145,7 +145,7 @@ func _test_rosa_save26() -> void:
 		assert(JSON.stringify(reloaded.pickup)==JSON.stringify(upgraded.pickup))
 		assert(reloaded.items[0].orchard.watered and FarmOrchardStaff.active(reloaded))
 		assert(reloaded.stock("orange")== (1000000000 if mode=="sandbox" else 0))
-		# Both progressions remain functional after the 27 round trip.
+		# Both progressions remain functional after the current-version round trip.
 		reloaded.pickup.cargo=FarmRosa.step(reloaded).cargo.duplicate()
 		assert(FarmRosa.act(reloaded,"story_deliver").is_empty())
 		reloaded.tick(300)

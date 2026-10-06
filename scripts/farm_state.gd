@@ -1,6 +1,6 @@
 class_name FarmState
 extends RefCounted
-const SAVE_VERSION:=27
+const SAVE_VERSION:=29
 ## Pure simulation. Coordinates are X/Z in meters; all persistence is JSON.
 
 const CROPS = {
@@ -686,10 +686,10 @@ func tick(delta: float) -> bool:
 			if item.kind=="plot" and item.planted and item.watered:
 				item.growth=minf(1.0,float(item.growth)+span/float(CROPS[item.crop].seconds))
 			if item.kind=="cheesery": FarmCheese.tick(item.cheese,span)
-			if item.kind=="corral" and not temporary_down.get(FarmFallTargets.item_key(self,index,"cow"),false): FarmDairy.tick(item.dairy,span)
-			if item.kind=="pigsty": FarmPigs.tick(item.pigs,span*active_animals("pig",index,int(item.pigs.count)))
+			if item.kind=="corral" and not temporary_down.get(FarmFallTargets.item_key(self,index,"cow"),false): FarmAnimalCare.tick(item,span)
+			if item.kind=="pigsty": FarmAnimalCare.tick(item,span*active_animals("pig",index,int(item.pigs.count)))
 			if item.kind=="coop":
-				if FarmAnimals.tick(item,span*active_animals("chicken",index,item.flock.names.size())): eggs=true
+				if FarmAnimalCare.tick(item,span*active_animals("chicken",index,item.flock.names.size())): eggs=true
 		if active:
 			staff.timer+=span
 			if staff.timer>=FarmStaff.interval(staff)-0.0000001:
@@ -849,6 +849,7 @@ func restore(data: Variant) -> bool:
 		if not _number(level) or level<1 or level>2 or float(level)!=floorf(float(level)): return false
 		if data.version>=7 and not item.has("level"): return false
 		if level==2 and not FarmProgression.UPGRADES.has(item.kind): return false
+		if item.has("animal_care") and (item.kind not in FarmAnimalCare.KINDS or not FarmAnimalCare.valid(item.animal_care)):return false
 		if item.kind=="cheesery" and (data.version<11 or not FarmCheese.valid(item.get("cheese"))): return false
 		if item.kind=="pigsty" and (data.version<18 or not FarmPigs.valid(item.get("pigs"))): return false
 		if item.kind=="corral" and (data.version<10 or not FarmDairy.valid(item.get("dairy"))): return false
@@ -930,6 +931,7 @@ func restore(data: Variant) -> bool:
 	items = data.items.duplicate(true)
 	for item in items:
 		item.level=int(item.get("level",1))
+		if item.has("animal_care"):item.animal_care={"seconds":float(item.animal_care.seconds),"visits":int(item.animal_care.visits)}
 		if item.kind=="orchard":
 			item.orchard.growth=float(item.orchard.growth)
 			item.orchard.fruit_time=float(item.orchard.fruit_time)

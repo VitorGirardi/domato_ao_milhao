@@ -1,3 +1,12 @@
+# 0.56.0 — Vida e cuidados dos animais
+
+- Bem-estar no galinheiro, curral e chiqueiro: palha, escovação e lama, gratuitos e opcionais.
+- Oito minutos ativos de conforto: +20% na velocidade de ovos/leite, sem consumo extra e sem acumular bônus.
+- Passeios dos três porcos, pausas noturnas, atenção aos suprimentos e galinhas evitando umas às outras.
+- Indicador de conforto, lama úmida e histórico por cercado, inclusive depois de mover ou salvar.
+- Cooperativo com validação de proximidade e rollback em falha de save. Save 29, protocolo 26.
+- Preserva animais e companheiros existentes, trabalho do Raul, Survival/Sandbox e saves antigos.
+
 # 0.55.0 — Movimento com mais vida
 
 - Ciclos de caminhada e corrida trabalhados no Blender, com flexão dos joelhos, apoio dos pés e movimento do quadril e dos ombros.

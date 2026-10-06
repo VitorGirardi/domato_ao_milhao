@@ -1,3 +1,7 @@
+# Testar 0.56 — Animais e bem-estar
+
+A pé, aproxime-se de um galinheiro, curral com vaca ou chiqueiro com porcos. Abra com E e escolha **Bem-estar**. Reponha água/ração se estiverem abaixo de 25% e faça o cuidado gratuito. Confira o coração sobre o cercado, o histórico e o bônus de oito minutos. Salve e continue: o conforto deve permanecer. À noite, observe as pausas; durante o dia os três porcos passeiam. [Regras completas](ANIMAIS.md).
+
 # Testar 0.55 — Movimento do personagem
 
 Ande com WASD, acelere com Shift e solte os controles. Observe a passada, os braços

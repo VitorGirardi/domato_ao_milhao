@@ -104,6 +104,7 @@ static func coop(hud:FarmHUD,state:FarmState,index:int,selected_hen:int) -> void
 	hud.building_index=index
 	var flock:Dictionary=state.items[index].flock
 	var p:=FarmGameUI.open(hud,"coop","Galinheiro","chicken",820,602)
+	FarmGameUI.action(hud,p,"Bem-estar",Rect2(285,547,220,38),"animal:open")
 	FarmGameUI.action(hud,p,"Cuidados",Rect2(26,112,230,42),"coop_tab:care",hud.coop_tab=="care")
 	FarmGameUI.action(hud,p,"Galinhas • %d"%flock.names.size(),Rect2(270,112,230,42),"coop_tab:hens",hud.coop_tab=="hens")
 	evolution(hud,p,state,index,Rect2(552,112,240,42))
