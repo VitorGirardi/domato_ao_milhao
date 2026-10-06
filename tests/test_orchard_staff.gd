@@ -95,5 +95,62 @@ func _initialize() -> void:
 	assert(FarmOrchardStaff.configure(sandbox,[0]).is_empty())
 	assert(FarmOrchardStaff.complete(sandbox,0,"water").is_empty())
 	assert(sandbox.orchard_staff.spent==0 and sandbox.staff.spent==0)
+	_test_rosa_save26()
 	print("ORCHARD_STAFF_OK")
 	quit()
+
+func _test_rosa_save26() -> void:
+	# Rosa 0.53 wrote version 26 without orchard_staff. Upgrade that real schema,
+	# retaining a story in progress, an independent resident order and the truck.
+	for mode in ["survival","sandbox"]:
+		var old_farm:=fixture(mode)
+		assert(FarmResidents.act(old_farm,"rosa","meet").is_empty())
+		assert(FarmResidents.act(old_farm,"rosa","accept").is_empty())
+		old_farm.pickup.cargo=FarmResidents.order(old_farm,"rosa").duplicate()
+		assert(FarmResidents.act(old_farm,"rosa","deliver").is_empty())
+		old_farm.elapsed+=FarmResidents.COOLDOWN
+		assert(FarmResidents.act(old_farm,"rosa","accept").is_empty())
+		for stage in range(2):
+			assert(FarmRosa.act(old_farm,"story_accept").is_empty())
+			old_farm.pickup.cargo=FarmRosa.step(old_farm).cargo.duplicate()
+			assert(FarmRosa.act(old_farm,"story_deliver").is_empty())
+		assert(FarmRosa.act(old_farm,"story_accept").is_empty())
+		old_farm.pickup.garage={"name":"Pomar da Rosa","paint":2,"bed":true,"tires":true,"engine":true,"rack":true}
+		old_farm.pickup.x=10.0;old_farm.pickup.z=2.0;old_farm.pickup.angle=.7
+		old_farm.pickup.cargo={"orange":33,"quartz":2}
+		old_farm.orchard_journey={"stage":2,"harvested":6}
+		var previous:=old_farm.serialize()
+		previous.version=26;previous.erase("orchard_staff")
+		var previous_bytes:=JSON.stringify(previous)
+		var upgraded:=FarmState.new()
+		assert(upgraded.restore(JSON.parse_string(previous_bytes)))
+		assert(JSON.stringify(previous)==previous_bytes)
+		assert(upgraded.orchard_staff==FarmOrchardStaff.fresh())
+		assert(upgraded.rosa_story.stage==2 and upgraded.rosa_story.active)
+		assert(upgraded.residents.rosa.done==1 and upgraded.residents.rosa.active)
+		assert(JSON.stringify(upgraded.residents)==JSON.stringify(old_farm.residents))
+		assert(upgraded.pickup==JSON.parse_string(JSON.stringify(old_farm.pickup)))
+		assert(upgraded.game_mode==mode and upgraded.infinite_resources()==(mode=="sandbox"))
+		assert(upgraded._money==old_farm._money and upgraded.revenue==old_farm.revenue)
+		assert(FarmGarage.capacity(upgraded)==120)
+		assert(FarmOrchardStaff.configure(upgraded,[0]).is_empty())
+		assert(FarmOrchardStaff.complete(upgraded,0,"water").is_empty())
+		var saved:=upgraded.serialize()
+		assert(saved.version==27 and saved.orchard_staff.enabled)
+		var reloaded:=FarmState.new()
+		assert(reloaded.restore(JSON.parse_string(JSON.stringify(saved))))
+		assert(reloaded.orchard_staff==upgraded.orchard_staff)
+		assert(reloaded.rosa_story==upgraded.rosa_story)
+		assert(reloaded.residents==upgraded.residents)
+		assert(JSON.stringify(reloaded.pickup)==JSON.stringify(upgraded.pickup))
+		assert(reloaded.items[0].orchard.watered and FarmOrchardStaff.active(reloaded))
+		assert(reloaded.stock("orange")== (1000000000 if mode=="sandbox" else 0))
+		# Both progressions remain functional after the 27 round trip.
+		reloaded.pickup.cargo=FarmRosa.step(reloaded).cargo.duplicate()
+		assert(FarmRosa.act(reloaded,"story_deliver").is_empty())
+		reloaded.tick(300)
+		assert(FarmOrchardStaff.complete(reloaded,0,"harvest").is_empty())
+		assert(reloaded.rosa_story.stage==3 and reloaded.orchard_staff.oranges==6)
+		var invalid:=saved.duplicate(true);invalid.erase("orchard_staff")
+		var before:=reloaded.serialize()
+		assert(not reloaded.restore(invalid) and reloaded.serialize()==before)
