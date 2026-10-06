@@ -19,7 +19,8 @@ static func show(hud:FarmHUD,state:FarmState,index:int) -> void:
 		var button:=FarmGameUI.action(hud,c,"Repor · $%d"%cost if slot==0 else "Encher · grátis",Rect2(18,95,350,48),"pigs:food" if slot==0 else "pigs:water")
 		button.disabled=data.count==0 or level>=1 or (slot==0 and state.money<cost)
 	hud.label(p,FarmPigs.status(data),Vector2(28,451),Vector2(780,32),22)
-	FarmGameUI.action(hud,p,"Bem-estar · um banho de lama",Rect2(28,588,784,42),"animal:open")
+	FarmGameUI.action(hud,p,"Bem-estar · um banho de lama",Rect2(28,588,380,42),"animal:open")
+	FarmGameUI.action(hud,p,"Filhotes e crescimento",Rect2(430,588,380,42),"young:open")
 	var buy:=FarmGameUI.action(hud,p,"Comprar porco · $240" if data.count<3 else "Chiqueiro completo",Rect2(28,499,385,49),"pigs:review",true)
 	buy.disabled=data.count>=3 or state.money<FarmPigs.COST
 	hud.label(p,"Companhia e cuidado · sem produção\nSaldo: "+hud.money_text(state),Vector2(435,499),Vector2(370,64),18)

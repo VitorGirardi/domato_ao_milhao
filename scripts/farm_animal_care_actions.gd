@@ -5,7 +5,7 @@ extends RefCounted
 
 static func proximity_error(game:Node3D,command:Dictionary,sender:int=1) -> String:
 	var action:Variant=command.get("action","")
-	if action!="animal:care":return ""
+	if action!="animal:care" and action not in FarmYoung.ACTIONS:return ""
 	var local:bool=not game.network.active or sender==game.multiplayer.get_unique_id()
 	var position:Vector3=game.player.position if local else game.network.target
 	var airborne:bool=game.actor.airborne if local else game.network.remote_airborne

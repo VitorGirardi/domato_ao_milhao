@@ -614,7 +614,11 @@ func update_animals(state: FarmState) -> void:
 	for i in range(state.items.size()):
 		var item:Dictionary=state.items[i]
 		if item.kind in FarmAnimalCare.KINDS and i<item_nodes.size():FarmAnimalCareVisual.update(item_nodes[i],item,state.elapsed,highlighted_index==i)
-	for pen in pigsties:FarmPigPen.update(pen,state.items[pen.index].pigs)
+	for cow in cows:FarmYoungVisual.apply(cow.node,state.items[cow.index],0)
+	for hen in chickens:FarmYoungVisual.apply(hen.node,state.items[hen.coop],hen.hen)
+	for pen in pigsties:
+		for pig in pen.pigs:FarmYoungVisual.apply(pig.node,state.items[pen.index],pig.slot)
+		FarmPigPen.update(pen,state.items[pen.index].pigs)
 	for index in coop_views:
 		var flock:Dictionary=state.items[index].flock
 		var view:Dictionary=coop_views[index]
@@ -716,6 +720,7 @@ func animate(delta: float, player_pos: Vector3, state: FarmState, event: String 
 	for chicken in chickens:
 		var hen: Node3D = chicken.node
 		if hen.get_meta("temporary_down",false):continue
+		var before:=hen.position
 		var phase: float = chicken.phase
 		var local:=Vector3(sin(clock*0.30+phase)*2.5,0,2.8+cos(clock*0.22+phase)*0.6)
 		var resting:=sin(clock*0.55+phase)>0.35
@@ -735,14 +740,15 @@ func animate(delta: float, player_pos: Vector3, state: FarmState, event: String 
 		# Feet pivot at the hips; keep them planted when the hen stops.
 		var foraging:bool=fposmod(clock+phase,11.6)<5.8 and event.is_empty() and not sleeping and not need
 		var paused:bool=foraging or (resting and chicken.hen==2 and event.is_empty() and not sleeping and not need) or ((sleeping or need) and direction.length()<.18)
-		var stepping:bool=direction.length()>0.12 and not paused
-		FarmHenMotion.pose(hen,clock+phase,delta,stepping,foraging)
 		direction.y = 0
 		var dancing:bool=event=="dance" and is_manager
 		hen.rotation.x=0.0
 		hen.rotation.z=sin(clock*9)*0.2 if dancing else 0.0
 		hen.position.y=absf(sin(clock*9))*0.26 if dancing else 0.0
-		if paused: continue
+		if paused:
+			FarmYoungVisual.stride(hen,before,delta,.40)
+			FarmHenMotion.pose(hen,clock+phase,delta,false,foraging)
+			continue
 		if direction.length() > 0.1:
 			hen.rotation.y = lerp_angle(hen.rotation.y, atan2(direction.x, direction.z), delta * 4)
 			var step:=direction.normalized()*minf(direction.length(),delta*(2.0 if event=="inspect" and is_manager else 0.65))
@@ -758,7 +764,9 @@ func animate(delta: float, player_pos: Vector3, state: FarmState, event: String 
 					hen.position.x=candidate.x
 					hen.position.z=candidate.z
 					break
-			if not dancing: hen.position.y=abs(sin(clock*13+phase))*0.045
+		var stride:=FarmYoungVisual.stride(hen,before,delta,.40)
+		FarmHenMotion.pose(hen,clock+phase,delta,stride.blend>.01,false,stride)
+		if not dancing: hen.position.y=absf(sin(stride.phase))*0.035*stride.blend*hen.scale.x
 
 func _hen_walkable(at: Vector3, state: FarmState) -> bool:
 	if at.x<FarmLandscape.WALK_MIN.x or at.x>FarmLandscape.WALK_MAX.x or at.z<FarmLandscape.WALK_MIN.y or at.z>FarmLandscape.WALK_MAX.y:return false

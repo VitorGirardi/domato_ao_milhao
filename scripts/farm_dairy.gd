@@ -32,6 +32,7 @@ static func care(state:FarmState,index:int,action:String) -> String:
 		if data.owned: return "Este curral já tem uma vaca."
 		if state.money<COW_COST: return "Faltam moedas para comprar a vaca."
 		state.money-=COW_COST; data.owned=true
+		if state.items[index].has("young_ages"):state.items[index].young_ages.append(FarmYoung.DURATIONS.corral)
 		return ""
 	if not data.owned: return "Compre a primeira vaca."
 	match action:

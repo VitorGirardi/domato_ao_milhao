@@ -12,6 +12,7 @@ static func show(hud:FarmHUD,state:FarmState,index:int) -> void:
 		var buy:=FarmGameUI.action(hud,p,"Comprar vaca · $480",Rect2(215,459,410,53),"dairy:review",true)
 		buy.disabled=state.money<FarmDairy.COW_COST
 		hud.label(p,"Saldo: "+hud.money_text(state),Vector2(28,539),Vector2(784,28),18)
+		FarmGameUI.action(hud,p,"Criar uma bezerra · $280",Rect2(28,579,784,44),"young:open")
 		return
 	for i in range(3):
 		var c:=FarmGameUI.card(hud,p,Rect2(26+i*268,126,250,302))
@@ -21,14 +22,16 @@ static func show(hud:FarmHUD,state:FarmState,index:int) -> void:
 		hud.label(c,"%d / 8 L"%data.milk if i==0 else "%d%%"%roundi(value*100),Vector2(14,153),Vector2(222,38),29).horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
 		FarmGameUI.meter(hud,c,Rect2(20,205,210,15),value,Color("6aaab9") if i!=1 else Color("d4a44d"))
 		var cost:=ceili((100-data.food)*.12-0.000001)
-		var text:String=("Coletar %d L"%data.milk if data.milk>0 else "Produzindo…") if i==0 else ("Repor · $%d"%cost if i==1 else "Encher · grátis")
+		var text:String=("Coletar %d L"%data.milk if data.milk>0 else ("Crescendo…" if FarmYoung.progress(state.items[index])<1 else "Produzindo…")) if i==0 else ("Repor · $%d"%cost if i==1 else "Encher · grátis")
 		var b:=FarmGameUI.action(hud,c,text,Rect2(14,244,222,44),"dairy:"+["milk","food","water"][i],i==0)
 		b.disabled=data.milk==0 if i==0 else (cost==0 or state.money<cost if i==1 else data.water>=100)
 	var status:="Leite cheio · colete para produzir mais" if data.milk==8 else ("Reponha água e ração para produzir" if minf(data.food,data.water)<=0 else "Próximos 2 L em %ds"%ceili(FarmAnimalCare.production_wait(state.items[index],60-data.timer)))
+	if FarmYoung.progress(state.items[index])<1:status="Bezerra crescendo · leite quando chegar à fase adulta"
 	hud.label(p,status,Vector2(28,449),Vector2(784,30),22)
 	FarmGameUI.action(hud,p,"Estoque de leite · %s L"%state.stock_text("milk"),Rect2(28,511,380,45),"milk_market")
 	FarmGameUI.action(hud,p,"Raul · Cuidar do curral",Rect2(430,511,380,45),"raul")
-	FarmGameUI.action(hud,p,"Bem-estar · escovação e conforto",Rect2(28,579,784,44),"animal:open")
+	FarmGameUI.action(hud,p,"Bem-estar · escovação e conforto",Rect2(28,579,380,44),"animal:open")
+	FarmGameUI.action(hud,p,"Filhotes e crescimento",Rect2(430,579,380,44),"young:open")
 static func confirm(hud:FarmHUD,state:FarmState,index:int) -> void:
 	var p:=FarmGameUI.open(hud,"dairy_confirm","Comprar Mimosa","cow",740,414)
 	hud.label(p,"$480 · uma vaca para este curral",Vector2(28,125),Vector2(684,40),27)

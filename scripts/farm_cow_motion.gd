@@ -25,6 +25,8 @@ static func animate(cow:Dictionary,delta:float,player_pos:Vector3,item:Dictionar
 	cow["dock_ready"]=false
 	var motion:Dictionary=cow.motion
 	var node:Node3D=cow.node
+	var before:=node.position
+	var heading:=node.rotation.y
 	motion.time+=delta
 	var walking:=false
 	if cow.get("attending",false):
@@ -69,14 +71,15 @@ static func animate(cow:Dictionary,delta:float,player_pos:Vector3,item:Dictionar
 			else:
 				motion.phase="walk";motion.target=(motion.target+1)%SPOTS.size()
 	motion.graze=move_toward(motion.graze,1.0 if motion.phase=="graze" else 0.0,delta*.8)
-	if walking: motion.gait+=delta*5.8
+	var stride:=FarmYoungVisual.stride(node,before,delta,.9,angle_difference(heading,node.rotation.y))
+	motion.gait=stride.phase
 	for key in cow.bones:
 		var bone:Dictionary=cow.bones[key]
 		var angle:=0.0
 		var axis:=Vector3.RIGHT
 		if key.begins_with("Leg"):
 			var phase:float={"LegBL":0.0,"LegFL":PI*.5,"LegBR":PI,"LegFR":PI*1.5}[key]
-			angle=sin(motion.gait+phase)*.20 if walking else 0.0
+			angle=sin(motion.gait+phase)*.20*stride.blend
 		elif key=="CowNeck":
 			angle=motion.graze*1.12
 		elif key=="CowHead":
@@ -84,7 +87,8 @@ static func animate(cow:Dictionary,delta:float,player_pos:Vector3,item:Dictionar
 		elif key=="CowTail":
 			axis=Vector3.UP;angle=sin(motion.time*2)*.18
 		var target:Basis=bone.rest*Basis(axis,angle)
-		bone.node.basis=bone.node.basis.slerp(target,1-exp(-delta*10))
+		var proportions:Vector3=bone.node.scale
+		bone.node.basis=bone.node.basis.orthonormalized().slerp(target.orthonormalized(),1-exp(-delta*10)).scaled(proportions)
 	var sleeping:bool=not item.is_empty() and FarmAnimalCare.night(elapsed) and minf(item.dairy.food,item.dairy.water)>=25 and not cow.get("attending",false)
 	FarmLivestockPose.cow(node,motion.time*.25 if sleeping else motion.time,motion.graze,walking)
 	if sleeping:FarmLivestockPose.joint(node,"CowHead",Vector3.RIGHT,.16+.015*sin(motion.time*.8))
