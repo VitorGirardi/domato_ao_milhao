@@ -151,6 +151,17 @@ func _player() -> void:
 	player.add_child(collision)
 	avatar = world.model("farmer",player)
 	actor.setup(avatar,world)
+	_configure_locomotion(actor)
+
+func _configure_locomotion(performer:FarmAvatar,remote_player:bool=false) -> void:
+	performer.locomotion.enabled=true
+	# Evaluate at animation time: mounting and tool actions can pose the actor
+	# immediately, before the next player physics tick.
+	performer.locomotion_allowed=func() -> bool:
+		if remote_player:
+			var peer_id:int=network.accepted
+			return network.mounts.rider!=peer_id and not falls.is_player_down(peer_id) and not weapons.combat.poses.get(peer_id,{}).get("armed",false) and not gathering.jobs.has(peer_id) and not companions.gestures.has(peer_id)
+		return session_started and not build_mode and not pickup.mounted and not _mounted() and not weapons.armed and not falls.local_down() and not gathering.jobs.has(gathering.own_id()) and not companions.gestures.has(companions.own_id())
 
 func _mounted() -> bool:
 	return horse.mounted and (not network.active or network.mounts.local_rider())
