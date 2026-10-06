@@ -1,3 +1,11 @@
+# 0.57.0 — Filhotes e crescimento
+
+- Pintinhos na ampliação do galinheiro, bezerra no curral vazio e leitões nas vagas do chiqueiro.
+- Crescimento gradual com água/ração, salvo por fazenda. Animais antigos continuam adultos.
+- Proporções juvenis, penugem amarela e características adultas graduais. Passadas ligadas ao deslocamento e tamanho, com parada suave.
+- Produção somente adulta, alternativas de compra adulta preservadas e confirmação com rollback de save.
+- Solo e cooperativo, save 30, protocolo 27. [Detalhes](FILHOTES.md).
+
 # 0.56.0 — Vida e cuidados dos animais
 
 - Bem-estar no galinheiro, curral e chiqueiro: palha, escovação e lama, gratuitos e opcionais.

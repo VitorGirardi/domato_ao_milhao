@@ -3,7 +3,7 @@ extends RefCounted
 ## Visual-only pose. Call after navigation; time includes each hen's phase.
 ## Never changes the root transform, collisions, economy or network state.
 
-static func pose(hen:Node3D,time:float,delta:float,stepping:bool,pecking:bool) -> void:
+static func pose(hen:Node3D,time:float,delta:float,stepping:bool,pecking:bool,gait:Dictionary={}) -> void:
 	if delta<=0: return
 	if not hen.has_meta("hen_pose"):
 		var skin:=hen.find_child("HenBody",true,false) as MeshInstance3D
@@ -22,6 +22,7 @@ static func pose(hen:Node3D,time:float,delta:float,stepping:bool,pecking:bool) -
 		var leg:Node3D=data.left if side==0 else data.right
 		if not leg:continue
 		var angle:=sin(time*13+(PI if side==0 else 0.0))*.38 if stepping else 0.0
+		if not gait.is_empty() and not forage:angle=sin(gait.phase+(PI if side==0 else 0.0))*.38*gait.blend
 		if scratch and side==int(floor(time/5.8))%2:
 			angle=-absf(sin(cycle/1.1*TAU))*.48
 		leg.rotation.x=lerpf(leg.rotation.x,angle,1.0-exp(-delta*22))

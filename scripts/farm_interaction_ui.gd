@@ -103,7 +103,8 @@ static func coop(hud:FarmHUD,state:FarmState,index:int,selected_hen:int) -> void
 	if hud.building_index!=index: hud.coop_tab="care"
 	hud.building_index=index
 	var flock:Dictionary=state.items[index].flock
-	var p:=FarmGameUI.open(hud,"coop","Galinheiro","chicken",820,602)
+	var p:=FarmGameUI.open(hud,"coop","Galinheiro","chicken",820,650)
+	FarmGameUI.action(hud,p,"Filhotes e crescimento",Rect2(26,598,768,36),"young:open")
 	FarmGameUI.action(hud,p,"Bem-estar",Rect2(285,547,220,38),"animal:open")
 	FarmGameUI.action(hud,p,"Cuidados",Rect2(26,112,230,42),"coop_tab:care",hud.coop_tab=="care")
 	FarmGameUI.action(hud,p,"Galinhas • %d"%flock.names.size(),Rect2(270,112,230,42),"coop_tab:hens",hud.coop_tab=="hens")
@@ -126,7 +127,7 @@ static func coop(hud:FarmHUD,state:FarmState,index:int,selected_hen:int) -> void
 			var b:=FarmGameUI.action(hud,c,text,Rect2(14,240,216,45),"care:"+["collect","food","water"][i],i==0)
 			b.disabled=flock.nest==0 if i==0 else (cost==0 or state.money<cost if i==1 else flock.water>=100)
 			b.tooltip_text="Sem água ou ração, a produção fica mais lenta."
-		var status:="Ninho cheio! Colete os ovos." if flock.nest>=FarmAnimals.capacity(flock) else "%d ovos a cada %d s • %s"%[FarmAnimals.eggs_per_cycle(flock),roundi(45/FarmAnimals.rate(flock)),FarmAnimals.status(flock)]
+		var status:="Ninho cheio! Colete os ovos." if flock.nest>=FarmAnimals.capacity(flock) else "%d ovos a cada %d s • %s"%[FarmAnimals.eggs_per_cycle(flock),roundi(45/(FarmAnimals.rate(flock)*maxf(.01,FarmYoung.productivity(state.items[index])))),FarmAnimals.status(flock)]
 		hud.label(p,status,Vector2(28,506),Vector2(764,30),19)
 	else:
 		for i in range(flock.names.size()):

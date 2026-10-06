@@ -43,6 +43,8 @@ static func animate(pen:Dictionary,delta:float,player:Vector3,item:Dictionary={}
 		var pig:Node3D=entry.node
 		if not pig.visible or pig.get_meta("temporary_down",false):continue
 		var time:float=pen.clock+entry.slot*2.1
+		var before:=pig.position
+		var heading:=pig.rotation.y
 		var walking:=false
 		if not sleeping:
 			entry.wait=maxf(0,entry.wait-delta)
@@ -62,4 +64,6 @@ static func animate(pen:Dictionary,delta:float,player:Vector3,item:Dictionary={}
 					pig.rotation.y=rotate_toward(pig.rotation.y,desired,delta*.85)
 					if absf(angle_difference(pig.rotation.y,desired))<.20:pig.position=next;walking=true
 		FarmLivestockPose.pig(pig,time*.2 if sleeping else time,walking)
+		var stride:=FarmYoungVisual.stride(pig,before,delta,.62,angle_difference(heading,pig.rotation.y))
+		FarmYoungVisual.pig_legs(pig,stride)
 		if sleeping:FarmLivestockPose.joint(pig,"PigHead",Vector3.RIGHT,.18+.018*sin(time*.8))

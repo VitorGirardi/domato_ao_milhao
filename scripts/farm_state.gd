@@ -1,6 +1,6 @@
 class_name FarmState
 extends RefCounted
-const SAVE_VERSION:=29
+const SAVE_VERSION:=30
 ## Pure simulation. Coordinates are X/Z in meters; all persistence is JSON.
 
 const CROPS = {
@@ -402,7 +402,9 @@ func upgrade_building(index:int) -> String:
 	if money<price: return "Faltam moedas: esta evolução custa $%d."%price
 	money-=price
 	item.level=2
-	if item.kind=="coop": item.flock.names.append_array(["Paçoca","Jurema","Dona Geminha"])
+	if item.kind=="coop":
+		item.flock.names.append_array(["Paçoca","Jurema","Dona Geminha"])
+		if item.has("young_ages"):item.young_ages.append_array([480.0,480.0,480.0])
 	return ""
 
 func buy_professional_watering() -> String:
@@ -858,6 +860,7 @@ func restore(data: Variant) -> bool:
 		if item.kind=="coop":
 			if data.version>=3 and not item.has("flock"): return false
 			if item.has("flock") and not FarmAnimals.valid(item.flock,int(level)): return false
+		if not FarmYoung.valid(item):return false
 		var area := item_rect(item.kind, Vector2(item.x, item.z), int(item.turn))
 		var land := Rect2(Vector2(data.center[0], data.center[1]) - Vector2.ONE * float(data.land_size) / 2, Vector2.ONE * float(data.land_size))
 		var inside:=land.encloses(area)
@@ -931,6 +934,8 @@ func restore(data: Variant) -> bool:
 	items = data.items.duplicate(true)
 	for item in items:
 		item.level=int(item.get("level",1))
+		if item.has("young_ages"):
+			for slot in range(item.young_ages.size()):item.young_ages[slot]=float(item.young_ages[slot])
 		if item.has("animal_care"):item.animal_care={"seconds":float(item.animal_care.seconds),"visits":int(item.animal_care.visits)}
 		if item.kind=="orchard":
 			item.orchard.growth=float(item.orchard.growth)

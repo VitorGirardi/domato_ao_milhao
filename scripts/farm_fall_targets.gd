@@ -34,10 +34,10 @@ static func collect(game:Node3D) -> Dictionary:
 	if is_instance_valid(game.horse):add(result,"horse",game.horse,game.horse.model,null,"horse",.85,2.6)
 	add(result,"cat",world.cat,world.cat.model,null,"cat",.32,.6)
 	for chicken in world.chickens:
-		add(result,item_key(state,chicken.coop,"chicken",chicken.hen),chicken.node,chicken.node,null,"chicken",.32,.85,chicken.coop)
+		add(result,item_key(state,chicken.coop,"chicken",chicken.hen),chicken.node,chicken.node,null,"chicken",.32*chicken.node.scale.x,.85*chicken.node.scale.y,chicken.coop)
 	for cow in world.cows:
-		add(result,item_key(state,cow.index,"cow"),cow.node,cow.node,null,"cow",.85,2.0,cow.index)
+		add(result,item_key(state,cow.index,"cow"),cow.node,cow.node,null,"cow",.85*cow.node.scale.x,2.0*cow.node.scale.y,cow.index)
 	for pen in world.pigsties:
 		for pig in pen.pigs:
-			add(result,item_key(state,pen.index,"pig",pig.slot),pig.node,pig.node,null,"pig",.6,1.1,pen.index)
+			add(result,item_key(state,pen.index,"pig",pig.slot),pig.node,pig.node,null,"pig",.6*pig.node.scale.x,1.1*pig.node.scale.y,pen.index)
 	return result

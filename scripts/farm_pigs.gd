@@ -37,7 +37,9 @@ static func care(state:FarmState,index:int,action:String) -> String:
 	if action=="buy":
 		if data.count>=CAPACITY:return "O chiqueiro já tem três porcos."
 		if state.money<COST:return "Faltam moedas para comprar o porco."
-		state.money-=COST;data.count=int(data.count)+1;return ""
+		state.money-=COST;data.count=int(data.count)+1
+		if state.items[index].has("young_ages"):state.items[index].young_ages.append(FarmYoung.DURATIONS.pigsty)
+		return ""
 	if action not in ["food","water"]:return "Cuidado inválido."
 	if data.count==0:return "Compre o primeiro porco."
 	if action=="food":

@@ -1,3 +1,7 @@
+# Filhotes e crescimento — 0.57.0
+
+Crie pintinhos, uma bezerra e leitões. Crescimento gradual, proporções próprias e passadas que acompanham o movimento. **E → Filhotes e crescimento**. [Guia e custos](FILHOTES.md).
+
 # Animais e bem-estar — 0.56.0
 
 Cuide do ninho, escove a vaca e prepare a lama dos porquinhos. Rotinas no cercado, descanso noturno e um bônus opcional de ovos/leite. Abra **E → Bem-estar** perto dos animais. [Como funciona](ANIMAIS.md).

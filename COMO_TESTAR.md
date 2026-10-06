@@ -1,3 +1,7 @@
+# Testar 0.57 — Filhotes e crescimento
+
+Perto do cercado, abra **E → Filhotes e crescimento**. No galinheiro nível 1, confirme a ampliação com três pintinhos; no curral vazio, escolha a bezerra; no chiqueiro, um leitão por vaga. Observe o tamanho, a penugem dos pintinhos, as passadas curtas e as pausas para ciscar/farejar/pastar. Reponha água e ração para crescer. Salve e continue para conferir a idade. No cooperativo, atualize os dois PCs. [Custos e regras](FILHOTES.md).
+
 # Testar 0.56 — Animais e bem-estar
 
 A pé, aproxime-se de um galinheiro, curral com vaca ou chiqueiro com porcos. Abra com E e escolha **Bem-estar**. Reponha água/ração se estiverem abaixo de 25% e faça o cuidado gratuito. Confira o coração sobre o cercado, o histórico e o bônus de oito minutos. Salve e continue: o conforto deve permanecer. À noite, observe as pausas; durante o dia os três porcos passeiam. [Regras completas](ANIMAIS.md).

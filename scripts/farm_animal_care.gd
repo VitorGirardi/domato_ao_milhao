@@ -58,11 +58,14 @@ static func tick(item:Dictionary,delta:float) -> bool:
 	while remaining>.000001:
 		var comfort:=seconds(item)
 		var span:=minf(remaining,comfort) if comfort>0 else remaining
-		var bonus:=MULTIPLIER if comfort>0 else 1.0
+		span=FarmYoung.boundary(item,span)
+		var growing:=FarmYoung.growing(item) and FarmYoung.supplied(item)
+		var bonus:=(MULTIPLIER if comfort>0 else 1.0)*FarmYoung.productivity(item)
 		match item.kind:
 			"coop":eggs=FarmAnimals.tick(item,span,bonus) or eggs
 			"corral":FarmDairy.tick(item.dairy,span,bonus)
 			"pigsty":FarmPigs.tick(item.pigs,span)
+		if growing:FarmYoung.advance(item,span)
 		if item.has("animal_care"):item.animal_care.seconds=maxf(0,comfort-span)
 		remaining-=span
 	return eggs
