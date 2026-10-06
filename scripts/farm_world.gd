@@ -38,6 +38,7 @@ var field_motion:=FarmIrrigationMotion.new()
 var field_anchor:=""
 var staff_services:=-1
 var staff_motion:=FarmStaffMotion.new()
+var orchard_staff_motion:=FarmOrchardStaffMotion.new()
 var irrigation_motion:=FarmIrrigationMotion.new()
 var irrigation_feedback:=FarmFeedback.new()
 
@@ -417,6 +418,8 @@ func rebuild(state: FarmState) -> void:
 	raul_motion.anchor="";raul_motion.reset()
 	chico_motion.reset()
 	staff_anchor=""
+	orchard_staff_motion.reset()
+	if staff_actor: staff_actor.action_time=0
 	field_anchor=""
 	update_staff(state,0)
 	cat.anchored=false
@@ -478,12 +481,16 @@ func update_staff(state: FarmState, delta: float) -> void:
 	update_cheese_worker(state,delta)
 	update_field_staff(state,delta)
 	var worker:Dictionary=state.staff
-	var visible_worker:bool=worker.hired and worker.coop>=0
+	var orchard_mode:bool=state.orchard_staff.enabled
+	var visible_worker:bool=worker.hired and (worker.coop>=0 or orchard_mode)
 	if not visible_worker:
 		if is_instance_valid(staff_root): staff_root.visible=false
+		orchard_staff_motion.reset()
+		if staff_actor: staff_actor.action_time=0
 		staff_services=int(worker.services)
 		return
-	if not is_instance_valid(staff_root):
+	var created:=not is_instance_valid(staff_root)
+	if created:
 		staff_root=Node3D.new()
 		add_child(staff_root)
 		var mesh:=model("helper",staff_root)
@@ -496,10 +503,20 @@ func update_staff(state: FarmState, delta: float) -> void:
 		staff_label.billboard=BaseMaterial3D.BILLBOARD_ENABLED
 		staff_label.modulate=Color("fff1cb")
 		staff_root.add_child(staff_label)
+		if orchard_mode: orchard_staff_motion.spawn(self,state)
 	staff_root.visible=true
 	if state.temporary_down.get("npc:staff",false):
 		state.staff_accessible=false
+		orchard_staff_motion.reset()
+		staff_actor.action_time=0
 		return
+	if orchard_mode:
+		state.staff_accessible=false
+		staff_anchor=""
+		if delta>0: orchard_staff_motion.update(self,state,delta)
+		elif created: staff_label.text="ZECA • POMAR"
+		return
+	orchard_staff_motion.reset()
 	var item:Dictionary=state.items[int(worker.coop)]
 	var site:="%d:%s:%s:%s"%[worker.coop,item.x,item.z,item.turn]
 	var anchor:=site+str(state.legacy_irrigation())

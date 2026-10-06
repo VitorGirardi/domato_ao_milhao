@@ -2,7 +2,7 @@ class_name FarmNetwork
 extends Node
 ## Host-authoritative cooperative farm.
 const PORT:=28729
-const PROTOCOL:=23
+const PROTOCOL:=24
 var game:Node3D
 var active:=false
 var ready_session:=false
@@ -542,6 +542,7 @@ func refresh_panel() -> void:
 	var s:FarmState=game.state
 	var i:int=game.selected
 	match h.modal_kind:
+		"orchard_staff":FarmOrchardStaffHUD.update(h,s)
 		"orchard":FarmInteractionUI.orchard(h,s,h.building_index)
 		"orchard_mission":FarmOrchardMission.show(h,s)
 		"house":FarmInteractionUI.house(h,s,h.building_index)

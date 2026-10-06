@@ -9,7 +9,7 @@ static func orchard(hud: FarmHUD, state: FarmState, index: int) -> void:
 	var mature := float(data.get("growth", 0)) >= FarmOrchard.GROW_SECONDS
 	var ready := int(data.get("ready", 0))
 	var watered := bool(data.get("watered", false))
-	var p := FarmGameUI.open(hud, "orchard", "Laranjeira do pomar", "seed", 760, 470)
+	var p := FarmGameUI.open(hud, "orchard", "Laranjeira do pomar", "seed", 760, 542)
 	p.set_meta("orchard_status", hud.label(p, FarmOrchard.status(item), Vector2(26, 118), Vector2(708, 38), 25))
 	var description := "Regue a muda para ela crescer. Depois de adulta, começa a formar frutas."
 	if mature: description = "Regue uma vez por safra. Colha as laranjas maduras e cuide da próxima colheita."
@@ -28,6 +28,7 @@ static func orchard(hud: FarmHUD, state: FarmState, index: int) -> void:
 	p.set_meta("orchard_water", water)
 	p.set_meta("orchard_harvest", harvest)
 	hud.label(p, "Aproxime-se a pé para regar e colher. As frutas vão para o estoque.", Vector2(26, 412), Vector2(708, 28), 16)
+	FarmGameUI.action(hud,p,"Zeca · cuidar do pomar",Rect2(26,471,708,44),"orchard_staff:open")
 
 static func update_orchard(hud: FarmHUD, state: FarmState) -> void:
 	if hud.modal_kind != "orchard" or not is_instance_valid(hud.modal): return

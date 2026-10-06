@@ -1,6 +1,6 @@
 class_name FarmState
 extends RefCounted
-const SAVE_VERSION:=26
+const SAVE_VERSION:=27
 ## Pure simulation. Coordinates are X/Z in meters; all persistence is JSON.
 
 const CROPS = {
@@ -58,6 +58,7 @@ var horse:Dictionary=FarmHorse.defaults()
 var pickup:Dictionary=FarmPickup.defaults()
 var chapter:Dictionary=FarmChapter.fresh()
 var residents:Dictionary=FarmResidents.fresh()
+var orchard_staff:Dictionary=FarmOrchardStaff.fresh()
 var rosa_story:Dictionary=FarmRosa.fresh()
 var orchard_journey:Dictionary=FarmOrchard.fresh_journey()
 var game_mode:="legacy"
@@ -197,6 +198,7 @@ func configure_irrigation(plots:Array) -> String:
 	for index in plots:
 		if not index is int or index<0 or index>=items.size() or items[index].kind!="plot": return "Canteiro inválido. Abra a seleção novamente."
 		if index not in unique: unique.append(index)
+	if not field_staff.hired:FarmOrchardStaff.stop(self)
 	cultivation.enabled=false
 	irrigation.plots=unique
 	irrigation.enabled=true
@@ -245,6 +247,7 @@ func assign_staff(index: int) -> String:
 	if not staff.hired: return "Contrate o Zeca primeiro."
 	if index<0 or index>=items.size() or items[index].kind!="coop": return "Escolha um galinheiro válido."
 	if not field_staff.hired: irrigation.enabled=false
+	FarmOrchardStaff.stop(self)
 	if staff.coop==index: return ""
 	staff.coop=index
 	staff.timer=0.0
@@ -253,11 +256,13 @@ func assign_staff(index: int) -> String:
 func pause_staff() -> String:
 	if not staff.hired: return "Contrate o Zeca primeiro."
 	if staff.paused and staff.coop<0: return "Escolha um galinheiro antes de retomar."
+	if staff.paused:FarmOrchardStaff.stop(self)
 	staff.paused=not staff.paused
 	staff.reason="manual" if staff.paused else ""
 	return ""
 
 func dismiss_staff() -> void:
+	FarmOrchardStaff.stop(self)
 	if not field_staff.hired: irrigation.enabled=false
 	staff.hired=false
 	staff.paused=true
@@ -445,6 +450,7 @@ func remove_item(index: int) -> String:
 	if items[index].kind=="barn" and reserve_count()>reserve_capacity()-FarmProgression.reserve_slots(items[index]):
 		return "Retire a reserva do celeiro antes de removê-lo."
 	money+=(int(ITEMS[items[index].kind].cost)+FarmProgression.investment(items[index]))/2
+	FarmOrchardStaff.remove(self,index)
 	FarmCultivation.remove(self,index)
 	FarmCheeseWorker.remove(self,index)
 	FarmDairyWorker.remove(self,index)
@@ -735,7 +741,7 @@ func expand() -> String:
 	return ""
 
 func serialize() -> Dictionary:
-	return {"version": SAVE_VERSION, "orchard_journey":orchard_journey.duplicate(), "residents":residents.duplicate(true), "rosa_story":rosa_story.duplicate(), "chapter":chapter.duplicate(), "pickup":pickup.duplicate(true), "game_mode":game_mode, "character_id":character_id, "resources":resources.duplicate(true), "horse":horse.duplicate(), "armory":armory.duplicate(), "owned_parcels":owned_parcels.duplicate(), "unlimited_money":unlimited_money, "farm_xp":farm_xp, "dairy_worker":dairy_worker.duplicate(), "cheese_worker":cheese_worker.duplicate(), "cheese_stock":cheese_stock, "cheese_order":cheese_order.duplicate(), "milk_stock":milk_stock, "cultivation":cultivation.duplicate(true), "field_staff":field_staff.duplicate(true), "professional_watering":professional_watering, "irrigation":irrigation.duplicate(true), "money": _money, "claimed": claimed,
+	return {"version": SAVE_VERSION, "rosa_story":rosa_story.duplicate(), "orchard_staff":orchard_staff.duplicate(true), "orchard_journey":orchard_journey.duplicate(), "residents":residents.duplicate(true), "chapter":chapter.duplicate(), "pickup":pickup.duplicate(true), "game_mode":game_mode, "character_id":character_id, "resources":resources.duplicate(true), "horse":horse.duplicate(), "armory":armory.duplicate(), "owned_parcels":owned_parcels.duplicate(), "unlimited_money":unlimited_money, "farm_xp":farm_xp, "dairy_worker":dairy_worker.duplicate(), "cheese_worker":cheese_worker.duplicate(), "cheese_stock":cheese_stock, "cheese_order":cheese_order.duplicate(), "milk_stock":milk_stock, "cultivation":cultivation.duplicate(true), "field_staff":field_staff.duplicate(true), "professional_watering":professional_watering, "irrigation":irrigation.duplicate(true), "money": _money, "claimed": claimed,
 		"center": [center.x, center.y], "land_size": land_size,
 		"items": items.duplicate(true), "inventory": inventory.duplicate(),
 		"elapsed": elapsed, "revenue": revenue, "harvests": harvests,
@@ -747,6 +753,7 @@ func restore(data: Variant) -> bool:
 	if data is Dictionary and data.has("armory") and not FarmArmory.valid(data.armory):return false
 	if not data is Dictionary or not _number(data.get("version")) or data.version<1 or data.version>SAVE_VERSION or float(data.version)!=floorf(float(data.version)):
 		return false
+	if data.version>=27 and not data.has("orchard_staff"):return false
 	if data.version>=23 and (not data.has("orchard_journey") or not data.get("inventory") is Dictionary):return false
 	if data.version>=23 and not data.inventory.has("orange"):return false
 	if not FarmOrchard.valid_journey(data.get("orchard_journey",FarmOrchard.fresh_journey())):return false
@@ -866,6 +873,13 @@ func restore(data: Variant) -> bool:
 				return false
 	if data.version>=5 and not data.has("staff"): return false
 	if data.has("staff") and not FarmStaff.valid(data.staff,data.items): return false
+	var saved_orchard_staff:Variant=data.get("orchard_staff",FarmOrchardStaff.fresh())
+	if not FarmOrchardStaff.valid(saved_orchard_staff,data.items):return false
+	if saved_orchard_staff.enabled:
+		if not data.get("irrigation",{}) is Dictionary or not data.get("field_staff",{}) is Dictionary:return false
+		if not data.claimed or not data.get("staff",{}).get("hired",false) or not data.staff.paused or data.staff.timer!=0:return false
+		if data.get("game_mode","legacy")!="sandbox" and data.get("orchard_journey",FarmOrchard.fresh_journey()).stage!=2:return false
+		if data.get("irrigation",{}).get("enabled",false) and not data.get("field_staff",{}).get("hired",false):return false
 	if data.version>=8 and not data.has("field_staff"): return false
 	if data.version>=13 and not data.has("dairy_worker"): return false
 	var saved_dairy_worker:Variant=data.get("dairy_worker",FarmDairyWorker.fresh())
@@ -906,6 +920,9 @@ func restore(data: Variant) -> bool:
 	rosa_story=data.get("rosa_story",FarmRosa.fresh()).duplicate();rosa_story.stage=int(rosa_story.stage)
 	var saved_orchard:Dictionary=data.get("orchard_journey",FarmOrchard.fresh_journey())
 	orchard_journey={"stage":int(saved_orchard.stage),"harvested":int(saved_orchard.harvested)}
+	orchard_staff=saved_orchard_staff.duplicate(true)
+	for key in ["services","oranges","spent"]:orchard_staff[key]=int(orchard_staff[key])
+	for i in range(orchard_staff.trees.size()):orchard_staff.trees[i]=int(orchard_staff.trees[i])
 	owned_parcels=data.get("owned_parcels",[]).duplicate()
 	claimed = data.claimed
 	center = Vector2(data.center[0], data.center[1])

@@ -1,3 +1,12 @@
+# Testar 0.54 — Zeca no pomar
+
+Conclua a missão Primeira colheita (ou use Sandbox). Abra H → Equipe → Pomar,
+marque as laranjeiras e aplique a rotina. Feche o painel: Zeca deve caminhar até
+elas, regar e colher quando estiverem maduras. Só cobra depois de concluir cada
+serviço; espera e deslocamento são gratuitos. Pause, salve e continue para conferir
+a seleção e o histórico. O galinheiro fica pausado enquanto ele cuida do pomar.
+No cooperativo, atualize os dois PCs. [Custos e funcionamento](ZECA_POMAR.md).
+
 # Testar 0.51 — Vizinhos e entregas
 
 Abra **Entregas · Influência** na lateral esquerda. Encontre Dona Rosa pela estrada norte, além do moinho; E conversa e aceita o primeiro pedido. Carregue 8 cenouras com V, estacione perto da casa, saia e entregue conversando com E. Confira pagamento, +5 influência e sobras na caçamba. Salve e continue: casa descoberta, confiança e espera devem permanecer.
