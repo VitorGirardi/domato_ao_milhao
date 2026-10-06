@@ -31,3 +31,5 @@ Esta é autorização permanente para integrar/mesclar PRs das tarefas do jogo s
 ## Vizinhos e entregas
 
 As casas fixas dos moradores ficam fora dos terrenos compráveis. Preserve descobertas, pedidos, confiança e influência por fazenda. Entregas consomem carga real da camionetinha, com validação de proximidade e gravação antes da confirmação; permanecem solo enquanto o veículo for solo. No Sandbox, o estoque é infinito, a caçamba continua finita.
+
+A história da horta de Dona Rosa (0.53) usa `rosa_story` independente dos pedidos comuns: nunca altere a carga de uma encomenda já aceita ao avançar a história. A rotina mantém atendimento fixo na entrada. O Canteiro da amizade libera ao concluir a história no Survival e desde o início no Sandbox.

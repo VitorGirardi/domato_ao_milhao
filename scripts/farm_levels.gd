@@ -22,6 +22,7 @@ static func required(kind:String) -> int:
 	return 4 if kind=="garage" else 3 if kind=="pigsty" else 5 if kind=="stable" else maxi(1,BUILDINGS.find(kind)+1)
 
 static func unlocked(state:FarmState,kind:String) -> bool:
+	if kind=="rosa_bed":return state.game_mode=="sandbox" or state.rosa_story.stage==3
 	return state.game_mode=="sandbox" or level(state.farm_xp)>=required(kind)
 
 static func next_text(xp:int) -> String:

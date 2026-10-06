@@ -1,7 +1,7 @@
 class_name FarmBuildArt
 extends RefCounted
 
-const KINDS := ["barn", "house", "fence", "fence_painted", "gate_rustic", "gate_painted", "well", "wash_tub", "raised_bed", "trellis", "orchard_young", "orchard_mature", "compost", "produce_crates"]
+const KINDS := ["rosa_bed","barn", "house", "fence", "fence_painted", "gate_rustic", "gate_painted", "well", "wash_tub", "raised_bed", "trellis", "orchard_young", "orchard_mature", "compost", "produce_crates"]
 var scenes: Dictionary = {}
 var shapes: Dictionary = {}
 var gates: Array[Dictionary] = []
@@ -13,7 +13,7 @@ func instantiate(item: Dictionary, parent: Node3D) -> Node3D:
 	var kind: String = item.kind
 	if kind == "orchard": return FarmOrchardView.create(self, parent, item)
 	var upgraded: bool = int(item.get("level", 1)) >= 2
-	var key := "farm_art_" + kind
+	var key := "farm_art_" + ("raised_bed" if kind=="rosa_bed" else kind)
 	if kind == "house": key = "farm_house_upgrade" if upgraded else "farm_house_starter"
 	elif kind == "barn": key = "farm_art_barn_upgrade" if upgraded else "farm_art_barn_starter"
 	elif kind == "fence": key = "farm_art_fence_rustic"
@@ -21,6 +21,13 @@ func instantiate(item: Dictionary, parent: Node3D) -> Node3D:
 	var visual: Node3D = scenes[key].instantiate()
 	parent.add_child(visual)
 	visual.set_meta("art_key", key)
+	if kind=="rosa_bed":
+		var plaque:=Label3D.new();visual.add_child(plaque);plaque.text="Com carinho, Rosa";plaque.font_size=36;plaque.pixel_size=.006;plaque.position=Vector3(0,.55,.84);plaque.modulate=Color("fff0b4")
+		for mesh in visual.find_children("*","MeshInstance3D",true,false):
+			for surface in range(mesh.mesh.get_surface_count()):
+				var source:Material=mesh.mesh.surface_get_material(surface)
+				if source is StandardMaterial3D and source.albedo_color.g>source.albedo_color.r*1.1:
+					var mat:StandardMaterial3D=source.duplicate();mat.albedo_color=Color("ab759b");mesh.set_surface_override_material(surface,mat)
 	if kind == "house": visual.position.z = -.4
 	elif kind == "well": visual.position = Vector3(-.1, 0, -.1)
 	elif kind == "wash_tub": visual.position = Vector3(-.26125, 0, .22375)
