@@ -1,24 +1,31 @@
-# Som do vale — 0.28.1
+# Som do vale — 0.60
 
-A trilha **Manhã no Vale** é uma composição instrumental original de 32 compassos, em Dó maior, 80 BPM e 96 segundos. Combina cordas dedilhadas, baixo suave, sopro sintetizado e percussão discreta. Não usa músicas comerciais, samples baixados ou vozes. O tema tem frases e pausas; a cauda de reverberação atravessa o ponto de repetição sem corte.
+Motor, tiro, animais, passos e ações foram revisados para reduzir o timbre artificial e dar espaço aos sons do mundo.
 
-`tools/build_audio.py` produz os 26 arquivos com Python e NumPy, usando semente fixa. Os WAVs e o manifesto com duração, pico e RMS ficam em `assets/audio`. O cavalo usa gravações reais CC0 de Joseph SARDIN / BigSoundBank, preservadas em art/audio (veja AUDIO_CREDITS.md). Os demais chamados continuam sintetizados. O relincho mantém a altura original; o sprint usa respiração curta, sem timbre tonal.
+| Grupo | Revisão |
+|---|---|
+| Camionetinha | Duas camadas de motor diesel gravado, marcha lenta e carga; aceleração, quatro marchas sonoras com histerese, queda de giro nas trocas e subida de giro no ar. Volume e alcance ajustados para o motorista. As marchas são sonoras, sem mudar a física. |
+| P-8 | Disparo gravado com ataque e cauda, sobreposição limitada a seis tiros, variação discreta de altura. Recarga e ferrolho acompanham o tempo da ação. Tiros remotos partem da posição de disparo e perdem volume à distância. |
+| Passos e cavalo | Gravações de cascalho, folhas e cascos. Quatro variações sem repetição consecutiva; chão de trilha/caverna e mato têm texturas diferentes. Cadência acompanha distância, sem passos ao dirigir. |
+| Animais | Vaca, três chamados de galinha, pássaros e ronronar usam gravações. Relincho e respiração reais já existentes preservados. Intervalos independentes e posição do animal mantidos. |
+| Fazenda e mineração | Plantar/colher usam folhas e terra; regar usa água, construir usa martelo. Picareta tem três impactos de metal, na fase de contato da animação. Compras e recompensas usam confirmação, não martelo. |
+| Ambiente | Vento em vegetação, riacho e cachoeira usam gravações com emendas de loop. Vento, rio e chamados externos são atenuados nas galerias. |
+| Música e interface | Tema original “Manhã no Vale” e sinais discretos de interface preservados; música mais baixa na partida, ainda mais ao dirigir ou entrar na mina. Assobio de chamada preservado para não mudar a identificação da interação. |
 
-## No jogo
+## Volume e limites
 
-- Música contínua no menu e na fazenda, mais baixa durante a partida/pausa e atenuada quando a janela perde foco.
-- Vento leve, água conforme a proximidade do rio e chamados ocasionais dos animais e pássaros existentes por perto. Cada espécie possui seu intervalo; muitas aves não deixam a vaca/galinha sem vez.
-- Relincho ao montar e reação curta quando o sprint é aceito, acompanhando a posição do cavalo. Comando recusado por fôlego/cooldown não produz som.
-- Quatro variações de passos e de cascos, baseadas na distância realmente percorrida. Sem passos parado, em menus ou deslocando a câmera de construção.
-- Respostas para plantar, regar, colher, construir e usar menus. A P-8 também respeita o volume de efeitos.
-- Vozes limitadas: quatro efeitos e quatro fontes espaciais e uma voz própria que acompanha o cavalo. Sons não criam nós indefinidamente.
+Configurações → Som mantém Volume geral, Música, Ambiente e animais, Efeitos e passos. Zero silencia a categoria. Preferências e saves existentes são preservados; não há mudança de economia, protocolo ou formato de save.
 
-## Ajustar
+Quatro vozes de ações, quatro de animais, seis efeitos espaciais e uma voz própria do cavalo; motor usa duas camadas. Disparos locais têm polifonia limitada. Limiter no Master mantém margem de pico. Menus interrompem o motor, passos e novas chamadas; perda de foco também silencia o motor.
 
-Configurações → Som: **Volume geral**, **Música**, **Ambiente e animais**, **Efeitos e passos**. Zero silencia a categoria. Aplicar e voltar salva as preferências em settings.cfg; Cancelar descarta. Saves da fazenda não mudam de formato. Configurações antigas mantêm seu volume geral e recebem os novos controles nos valores padrão.
+## Fontes e reconstrução
 
-Configurações → Jogo e vídeo mantém sensibilidade, tela cheia, qualidade e FPS.
+As gravações CC0 de Joseph Sardin/BigSoundBank estão em `art/audio/natural/`, com URLs, licença e SHA256 em `sources.json`. Créditos em AUDIO_CREDITS.md. Modelamos o som da P-8 a partir de um disparo 9 mm gravado; não é uma simulação balística ou acústica de um modelo real de pistola. A picareta usa foley de metal.
 
-## Verificação
+`python tools/build_natural_audio.py` reconstrói a paleta a partir dos originais, sem rede. Requer NumPy, SciPy e ffmpeg. Faz conversão para mono/32 kHz, filtro de graves, cortes, fades, ajuste de ganho e crossfade de loops. Se executar os geradores antigos `build_audio.py` ou `build_companion_audio.py`, execute este por último para restaurar a paleta atual. Música e sinais da interface continuam originais sintetizados; não foram substituídos por gravações.
 
-`tests/test_audio.gd` exige APPDATA isolado contendo test-results. Valida os 26 clipes, a duração/loop, buses, silêncio por categoria, passos/parada/menu, atenuação do rio, limite de vozes e ausência de mutações da fazenda. Executar com --headless --audio-driver Dummy. O gerador valida forma de onda finita e margem de pico; efeitos terminam em zero e a música possui borda contínua.
+## Validação
+
+`test_audio_assets.py` verifica WAVs, RMS, picos, canais e continuidade. `test_audio.gd` e `test_animal_audio.gd` cobrem mix, configurações, eventos e distância. `test_audio_mix.gd` mede a saída real do mixer para motor no banco do motorista, aceleração, marchas, silêncio em pausa, disparo distante, mute e ausência de mutações do save. Todos os testes usam perfis isolados em test-results.
+
+Para comparar: dirigir parado/acelerando/freando, disparar e recarregar, caminhar na trilha e no mato, aproximar-se dos animais e entrar na mina. As preferências antigas de volume continuam valendo; se Efeitos estava em zero, o motor continuará mudo até ajustar essa categoria.

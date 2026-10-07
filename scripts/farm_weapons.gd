@@ -44,7 +44,8 @@ func setup(host:Node3D) -> void:
 	muzzle=MeshInstance3D.new();var flash:=SphereMesh.new();flash.radius=.06;flash.height=.12
 	muzzle.mesh=flash;var light:=StandardMaterial3D.new();light.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED;light.albedo_color=Color("ffe29b")
 	muzzle.material_override=light;pistol.add_child(muzzle);muzzle.position=Vector3(0,.184,.235);muzzle.visible=false
-	add_child(sound);sound.volume_db=-16
+	add_child(sound);sound.volume_db=-5;sound.max_polyphony=6
+	sound.stream=load("res://assets/audio/pistol_shot.wav")
 	_build_hud()
 	game.hud.action.connect(_shop_action)
 
@@ -185,7 +186,7 @@ func start_reload() -> bool:
 	if not FarmArmory.can_reload(inventory()):
 		game.hud.toast("Carregador cheio." if inventory().magazine==FarmArmory.CAPACITY else "Sem munição na reserva. Fale com Damião.");return false
 	if game.network.active:return combat.request("reload")
-	reload_left=RELOAD_TIME;return true
+	reload_left=RELOAD_TIME;game.audio.play_effect("pistol_reload",-12);return true
 
 func _physics_process(delta:float) -> void:
 	if game==null:return
@@ -198,7 +199,9 @@ func _physics_process(delta:float) -> void:
 	else:
 		cooldown=maxf(0,cooldown-delta);recoil=maxf(0,recoil-delta);hit_time=maxf(0,hit_time-delta)
 		if reload_left>0:
+			var before_reload:=reload_left
 			reload_left=maxf(0,reload_left-delta)
+			if before_reload>.25 and reload_left<=.25:game.audio.play_effect("pistol_cock",-14)
 			if reload_left==0 and not game.network.active:FarmArmory.reload_magazine(inventory(),game.state.infinite_resources())
 		if armed and (game.actor.action_time>0 or game.actor.airborne or game.actor.emote_time>0):holster()
 		if armed:_pose_player(delta)
@@ -277,14 +280,11 @@ func _tracer(from:Vector3,to:Vector3) -> void:
 	flashes.append({"node":line,"time":.07})
 	var spark:=MeshInstance3D.new();var sphere:=SphereMesh.new();sphere.radius=.045;sphere.height=.09;spark.mesh=sphere;spark.material_override=mat;add_child(spark);spark.global_position=to;flashes.append({"node":spark,"time":.12})
 
-func _shot_sound() -> void:
-	var wav:=AudioStreamWAV.new();wav.format=AudioStreamWAV.FORMAT_16_BITS;wav.mix_rate=22050
-	var bytes:=PackedByteArray();bytes.resize(3308*2)
-	var rng:=RandomNumberGenerator.new();rng.seed=inventory().shots+37
-	for i in range(3308):
-		var t:=float(i)/22050;var sample:float=(rng.randf_range(-1,1)*exp(-t*70)*.65+sin(t*TAU*90)*exp(-t*40)*.35)*.65
-		bytes.encode_s16(i*2,int(clampf(sample,-1,1)*32767))
-	wav.data=bytes;sound.stream=wav;sound.play()
+func _shot_sound(at:Vector3=Vector3.INF) -> void:
+	if at.is_finite():
+		game.audio.world_effect("pistol_shot",at,-5,1.0,100)
+	else:
+		sound.pitch_scale=randf_range(.98,1.02);sound.play()
 
 func show_shop() -> void:
 	if down() or not game.session_started or game.build_mode or not near_shop():return

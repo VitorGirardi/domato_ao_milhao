@@ -49,7 +49,8 @@ func run() -> void:
 		assert(w.shoot());await until(func():return exists("host_hit") and game.falls.is_player_down(1))
 		await until(func():return combat.seen_shots==1 and combat.inventory().magazine==7)
 		n.leave();assert(FileAccess.get_file_as_string(game.save_path)==solo);flag("client_done")
-	game.audio.stop_all();game.queue_free();await process_frame;await create_timer(.2).timeout
+	game.session_started=false;game.audio.stop_all();await create_timer(.2).timeout
+	game.queue_free();await process_frame;await create_timer(.2).timeout
 	print("COOP_QA_OK: ",mode," both genders, remote two-hand aim/pitch, release, actual shoulder shot and personal ammo")
 	quit()
 

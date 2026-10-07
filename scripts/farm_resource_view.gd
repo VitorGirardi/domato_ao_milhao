@@ -133,7 +133,7 @@ func _impact(at:Vector3) -> void:
 		tween.tween_property(chip,"scale",Vector3.ONE*.05,.3)
 		tween.chain().tween_callback(chip.queue_free)
 	if game.player.global_position.distance_to(at)<12:
-		game.audio.play_effect("step_2",-18,.65)
+		game.audio.world_effect("pickaxe_"+str(randi()%3),at,-9,randf_range(.94,1.04),24)
 
 func _fishing_feedback(entry:Dictionary,job:Dictionary,target:Vector3) -> void:
 	# All motion follows the replicated job clock; only FarmGathering grants fish.

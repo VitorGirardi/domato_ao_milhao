@@ -29,5 +29,7 @@ func run() -> void:
 	assert(not combat.reloads.has(1),"Authoritative reload must finish within five seconds")
 	assert(game.state.armory.magazine==8 and game.state.armory.reserve==23,str(game.state.armory))
 	game.network.leave();assert(game.state.armory==solo)
-	print("COMBAT_AUTHORITY_OK");game.queue_free();await process_frame;quit()
+	game.session_started=false;game.audio.stop_all();await create_timer(.2).timeout
+	game.queue_free();await process_frame;await create_timer(.2).timeout
+	print("COMBAT_AUTHORITY_OK");quit()
 

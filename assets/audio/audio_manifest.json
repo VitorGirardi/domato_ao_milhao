@@ -7,81 +7,103 @@
     "boundary_jump": 0.0
   },
   "step_0": {
-    "seconds": 0.19,
-    "peak": 0.43,
-    "rms": 0.0586,
+    "seconds": 0.67,
+    "peak": 0.57,
+    "rms": 0.03188,
     "loop": false,
-    "boundary_jump": 0.0
+    "channels": 1,
+    "boundary_jump": 0.0,
+    "source": "BigSoundBank #0510, Joseph Sardin, CC0"
   },
   "hoof_0": {
-    "seconds": 0.2,
-    "peak": 0.56,
-    "rms": 0.0787,
+    "seconds": 0.3,
+    "peak": 0.6,
+    "rms": 0.05173,
     "loop": false,
-    "boundary_jump": 0.0
+    "channels": 1,
+    "boundary_jump": 0.0,
+    "source": "BigSoundBank #0496, Joseph Sardin, CC0"
   },
   "step_1": {
-    "seconds": 0.19,
-    "peak": 0.43,
-    "rms": 0.0678,
+    "seconds": 0.73,
+    "peak": 0.57,
+    "rms": 0.02826,
     "loop": false,
-    "boundary_jump": 0.0
+    "channels": 1,
+    "boundary_jump": 0.0,
+    "source": "BigSoundBank #0510, Joseph Sardin, CC0"
   },
   "hoof_1": {
-    "seconds": 0.2,
-    "peak": 0.56,
-    "rms": 0.0781,
+    "seconds": 0.3,
+    "peak": 0.6,
+    "rms": 0.0387,
     "loop": false,
-    "boundary_jump": 0.0
+    "channels": 1,
+    "boundary_jump": 0.0,
+    "source": "BigSoundBank #0496, Joseph Sardin, CC0"
   },
   "step_2": {
-    "seconds": 0.19,
-    "peak": 0.2833,
-    "rms": 0.0481,
+    "seconds": 0.71,
+    "peak": 0.57,
+    "rms": 0.01829,
     "loop": false,
-    "boundary_jump": 0.0
+    "channels": 1,
+    "boundary_jump": 0.0,
+    "source": "BigSoundBank #0510, Joseph Sardin, CC0"
   },
   "hoof_2": {
-    "seconds": 0.2,
-    "peak": 0.5248,
-    "rms": 0.0618,
+    "seconds": 0.3,
+    "peak": 0.6,
+    "rms": 0.03126,
     "loop": false,
-    "boundary_jump": 0.0
+    "channels": 1,
+    "boundary_jump": 0.0,
+    "source": "BigSoundBank #0496, Joseph Sardin, CC0"
   },
   "step_3": {
-    "seconds": 0.19,
-    "peak": 0.427,
-    "rms": 0.0689,
+    "seconds": 0.72,
+    "peak": 0.57,
+    "rms": 0.02714,
     "loop": false,
-    "boundary_jump": 0.0
+    "channels": 1,
+    "boundary_jump": 0.0,
+    "source": "BigSoundBank #0510, Joseph Sardin, CC0"
   },
   "hoof_3": {
-    "seconds": 0.2,
-    "peak": 0.56,
-    "rms": 0.066,
+    "seconds": 0.3,
+    "peak": 0.6,
+    "rms": 0.04815,
     "loop": false,
-    "boundary_jump": 0.0
+    "channels": 1,
+    "boundary_jump": 0.0,
+    "source": "BigSoundBank #0496, Joseph Sardin, CC0"
   },
   "harvest": {
-    "seconds": 0.65,
-    "peak": 0.52,
-    "rms": 0.15,
+    "seconds": 0.7,
+    "peak": 0.5,
+    "rms": 0.02748,
     "loop": false,
-    "boundary_jump": 0.0
+    "channels": 1,
+    "boundary_jump": 0.0,
+    "source": "BigSoundBank #0137, Joseph Sardin, CC0"
   },
   "build": {
-    "seconds": 0.65,
-    "peak": 0.52,
-    "rms": 0.1462,
+    "seconds": 0.52,
+    "peak": 0.68,
+    "rms": 0.02148,
     "loop": false,
-    "boundary_jump": 0.0
+    "channels": 1,
+    "boundary_jump": 0.0,
+    "source": "BigSoundBank #0005, Joseph Sardin, CC0"
   },
   "plant": {
-    "seconds": 0.65,
-    "peak": 0.52,
-    "rms": 0.1474,
+    "seconds": 0.67,
+    "peak": 0.5,
+    "rms": 0.04287,
     "loop": false,
-    "boundary_jump": 0.0
+    "channels": 1,
+    "boundary_jump": 0.0,
+    "source": "BigSoundBank #0137, Joseph Sardin, CC0"
   },
   "ui_confirm": {
     "seconds": 0.65,
@@ -98,11 +120,13 @@
     "boundary_jump": 0.0
   },
   "water": {
-    "seconds": 0.85,
+    "seconds": 2.6215,
     "peak": 0.58,
-    "rms": 0.0907,
+    "rms": 0.02389,
     "loop": false,
-    "boundary_jump": 0.0
+    "channels": 1,
+    "boundary_jump": 0.0,
+    "source": "BigSoundBank #1529, Joseph Sardin, CC0"
   },
   "ui_tick": {
     "seconds": 0.12,
@@ -112,39 +136,49 @@
     "boundary_jump": 0.0
   },
   "bird_0": {
-    "seconds": 0.65,
+    "seconds": 1.0,
     "peak": 0.36,
-    "rms": 0.102,
+    "rms": 0.06057,
     "loop": false,
-    "boundary_jump": 0.0
+    "channels": 1,
+    "boundary_jump": 0.0,
+    "source": "BigSoundBank #1670, Joseph Sardin, CC0"
   },
   "bird_1": {
-    "seconds": 0.75,
+    "seconds": 1.0,
     "peak": 0.36,
-    "rms": 0.1007,
+    "rms": 0.05517,
     "loop": false,
-    "boundary_jump": 0.0
+    "channels": 1,
+    "boundary_jump": 0.0,
+    "source": "BigSoundBank #1670, Joseph Sardin, CC0"
   },
   "bird_2": {
-    "seconds": 0.85,
+    "seconds": 1.11,
     "peak": 0.36,
-    "rms": 0.0999,
+    "rms": 0.0572,
     "loop": false,
-    "boundary_jump": 0.0
+    "channels": 1,
+    "boundary_jump": 0.0,
+    "source": "BigSoundBank #1670, Joseph Sardin, CC0"
   },
   "chicken": {
-    "seconds": 1.1,
-    "peak": 0.5,
-    "rms": 0.0833,
+    "seconds": 1.2,
+    "peak": 0.55,
+    "rms": 0.06097,
     "loop": false,
-    "boundary_jump": 0.0
+    "channels": 1,
+    "boundary_jump": 0.0,
+    "source": "BigSoundBank #0975, Joseph Sardin, CC0"
   },
   "cow": {
-    "seconds": 1.8,
+    "seconds": 2.4441,
     "peak": 0.6,
-    "rms": 0.1491,
+    "rms": 0.06902,
     "loop": false,
-    "boundary_jump": 0.0
+    "channels": 1,
+    "boundary_jump": 0.0,
+    "source": "BigSoundBank #2386, Joseph Sardin, CC0"
   },
   "horse_snort": {
     "seconds": 0.687,
@@ -155,18 +189,22 @@
     "source": "BigSoundBank #1543, Joseph SARDIN, CC0"
   },
   "wind": {
-    "seconds": 24.0,
+    "seconds": 23.65,
     "peak": 0.35,
-    "rms": 0.0679,
+    "rms": 0.03463,
     "loop": true,
-    "boundary_jump": 0.00522
+    "channels": 2,
+    "boundary_jump": 0.0,
+    "source": "BigSoundBank #0908, Joseph Sardin, CC0"
   },
   "river": {
-    "seconds": 16.0,
+    "seconds": 16.65,
     "peak": 0.48,
-    "rms": 0.0891,
+    "rms": 0.03036,
     "loop": true,
-    "boundary_jump": 0.0432
+    "channels": 2,
+    "boundary_jump": 0.0,
+    "source": "BigSoundBank #1354, Joseph Sardin, CC0"
   },
   "horse_neigh": {
     "seconds": 1.105,
@@ -183,5 +221,149 @@
     "loop": false,
     "boundary_jump": 0.0,
     "source": "BigSoundBank #1543, Joseph SARDIN, CC0"
+  },
+  "engine_idle": {
+    "seconds": 7.65,
+    "peak": 0.68,
+    "rms": 0.16648,
+    "loop": true,
+    "channels": 1,
+    "boundary_jump": 0.0,
+    "source": "BigSoundBank #1145, Joseph Sardin, CC0"
+  },
+  "engine_load": {
+    "seconds": 5.25,
+    "peak": 0.68,
+    "rms": 0.09465,
+    "loop": true,
+    "channels": 1,
+    "boundary_jump": 0.0,
+    "source": "BigSoundBank #1146, Joseph Sardin, CC0"
+  },
+  "pistol_shot": {
+    "seconds": 1.55,
+    "peak": 0.76,
+    "rms": 0.09249,
+    "loop": false,
+    "channels": 1,
+    "boundary_jump": 0.0,
+    "source": "BigSoundBank #0437, Joseph Sardin, CC0"
+  },
+  "pistol_reload": {
+    "seconds": 0.749,
+    "peak": 0.68,
+    "rms": 0.01574,
+    "loop": false,
+    "channels": 1,
+    "boundary_jump": 0.0,
+    "source": "BigSoundBank #1989, Joseph Sardin, CC0"
+  },
+  "pistol_cock": {
+    "seconds": 0.454,
+    "peak": 0.68,
+    "rms": 0.02887,
+    "loop": false,
+    "channels": 1,
+    "boundary_jump": 0.0,
+    "source": "BigSoundBank #1987, Joseph Sardin, CC0"
+  },
+  "chicken_1": {
+    "seconds": 1.1,
+    "peak": 0.55,
+    "rms": 0.08648,
+    "loop": false,
+    "channels": 1,
+    "boundary_jump": 0.0,
+    "source": "BigSoundBank #0975, Joseph Sardin, CC0"
+  },
+  "chicken_2": {
+    "seconds": 1.25,
+    "peak": 0.55,
+    "rms": 0.04545,
+    "loop": false,
+    "channels": 1,
+    "boundary_jump": 0.0,
+    "source": "BigSoundBank #0975, Joseph Sardin, CC0"
+  },
+  "grass_0": {
+    "seconds": 0.65,
+    "peak": 0.48,
+    "rms": 0.04685,
+    "loop": false,
+    "channels": 1,
+    "boundary_jump": 0.0,
+    "source": "BigSoundBank #0137, Joseph Sardin, CC0"
+  },
+  "grass_1": {
+    "seconds": 0.65,
+    "peak": 0.48,
+    "rms": 0.04669,
+    "loop": false,
+    "channels": 1,
+    "boundary_jump": 0.0,
+    "source": "BigSoundBank #0137, Joseph Sardin, CC0"
+  },
+  "grass_2": {
+    "seconds": 0.65,
+    "peak": 0.48,
+    "rms": 0.01358,
+    "loop": false,
+    "channels": 1,
+    "boundary_jump": 0.0,
+    "source": "BigSoundBank #0137, Joseph Sardin, CC0"
+  },
+  "grass_3": {
+    "seconds": 0.65,
+    "peak": 0.48,
+    "rms": 0.01491,
+    "loop": false,
+    "channels": 1,
+    "boundary_jump": 0.0,
+    "source": "BigSoundBank #0137, Joseph Sardin, CC0"
+  },
+  "pickaxe_0": {
+    "seconds": 0.48,
+    "peak": 0.7,
+    "rms": 0.02053,
+    "loop": false,
+    "channels": 1,
+    "boundary_jump": 0.0,
+    "source": "BigSoundBank #0005, Joseph Sardin, CC0"
+  },
+  "pickaxe_1": {
+    "seconds": 0.48,
+    "peak": 0.7,
+    "rms": 0.02095,
+    "loop": false,
+    "channels": 1,
+    "boundary_jump": 0.0,
+    "source": "BigSoundBank #0005, Joseph Sardin, CC0"
+  },
+  "pickaxe_2": {
+    "seconds": 0.48,
+    "peak": 0.7,
+    "rms": 0.02302,
+    "loop": false,
+    "channels": 1,
+    "boundary_jump": 0.0,
+    "source": "BigSoundBank #0005, Joseph Sardin, CC0"
+  },
+  "cat_purr": {
+    "seconds": 3.2,
+    "peak": 0.6,
+    "rms": 0.0542,
+    "loop": false,
+    "channels": 1,
+    "boundary_jump": 0.0,
+    "source": "BigSoundBank #0436, Joseph Sardin, CC0"
+  },
+  "waterfall": {
+    "seconds": 11.65,
+    "peak": 0.58,
+    "rms": 0.03641,
+    "loop": true,
+    "channels": 1,
+    "boundary_jump": 0.0,
+    "source": "BigSoundBank #1354, Joseph Sardin, CC0"
   }
 }

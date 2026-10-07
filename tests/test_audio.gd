@@ -9,7 +9,7 @@ func run() -> void:
 	await process_frame
 	var audio:FarmAudio=game.get("audio")
 	if audio==null:audio=FarmAudio.new();game.add_child(audio);audio.setup(game)
-	assert(audio.clips.size()==26 and audio.effects.size()==4 and audio.animals.size()==4)
+	assert(audio.clips.size()==FarmAudio.NAMES.size() and audio.effects.size()==4 and audio.animals.size()==4)
 	var count:=AudioServer.bus_count
 	FarmAudio.ensure_buses();FarmAudio.ensure_buses();assert(AudioServer.bus_count==count)
 	assert(audio.music.bus=="Music" and audio.wind.bus=="Ambience" and audio.effects[0].bus=="Effects")
@@ -68,5 +68,5 @@ func run() -> void:
 
 	game.session_started=false;audio.stop_all();await create_timer(.15).timeout
 	game.queue_free();await process_frame
-	print("AUDIO_QA_OK: 26 clips, exact musical loop, buses/mutes, bounded voices, footsteps, idle/menu silence, river distance unchanged state and mixer output/silence")
+	print("AUDIO_QA_OK: recorded clips, exact musical loop, buses/mutes, bounded voices, footsteps, idle/menu silence, river distance unchanged state and mixer output/silence")
 	quit()

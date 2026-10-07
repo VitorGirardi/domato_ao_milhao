@@ -5,7 +5,7 @@ signal animal_called(kind:String)
 const MUSIC_BUS:="Music"
 const AMBIENCE_BUS:="Ambience"
 const EFFECTS_BUS:="Effects"
-const NAMES:=["manha_no_vale","wind","river","water","plant","harvest","build","ui_tick","ui_confirm","ui_back","bird_0","bird_1","bird_2","chicken","cow","horse_snort","horse_neigh","horse_sprint","step_0","step_1","step_2","step_3","hoof_0","hoof_1","hoof_2","hoof_3"]
+const NAMES:=["manha_no_vale","wind","river","water","plant","harvest","build","ui_tick","ui_confirm","ui_back","bird_0","bird_1","bird_2","chicken","cow","horse_snort","horse_neigh","horse_sprint","step_0","step_1","step_2","step_3","hoof_0","hoof_1","hoof_2","hoof_3","grass_0","grass_1","grass_2","grass_3","chicken_1","chicken_2","pickaxe_0","pickaxe_1","pickaxe_2","pistol_shot","pistol_reload","pistol_cock"]
 var shutting_down:=false
 var game:Node3D
 var clips:Dictionary={}
@@ -14,6 +14,9 @@ var wind:=AudioStreamPlayer.new()
 var river:=AudioStreamPlayer.new()
 var effects:Array[AudioStreamPlayer]=[]
 var animals:Array[AudioStreamPlayer3D]=[]
+var world_effects:Array[AudioStreamPlayer3D]=[]
+var world_cursor:=0
+var last_variants:Dictionary={}
 var listener:=AudioListener3D.new()
 var rng:=RandomNumberGenerator.new()
 var distance_walked:=0.0
@@ -29,6 +32,12 @@ var step_count:=0
 var emitted_events:=0
 var effect_cursor:=0
 var animal_cursor:=0
+
+static func loop_clip(key:String) -> AudioStreamWAV:
+	var clip:AudioStreamWAV=load("res://assets/audio/%s.wav"%key).duplicate()
+	clip.loop_mode=AudioStreamWAV.LOOP_FORWARD;clip.loop_begin=0
+	clip.loop_end=roundi(clip.get_length()*clip.mix_rate)
+	return clip
 
 static func ensure_buses() -> void:
 	var limited:=false
@@ -61,6 +70,9 @@ func setup(owner_game:Node3D) -> void:
 		var voice:AudioStreamPlayer=entry[0];add_child(voice);voice.stream=clips[entry[1]];voice.bus=entry[2];voice.volume_db=entry[3];voice.play()
 	for i in range(4):
 		var voice:=AudioStreamPlayer.new();voice.bus=EFFECTS_BUS;add_child(voice);effects.append(voice)
+	for i in range(6):
+		var voice:=AudioStreamPlayer3D.new();voice.bus=EFFECTS_BUS;voice.unit_size=5;voice.max_db=0
+		game.add_child(voice);world_effects.append(voice)
 	for i in range(4):
 		var voice:=AudioStreamPlayer3D.new();voice.bus=AMBIENCE_BUS;voice.unit_size=6;voice.max_distance=32
 		game.add_child(voice);animals.append(voice)
@@ -77,6 +89,19 @@ func play_effect(key:String,gain:float=-13.0,pitch:float=1.0) -> void:
 	voice.stop();voice.stream=clips[key];voice.volume_db=gain;voice.pitch_scale=pitch;voice.play()
 	emitted_events+=1
 
+func world_effect(key:String,at:Vector3,gain:float=-12,pitch:float=1.0,radius:float=35) -> void:
+	if shutting_down or not clips.has(key) or world_effects.is_empty():return
+	var voice:=world_effects[world_cursor%world_effects.size()];world_cursor+=1
+	voice.stop();voice.stream=clips[key];voice.global_position=at;voice.volume_db=gain
+	voice.pitch_scale=pitch;voice.max_distance=radius;voice.play();emitted_events+=1
+
+func variant(group:String,count:int) -> int:
+	var previous:int=last_variants.get(group,-1)
+	var index:=rng.randi_range(0,count-2) if previous>=0 else rng.randi_range(0,count-1)
+	if previous>=0 and index>=previous:index+=1
+	last_variants[group]=index
+	return index
+
 func ui_action(value:String) -> void:
 	if ui_cooldown>0:return
 	ui_cooldown=.075
@@ -87,7 +112,10 @@ func ui_action(value:String) -> void:
 func spatial(key:String,at:Vector3) -> void:
 	if shutting_down or animals.is_empty():return
 	var voice:=animals[animal_cursor%animals.size()];animal_cursor+=1
-	voice.stop();voice.stream=clips[key];voice.global_position=at;voice.volume_db=-8
+	var sample_key:=key
+	if key=="chicken":
+		var choice:=variant("chicken",3);sample_key="chicken" if choice==0 else "chicken_"+str(choice)
+	voice.stop();voice.stream=clips[sample_key];voice.global_position=at;voice.volume_db=-7
 	voice.pitch_scale=rng.randf_range(.95,1.05);voice.play();emitted_events+=1;animal_called.emit(key)
 
 func _process(delta:float) -> void:
@@ -96,13 +124,17 @@ func _process(delta:float) -> void:
 	var active:bool=game.session_started and game.hud.modal_kind.is_empty() and not game.build_mode
 	var focused:bool=DisplayServer.get_name()=="headless" or (game.get_window().has_focus() and game.get_window().mode!=Window.MODE_MINIMIZED)
 	# Smooth changes keep settings, pause and build mode from producing abrupt jumps.
-	var music_target:float=-7 if not game.session_started else (-11 if active else -17)
+	var pos:Vector3=game.player.global_position
+	var interior:=FarmMineLayout.interior_weight(pos)
+	var driving:bool=game.get("pickup")!=null and game.pickup.mounted
+	var music_target:float=-9 if not game.session_started else (-16 if active else -21)
+	if driving:music_target=-23
+	if interior>0:music_target=lerpf(music_target,-27,interior)
 	if not focused:music_target=-60
 	music.volume_db=move_toward(music.volume_db,music_target,delta*14)
-	wind.volume_db=move_toward(wind.volume_db,-24.0 if active and focused else -60.0,delta*18)
-	var pos:Vector3=game.player.global_position
+	wind.volume_db=move_toward(wind.volume_db,lerpf(-22.0,-60.0,interior) if active and focused else -60.0,delta*18)
 	var river_x:float=-42+sin(pos.z*.065)*2.6
-	var strength:float=clampf(1-absf(pos.x-river_x)/26,0,1) if active and focused else 0
+	var strength:float=clampf(1-absf(pos.x-river_x)/26,0,1) if active and focused and interior<.1 else 0
 	river.volume_db=move_toward(river.volume_db,-13+linear_to_db(maxf(.003,strength)),delta*25)
 	if active:
 		listener.make_current();listener.global_basis=game.camera.global_basis
@@ -111,11 +143,11 @@ func _process(delta:float) -> void:
 	if not active or not focused:
 		distance_walked=0;previous_grounded=game.player.is_on_floor();previous_mounted=game._mounted()
 		for voice in animals:voice.stop()
+		for voice in world_effects:voice.stop()
 		horse_voice.stop()
 		return
 	var grounded:bool=game.player.is_on_floor()
 	var mounted:bool=game._mounted()
-	var driving:bool=game.get("pickup")!=null and game.pickup.mounted
 	if mounted and not previous_mounted:_horse_call("horse_neigh")
 	if previous_mounted!=mounted or travel>=2 or driving:distance_walked=0
 	if not driving and travel<2 and (grounded or mounted):
@@ -123,12 +155,13 @@ func _process(delta:float) -> void:
 		var stride:float=1.45 if not mounted else (2.15 if game.horse.burst>0 else 1.75)
 		if distance_walked>=stride:
 			distance_walked=fmod(distance_walked,stride);step_count+=1
-			play_effect(("hoof_" if mounted else "step_")+str(step_count%4),-17 if mounted else -22,rng.randf_range(.94,1.06))
+			var group:="hoof_" if mounted else ("step_" if interior>.2 or FarmLandscape.road_distance(Vector2(pos.x,pos.z))<3 else "grass_")
+			play_effect(group+str(variant(group,4)),-13 if mounted else -12,rng.randf_range(.97,1.03))
 	if grounded and not previous_grounded and not mounted and not driving:play_effect("step_2",-17,.88)
 	previous_grounded=grounded;previous_mounted=mounted
 	for kind in call_timers:call_timers[kind]=maxf(0,call_timers[kind]-delta)
 	event_wait-=delta
-	if event_wait<=0:event_wait=1.3 if _nearby_call(pos) else .5
+	if event_wait<=0:event_wait=1.3 if interior<.2 and _nearby_call(pos) else .5
 
 func _horse_call(key:String) -> void:
 	if shutting_down:return
@@ -172,3 +205,10 @@ func stop_all() -> void:
 	if is_instance_valid(horse_voice):horse_voice.stop()
 	for voice in effects:voice.stop()
 	for voice in animals:voice.stop()
+	for voice in world_effects:voice.stop()
+
+	# Some emitters belong to scene objects (weapon, pickup, waterfall).
+	# Stop them too before the caller drains AudioServer and frees the scene.
+	if is_instance_valid(game):
+		for voice in game.find_children("*","AudioStreamPlayer",true,false):voice.stop()
+		for voice in game.find_children("*","AudioStreamPlayer3D",true,false):voice.stop()

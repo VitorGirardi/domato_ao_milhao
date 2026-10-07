@@ -530,7 +530,7 @@ func _command_done(success:bool,message:String,command:Dictionary) -> void:
 			game.move_index=-1;game._cancel_route();game.hud.close_modal()
 			if action=="claim":game.build_mode=true;game.tool="plot";game.focus=Vector3(game.state.center.x,0,game.state.center.y)
 		else:refresh_panel()
-		game._chime()
+		game._chime("build" if action=="place" else "ui_confirm")
 	game.hud.toast(message);game._update_ui()
 
 func rebuild_shared() -> void:

@@ -107,6 +107,7 @@ func _bag(value:Dictionary,left:float,message:String) -> void:
 	if game.network.active and game.network.ready_session and FarmArmory.valid(value):receive_bag(value,left,message)
 
 func receive_bag(value:Dictionary,left:float,message:String) -> void:
+	if left>0 and weapons.reload_left<=0:game.audio.play_effect("pistol_reload",-12)
 	client_bag=value.duplicate(true);weapons.reload_left=left
 	if not message.is_empty():game.hud.toast(message)
 	if game.hud.modal_kind=="armory":weapons.show_shop()
@@ -119,7 +120,7 @@ func _shot(id:int,origin:Vector3,end:Vector3) -> void:
 	if game.network.active and game.network.ready_session:show_shot(id,origin,end)
 
 func show_shot(id:int,origin:Vector3,end:Vector3) -> void:
-	seen_shots+=1;weapons._tracer(origin,end);weapons._shot_sound()
+	seen_shots+=1;weapons._tracer(origin,end);weapons._shot_sound(Vector3.INF if id==multiplayer.get_unique_id() else origin)
 	if id==multiplayer.get_unique_id():weapons.recoil=FarmWeapons.SHOT_INTERVAL
 	else:
 		var pose:Dictionary=poses.get(id,{"armed":true,"aiming":false,"pitch":0.0,"reload":0.0,"kick":0.0})

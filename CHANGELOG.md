@@ -1,3 +1,11 @@
+## 0.60.0 — Sons do vale
+
+- Motor diesel gravado com marcha lenta, carga, transições e volume audível ao dirigir.
+- P-8 com disparo gravado, recarga, ferrolho e distância dos tiros cooperativos.
+- Novas gravações de passos, cascos, animais, água, vento e ações; picareta sincronizada ao contato.
+- Variações sem repetição consecutiva; música recuada ao dirigir e dentro da mina.
+- Preservados saves, configurações, Sandbox, física e animações.
+
 # 0.59.0 — Profundezas da Pedra Clara
 
 - Caverna com 22 metros de descida, 29 trechos e ambientes de raízes, fungos e cristais.

@@ -7,7 +7,11 @@ func run() -> void:
 	var fall:=FarmWaterfall.new();world.add_child(fall);fall.setup();fall.position=Vector3.ZERO
 	var camera:=Camera3D.new();world.add_child(camera);camera.position=Vector3(23,17,34);camera.look_at(Vector3(0,7,-2));camera.current=true
 	assert(fall.get_node("MovingWater").mesh.get_surface_count()==1)
-	assert(fall.get_node("WaterRush").stream.data.size()==84000)
+	var stream:AudioStreamWAV=fall.get_node("WaterRush").stream
+	assert(stream.mix_rate==32000 and stream.get_length()>10)
+	assert(stream.loop_mode==AudioStreamWAV.LOOP_FORWARD)
+	assert(stream.loop_end==roundi(stream.get_length()*stream.mix_rate))
+	assert(not stream.data.is_empty()) # Imported data may be QOA-compressed, not raw PCM.
 	await physics_frame
 	var ray:=PhysicsRayQueryParameters3D.create(Vector3(-6,8,12),Vector3(-6,8,-12))
 	assert(not world.get_world_3d().direct_space_state.intersect_ray(ray).is_empty(),"Cliff rocks must collide")
