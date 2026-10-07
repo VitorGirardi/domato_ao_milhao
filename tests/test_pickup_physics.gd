@@ -10,8 +10,10 @@ func place(point:Vector2,heading:float) -> void:
 
 func screenshot(label:String) -> void:
 	if DisplayServer.get_name()=="headless":return
+	RenderingServer.set_render_loop_enabled(true)
 	await process_frame;await RenderingServer.frame_post_draw
 	root.get_texture().get_image().save_png("res://test-results/pickup-"+label+".png")
+	RenderingServer.set_render_loop_enabled(false)
 
 func run() -> void:
 	game=load("res://scenes/main.tscn").instantiate();game.save_path="user://physics-probe.json";root.add_child(game)
@@ -19,6 +21,8 @@ func run() -> void:
 	game.session_started=true;game.build_mode=false;game.hud.close_modal()
 	truck=game.pickup;truck.set_physics_process(false)
 	await physics_frame
+	# Preserve every physics step; only draw the frame used for visual review.
+	RenderingServer.set_render_loop_enabled(false)
 	var highs:=[]
 	for throttle in [.3,1.0]:
 		place(Vector2(580,-250),1.86)
@@ -48,6 +52,7 @@ func run() -> void:
 	truck.drive(1.0/60,0,1,true,true)
 	assert(truck.speed==15 and truck.rotation.y==heading and not truck.exit_vehicle())
 	assert(truck.velocity.y<3 and truck.velocity.y>0)
+	RenderingServer.set_render_loop_enabled(true)
 	game.session_started=false;game.audio.stop_all();game.free()
 	print("PICKUP_PHYSICS_OK: real crest slow/fast, inertia, flight, landing and airborne controls")
 	quit()

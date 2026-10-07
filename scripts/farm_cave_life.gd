@@ -40,6 +40,10 @@ func _process(delta:float) -> void:
 		var entry:Dictionary=game.state.cave_crew[i]
 		creature.root.visible=game.state.resources.mine_owned and game.state.resources.gallery_level>=i
 		labels[i].visible=creature.root.visible
+		if not creature.root.visible or game.player.position.distance_to(FarmResourceSites.point(FarmCaveCrew.DENS[i]))>70:
+			# Economy still runs in FarmState. Pose only residents near this viewer.
+			creature.root.position=FarmResourceSites.point(FarmCaveCrew.DENS[i])
+			continue
 		var active:=FarmCaveCrew.active(game.state,i)
 		var progress:float=entry.progress
 		# The visitor receives farm clocks twice a second. Interpolate the visual

@@ -15,6 +15,8 @@ static func floor_y(p:Vector2) -> float:
 	return ORIGIN.y+floor_offset(p.y-ORIGIN.z)
 
 static func inside(p:Vector2, margin:float=0.0) -> bool:
+	# Height queries cover the entire valley, while the mine occupies a tiny part.
+	if p.x<880-margin or p.x>920+margin or p.y< -324-margin or p.y> -220+margin:return false
 	var local:=p-Vector2(ORIGIN.x,ORIGIN.z)
 	for cell in CELLS:
 		if absf(local.x-cell.x)<=4+margin and absf(local.y-cell.y)<=4+margin:return true
