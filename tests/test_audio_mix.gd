@@ -52,6 +52,10 @@ func run() -> void:
 		for i in range(30):
 			var value:int=game.audio.variant(group,3);assert(value!=previous);previous=value
 	assert(game.state.serialize()==snapshot,"Sound cannot change saves or economy")
-	AudioServer.remove_bus_effect(0,index);game.audio.stop_all();game.queue_free();await process_frame
+	game.session_started=false;game.weapons.sound.stop();motor.stop();game.audio.stop_all()
+	await create_timer(.2).timeout
+	AudioServer.remove_bus_effect(0,index);capture=null
+	game.queue_free();await process_frame;game=null
+	await create_timer(.2).timeout
 	print("AUDIO_MIX_OK: audible recorded motor, acceleration/gears, pause silence, shot distance/mute, variants, unchanged state; RMS ",idle," / ",accelerating," / ",shot," / ",distant)
 	quit()
