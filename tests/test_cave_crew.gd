@@ -58,5 +58,15 @@ func run() -> void:
 	for i in range(3):assert(FarmCaveCrew.run(sandbox,"cave:recruit:%d"%i).is_empty())
 	assert(sandbox.stock("gold")==1000000000 and sandbox.stock("amethyst")==1000000000)
 	assert(copy.restore(sandbox.serialize()))
+	var limits:=FarmState.new();limits.claim(Vector2(4,0));limits.resources.mine_owned=true;limits.resources.pickaxe=true
+	limits.cave_crew[0].joined=true;limits.cave_crew[0].fuel=600.0;limits.cave_crew[0].progress=119.0
+	limits.resources.stock.copper=9999;limits.resources.mined=9999
+	FarmCaveCrew.tick(limits,300)
+	assert(limits.resources.stock.copper==10000 and limits.cave_crew[0].fuel==599 and limits.cave_crew[0].progress==0)
+	before=limits.serialize();FarmCaveCrew.tick(limits,300);assert(limits.serialize()==before)
+	limits.cave_crew[0].fuel=1799.0;limits.inventory.wheat=5;limits.inventory.egg=2
+	before=limits.serialize();assert(not FarmCaveCrew.run(limits,"cave:feed:0").is_empty() and limits.serialize()==before)
+	limits.cave_crew[0].fuel=1200.0;assert(FarmCaveCrew.run(limits,"cave:feed:0").is_empty() and limits.cave_crew[0].fuel==1800)
+	assert(copy.restore(limits.serialize()))
 	print("CAVE_CREW_OK: gifts, fuel, pause, timestep equivalence, rare ores, sales, strict saves, v30 migration and Sandbox")
 	quit()

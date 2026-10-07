@@ -53,7 +53,7 @@ func run() -> void:
 	assert(FarmPickupCargo.transfer(sandbox,"orange",60,false).is_empty())
 	assert(sandbox.inventory.orange==physical and sandbox.stock("orange")==1000000000)
 	assert(sandbox.sell_product("orange",1)==16 and sandbox.inventory.orange==physical)
-	assert(FarmPickupCargo.KEYS.size()==13 and FarmPickupCargo.TITLES.size()==13)
+	assert(FarmPickupCargo.KEYS.size()==15 and FarmPickupCargo.TITLES.size()==15)
 	var hud:=FarmHUD.new();root.add_child(hud)
 	await process_frame
 	hud.market(state,"sales");await process_frame
