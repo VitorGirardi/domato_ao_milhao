@@ -52,11 +52,22 @@ jobs:
           python3 tools/linux/audit_resources.py
           timeout 300 godot --headless --editor --path . --import --quit > test-results/linux/import.log 2>&1
           ! grep -E 'SCRIPT ERROR|ERROR:' test-results/linux/import.log
+      - name: Recorded audio and real mixer output
+        if: matrix.suite == 'gameplay'
+        run: |
+          python3 tests/test_audio_assets.py
+          for entry in 'test_audio AUDIO_QA_OK' 'test_audio_mix AUDIO_MIX_OK' 'test_animal_audio ANIMAL_AUDIO_OK'; do
+            read -r test marker <<< "$entry"
+            if ! timeout 180 godot --headless --audio-driver Dummy --path . --script "tests/$test.gd" > "test-results/linux/$test.log" 2>&1; then cat "test-results/linux/$test.log"; exit 1; fi
+            cat "test-results/linux/$test.log"
+            grep -q "$marker" "test-results/linux/$test.log"
+            if grep -E 'SCRIPT ERROR|ERROR:' "test-results/linux/$test.log"; then exit 1; fi
+          done
       - name: Cave rigs and helper panels
         if: matrix.suite == 'graphics'
         run: |
           set -euo pipefail
-          for entry in 'test_audio AUDIO_QA_OK' 'test_audio_mix AUDIO_MIX_OK' 'test_animal_audio ANIMAL_AUDIO_OK' 'test_cave_animation CAVE_ANIMATION_OK' 'test_cave_world CAVE_WORLD_OK'; do
+          for entry in 'test_cave_animation CAVE_ANIMATION_OK' 'test_cave_world CAVE_WORLD_OK'; do
             set -- $entry
             xvfb-run -a timeout 180 godot --audio-driver Dummy --path . --script tests/$1.gd > test-results/linux/$1.log 2>&1
             grep "$2" test-results/linux/$1.log
