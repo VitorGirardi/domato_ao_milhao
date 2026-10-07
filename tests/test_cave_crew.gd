@@ -35,6 +35,9 @@ func run() -> void:
 	var copy:=FarmState.new();assert(copy.restore(JSON.parse_string(JSON.stringify(state.serialize()))))
 	assert(copy.cave_crew==state.cave_crew)
 	before=copy.serialize()
+	for bad in ["bad",3,null,[],{}]:
+		var payload:=before.duplicate(true);payload.claimed=bad
+		assert(not copy.restore(payload) and copy.serialize()==before)
 	for bad in [null,{},[],[{}, {}, {}]]:
 		var payload:=before.duplicate(true);payload.cave_crew=bad
 		assert(not copy.restore(payload) and copy.serialize()==before)

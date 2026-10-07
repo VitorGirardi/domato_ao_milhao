@@ -17,8 +17,8 @@ static func fresh() -> Array:
 	for i in range(3):result.append({"joined":false,"paused":false,"fuel":0.0,"progress":0.0,"produced":0})
 	return result
 
-static func valid(data:Variant,resources:Dictionary,claimed:bool) -> bool:
-	if not data is Array or data.size()!=3:return false
+static func valid(data:Variant,resources:Dictionary,claimed:Variant) -> bool:
+	if not claimed is bool or not data is Array or data.size()!=3:return false
 	var total:=0
 	for i in range(3):
 		var entry:Variant=data[i]
