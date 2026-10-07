@@ -57,7 +57,11 @@ func run() -> void:
 	await physics_frame;await physics_frame
 	var hits:int=game.state.armory.hits;w.cooldown=0;assert(w.shoot());assert(game.state.armory.hits==hits+1,"Practice range stopped recording hits")
 	w.holster();w._physics_process(1);assert(w.aim_blend<.001 and not w.pistol.visible)
+	game.session_started=false;game.weapons.sound.stop();game.audio.stop_all()
+	# Drain stopped voices on the mixer thread before freeing their players.
+	await create_timer(.2).timeout
 	game.queue_free();await process_frame
+	await create_timer(.2).timeout
 	print("SHOULDER_AIM_OK: event-driven input, shoulder switching, smooth blend, HUD release, both characters, NPC reticle, muzzle cover and practice range")
 	quit()
 
