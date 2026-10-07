@@ -20,6 +20,8 @@ for name, metadata in manifest.items():
     rms = math.sqrt(sum(value * value for value in samples) / len(samples)) / 32768
     assert 0.002 < rms < 0.3 and peak < 0.8, name
     if not metadata['loop']: assert samples[0] == samples[-1] == 0, name
+    if metadata['loop']:
+        assert samples[:channels] == samples[-channels:], f'{name}: PCM loop seam must be continuous'
     if name == 'manha_no_vale':
         assert len(samples) == 96 * 32000 * 2
         assert samples[:2] == samples[-2:], 'Musical loop must meet continuously'
