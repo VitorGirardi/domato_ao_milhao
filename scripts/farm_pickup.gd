@@ -24,7 +24,7 @@ var accessories:=Node3D.new()
 var collision_box:BoxShape3D
 var body_shell:CollisionShape3D
 var engine_sound:AudioStreamPlayer3D
-var motor:=FarmEngineAudio.new()
+var motor:FarmEngineAudio
 var audio_throttle:=0.0
 var airborne:=false
 var suspension:=0.0
@@ -53,7 +53,7 @@ func setup(owner_game:Node3D) -> void:
 	body_shell.shape=collision_box;body_shell.position.y=2.05;add_child(body_shell)
 	floor_snap_length=.25;floor_stop_on_slope=true;floor_max_angle=MAX_SLOPE;floor_constant_speed=false
 	instruments.setup(game.hud);speed_label=instruments.speed
-	add_child(motor);motor.setup(self);engine_sound=motor.idle
+	motor=FarmEngineAudio.new();add_child(motor);motor.setup(self);engine_sound=motor.idle
 	restore(game.state.pickup)
 
 func restore(data:Dictionary) -> void:
