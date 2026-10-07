@@ -1481,8 +1481,6 @@ func _load_game() -> bool:
 func _request_quit() -> void:
 	if quitting or not _save_game(false):return
 	quitting=true;session_started=false;audio.stop_all()
-	weapons.sound.stop()
-	if is_instance_valid(pickup.motor):pickup.motor.stop()
 	if network.active and network.peer:network.peer.close()
 	# Let the audio mixer release loop playbacks before destroying the engine.
 	await get_tree().create_timer(.15).timeout

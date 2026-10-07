@@ -103,7 +103,8 @@ func run() -> void:
 		await until(func():return exists("host_recovered") and not game.falls.is_player_down(1))
 		assert(combat.inventory().magazine==7 and game.player.collision_layer!=0)
 		n.leave();assert(FileAccess.get_file_as_string(game.save_path)==solo);flag("client_done")
-	game.audio.stop_all();game.queue_free();await process_frame;await create_timer(.2).timeout
+	game.session_started=false;game.audio.stop_all();await create_timer(.2).timeout
+	game.queue_free();await process_frame;await create_timer(.2).timeout
 	print("COOP_QA_OK: ",mode," pistol falls, late join, horse dismount, frozen players, 60-second lifecycle, immunity and preserved saves")
 	quit()
 

@@ -82,6 +82,6 @@ func run() -> void:
 	# Prototype is hidden and has no collision in cooperative play.
 	game.network.active=true;truck._physics_process(0)
 	assert(not truck.visible and truck.collision_layer==0 and not truck.nearby())
-	game.network.active=false;game.session_started=false;game.audio.stop_all();game.free()
+	game.network.active=false;game.session_started=false;game.audio.stop_all();await create_timer(.2).timeout;game.free()
 	print("PICKUP_OK: original model, driving, steering, braking, safe exits, collisions, water/bounds, modes and persistence")
 	quit()

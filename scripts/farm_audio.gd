@@ -206,3 +206,9 @@ func stop_all() -> void:
 	for voice in effects:voice.stop()
 	for voice in animals:voice.stop()
 	for voice in world_effects:voice.stop()
+
+	# Some emitters belong to scene objects (weapon, pickup, waterfall).
+	# Stop them too before the caller drains AudioServer and frees the scene.
+	if is_instance_valid(game):
+		for voice in game.find_children("*","AudioStreamPlayer",true,false):voice.stop()
+		for voice in game.find_children("*","AudioStreamPlayer3D",true,false):voice.stop()

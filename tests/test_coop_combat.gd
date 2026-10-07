@@ -39,6 +39,7 @@ func run() -> void:
 		assert(combat.inventory().reserve==23);flag("guest_reloaded")
 		await until(func():return exists("inventory_seen"))
 		n.leave();assert(FileAccess.get_file_as_string(game.save_path)==solo);flag("client_done")
-	game.audio.stop_all();game.queue_free();await process_frame;await create_timer(.2).timeout
+	game.session_started=false;game.audio.stop_all();await create_timer(.2).timeout
+	game.queue_free();await process_frame;await create_timer(.2).timeout
 	print("COOP_QA_OK: ",mode," authoritative shots, replicated pistol, personal ammo and solo preservation")
 	quit()
