@@ -52,6 +52,16 @@ jobs:
           python3 tools/linux/audit_resources.py
           timeout 300 godot --headless --editor --path . --import --quit > test-results/linux/import.log 2>&1
           ! grep -E 'SCRIPT ERROR|ERROR:' test-results/linux/import.log
+      - name: Cave rigs and helper panels
+        if: matrix.suite == 'graphics'
+        run: |
+          set -euo pipefail
+          for entry in 'test_cave_animation CAVE_ANIMATION_OK' 'test_cave_world CAVE_WORLD_OK'; do
+            set -- $entry
+            xvfb-run -a timeout 180 godot --audio-driver Dummy --path . --script tests/$1.gd > test-results/linux/$1.log 2>&1
+            grep "$2" test-results/linux/$1.log
+            ! grep -E 'SCRIPT ERROR|ERROR:' test-results/linux/$1.log
+          done
       - name: Pickup prototype gameplay
         if: matrix.suite == 'gameplay'
         run: |
@@ -72,9 +82,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          for entry in 'test_build_edit BUILD_EDIT_OK' 'test_pickup_physics PICKUP_PHYSICS_OK' 'test_young YOUNG_OK' 'test_young_life YOUNG_LIFE_OK' 'test_locomotion LOCOMOTION_OK' 'test_locomotion_integration LOCOMOTION_INTEGRATION_OK' 'test_animal_care ANIMAL_CARE_OK' 'test_animal_life ANIMAL_LIFE_OK' 'test_orchard_staff ORCHARD_STAFF_OK' 'test_orchard_staff_hud ORCHARD_STAFF_HUD_OK' 'test_orchard_staff_motion ORCHARD_STAFF_MOTION_OK' 'test_orchard_staff_integration ORCHARD_STAFF_INTEGRATION_OK' 'test_rosa ROSA_OK' 'test_rosa_world ROSA_WORLD_OK' 'test_residents RESIDENTS_OK' 'test_residents_world RESIDENTS_WORLD_OK' 'test_orchard ORCHARD_OK' 'test_orchard_view ORCHARD_VIEW_OK' 'test_orchard_trade ORCHARD_TRADE_OK' 'test_orchard_integration ORCHARD_INTEGRATION_OK' 'test_horse_art_gate HORSE_ART_GATE_CLEARANCE_OK' 'test_farm_art_integration FARM_ART_INTEGRATION_OK' 'test_farm_art_ui FARM_ART_UI_OK' 'test_chapter CHAPTER_OK' 'test_chapter_world CHAPTER_WORLD_OK' 'test_sandbox_resources SANDBOX_RESOURCES_OK' 'test_bridge_clearance BRIDGE_CLEARANCE_OK' 'test_bridge_sandbox_ui BRIDGE_SANDBOX_UI_OK' 'test_shore_life SHORE_LIFE_OK' 'test_farm_slots FARM_SLOTS_OK' 'test_shoulder_camera SHOULDER_CAMERA_OK' 'test_pistol_pose PISTOL_POSE_OK' 'test_shoulder_aim SHOULDER_AIM_OK' 'test_temporary_fall TEMPORARY_FALL_OK' 'test_fall_targets FALL_TARGETS_OK' 'test_fall_pose FALL_POSE_OK' 'test_combat_authority COMBAT_AUTHORITY_OK' 'test_armory_integration ARMORY_INTEGRATION_OK' 'test_horse_route_lifecycle ROUTE_CANCEL_OK' 'test_horse_summon LONG_WHISTLE_OK' 'test_farm_stream FARM_STREAM_OK' 'test_waterfall_region WATERFALL_REGION_OK' 'test_swimming SWIMMING_OK' 'test_waterfall WATERFALL_OK' 'test_horse_grounding HORSE_GROUNDING_OK' 'test_mining_pose MINING_POSE_OK' 'test_mine_exploration MINE_EXPLORATION_OK' 'test_resources RESOURCES_OK' 'test_gathering GATHERING_OK' 'test_resource_world RESOURCE_WORLD_OK' 'test_region REGION_OK' 'test_horse HORSE_STATE_OK' 'test_settings SETTINGS_STATE_OK' 'test_fullscreen FULLSCREEN_QA_OK' 'test_linux LINUX_QA_OK' 'test_coop_save COOP_SAVE_OK' 'test_coop_commands COOP_COMMANDS_OK' 'test_coop_automation COOP_AUTOMATION_OK' 'test_character_choice CHARACTER_CHOICE_OK' 'test_livestock_pose LIVESTOCK_POSE_OK' 'test_day_night DAY_NIGHT_OK' 'test_build_menu BUILD_MENU_OK' 'test_pigsty_assets PIGSTY_ASSETS_OK' 'test_pigs PIGS_GAME_OK' 'test_map_places MAP_PLACES_OK' 'test_cat CAT_OK' 'test_companions COMPANIONS_OK'; do
+          for entry in 'test_cave_world CAVE_WORLD_OK' 'test_cave_crew CAVE_CREW_OK' 'test_cave_animation CAVE_ANIMATION_OK' 'test_cave_details CAVE_DETAILS_OK' 'test_build_edit BUILD_EDIT_OK' 'test_pickup_physics PICKUP_PHYSICS_OK' 'test_young YOUNG_OK' 'test_young_life YOUNG_LIFE_OK' 'test_locomotion LOCOMOTION_OK' 'test_locomotion_integration LOCOMOTION_INTEGRATION_OK' 'test_animal_care ANIMAL_CARE_OK' 'test_animal_life ANIMAL_LIFE_OK' 'test_orchard_staff ORCHARD_STAFF_OK' 'test_orchard_staff_hud ORCHARD_STAFF_HUD_OK' 'test_orchard_staff_motion ORCHARD_STAFF_MOTION_OK' 'test_orchard_staff_integration ORCHARD_STAFF_INTEGRATION_OK' 'test_rosa ROSA_OK' 'test_rosa_world ROSA_WORLD_OK' 'test_residents RESIDENTS_OK' 'test_residents_world RESIDENTS_WORLD_OK' 'test_orchard ORCHARD_OK' 'test_orchard_view ORCHARD_VIEW_OK' 'test_orchard_trade ORCHARD_TRADE_OK' 'test_orchard_integration ORCHARD_INTEGRATION_OK' 'test_horse_art_gate HORSE_ART_GATE_CLEARANCE_OK' 'test_farm_art_integration FARM_ART_INTEGRATION_OK' 'test_farm_art_ui FARM_ART_UI_OK' 'test_chapter CHAPTER_OK' 'test_chapter_world CHAPTER_WORLD_OK' 'test_sandbox_resources SANDBOX_RESOURCES_OK' 'test_bridge_clearance BRIDGE_CLEARANCE_OK' 'test_bridge_sandbox_ui BRIDGE_SANDBOX_UI_OK' 'test_shore_life SHORE_LIFE_OK' 'test_farm_slots FARM_SLOTS_OK' 'test_shoulder_camera SHOULDER_CAMERA_OK' 'test_pistol_pose PISTOL_POSE_OK' 'test_shoulder_aim SHOULDER_AIM_OK' 'test_temporary_fall TEMPORARY_FALL_OK' 'test_fall_targets FALL_TARGETS_OK' 'test_fall_pose FALL_POSE_OK' 'test_combat_authority COMBAT_AUTHORITY_OK' 'test_armory_integration ARMORY_INTEGRATION_OK' 'test_horse_route_lifecycle ROUTE_CANCEL_OK' 'test_horse_summon LONG_WHISTLE_OK' 'test_farm_stream FARM_STREAM_OK' 'test_waterfall_region WATERFALL_REGION_OK' 'test_swimming SWIMMING_OK' 'test_waterfall WATERFALL_OK' 'test_horse_grounding HORSE_GROUNDING_OK' 'test_mining_pose MINING_POSE_OK' 'test_mine_exploration MINE_EXPLORATION_OK' 'test_resources RESOURCES_OK' 'test_gathering GATHERING_OK' 'test_resource_world RESOURCE_WORLD_OK' 'test_region REGION_OK' 'test_horse HORSE_STATE_OK' 'test_settings SETTINGS_STATE_OK' 'test_fullscreen FULLSCREEN_QA_OK' 'test_linux LINUX_QA_OK' 'test_coop_save COOP_SAVE_OK' 'test_coop_commands COOP_COMMANDS_OK' 'test_coop_automation COOP_AUTOMATION_OK' 'test_character_choice CHARACTER_CHOICE_OK' 'test_livestock_pose LIVESTOCK_POSE_OK' 'test_day_night DAY_NIGHT_OK' 'test_build_menu BUILD_MENU_OK' 'test_pigsty_assets PIGSTY_ASSETS_OK' 'test_pigs PIGS_GAME_OK' 'test_map_places MAP_PLACES_OK' 'test_cat CAT_OK' 'test_companions COMPANIONS_OK'; do
             read -r test marker <<< "$entry"
-            timeout 180 godot --headless --audio-driver Dummy --path . --script "tests/$test.gd" > "test-results/linux/$test.log" 2>&1
+            if ! timeout 180 godot --headless --audio-driver Dummy --path . --script "tests/$test.gd" > "test-results/linux/$test.log" 2>&1; then cat "test-results/linux/$test.log"; exit 1; fi
             cat "test-results/linux/$test.log"
             grep -q "$marker" "test-results/linux/$test.log"
             if grep -E 'SCRIPT ERROR|ERROR:' "test-results/linux/$test.log"; then exit 1; fi
@@ -103,6 +113,7 @@ jobs:
           python3 tests/run_network.py --godot godot --test test_coop_chapter
           python3 tests/run_network.py --godot godot --test test_coop_orchard
           python3 tests/run_network.py --godot godot --test test_coop_orchard_staff
+          python3 tests/run_network.py --godot godot --test test_coop_cave
           python3 tests/run_network.py --godot godot --test test_coop_animal_care
           python3 tests/run_network.py --godot godot --test test_coop_young
           python3 tests/run_network.py --godot godot --test test_coop_locomotion
@@ -136,7 +147,7 @@ jobs:
         run: |
           for entry in 'test_orchard_staff_hud ORCHARD_STAFF_HUD_OK' 'test_orchard_staff_motion ORCHARD_STAFF_MOTION_OK' 'test_orchard_staff_integration ORCHARD_STAFF_INTEGRATION_OK' 'test_orchard_trade ORCHARD_TRADE_OK' 'test_orchard_integration ORCHARD_INTEGRATION_OK'; do
             read -r test marker <<< "$entry"
-            xvfb-run -a timeout 180 godot --audio-driver Dummy --path . --script "tests/$test.gd" > "test-results/linux/$test-visual.log" 2>&1
+            if ! xvfb-run -a timeout 180 godot --audio-driver Dummy --path . --script "tests/$test.gd" > "test-results/linux/$test-visual.log" 2>&1; then cat "test-results/linux/$test-visual.log"; exit 1; fi
             grep -q "$marker" "test-results/linux/$test-visual.log"
             if grep -E 'SCRIPT ERROR|ERROR:' "test-results/linux/$test-visual.log"; then exit 1; fi
           done
@@ -298,7 +309,7 @@ jobs:
           git rev-parse HEAD > exports/linux/COMMIT.txt
           cp tools/linux/jogar.sh exports/linux/
           cp LINUX.md exports/linux/LEIA-ME.md
-          cp CONSTRUCAO.md FILHOTES.md ANIMAIS.md MOVIMENTO.md ZECA_POMAR.md ROSA.md ENTREGAS.md POMAR.md GARAGEM.md ARTE_FAZENDA.md PRIMEIROS_LACOS.md CAMIONETINHA.md GODOT_LICENSE.txt AUDIO.md AUDIO_CREDITS.md MULTIPLAYER.md AGUAS_VIVAS.md FAZENDAS.md QUEDA_RETORNO.md MIRA.md MAPA.md VALE_SERRA.md PESCA_MINERACAO.md exports/linux/
+          cp PROFUNDEZAS.md CONSTRUCAO.md FILHOTES.md ANIMAIS.md MOVIMENTO.md ZECA_POMAR.md ROSA.md ENTREGAS.md POMAR.md GARAGEM.md ARTE_FAZENDA.md PRIMEIROS_LACOS.md CAMIONETINHA.md GODOT_LICENSE.txt AUDIO.md AUDIO_CREDITS.md MULTIPLAYER.md AGUAS_VIVAS.md FAZENDAS.md QUEDA_RETORNO.md MIRA.md MAPA.md VALE_SERRA.md PESCA_MINERACAO.md exports/linux/
           chmod +x exports/linux/jogar.sh
           tar -czf exports/DoMatoAoMilhao-Linux-x86_64.tar.gz -C exports/linux .
           sha256sum exports/DoMatoAoMilhao-Linux-x86_64.tar.gz | tee exports/SHA256SUMS

@@ -36,6 +36,7 @@ func setup(g:Node3D) -> void:
 		fish_labels.append(_label("PESCA · E",at+Vector3(0,1.6,0)))
 		var marker:=MeshInstance3D.new();var cylinder:=CylinderMesh.new();cylinder.top_radius=.06;cylinder.bottom_radius=.08;cylinder.height=.85
 		marker.mesh=cylinder;marker.position=at+Vector3(0,.4,0);var mat:=StandardMaterial3D.new();mat.albedo_color=Color("79553b");marker.material_override=mat;add_child(marker)
+	var life:=FarmCaveLife.new();add_child(life);life.setup(game)
 	refresh_world()
 
 func _label(text:String,at:Vector3) -> Label3D:

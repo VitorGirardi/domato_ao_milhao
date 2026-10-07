@@ -4,10 +4,10 @@ var game:Node3D
 const STATIONS := [Vector2(900,-233),Vector2(909,-256)]
 func _initialize() -> void:call_deferred("run")
 func move_to(at:Vector2) -> void:
-	game.player.position=Vector3(at.x,81.15,at.y);game.player.velocity=Vector3.ZERO
+	game.player.position=FarmResourceSites.point(at)+Vector3.UP*.1;game.player.velocity=Vector3.ZERO
 func gate_hit(index:int) -> bool:
-	var start:=Vector3(900,82,-234) if index==0 else Vector3(910,82,-256)
-	var finish:=Vector3(900,82,-238) if index==0 else Vector3(914,82,-256)
+	var start:=Vector3(900,82,-234) if index==0 else Vector3(910,76,-256)
+	var finish:=Vector3(900,82,-238) if index==0 else Vector3(914,76,-256)
 	var ray:=PhysicsRayQueryParameters3D.create(start,finish);ray.exclude=[game.player.get_rid()]
 	return not game.world.get_world_3d().direct_space_state.intersect_ray(ray).is_empty()
 func action(value:String) -> String:
@@ -28,7 +28,7 @@ func walk_to(at:Vector2) -> void:
 		var remaining:=at-Vector2(game.player.position.x,game.player.position.z)
 		if remaining.length()<.25:return
 		var direction:=remaining.normalized()
-		game.player.velocity=Vector3(direction.x*12,-2,direction.y*12);game.player.move_and_slide()
+		game.player.velocity=Vector3(direction.x*12,-12,direction.y*12);game.player.move_and_slide()
 	assert(false,"Gallery route is blocked at %s, toward %s"%[game.player.position,at])
 func run() -> void:
 	assert(OS.get_user_data_dir().contains("test-results"))
@@ -72,23 +72,24 @@ func run() -> void:
 	move_to(FarmResourceSites.ORE_SPOTS[8]);assert(action("gather:mine:8").is_empty());game.gathering._process(5.1)
 	assert(game.state.resources.mined==20)
 	var restored:=FarmState.new();assert(restored.restore(JSON.parse_string(JSON.stringify(game.state.serialize()))))
-	assert(restored.resources==game.state.resources and restored.resources.node_ready.size()==9)
-	game.world.day_night.update_cycle(80,Vector3(900,82,-280))
+	assert(restored.resources==game.state.resources and restored.resources.node_ready.size()==FarmResources.NODE_COUNT)
+	game.world.day_night.update_cycle(80,Vector3(900,68,-280))
 	assert(game.world.day_night.sun.light_energy==0)
 	game.world.day_night.update_cycle(80,Vector3(900,82,-214))
 	assert(game.world.day_night.sun.light_energy>.6,"Leaving the mine restores exterior daylight")
 	# Walk the actual player capsule through every authored bend, in both directions.
 	move_to(Vector2(900,-224));RenderingServer.set_render_loop_enabled(false)
 	for cell in FarmMineLayout.CELLS:await walk_to(Vector2(900,-220)+cell)
-	assert(absf(game.player.position.y-81.05)<.5,"Mine floor must support the capsule")
+	assert(absf(game.player.position.y-FarmLandscape.height_at(Vector2(game.player.position.x,game.player.position.z)))<.5,"Mine floor must support the capsule")
 	game.yaw=0;game.pitch=.7;game._update_camera(1,true)
-	assert(game.camera.position.y<87.2,"Walking camera must stay below the cave roof")
+	print("CAMERA ",game.camera.position," PLAYER ",game.player.position)
+	assert(game.camera.position.y<FarmMineLayout.floor_y(Vector2(game.camera.position.x,game.camera.position.z))+6.5,"Walking camera must stay below the cave roof")
 	RenderingServer.set_render_loop_enabled(true)
-	await capture("deep",Vector3(900,84,-280),Vector3(900,83,-289))
+	await capture("deep",Vector3(900,62,-316),Vector3(900,61,-322))
 	RenderingServer.set_render_loop_enabled(false)
 	for i in range(FarmMineLayout.CELLS.size()-1,-1,-1):await walk_to(Vector2(900,-220)+FarmMineLayout.CELLS[i])
 	RenderingServer.set_render_loop_enabled(true)
-	await capture("gallery",Vector3(884,84,-247),Vector3(884,83,-256))
+	await capture("gallery",Vector3(884,79,-247),Vector3(884,77,-256))
 	await capture("exterior",Vector3(942,111,-179),Vector3(900,87,-245))
 	game.state=FarmState.new();game.state.claim(Vector2(4,0));game.state.resources.mine_owned=true
 	await refresh();assert(gate_hit(0) and gate_hit(1),"Changing farms must close galleries")

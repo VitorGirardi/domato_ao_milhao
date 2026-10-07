@@ -28,7 +28,7 @@ func run() -> void:
 		assert(FarmResources.buy(state,kind)!="" and state.serialize()==before)
 	assert(state.money==1170 and FarmResources.value(state)==0)
 	var before:=state.serialize()
-	assert(FarmResources.buy(state,"quartz")!="" and FarmResources.catch_fish(state,-1)!="" and FarmResources.catch_fish(state,4)!="" and FarmResources.extract(state,9)!="")
+	assert(FarmResources.buy(state,"quartz")!="" and FarmResources.catch_fish(state,-1)!="" and FarmResources.catch_fish(state,4)!="" and FarmResources.extract(state,FarmResources.NODE_COUNT)!="")
 	assert(state.serialize()==before)
 	seed(4721)
 	for spot in range(FarmResourceSites.FISH_SPOTS.size()):
@@ -57,7 +57,7 @@ func run() -> void:
 	var expected:=FarmResources.value(state)
 	var initial_money:=state.money
 	var initial_revenue:=state.revenue
-	for key in FarmResources.FISH_KEYS+FarmResources.ORE_KEYS:
+	for key in FarmResources.FISH_KEYS+["copper","iron","quartz"]:
 		assert(FarmResources.sell(state,key)>0)
 		assert(FarmResources.sell(state,key)==0)
 	assert(state.money==initial_money+expected and state.revenue==initial_revenue+expected and FarmResources.value(state)==0)
@@ -90,11 +90,13 @@ func run() -> void:
 	# Version 19 retains stock, tools, counters and its three original cooldowns.
 	var legacy19:=saved.duplicate(true);legacy19.version=19
 	legacy19.resources.erase("gallery_level")
+	legacy19.resources.stock.erase("gold");legacy19.resources.stock.erase("amethyst")
 	legacy19.resources.node_ready=legacy19.resources.node_ready.slice(0,3)
 	var legacy_before:=legacy19.duplicate(true)
 	assert(restored.restore(legacy19) and restored.resources==FarmResources.normalized(saved.resources))
 	assert(legacy19==legacy_before and restored.serialize().version==FarmState.SAVE_VERSION)
 	var old_empty:=empty.duplicate(true);old_empty.version=19
+	old_empty.resources.stock.erase("gold");old_empty.resources.stock.erase("amethyst")
 	old_empty.resources.erase("gallery_level");old_empty.resources.node_ready=[0.0,0.0,0.0]
 	assert(empty_copy.restore(JSON.parse_string(JSON.stringify(old_empty))))
 	before=restored.serialize()

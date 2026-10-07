@@ -144,7 +144,8 @@ func update_cycle(elapsed: float, observer: Vector3) -> void:
 	moon.light_energy = 0.20 * night_amount
 	var underground:=FarmMineLayout.interior_weight(observer)
 	sun.light_energy*=1-underground;moon.light_energy*=1-underground
-	environment.ambient_light_color=environment.ambient_light_color.lerp(Color("b7ae91"),underground)
+	var cave_tint:=Color("b7ae91").lerp(Color("75a38f"),smoothstep(0,8,81-observer.y)).lerp(Color("818ab5"),smoothstep(8,22,81-observer.y))
+	environment.ambient_light_color=environment.ambient_light_color.lerp(cave_tint,underground)
 	environment.ambient_light_energy=lerpf(environment.ambient_light_energy,.22,underground)
 	var angle := (displayed_hour-6.0)/24.0*TAU
 	var sun_dir := Vector3(cos(angle),sin(angle),-.3).normalized()

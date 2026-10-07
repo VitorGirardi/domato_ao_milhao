@@ -2,7 +2,7 @@ class_name FarmCoopCommands
 extends RefCounted
 ## Only this allowlist may mutate the authoritative cooperative farm.
 const SIMPLE:=["young:adopt","animal:care","tool:expand","remove","route_confirm","apply_text","apply_hen_name","upgrade","professional_watering","sell","contract","sell_milk","staff_hire","staff_assign","staff_pause","staff_dismiss","crew_hire","crew_pause","crew_dismiss","irrigation_apply","cultivation_apply","cultivation_renew","raul:confirm","raul:pause","chico:confirm","chico:pause","cheese:start","cheese:collect","cheese:sell","cheese:accept","cheese:cancel","cheese:deliver"]
-const PREFIXES:=["pigs:buy","pigs:food","pigs:water","parcel_buy:","evolution_buy:","paint:","deposit:","withdraw:","sell_product:","accept_order:","deliver_order:","cancel_order:","care:","dairy:buy","dairy:milk","dairy:food","dairy:water","crew_train:"]
+const PREFIXES:=["cave:recruit:","cave:feed:","cave:pause:","pigs:buy","pigs:food","pigs:water","parcel_buy:","evolution_buy:","paint:","deposit:","withdraw:","sell_product:","accept_order:","deliver_order:","cancel_order:","care:","dairy:buy","dairy:milk","dairy:food","dairy:water","crew_train:"]
 
 static func mutates(value:String) -> bool:
 	if value in SIMPLE or value in FarmOrchardActions.MUTATIONS or value in FarmOrchardStaffActions.MUTATIONS:return true
@@ -64,6 +64,7 @@ static func run(s:FarmState,c:Dictionary) -> String:
 		if action=="move_item":return s.move_item(i,c.at,turn)
 		if not FarmState.ITEMS.has(c.get("kind","")) or not FarmState.CROPS.has(c.get("crop","carrot")):return "Construção ou cultura inválida."
 		return s.place(c.kind,c.at,turn,c.get("crop","carrot"))
+	if action.begins_with("cave:"):return FarmCaveCrew.run(s,action)
 	if action=="young:adopt":return FarmYoung.adopt(s,i)
 	if action=="animal:care":return FarmAnimalCare.care(s,i)
 	if action=="orchard:water":return FarmOrchard.water(s,i)

@@ -1,6 +1,6 @@
 class_name FarmState
 extends RefCounted
-const SAVE_VERSION:=30
+const SAVE_VERSION:=31
 ## Pure simulation. Coordinates are X/Z in meters; all persistence is JSON.
 
 const CROPS = {
@@ -52,6 +52,7 @@ var scenery_obstacles:Array[Rect2]=[] # Runtime scenery, reconstructed from prop
 var farm_xp:int=0
 var level_notice:="" # Runtime-only; loaded games do not replay celebrations.
 var owned_parcels:Array=[]
+var cave_crew:Array=FarmCaveCrew.fresh()
 var resources:Dictionary=FarmResources.fresh()
 var armory:Dictionary=FarmArmory.fresh()
 var horse:Dictionary=FarmHorse.defaults()
@@ -683,6 +684,7 @@ func active_animals(kind:String,index:int,count:int) -> float:
 func tick(delta: float) -> bool:
 	if not claimed:
 		return false
+	FarmCaveCrew.tick(self,delta)
 	FarmOrchard.tick(self,delta)
 	var eggs := false
 	var remaining:=maxf(0,delta)
@@ -752,7 +754,7 @@ func expand() -> String:
 	return ""
 
 func serialize() -> Dictionary:
-	return {"version": SAVE_VERSION, "rosa_story":rosa_story.duplicate(), "orchard_staff":orchard_staff.duplicate(true), "orchard_journey":orchard_journey.duplicate(), "residents":residents.duplicate(true), "chapter":chapter.duplicate(), "pickup":pickup.duplicate(true), "game_mode":game_mode, "character_id":character_id, "resources":resources.duplicate(true), "horse":horse.duplicate(), "armory":armory.duplicate(), "owned_parcels":owned_parcels.duplicate(), "unlimited_money":unlimited_money, "farm_xp":farm_xp, "dairy_worker":dairy_worker.duplicate(), "cheese_worker":cheese_worker.duplicate(), "cheese_stock":cheese_stock, "cheese_order":cheese_order.duplicate(), "milk_stock":milk_stock, "cultivation":cultivation.duplicate(true), "field_staff":field_staff.duplicate(true), "professional_watering":professional_watering, "irrigation":irrigation.duplicate(true), "money": _money, "claimed": claimed,
+	return {"version": SAVE_VERSION, "rosa_story":rosa_story.duplicate(), "orchard_staff":orchard_staff.duplicate(true), "orchard_journey":orchard_journey.duplicate(), "residents":residents.duplicate(true), "chapter":chapter.duplicate(), "pickup":pickup.duplicate(true), "game_mode":game_mode, "character_id":character_id, "cave_crew":cave_crew.duplicate(true),"resources":resources.duplicate(true), "horse":horse.duplicate(), "armory":armory.duplicate(), "owned_parcels":owned_parcels.duplicate(), "unlimited_money":unlimited_money, "farm_xp":farm_xp, "dairy_worker":dairy_worker.duplicate(), "cheese_worker":cheese_worker.duplicate(), "cheese_stock":cheese_stock, "cheese_order":cheese_order.duplicate(), "milk_stock":milk_stock, "cultivation":cultivation.duplicate(true), "field_staff":field_staff.duplicate(true), "professional_watering":professional_watering, "irrigation":irrigation.duplicate(true), "money": _money, "claimed": claimed,
 		"center": [center.x, center.y], "land_size": land_size,
 		"items": items.duplicate(true), "inventory": inventory.duplicate(),
 		"elapsed": elapsed, "revenue": revenue, "harvests": harvests,
@@ -778,8 +780,16 @@ func restore(data: Variant) -> bool:
 		data=data.duplicate(true)
 		data.resources.gallery_level=0
 		data.resources.node_ready.append_array([0.0,0.0,0.0,0.0,0.0,0.0])
+	if data.version<31 and data.has("resources"):
+		data=data.duplicate(true)
+		if not data.resources is Dictionary or not data.resources.get("stock") is Dictionary or not data.resources.get("node_ready") is Array:return false
+		if data.resources.stock.size()==6 and data.resources.node_ready.size()==9:
+			data.resources.stock.gold=0;data.resources.stock.amethyst=0
+			data.resources.node_ready.append_array([0.0,0.0])
+	if data.version>=31 and not data.has("cave_crew"):return false
 	if data.has("resources") and (not _number(data.get("elapsed")) or not FarmResources.valid(data.resources,float(data.elapsed))):return false
 	if data.get("game_mode","legacy")!="sandbox" and data.has("resources") and not data.get("claimed",false) and FarmResources.normalized(data.resources)!=FarmResources.fresh():return false
+	if not FarmCaveCrew.valid(data.get("cave_crew",FarmCaveCrew.fresh()),data.get("resources",FarmResources.fresh()),data.get("claimed",false)):return false
 	if data.has("pickup") and not FarmPickup.valid(data.pickup):return false
 	if data.has("residents") and not FarmResidents.valid(data.residents):return false
 	if data.has("rosa_story"):
@@ -920,6 +930,7 @@ func restore(data: Variant) -> bool:
 		var selected_plans:Array=[]
 		for plan in saved_cultivation.plans: selected_plans.append(int(plan.index))
 		if selected_plans!=unique_plots: return false
+	cave_crew=FarmCaveCrew.normalized(data.get("cave_crew",FarmCaveCrew.fresh()))
 	resources=FarmResources.normalized(data.get("resources",FarmResources.fresh()))
 	_money = int(data.money)
 	armory=FarmArmory.normalized(data.get("armory",FarmArmory.fresh()))
