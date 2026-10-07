@@ -4,6 +4,7 @@ extends Node3D
 var game:Node3D
 var creatures:Array[FarmCaveCreature]=[]
 var labels:Array[Label3D]=[]
+var visual_progress:=[0.0,0.0,0.0]
 
 func setup(g:Node3D) -> void:
 	game=g;name="CaveLife"
@@ -41,6 +42,14 @@ func _process(delta:float) -> void:
 		labels[i].visible=creature.root.visible
 		var active:=FarmCaveCrew.active(game.state,i)
 		var progress:float=entry.progress
+		# The visitor receives farm clocks twice a second. Interpolate the visual
+		# clock so walking never alternates a short sprint and a network wait.
+		if active and game.network.active and not game.network.hosting:
+			var predicted:float=fposmod(float(visual_progress[i])+delta,FarmCaveCrew.PERIOD)
+			var correction:=fposmod(progress-predicted+60,120)-60
+			visual_progress[i]=progress if absf(correction)>1 else fposmod(predicted+correction*(1-exp(-delta*2)),120)
+			progress=visual_progress[i]
+		else:visual_progress[i]=progress
 		var weight:=clampf(progress/8,0,1) if progress<96 else 1-clampf((progress-96)/8,0,1)
 		if not active:weight=0
 		var target:=FarmResourceSites.point(FarmCaveCrew.DENS[i].lerp(FarmCaveCrew.WORK[i],weight))
