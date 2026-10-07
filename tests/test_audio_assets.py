@@ -8,12 +8,12 @@ import wave
 
 folder = Path(__file__).resolve().parents[1] / 'assets/audio'
 manifest = json.loads((folder / 'audio_manifest.json').read_text())
-assert len(manifest) == 26
+assert len(manifest) >= 42
 for name, metadata in manifest.items():
     with wave.open(str(folder / f'{name}.wav')) as stream:
         assert stream.getsampwidth() == 2 and stream.getframerate() == 32000
         channels = stream.getnchannels()
-        assert channels == (2 if metadata['loop'] else 1)
+        assert channels == metadata.get('channels',2 if metadata['loop'] else 1)
         samples = array('h', stream.readframes(stream.getnframes()))
         if sys.byteorder != 'little': samples.byteswap()
     peak = max(abs(value) for value in samples) / 32768
@@ -23,4 +23,4 @@ for name, metadata in manifest.items():
     if name == 'manha_no_vale':
         assert len(samples) == 96 * 32000 * 2
         assert samples[:2] == samples[-2:], 'Musical loop must meet continuously'
-print('AUDIO_SIGNAL_OK: 26 source files, bounded peaks/RMS, faded effects and seamless musical loop')
+print('AUDIO_SIGNAL_OK: recorded and original source files, bounded peaks/RMS, faded effects and seamless musical loop')

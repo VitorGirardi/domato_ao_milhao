@@ -24,8 +24,8 @@ var accessories:=Node3D.new()
 var collision_box:BoxShape3D
 var body_shell:CollisionShape3D
 var engine_sound:AudioStreamPlayer3D
-var engine_playback:AudioStreamGeneratorPlayback
-var sound_phase:=0.0
+var motor:=FarmEngineAudio.new()
+var audio_throttle:=0.0
 var airborne:=false
 var suspension:=0.0
 var suspension_speed:=0.0
@@ -53,8 +53,7 @@ func setup(owner_game:Node3D) -> void:
 	body_shell.shape=collision_box;body_shell.position.y=2.05;add_child(body_shell)
 	floor_snap_length=.25;floor_stop_on_slope=true;floor_max_angle=MAX_SLOPE;floor_constant_speed=false
 	instruments.setup(game.hud);speed_label=instruments.speed
-	engine_sound=AudioStreamPlayer3D.new();engine_sound.bus=FarmAudio.EFFECTS_BUS;engine_sound.volume_db=-22;engine_sound.max_distance=35
-	var generator:=AudioStreamGenerator.new();generator.mix_rate=22050;generator.buffer_length=.15;engine_sound.stream=generator;add_child(engine_sound)
+	add_child(motor);motor.setup(self);engine_sound=motor.idle
 	restore(game.state.pickup)
 
 func restore(data:Dictionary) -> void:
@@ -108,7 +107,7 @@ func reset_driver() -> void:
 		game.player.velocity=Vector3.ZERO
 	mounted=false;speed=0;velocity=Vector3.ZERO
 	if is_instance_valid(instruments):instruments.visible=false
-	if is_instance_valid(engine_sound):engine_sound.stop();engine_playback=null
+	if is_instance_valid(motor):motor.stop()
 
 static func water_depth(point:Vector2) -> float:
 	if FarmRegion.on_bridge(point):return 0.0
@@ -167,6 +166,7 @@ func ensure_parking() -> void:
 
 func drive(delta:float,throttle:float,turn:float,brake:bool,active:bool) -> void:
 	if not mounted:return
+	audio_throttle=throttle if active and not brake else 0.0
 	delta=clampf(delta,0,.05)
 	if not active:
 		speed=0;velocity=Vector3.ZERO;steering=move_toward(steering,0,delta*2)
@@ -250,21 +250,13 @@ func _physics_process(delta:float) -> void:
 	if not mounted and visible:
 		velocity=Vector3(0,velocity.y-22*delta,0);move_and_slide()
 	if not mounted:_animate(delta)
-	_update_sound()
+	_update_sound(delta)
 	refresh_cargo()
 
-func _update_sound() -> void:
-	var playing:bool=mounted and available() and game.hud.modal_kind.is_empty()
-	if not playing:
-		engine_sound.stop();engine_playback=null;return
-	if not engine_sound.playing:
-		engine_sound.play();engine_playback=engine_sound.get_stream_playback()
-	if engine_playback==null:return
-	var rpm:=26+absf(speed)*3.2
-	for i in range(engine_playback.get_frames_available()):
-		sound_phase=fmod(sound_phase+rpm/22050,1)
-		var sample:=sin(sound_phase*TAU)*.24+sin(sound_phase*TAU*2)*.12+sin(sound_phase*TAU*5)*.045
-		engine_playback.push_frame(Vector2.ONE*sample)
+func _update_sound(delta:float=0.016) -> void:
+	var focused:=DisplayServer.get_name()=="headless" or (get_window().has_focus() and get_window().mode!=Window.MODE_MINIMIZED)
+	var playing:bool=mounted and available() and game.hud.modal_kind.is_empty() and focused
+	motor.update(delta,speed,audio_throttle,airborne,playing)
 
 func cargo_access() -> bool:
 	return available() and game.state.claimed and (mounted or nearby()) and absf(speed)<=1.2 and not game.build_mode and not game.falls.local_down()

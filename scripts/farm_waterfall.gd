@@ -56,19 +56,6 @@ func _process(delta:float) -> void:
 		mist[i].scale=Vector3.ONE*(.7+t*.65)
 		mist[i].transparency=absf(t*2-1)
 func _add_sound() -> void:
-	# Original deterministic filtered noise: no external recording or dependency.
-	var rng:=RandomNumberGenerator.new();rng.seed=4271
-	var samples:=PackedFloat32Array();samples.resize(44100)
-	var filtered:=0.0
-	for i in range(samples.size()):
-		filtered=lerpf(filtered,rng.randf_range(-1,1),.14)
-		samples[i]=filtered*.5+rng.randf_range(-.06,.06)
-	# Crossfade a tail into the start for a continuous loop without a click.
-	var bytes:=PackedByteArray();bytes.resize(42000*2)
-	for i in range(42000):
-		var sample:=samples[i]
-		if i<2100:sample=lerpf(samples[i+42000],sample,float(i)/2100.0)
-		bytes.encode_s16(i*2,int(clampf(sample,-1,1)*32767))
-	var stream:=AudioStreamWAV.new();stream.format=AudioStreamWAV.FORMAT_16_BITS;stream.mix_rate=22050;stream.data=bytes;stream.loop_mode=AudioStreamWAV.LOOP_FORWARD;stream.loop_end=42000
+	var stream:=FarmAudio.loop_clip("waterfall")
 	FarmAudio.ensure_buses()
 	var sound:=AudioStreamPlayer3D.new();sound.bus=FarmAudio.AMBIENCE_BUS;sound.name="WaterRush";sound.stream=stream;sound.position=Vector3(0,3,2);sound.unit_size=8;sound.max_distance=100;sound.volume_db=-15;add_child(sound);sound.play()

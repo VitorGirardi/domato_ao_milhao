@@ -56,7 +56,7 @@ jobs:
         if: matrix.suite == 'graphics'
         run: |
           set -euo pipefail
-          for entry in 'test_cave_animation CAVE_ANIMATION_OK' 'test_cave_world CAVE_WORLD_OK'; do
+          for entry in 'test_audio AUDIO_QA_OK' 'test_audio_mix AUDIO_MIX_OK' 'test_animal_audio ANIMAL_AUDIO_OK' 'test_cave_animation CAVE_ANIMATION_OK' 'test_cave_world CAVE_WORLD_OK'; do
             set -- $entry
             xvfb-run -a timeout 180 godot --audio-driver Dummy --path . --script tests/$1.gd > test-results/linux/$1.log 2>&1
             grep "$2" test-results/linux/$1.log

@@ -615,7 +615,7 @@ func _click_world() -> void:
 			selected=state.items.size()-1
 			world.rebuild(state)
 			_ensure_player_space()
-			_chime()
+			_chime("plant" if tool=="plot" else "build")
 			if tool=="sign":
 				hud.editor_dialog("sign",state.items[selected].text)
 			elif tool=="plot":
@@ -1512,8 +1512,8 @@ func _pause_for_focus_loss() -> void:
 		hud.menu(state)
 		hud.toast("Jogo pausado enquanto você estava fora da janela.")
 
-func _chime(kind: String = "build") -> void:
-	audio.play_effect(kind if kind in ["build","harvest","plant","water"] else "build")
+func _chime(kind: String = "ui_confirm") -> void:
+	audio.play_effect(kind if kind in ["build","harvest","plant","water","ui_confirm"] else "ui_confirm")
 
 func _qa() -> void:
 	if "--qa-v026" in OS.get_cmdline_user_args():
