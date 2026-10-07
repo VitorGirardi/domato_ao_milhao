@@ -1,8 +1,8 @@
 class_name FarmPickupCargo
 extends RefCounted
 const CAPACITY:=60
-const KEYS:=["carrot","wheat","corn","egg","milk","cheese","tilapia","trout","dorado","copper","iron","quartz","orange"]
-const TITLES:=["Cenoura","Trigo","Milho","Ovos","Leite","Queijo","Tilápia","Truta","Dourado","Cobre","Ferro","Quartzo","Laranjas"]
+const KEYS:=["carrot","wheat","corn","egg","milk","cheese","tilapia","trout","dorado","copper","iron","quartz","orange","gold","amethyst"]
+const TITLES:=["Cenoura","Trigo","Milho","Ovos","Leite","Queijo","Tilápia","Truta","Dourado","Cobre","Ferro","Quartzo","Laranjas","Ouro","Ametista"]
 
 static func count(cargo:Dictionary) -> int:
 	var total:=0

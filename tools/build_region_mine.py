@@ -43,8 +43,10 @@ def rock(name,p,s,material,sub=2):
 # Depth +Y exports as Godot -Z. Flat floor +.05, clear wall width >=7m.
 CELLS = [(0,4),(0,12),(0,20),(-8,20),(-16,20),(-16,28),
          (-16,36),(-8,36),(0,36),(8,36),(16,36),(16,44),
-         (16,52),(8,52),(0,52),(0,60),(0,68)]
+         (16,52),(8,52),(0,52),(0,60),(0,68),(0,76),(8,76),(16,76),(16,84),(16,92),(8,92),(0,92),(-8,92),(-16,92),(-16,100),(-8,100),(0,100)]
 cell_set=set(CELLS)
+def floor_offset(depth):
+    return -min(max(depth-16,0),16)*.375-min(max(depth-40,0),16)*.5-min(max(depth-80,0),16)*.5
 ceiling=mat('Gallery ceiling',(.19,.22,.21))
 wall_mats=[mat('Gallery limestone %d'%i,c) for i,c in enumerate([
     (.28,.31,.29),(.32,.34,.29),(.24,.28,.28),(.36,.35,.29)])]
@@ -68,7 +70,7 @@ for f in shell.data.polygons:f.material_index=random.choice([0,0,2,3])
 # Exterior mountain shell hides the authored galleries from outdoor viewpoints.
 # Only the exterior skin exists: it never fills or intersects the walkable rooms.
 mountain_rings=[(0,8,9.3),(2,9.5,10.5),(4,11.5,11.5),(8,15,13),(12,22,15),(20,28,16.5),(28,29,17),
-                (40,28,17),(52,28,17),(64,24,16),(74,20,13),(82,12,8),(88,.1,.1)]
+                (40,28,17),(52,28,17),(64,24,16),(74,28,16),(88,28,15),(104,26,13),(116,18,9),(126,.1,.1)]
 vs=[];segments=20
 for k,(depth,width,height) in enumerate(mountain_rings):
     for i in range(segments+1):
@@ -186,6 +188,14 @@ for i,(mx,my,dx,dy) in enumerate(BOUNDARIES):
                 bpy.ops.mesh.primitive_cone_add(vertices=5,radius1=.13,radius2=0,depth=.45+j*.12,location=(x,y,.3+j*.06))
                 o=bpy.context.object;o.name='Decorative mineral seam';o.parent=root;o.data.materials.append(crystals[min(2,int(my//25))])
 print('MINE_LANTERNS_BLENDER',LANTERNS)
+# Descending rock, floors and beams share the exact runtime height contract.
+interior_names=('Level gallery floor','High gallery ceiling','Carved gallery boundary','Gallery timber','Lantern wall hook','Amber lantern glass','Lantern iron cap','Gallery edge stone','Decorative mineral seam')
+for o in list(bpy.context.scene.objects):
+    if o.type=='MESH' and o.name.startswith(interior_names):
+        matrix=o.matrix_world.copy();inverse=matrix.inverted()
+        for vertex in o.data.vertices:
+            at=matrix@vertex.co;at.z+=floor_offset(at.y);vertex.co=inverse@at
+LANTERNS=[(x,y,z+floor_offset(y)) for x,y,z in LANTERNS]
 # Apply scales before exporting, keep useful hierarchy (especially purchase barrier).
 for o in list(bpy.context.scene.objects):
     if o.type=='MESH':
@@ -207,16 +217,16 @@ for parent,name in [(root,'MineRockAndVegetation'),(barrier,'MineBarrierMesh')]:
 bpy.context.view_layer.update()
 depsgraph=bpy.context.evaluated_depsgraph_get()
 for cx,cy in CELLS:
-    origin=Vector((cx,cy,1.5))
+    origin=Vector((cx,cy,1.5+floor_offset(cy)))
     floor=bpy.context.scene.ray_cast(depsgraph,origin,Vector((0,0,-1)),distance=2)
-    assert floor[0] and abs(floor[1].z-.05)<.001, ('floor',cx,cy,floor[:2])
+    assert floor[0] and abs(floor[1].z-floor_offset(cy)-.05)<.001, ('floor',cx,cy,floor[:2])
     roof=bpy.context.scene.ray_cast(depsgraph,origin,Vector((0,0,1)),distance=10)
-    assert roof[0] and roof[1].z>=5.5, ('headroom',cx,cy,roof[:2])
+    assert roof[0] and roof[1].z>=floor_offset(cy)+5.5, ('headroom',cx,cy,roof[:2])
     for dx,dy in [(8,0),(0,8)]:
         if (cx+dx,cy+dy) in cell_set:
-            hit=bpy.context.scene.ray_cast(depsgraph,origin,Vector((dx,dy,0)).normalized(),distance=8)
+            hit=bpy.context.scene.ray_cast(depsgraph,origin,Vector((dx,dy,floor_offset(cy+dy)-floor_offset(cy))).normalized(),distance=Vector((dx,dy,floor_offset(cy+dy)-floor_offset(cy))).length)
             assert not hit[0], ('blocked passage',cx,cy,dx,dy,hit[4].name)
-print('MINE_GEOMETRY_CHECKS: 17 level floors, 17 clear ceilings, connected cell passages passed')
+print('MINE_GEOMETRY_CHECKS:',len(CELLS),'descending floors and clear ceilings; connected passages passed')
 assets=[o for o in bpy.context.scene.objects]
 for o in assets:o.select_set(True)
 (R/'art/source').mkdir(parents=True,exist_ok=True)
@@ -227,6 +237,8 @@ points=[o.matrix_world@Vector(v) for o in assets if o.type=='MESH' for v in o.bo
 print('MINE_BLENDER_BOUNDS',[(min(p[i] for p in points),max(p[i] for p in points)) for i in range(3)])
 print('MINE_TRIANGLES_BASE',sum(sum(len(p.vertices)-2 for p in o.data.polygons) for o in assets if o.type=='MESH'))
 # Preview only, not part of the exported model.
+import sys
+if "--skip-preview" in sys.argv:sys.exit(0)
 bpy.ops.mesh.primitive_plane_add(size=200);bpy.context.object.data.materials.append(mat('Preview meadow',(.22,.33,.115)))
 bpy.ops.object.camera_add(location=(16,-25,13));cam=bpy.context.object;cam.rotation_euler=(Vector((0,2,3.8))-cam.location).to_track_quat('-Z','Y').to_euler();cam.data.type='ORTHO';cam.data.ortho_scale=24;bpy.context.scene.camera=cam
 bpy.ops.object.light_add(type='AREA',location=(-6,-10,16));bpy.context.object.data.energy=2400;bpy.context.object.data.shape='DISK';bpy.context.object.data.size=12

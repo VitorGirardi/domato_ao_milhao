@@ -2,19 +2,19 @@ class_name FarmResources
 extends RefCounted
 ## Host-side transactions. Activity duration and proximity are enforced by the game.
 const FISH_KEYS := ["tilapia", "trout", "dorado"]
-const ORE_KEYS := ["copper", "iron", "quartz"]
-const NODE_ORES := ["copper", "iron", "quartz", "copper", "iron", "iron", "iron", "quartz", "quartz"]
-const NODE_LEVELS := [0,0,0,1,1,1,2,2,2]
-const NODE_COUNT := 9
-const NAMES := {"tilapia":"Tilápia", "trout":"Truta", "dorado":"Dourado", "copper":"Cobre", "iron":"Ferro", "quartz":"Quartzo", "rod":"Vara de pesca", "pickaxe":"Picareta", "mine":"Mina da Pedra Clara", "gallery_1":"Galeria do Ferro", "gallery_2":"Salão dos Cristais"}
-const PRICES := {"tilapia":18, "trout":28, "dorado":45, "copper":24, "iron":40, "quartz":65, "rod":150, "pickaxe":180, "mine":1500, "gallery_1":1200, "gallery_2":3000}
+const ORE_KEYS := ["copper", "iron", "quartz", "gold", "amethyst"]
+const NODE_ORES := ["copper", "iron", "quartz", "copper", "iron", "iron", "iron", "quartz", "quartz", "gold", "amethyst"]
+const NODE_LEVELS := [0,0,0,1,1,1,2,2,2,2,2]
+const NODE_COUNT := 11
+const NAMES := {"tilapia":"Tilápia", "trout":"Truta", "dorado":"Dourado", "copper":"Cobre", "iron":"Ferro", "quartz":"Quartzo", "gold":"Ouro", "amethyst":"Ametista", "rod":"Vara de pesca", "pickaxe":"Picareta", "mine":"Mina da Pedra Clara", "gallery_1":"Galeria do Ferro", "gallery_2":"Salão dos Cristais"}
+const PRICES := {"tilapia":18, "trout":28, "dorado":45, "copper":24, "iron":40, "quartz":65, "gold":110, "amethyst":165, "rod":150, "pickaxe":180, "mine":1500, "gallery_1":1200, "gallery_2":3000}
 const STOCK_LIMIT := 10000
 const MAX_COUNTER := 1000000000
 const COOLDOWN := 120.0
 const FISH_WEIGHTS := [[75,20,5], [40,45,15], [20,35,45], [75,20,5]]
 
 static func fresh() -> Dictionary:
-	return {"rod":false, "pickaxe":false, "mine_owned":false, "gallery_level":0, "stock":{"tilapia":0,"trout":0,"dorado":0,"copper":0,"iron":0,"quartz":0}, "node_ready":[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0], "caught":0, "mined":0}
+	return {"rod":false, "pickaxe":false, "mine_owned":false, "gallery_level":0, "stock":{"tilapia":0,"trout":0,"dorado":0,"copper":0,"iron":0,"quartz":0,"gold":0,"amethyst":0}, "node_ready":[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0], "caught":0, "mined":0}
 
 static func _integer(value:Variant, maximum:int) -> bool:
 	return (value is int or value is float) and is_finite(float(value)) and value>=0 and value<=maximum and float(value)==floorf(float(value))
@@ -25,7 +25,7 @@ static func valid(data:Variant, elapsed:float) -> bool:
 		if not data.get(key) is bool:return false
 	if not _integer(data.get("gallery_level"),2):return false
 	if data.gallery_level>0 and not (data.pickaxe and data.mine_owned):return false
-	if not data.get("stock") is Dictionary or data.stock.size()!=6:return false
+	if not data.get("stock") is Dictionary or data.stock.size()!=8:return false
 	for key in FISH_KEYS+ORE_KEYS:
 		if not _integer(data.stock.get(key),STOCK_LIMIT):return false
 	for key in ["caught","mined"]:

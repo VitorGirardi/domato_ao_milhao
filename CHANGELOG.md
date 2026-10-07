@@ -1,3 +1,11 @@
+# 0.59.0 — Profundezas da Pedra Clara
+
+- Caverna com 22 metros de descida, 29 trechos e ambientes de raízes, fungos e cristais.
+- Grunho, Ferrugem e Vigia: três ajudantes originais modelados e rigados no Blender, com caminhada, descanso, escavação e transporte.
+- Contratação com produtos da fazenda, refeições e pausa; produção por tempo ativo, compartilhada no cooperativo.
+- Ouro e ametista no fundo, venda e transporte na camionetinha. Nove veios antigos preservados.
+- Migração de saves para 31 e protocolo 28. [Guia e referências](PROFUNDEZAS.md).
+
 # 0.58.0 — Construção e física da camionetinha
 
 - Ferramentas explícitas para mover e vender construções; prévia de destino e cancelamento.

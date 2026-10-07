@@ -48,6 +48,7 @@ static func legacy_height(p:Vector2) -> float:
 	return result
 
 static func height_at(p:Vector2) -> float:
+	if FarmMineLayout.inside(p):return FarmMineLayout.floor_y(p)+.05
 	if FarmRegion.on_bridge(p): return FarmRegion.bridge_height(p)
 	return ground_height(p)
 

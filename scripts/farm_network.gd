@@ -2,7 +2,7 @@ class_name FarmNetwork
 extends Node
 ## Host-authoritative cooperative farm.
 const PORT:=28729
-const PROTOCOL:=27
+const PROTOCOL:=28
 var game:Node3D
 var active:=false
 var ready_session:=false
@@ -496,6 +496,8 @@ func apply_command(sender:int,seq:int,topology:int,command:Dictionary) -> void:
 	if topology!=structure_version:command_result(sender,false,"A fazenda mudou. Confira a seleção e tente novamente.",command);return
 	var proximity:=FarmOrchardActions.proximity_error(game,command,sender)
 	if not proximity.is_empty():command_result(sender,false,proximity,command);return
+	proximity=FarmCaveActions.proximity_error(game,command,sender)
+	if not proximity.is_empty():command_result(sender,false,proximity,command);return
 	proximity=FarmAnimalCareActions.proximity_error(game,command,sender)
 	if not proximity.is_empty():command_result(sender,false,proximity,command);return
 	var before:Dictionary=game.state.serialize()
@@ -546,6 +548,7 @@ func refresh_panel() -> void:
 	var s:FarmState=game.state
 	var i:int=game.selected
 	match h.modal_kind:
+		"cave_helper":FarmCaveActions.show(game,int(h.modal.get_meta("helper",0)))
 		"young":FarmYoungHUD.show(h,s,h.building_index)
 		"animal_care":FarmAnimalCareHUD.show(h,s,h.building_index)
 		"orchard_staff":FarmOrchardStaffHUD.update(h,s)

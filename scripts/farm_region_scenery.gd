@@ -129,7 +129,7 @@ func _lookout() -> void:
 
 func _cave() -> void:
 	var p:=Vector2(900,-220)
-	var model:=_model("region_mine",Vector3(p.x,FarmLandscape.height_at(p),p.y))
+	var model:=_model("region_mine",FarmMineLayout.ORIGIN)
 	# The Blender mountain also blocks walking/camera rays outside the tunnels.
 	# Keep the purchase tape separate so its collision remains removable.
 	var rock_mesh:=model.find_child("MineRockAndVegetation",true,false) as MeshInstance3D
@@ -140,17 +140,14 @@ func _cave() -> void:
 				if collision is CollisionShape3D and collision.shape is ConcavePolygonShape3D:collision.shape.backface_collision=true
 	# Collision follows the authored cell union, leaving every junction open.
 	for cell in FarmMineLayout.CELLS:
-		_collision(model,Vector3(cell.x,-.10,cell.y),Vector3(8,.3,8))
-		_collision(model,Vector3(cell.x,6.5,cell.y),Vector3(8,.6,8))
 		for step in [Vector2(8,0),Vector2(-8,0),Vector2(0,8),Vector2(0,-8)]:
 			if cell+step in FarmMineLayout.CELLS:continue
 			if cell==Vector2(0,-4) and step==Vector2(0,8):continue
 			var center:Vector2=cell+step*.5
 			var size:=Vector3(.4,6.4,8.4) if step.x!=0 else Vector3(8.4,6.4,.4)
-			_collision(model,Vector3(center.x,3.2,center.y),size)
 			landscape.solid_bounds.append(Rect2(Vector2(900+center.x-size.x/2,-220+center.y-size.z/2),Vector2(size.x,size.z)))
 	for i in range(2):
-		var gate_root:=Node3D.new();gate_root.position=FarmMineLayout.GATES[i];model.add_child(gate_root)
+		var gate_root:=Node3D.new();gate_root.position=FarmMineLayout.GATES[i];gate_root.position.y=FarmMineLayout.floor_offset(gate_root.position.z);model.add_child(gate_root)
 		if i==1:gate_root.rotation.y=PI/2
 		var body:=StaticBody3D.new();gate_root.add_child(body)
 		var collision:=CollisionShape3D.new();var gate_shape:=BoxShape3D.new();gate_shape.size=Vector3(8,6,.4)
@@ -177,9 +174,9 @@ func _cave() -> void:
 	mine_label=Label3D.new();mine_label.text="NÃO ENTRE";mine_label.font_size=48;mine_label.pixel_size=.009
 	mine_label.position=Vector3(0,1.65,1.10);mine_label.modulate=Color("ffe6a0");mine_label.outline_size=8
 	model.add_child(mine_label)
-	for at in [Vector3(3.4,3.3,-4),Vector3(-3.4,3.3,-12),Vector3(-8,3.3,-23.4),Vector3(-16,3.3,-16.6),Vector3(-19.4,3.3,-36),Vector3(-8,3.3,-32.6),Vector3(8,3.3,-39.4),Vector3(16,3.3,-32.6),Vector3(19.4,3.3,-52),Vector3(8,3.3,-48.6),Vector3(3.4,3.3,-60),Vector3(-3.4,3.3,-68)]:
-		var light:=OmniLight3D.new();light.position=at;light.omni_range=10
-		light.light_color=Color("ffda9e");light.light_energy=1.1;model.add_child(light)
+	for at in [Vector3(3.4,3.3,-4),Vector3(-3.4,3.3,-12),Vector3(-8,3.3,-23.4),Vector3(-16,3.3,-16.6),Vector3(-19.4,3.3,-36),Vector3(-8,3.3,-32.6),Vector3(8,3.3,-39.4),Vector3(16,3.3,-32.6),Vector3(19.4,3.3,-52),Vector3(8,3.3,-48.6),Vector3(3.4,3.3,-60),Vector3(-3.4,3.3,-68),Vector3(0,3.3,-76),Vector3(19.4,3.3,-84),Vector3(12,3.3,-92),Vector3(-8,3.3,-88.6),Vector3(-16,3.3,-100),Vector3(0,3.3,-100)]:
+		var light:=OmniLight3D.new();light.position=at;light.position.y+=FarmMineLayout.floor_offset(at.z);light.omni_range=10
+		light.light_color=Color("9bbaf4") if at.z<-56 else Color("acd5ac") if at.z<-24 else Color("ffda9e");light.light_energy=1.1;model.add_child(light)
 		light.distance_fade_enabled=true;light.distance_fade_begin=70;light.distance_fade_length=20
 		mine_lights.append(light)
 	update_lights(Vector3.ZERO)

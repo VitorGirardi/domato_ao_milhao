@@ -877,6 +877,7 @@ func _action(value: String) -> void:
 	if gathering.handle(value):return
 	if FarmBuildActions.handle(self,value):return
 	if network.handle(value):return
+	if FarmCaveActions.handle(self,value):return
 	if FarmAnimalCareActions.handle(self,value):return
 	if FarmYoungActions.handle(self,value):return
 	if FarmOrchardStaffActions.handle(self,value):return
