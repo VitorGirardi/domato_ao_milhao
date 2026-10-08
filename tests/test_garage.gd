@@ -75,6 +75,8 @@ func run() -> void:
 	assert(painted,"Customization must visibly recolor the pickup")
 	# Menu alone is not authority: a remote car, moving car or coop cannot buy.
 	truck.position.x=30;game._action("garage:open");before=game.state.serialize();game.hud.text_input.text="Remoto";game._action("garage:name");assert(game.state.serialize()==before)
+	# Construction is only available on foot; do not bypass the mounted gate.
+	truck.reset_driver()
 	game.hud.close_modal();game.build_mode=true;game.selected=0;game._action("build:open");assert(game.hud.modal_kind=="garage")
 	game.hud.close_modal();game._action("map");assert(game.navigator.destinations().any(func(entry):return entry.key=="garage:0"))
 	game.hud.close_modal();game.network.active=true;game._action("garage:open");before=game.state.serialize();game._action("garage:paint:2");assert(game.state.serialize()==before);game.network.active=false
