@@ -1,4 +1,4 @@
-﻿extends SceneTree
+extends SceneTree
 var game:Node3D
 func _initialize() -> void:call_deferred("run")
 func find_row(s:FarmState,key:String) -> Dictionary:
@@ -66,4 +66,3 @@ func run() -> void:
 	game.queue_free();await process_frame;await create_timer(.2).timeout
 	print("GUIDE_OK: read-only advice, unlocks, money, stock, sandbox, completed, paging, tracking, map, camera and construction")
 	quit()
-
