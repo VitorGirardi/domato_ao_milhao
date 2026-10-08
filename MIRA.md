@@ -1,3 +1,15 @@
+## Câmera livre — 0.61
+
+A exploração agora usa o movimento do mouse sem segurar botão. Toque Alt para alternar entre câmera e cursor; abrir menus libera o cursor e fechar restaura o modo escolhido. Alt+Tab continua disponível sem trocar o modo de construção. Rodinha ajusta a distância. Um ponto discreto indica o centro da visão quando a arma está guardada.
+
+Na construção o cursor permanece livre e o botão direito gira a vista. Com a arma sacada, botão direito mira, esquerdo atira e R recarrega; liberar o cursor com Alt interrompe a mira e permite usar a interface sem disparar.
+
+Em movimento, a câmera acompanha suavemente o carro e o cavalo. Olhar manualmente suspende esse acompanhamento por dois segundos. O cavalo mantém a direção relativa à câmera; o acompanhamento não interfere enquanto houver comando lateral ou de retorno.
+
+Para voltar ao controle anterior, desmarque **Câmera livre** em **Configurações → Jogo e vídeo** e aplique. A preferência é por perfil, sem alterar os saves. Instalações anteriores começam com o novo padrão e preservam sensibilidade e demais configurações.
+
+Validação: `test_free_camera.gd` cobre movimento sem botão, Alt, menus, construção, mira, foco, Alt+Tab, acompanhamento, modo antigo e liberação ao sair; `test_settings.gd` cobre migração e persistência. A mesma integração roda com janela real e em Linux.
+
 # Mira sobre o ombro — 0.43.0
 
 **P** saca ou guarda a pistola. Segure o **botão direito** para aproximar a câmera

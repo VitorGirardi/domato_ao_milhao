@@ -12,6 +12,7 @@ var actor:=FarmAvatar.new()
 var feedback:=FarmFeedback.new()
 var camera := Camera3D.new()
 var shoulder_camera := FarmShoulderCamera.new()
+var camera_control:=FarmCameraControl.new()
 var build_mode := true
 var focus := Vector3(4,0,-2)
 var yaw := 0.48
@@ -119,6 +120,7 @@ func _ready() -> void:
 	add_child(chapter_world);chapter_world.setup(self)
 	add_child(residents_world);residents_world.setup(self)
 	preferences.load_preferences();preferences.apply(self)
+	add_child(camera_control);camera_control.setup(self)
 	front_end.show_title()
 	_update_camera(1.0, true)
 	_update_ui()
@@ -279,6 +281,7 @@ func _start_silly() -> void:
 	hud.toast(messages[silly_kind]%name)
 
 func _update_camera(delta: float, immediate: bool = false) -> void:
+	if camera_control.game!=null and not immediate:camera_control.update(delta)
 	var target := focus if build_mode else player.position + Vector3(0,2.0 if _mounted() or pickup.mounted else 1.1,0)
 	var distance := build_distance if build_mode else (walk_distance+5.0 if pickup.mounted else walk_distance+3.0 if _mounted() else walk_distance)
 	var angle := pitch if build_mode else clampf(pitch,0.2,1.0)
@@ -369,6 +372,8 @@ func _input(event: InputEvent) -> void:
 		if not event.echo:_toggle_fullscreen()
 		get_viewport().set_input_as_handled()
 		return
+	if camera_control.game!=null and camera_control.handle_input(event):
+		get_viewport().set_input_as_handled();return
 	# Release must be caught even over a HUD panel, where unhandled input is consumed.
 	if dragging and event is InputEventMouseButton and event.button_index==MOUSE_BUTTON_LEFT and not event.pressed:
 		_update_pointer()
@@ -379,6 +384,7 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.alt_pressed:return
 	if falls.local_down() and not (event is InputEventKey and event.pressed and event.physical_keycode in [KEY_ESCAPE,KEY_F5]):return
 	if network.active:
 		if event is InputEventKey and event.pressed and not event.echo:
@@ -447,7 +453,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_K: _action("tool:stable")
 	if not hud.modal_kind.is_empty():
 		return
-	if event is InputEventMouseMotion and Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT):
+	if event is InputEventMouseMotion and Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT) and (build_mode or not camera_control.free_mode()):
 		yaw -= event.relative.x*0.005*float(preferences.data.sensitivity)
 		pitch=clampf(pitch+event.relative.y*0.003*float(preferences.data.sensitivity),0.2,1.3)
 	if event is InputEventMouseButton and event.pressed:
@@ -1395,6 +1401,10 @@ func _update_ui() -> void:
 	FarmOrchardStaffHUD.update(hud,state)
 	hud.walking.update(hud,state,_nearby_context(),crop)
 	hud.walking.mount_status(_mounted(),horse.stamina,horse.burst,actor.swimming)
+	camera_control.sync_cursor()
+	if camera_control.free_mode():
+		var mouse_hint:="Alt: câmera" if camera_control.cursor_released else "Mouse: olhar • Alt: cursor"
+		hud.walking.controls.text=mouse_hint+" • "+("WASD dirigir • Espaço frear • E sair" if pickup.mounted else "WASD cavalgar • Shift galope • E sair" if _mounted() else "WASD mover • Shift correr • Espaço pular")
 	pickup.update_hud()
 	hud.walking.visit_mode(network.active)
 	if network.active:hud.mode_label.text="CONSTRUÇÃO · COOPERATIVO" if build_mode else "FAZENDA COOPERATIVA"
@@ -1487,6 +1497,11 @@ func _request_quit() -> void:
 	get_tree().quit()
 
 func _notification(what: int) -> void:
+	if is_instance_valid(camera_control) and camera_control.game!=null:
+		if what==NOTIFICATION_APPLICATION_FOCUS_OUT:
+			camera_control.alt_pending=false;camera_control.focus_allowed=false;camera_control.sync_cursor()
+		elif what==NOTIFICATION_APPLICATION_FOCUS_IN:
+			camera_control.focus_allowed=true;camera_control.sync_cursor()
 	if what==NOTIFICATION_WM_CLOSE_REQUEST:
 		_request_quit()
 	elif what==NOTIFICATION_APPLICATION_FOCUS_OUT and session_started and not qa_mode and DisplayServer.get_name()!="headless" and not focus_check_pending:
