@@ -76,12 +76,12 @@ box('Front plate',(0,.98,3.19),(.56,.20,.03),cream,.02)
 # Real openings instead of opaque windows: the driver can be seen in the cab.
 box('Cab floor',(0,1.30,.13),(2.15,.16,1.95),dark)
 box('Cab rear lower',(0,1.92,-.92),(2.23,1.24,.14),green,.09)
-box('Cab rear glass',(0,2.76,-.92),(1.66,.57,.055),blue,.04)
-box('Roof',(0,3.30,.10),(2.46,.18,2.23),cream,.11)
+box('Cab rear glass',(0,2.97,-.92),(1.66,.99,.055),blue,.04)
+box('Roof',(0,3.72,.10),(2.46,.18,2.23),cream,.11)
 door_parts=[]
 for x in [-1.08,1.08]:
-    rod('Windscreen pillar',(x,2.10,1.04),(x,3.23,.88),.065,cream)
-    rod('Rear window pillar',(x,2.13,-.89),(x,3.24,-.89),.075,cream)
+    rod('Windscreen pillar',(x,2.10,1.04),(x,3.65,.88),.065,cream)
+    rod('Rear window pillar',(x,2.13,-.89),(x,3.66,-.89),.075,cream)
     before_door=set(bpy.context.scene.objects)
     box('Door',(x,1.85,.07),(.15,1.10,1.79),green,.07)
     box('Door ivory strip',(x*1.065,2.14,.08),(.03,.10,1.75),cream,.02)
@@ -91,7 +91,7 @@ for x in [-1.08,1.08]:
     if x<0:door_parts.extend(o for o in bpy.context.scene.objects if o not in before_door)
     box('Running board',(x*1.14,.89,.12),(.34,.13,1.95),dark,.04)
 box('Windshield lower rail',(0,2.17,1.03),(2.18,.12,.13),cream,.04)
-box('Split windscreen center',(0,2.72,.95),(.05,1.01,.06),cream,.01)
+box('Split windscreen center',(0,2.93,.95),(.05,1.43,.06),cream,.01)
 box('Dash',(0,2.00,.86),(1.98,.22,.33),dark,.05)
 for x in [-.53,.53]:
     box('Seat cushion',(x,1.71,-.19),(.81,.22,.68),seat,.10)
