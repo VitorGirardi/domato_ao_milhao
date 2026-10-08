@@ -10,6 +10,8 @@ const FORD_DEPTH:=1.0
 var game:Node3D
 var model:Node3D
 var wheels:Dictionary={}
+var driver_door:Node3D
+var transition:=FarmVehicleTransition.new()
 var mounted:=false
 var speed:=0.0
 var steering:=0.0
@@ -44,6 +46,7 @@ static func valid(value:Variant) -> bool:
 func setup(owner_game:Node3D) -> void:
 	game=owner_game;name="FarmPickup"
 	model=load("res://assets/models/farm_pickup.glb").instantiate();add_child(model)
+	driver_door=model.find_child("DriverDoor",true,false)
 	cargo_visual.name="Cargo";model.add_child(cargo_visual)
 	accessories.name="CustomParts";model.add_child(accessories)
 	for key in ["FL","FR","RL","RR"]:wheels[key]=model.find_child("Wheel_"+key,true,false)
@@ -78,29 +81,32 @@ func nearby() -> bool:
 	return available() and not mounted and not game._mounted() and game.player.position.distance_to(position)<4.2 and absf(game.player.position.y-position.y)<1.5
 
 func enter() -> bool:
+	if transition.active:return false
 	if not nearby() or game.build_mode or not game.hud.modal_kind.is_empty() or game.falls.local_down() or game.actor.airborne or game.actor.swimming:return false
+	var outside:=door_stand()
+	if to_local(game.player.position).x> -1.5 or game.player.position.distance_to(outside)>1.35 or not door_clear(outside) or not approach_clear(outside):
+		game.hud.toast("Aproxime-se pela porta do motorista em um lugar aberto.");return false
 	game._cancel_route();game.gathering.reset();game.weapons.holster();game.actor.stop_emote();game.actor.action_time=0
 	game.companions.end_horse_call()
 	mounted=true;speed=0;velocity=Vector3.ZERO
 	add_collision_exception_with(game.player);game.player.add_collision_exception_with(self)
 	game.yaw=rotation.y+PI;game.pitch=.32
-	_pose_driver(0)
+	transition.begin(self,false,outside);transition.apply(self,0)
 	return true
 
 func exit_vehicle() -> bool:
 	if not mounted:return true
+	if transition.active:return false
 	if airborne or absf(speed)>1.2:
 		game.hud.toast("Pare a camionetinha antes de sair. Espaço freia.");return false
-	for radius in [2.2,3.4,4.6,6.0]:
-		for angle in [-PI/2,PI/2,PI*.75,-PI*.75,PI,0.0]:
-			var point:Vector2=Vector2(position.x,position.z)+Vector2(sin(rotation.y+angle),cos(rotation.y+angle))*radius
-			if not game.horse.safe_spot(point,game.player,game.state,game.world.landscape):continue
-			reset_driver();game.player.position=Vector3(point.x,FarmLandscape.height_at(point)+.12,point.y)
-			store();return true
+	var outside:=door_stand()
+	if door_clear(outside):
+		transition.begin(self,true,outside);return true
 	game.hud.toast("A porta está bloqueada. Estacione em um lugar mais aberto.")
 	return false
 
 func reset_driver() -> void:
+	transition.clear(self)
 	if mounted and game!=null:
 		remove_collision_exception_with(game.player);game.player.remove_collision_exception_with(self)
 		game.avatar.position=Vector3.ZERO;game.avatar.rotation=Vector3(0,rotation.y,0);game.actor.animate(0,false,false)
@@ -166,6 +172,15 @@ func ensure_parking() -> void:
 
 func drive(delta:float,throttle:float,turn:float,brake:bool,active:bool) -> void:
 	if not mounted:return
+	if transition.active:
+		speed=0;velocity=Vector3.ZERO;audio_throttle=0
+		if active and transition.apply(self,clampf(delta,0,.05)):
+			var leaving:=transition.exiting;var outside:=transition.outside
+			transition.clear(self)
+			if leaving:
+				reset_driver();game.player.position=outside;store()
+			else:_pose_driver(0)
+		_animate(0);return
 	audio_throttle=throttle if active and not brake else 0.0
 	delta=clampf(delta,0,.05)
 	if not active:
@@ -209,7 +224,7 @@ func drive(delta:float,throttle:float,turn:float,brake:bool,active:bool) -> void
 func _pose_driver(delta:float) -> void:
 	game.player.position=position;game.player.velocity=Vector3.ZERO
 	game.actor.airborne=false;game.actor.swimming=false;game.actor.animate(delta,false,false)
-	game.avatar.global_transform=Transform3D(global_basis*model.basis,model.to_global(Vector3(-.53,.35,-.19)))
+	game.avatar.global_transform=Transform3D(global_basis*model.basis,model.to_global(Vector3(-.53,.35,-.02)))
 	game.actor.pose_bone("Spine",Vector3(.06,0,0))
 	for side in ["L","R"]:
 		var sign_value:=1.0 if side=="R" else -1.0
@@ -246,7 +261,7 @@ func _physics_process(delta:float) -> void:
 	if game==null:return
 	visible=not game.network.active
 	collision_layer=1 if visible else 0
-	if mounted and (game.falls.local_down() or game.network.active):reset_driver()
+	if mounted and (game.falls.local_down() or game.network.active or not game.session_started):reset_driver()
 	if not mounted and visible:
 		velocity=Vector3(0,velocity.y-22*delta,0);move_and_slide()
 	if not mounted:_animate(delta)
@@ -255,11 +270,38 @@ func _physics_process(delta:float) -> void:
 
 func _update_sound(delta:float=0.016) -> void:
 	var focused:=DisplayServer.get_name()=="headless" or (get_window().has_focus() and get_window().mode!=Window.MODE_MINIMIZED)
-	var playing:bool=mounted and available() and game.hud.modal_kind.is_empty() and focused
+	var playing:bool=mounted and not transition.active and available() and game.hud.modal_kind.is_empty() and focused
 	motor.update(delta,speed,audio_throttle,airborne,playing)
 
 func cargo_access() -> bool:
-	return available() and game.state.claimed and (mounted or nearby()) and absf(speed)<=1.2 and not game.build_mode and not game.falls.local_down()
+	return available() and not transition.active and game.state.claimed and (mounted or nearby()) and absf(speed)<=1.2 and not game.build_mode and not game.falls.local_down()
+
+func transitioning() -> bool:return transition.active
+
+func door_stand() -> Vector3:
+	var at:=to_global(Vector3(-2.25,0,-.25))
+	at.y=FarmLandscape.height_at(Vector2(at.x,at.z))+.12
+	return at
+
+func door_clear(outside:Vector3) -> bool:
+	if not game.horse.safe_spot(Vector2(outside.x,outside.z),game.player,game.state,game.world.landscape):return false
+	var query:=PhysicsShapeQueryParameters3D.new();var shape:=BoxShape3D.new()
+	shape.size=Vector3(.22,1.4,1.8);query.shape=shape;query.collision_mask=1
+	query.exclude=[get_rid(),game.player.get_rid()]
+	for i in range(9):
+		var hinge:=model.global_transform*Transform3D(Basis(Vector3.UP,i/8.0*1.15),Vector3(-1.08,1.85,.965))
+		query.transform=hinge*Transform3D(Basis.IDENTITY,Vector3(0,.12,-.895))
+		if not get_world_3d().direct_space_state.intersect_shape(query,1).is_empty():return false
+	return true
+
+func approach_clear(outside:Vector3) -> bool:
+	var query:=PhysicsShapeQueryParameters3D.new();var shape:=CapsuleShape3D.new()
+	shape.radius=.35;shape.height=2.58;query.shape=shape;query.collision_mask=1;query.exclude=[game.player.get_rid()]
+	for i in range(1,13):
+		var at:Vector3=game.player.position.lerp(outside,i/12.0)
+		query.transform=Transform3D(Basis.IDENTITY,at+Vector3.UP*1.4)
+		if not get_world_3d().direct_space_state.intersect_shape(query,1).is_empty():return false
+	return true
 
 func near_market() -> bool:
 	return Vector2(position.x,position.z).distance_to(Vector2(-24,15))<=15
