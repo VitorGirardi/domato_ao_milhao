@@ -72,6 +72,7 @@ var modal_kind := "":
 var current_tool := "inspect"
 var current_crop := "carrot"
 
+var guide:=FarmGuideHUD.new()
 var farm_levels:=FarmLevelsHUD.new()
 var construction:=FarmBuildHUD.new()
 var legacy_build:Control
@@ -107,6 +108,7 @@ func _ready() -> void:
 	legacy_build.hide()
 	construction.setup(self)
 	walking.setup(self)
+	guide.setup(self)
 	get_viewport().size_changed.connect(_fit_screen)
 	_fit_screen()
 
@@ -294,6 +296,7 @@ func update(state: FarmState, build_mode: bool, selected: int, tool: String, cro
 	tool_title.text="CONSTRUA SEU COMEÇO" if build_mode else "VIVA SUA FAZENDA"
 	walk_tip.visible=not build_mode
 	farm_levels.update(state)
+	guide.update(state)
 	for key in buttons:
 		var b:Button=buttons[key]
 		b.visible=build_mode
