@@ -22,6 +22,7 @@ func run() -> void:
 	assert(g.apply(1,"gather:fish:0").is_empty())
 	g._process(7.9);assert(game.state.resources==before and g.jobs.has(1))
 	g._process(.2);assert(game.state.resources!=before and g.jobs.is_empty())
+	assert(game.state.skills.fishing==10)
 	var reward:Dictionary=game.state.resources.duplicate(true)
 	g._process(100);assert(game.state.resources==reward)
 	allow();assert(g.apply(1,"gather:fish:0").is_empty())
@@ -33,6 +34,7 @@ func run() -> void:
 	allow();assert(g.apply(1,"gather:fish:0").is_empty())
 	game.hud.modal_kind="menu";g._process(10);game.hud.close_modal()
 	assert(g.jobs.is_empty() and game.state.resources==reward)
+	assert(game.state.skills.fishing==10,"Cancelled fishing must not award XP")
 	move_to(FarmResourceSites.ORE_SPOTS[0]);allow();assert(g.apply(1,"gather:mine:0").is_empty())
 	g._process(4.9);assert(game.state.resources==reward)
 	g._process(.2);assert(g.jobs.is_empty() and game.state.resources!=reward)
@@ -43,6 +45,7 @@ func run() -> void:
 	var path:String=game.save_path;game.save_path="user://missing_folder/no.json"
 	g._process(9);game.save_path=path
 	assert(g.jobs.is_empty() and game.state.resources==reward,"Failed save must roll back reward")
+	assert(game.state.skills.fishing==10 and game.state.skills.mining==10,"Failed save must roll back skill XP")
 	# The farm stream is an ordinary authoritative eight-second fishing site.
 	move_to(FarmResourceSites.FISH_SPOTS[3]);allow()
 	assert(FarmResourceSites.FISH_NAMES[3]=="Riacho da Fazenda")

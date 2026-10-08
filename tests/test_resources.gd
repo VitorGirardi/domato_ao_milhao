@@ -137,7 +137,9 @@ func run() -> void:
 	before=progression.serialize()
 	assert(FarmResources.buy(progression,"gallery_2")!="" and progression.serialize()==before)
 	for node in range(6,9):assert(FarmResources.extract(progression,node).is_empty())
-	assert(progression.resources.stock.iron==1 and progression.resources.stock.quartz==2)
+	assert(progression.skills.mining==220)
+	# The twentieth manual extraction now grants the level-three ore bonus.
+	assert(progression.resources.stock.iron==2 and progression.resources.stock.quartz==2)
 	assert(restored.restore(JSON.parse_string(JSON.stringify(progression.serialize()))))
 	assert(restored.resources==progression.resources)
 	before=restored.serialize()

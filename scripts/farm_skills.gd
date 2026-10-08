@@ -32,7 +32,7 @@ static func earn(s:FarmState,key:String,amount:int) -> void:
 	var before:=level(s.skills[key])
 	s.skills[key]=mini(MAX_XP,int(s.skills[key])+amount)
 	var after:=level(s.skills[key])
-	if after>before:s.skill_notice="%s · nível %d! %s"%[NAMES[key],after,benefit(key,after)]
+	if after>before:s.skill_notice="%s chegou ao nível %d! Confira o benefício no Caderno."%[NAMES[key],after]
 
 static func crop_bonus(s:FarmState) -> int:
 	return int((level(s.skills.farming)-1)/2)

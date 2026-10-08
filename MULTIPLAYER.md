@@ -1,3 +1,7 @@
+## Habilidades — 0.64.0
+
+Atualizem os dois PCs para **0.64.0, protocolo 30**. Habilidades são compartilhadas por fazenda: ações manuais do anfitrião e visitante somam experiência salva pelo anfitrião. Save 32 migra os anteriores preservando o progresso. [Guia](HABILIDADES.md).
+
 # Atualização 0.62 — trabalho e montaria
 
 Atualizem os dois PCs para **0.62.0, protocolo 29**. As animações de regar e colher aparecem para ambos; o anfitrião controla a entrada e saída do cavalo, inclusive pausas e conclusão. Mensagens antigas não fazem a pose retroceder. A camionetinha continua solo. Save 31 preservado. [Guia](ACOES_PERSONAGEM.md).

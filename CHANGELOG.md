@@ -1,3 +1,11 @@
+## 0.64.0 — Habilidades pela prática
+
+- Pesca, Agricultura, Mineração e Manejo evoluem automaticamente com ações manuais concluídas, em cinco níveis por fazenda, compartilhados no cooperativo.
+- Caderno → Habilidades mostra XP, benefícios atuais/próximos e instruções de prática. Benefícios melhoram pesca, replantio/colheita, extração e conforto dos animais.
+- Ajudantes, ações canceladas e tentativas sem recompensa não dão experiência. Animações e movimentação preservadas.
+- Save 32 preserva fazendas anteriores; Sandbox libera todas as habilidades. Protocolo 30 exige atualizar ambos os PCs.
+- Inclui os ajustes de motorista e som de colisões da 0.63.1.
+
 ## 0.63.1 — Banco do motorista e som de colisão
 
 - Quadril apoiado no assento, pés sobre o piso e mãos no volante nos dois personagens, sem reduzir sua escala.

@@ -71,7 +71,7 @@ func run() -> void:
 	await barrier("ripe")
 	await perform("host_harvest","host",0,"harvest")
 	await perform("guest_harvest","client",1,"harvest")
-	await until(func():return game.state.inventory.carrot==6 and game.state.harvests==2)
+	await until(func():return game.state.inventory.carrot==6 and game.state.harvests==2 and game.state.skills.farming==20)
 	await create_timer(1.6).timeout
 	assert(not game.actor.can.visible and not n.remote_actor.can.visible)
 	assert(game.actor.locomotion.active and n.remote_actor.locomotion.active)

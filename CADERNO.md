@@ -10,6 +10,6 @@ Cada ficha explica o benefício e os requisitos. **Ver orientação** abre a tel
 
 No Survival, os custos e desbloqueios continuam valendo. No Sandbox, dinheiro e recursos infinitos são respeitados. O caderno não distribui recompensas, XP nem altera o estado da fazenda.
 
-## Próxima etapa alinhada
+## Habilidades
 
-Habilidades evoluirão automaticamente pela prática (pesca, agricultura, mineração e manejo). Ainda não implementadas nesta versão; benefícios e equilíbrio serão definidos na etapa própria.
+Desde a 0.64.0, a aba **Habilidades** mostra a evolução automática por pesca, agricultura, mineração e manejo. Consulte o nível, a experiência e os benefícios atuais e futuros. **Como ganhar experiência** explica as ações. [Guia e tabela de benefícios](HABILIDADES.md).

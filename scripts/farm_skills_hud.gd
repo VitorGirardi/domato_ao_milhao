@@ -20,7 +20,7 @@ static func draw(h:FarmHUD,p:Control,s:FarmState) -> void:
 			var target:=rank+1
 			future="No nível %d: %s"%[target,FarmSkills.benefit(key,target)]
 		FarmGuideHUD.wrapped(h,card,future,Rect2(16,155,474,62),16,FarmHUD.MUTED)
-	FarmGuideHUD.wrapped(h,p,"Somente ações manuais concluídas dão XP. Trabalho dos ajudantes, tentativas e ações canceladas não contam. O benefício de uma ação usa o nível que você tinha ao começar a recompensa.",Rect2(28,694,1024,50),16,FarmHUD.MUTED)
+	FarmGuideHUD.wrapped(h,p,"Somente ações manuais concluídas dão XP. Trabalho dos ajudantes, tentativas e ações canceladas não contam. Novos benefícios valem a partir da próxima ação concluída.",Rect2(28,694,1024,50),16,FarmHUD.MUTED)
 	FarmGameUI.action(h,p,"Como ganhar experiência",Rect2(26,749,420,36),"guide:practice")
 	FarmGameUI.action(h,p,"Voltar ao campo",Rect2(734,749,320,36),"close",true)
 
