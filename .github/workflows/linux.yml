@@ -60,7 +60,7 @@ jobs:
           display=(--headless)
           runner=()
           if [ '${{ matrix.suite }}' = graphics ]; then display=(); runner=(xvfb-run -a); fi
-          for entry in 'test_work_actions WORK_ACTIONS_OK' 'test_work_integration WORK_INTEGRATION_OK' 'test_horse_mount_animation HORSE_MOUNT_ANIMATION_OK' 'test_horse_mount_revision HORSE_MOUNT_REVISION_OK' 'test_vehicle_entry VEHICLE_ENTRY_OK' 'test_transport_integration TRANSPORT_INTEGRATION_OK'; do
+          for entry in 'test_work_actions WORK_ACTIONS_OK' 'test_work_integration WORK_INTEGRATION_OK' 'test_horse_mount_animation HORSE_MOUNT_ANIMATION_OK' 'test_horse_mount_revision HORSE_MOUNT_REVISION_OK' 'test_driver_seat DRIVER_SEAT_OK' 'test_pickup_collision PICKUP_COLLISION_OK' 'test_vehicle_entry VEHICLE_ENTRY_OK' 'test_transport_integration TRANSPORT_INTEGRATION_OK'; do
             read -r test marker <<< "$entry"
             "${runner[@]}" timeout 240 godot "${display[@]}" --audio-driver Dummy --path . --script "tests/$test.gd" > "test-results/linux/$test.log" 2>&1
             cat "test-results/linux/$test.log"
@@ -96,7 +96,7 @@ jobs:
         if: matrix.suite == 'gameplay'
         run: |
           python3 tests/test_audio_assets.py
-          for entry in 'test_audio AUDIO_QA_OK' 'test_audio_mix AUDIO_MIX_OK' 'test_animal_audio ANIMAL_AUDIO_OK'; do
+          for entry in 'test_audio AUDIO_QA_OK' 'test_audio_mix AUDIO_MIX_OK' 'test_pickup_impact_audio PICKUP_IMPACT_AUDIO_OK' 'test_animal_audio ANIMAL_AUDIO_OK'; do
             read -r test marker <<< "$entry"
             if ! timeout 180 godot --headless --audio-driver Dummy --path . --script "tests/$test.gd" > "test-results/linux/$test.log" 2>&1; then cat "test-results/linux/$test.log"; exit 1; fi
             cat "test-results/linux/$test.log"

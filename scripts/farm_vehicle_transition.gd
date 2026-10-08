@@ -3,6 +3,8 @@ extends RefCounted
 ## Door, body and grips share one reversible timeline. No physics root motion.
 const POSES=preload("res://assets/animations/vehicle_entry.gd").FRAMES
 const DURATION:=3.0
+# Pelvis rest height .97 + root .97 = 1.94: tissue rests on cushion top 1.82.
+const SEATED_ORIGIN:=Vector3(-.53,.97,-.14)
 var active:=false
 var exiting:=false
 var elapsed:=0.0
@@ -22,7 +24,7 @@ func apply(truck:FarmPickup,delta:float) -> bool:
 	game.actor.animate(0,false,false)
 	var sit:=smoothstep(.35,.72,t)
 	var approach:=smoothstep(0,.15,t)
-	var at:=outside.lerp(truck.model.to_global(Vector3(-.53,.35,-.02)),sit)
+	var at:=outside.lerp(truck.model.to_global(SEATED_ORIGIN),sit)
 	var player_at:=outside.lerp(truck.position,sit)
 	at.y+=sin(sit*PI)*.38
 	var facing:=truck.global_basis*truck.model.basis

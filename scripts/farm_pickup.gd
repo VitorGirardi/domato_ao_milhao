@@ -4,7 +4,8 @@ extends CharacterBody3D
 const HOME:=Vector2(-20,27)
 const MAX_SPEED:=20.0
 const REVERSE_SPEED:=6.0
-const BODY_SIZE:=Vector3(2.55,2.3,5.95)
+const BODY_SIZE:=Vector3(2.55,2.92,5.95)
+const BODY_CENTER_Y:=2.36
 const MAX_SLOPE:=deg_to_rad(48.0)
 const FORD_DEPTH:=1.0
 var game:Node3D
@@ -53,7 +54,7 @@ func setup(owner_game:Node3D) -> void:
 	var support:=CollisionShape3D.new();var capsule:=CapsuleShape3D.new()
 	capsule.radius=.65;capsule.height=2.7;support.shape=capsule;support.position.y=1.35;add_child(support)
 	body_shell=CollisionShape3D.new();collision_box=BoxShape3D.new();collision_box.size=BODY_SIZE
-	body_shell.shape=collision_box;body_shell.position.y=2.05;add_child(body_shell)
+	body_shell.shape=collision_box;body_shell.position.y=BODY_CENTER_Y;add_child(body_shell)
 	floor_snap_length=.25;floor_stop_on_slope=true;floor_max_angle=MAX_SLOPE;floor_constant_speed=false
 	instruments.setup(game.hud);speed_label=instruments.speed
 	motor=FarmEngineAudio.new();add_child(motor);motor.setup(self);engine_sound=motor.idle
@@ -144,7 +145,7 @@ func clear_at(at:Vector3,angle:float) -> bool:
 	var query:=PhysicsShapeQueryParameters3D.new();query.shape=collision_box;query.collision_mask=1
 	query.exclude=[get_rid(),game.player.get_rid()]
 	var basis:=Basis(Vector3.UP,angle)*Basis.from_euler(ground_tilt(at,angle))
-	query.transform=Transform3D(basis,at+basis*Vector3.UP*2.05)
+	query.transform=Transform3D(basis,at+basis*Vector3.UP*BODY_CENTER_Y)
 	return get_world_3d().direct_space_state.intersect_shape(query,1).is_empty()
 
 func ground_tilt(at:Vector3,angle:float) -> Vector3:
@@ -209,6 +210,7 @@ func drive(delta:float,throttle:float,turn:float,brake:bool,active:bool) -> void
 	var impact_speed:=velocity.y
 	# Align the collision shell before movement, not one physics frame behind it.
 	_animate(0)
+	var incoming:=velocity
 	move_and_slide()
 	blocked_reason=surface_problem(position,rotation.y)
 	if not blocked_reason.is_empty():
@@ -216,6 +218,8 @@ func drive(delta:float,throttle:float,turn:float,brake:bool,active:bool) -> void
 	elif get_slide_collision_count()>0:
 		for i in range(get_slide_collision_count()):
 			if get_slide_collision(i).get_normal().y<cos(slope_limit()):
+				var hit:=get_slide_collision(i)
+				motor.impact(maxf(0,-incoming.dot(hit.get_normal())),hit.get_position())
 				speed=0;blocked_reason="Obstáculo à frente · recue ou contorne";break
 	if is_on_floor() and airborne and impact_speed < -2:
 		suspension_speed=-minf(impact_speed*-0.32,3.0)
@@ -227,15 +231,13 @@ func drive(delta:float,throttle:float,turn:float,brake:bool,active:bool) -> void
 func _pose_driver(delta:float) -> void:
 	game.player.position=position;game.player.velocity=Vector3.ZERO
 	game.actor.airborne=false;game.actor.swimming=false;game.actor.animate(delta,false,false)
-	game.avatar.global_transform=Transform3D(global_basis*model.basis,model.to_global(Vector3(-.53,.35,-.02)))
-	game.actor.pose_bone("Spine",Vector3(.06,0,0))
+	game.avatar.global_transform=Transform3D(global_basis*model.basis,model.to_global(FarmVehicleTransition.SEATED_ORIGIN))
+	var seated:Dictionary=FarmVehicleTransition.POSES.back()
+	for bone in seated:
+		var angles:Array=seated[bone]
+		game.actor.pose_bone(bone,Vector3(angles[0],angles[1],angles[2]))
 	for side in ["L","R"]:
 		var sign_value:=1.0 if side=="R" else -1.0
-		game.actor.pose_bone("Thigh."+side,Vector3(-1.3,0,sign_value*.1))
-		game.actor.pose_bone("Shin."+side,Vector3(1.5,0,0))
-		game.actor.pose_bone("Foot."+side,Vector3(-.15,0,0))
-		game.actor.pose_bone("UpperArm."+side,Vector3(-.6,0,-sign_value*.2))
-		game.actor.pose_bone("Forearm."+side,Vector3(-1,0,0))
 		game.actor.reach_rein_hand(side,model.to_global(Vector3(-.53+sign_value*.22,2.30,.50)),1)
 
 func _animate(delta:float) -> void:
@@ -249,7 +251,7 @@ func _animate(delta:float) -> void:
 			suspension_speed+=(-suspension*85-suspension_speed*12)*delta
 			suspension=clampf(suspension+suspension_speed*delta,-.22,.12)
 		model.position.y=suspension
-		body_shell.basis=model.basis;body_shell.position=model.basis*Vector3.UP*2.05
+		body_shell.basis=model.basis;body_shell.position=model.basis*Vector3.UP*BODY_CENTER_Y
 	for key in wheels:
 		if is_instance_valid(wheels[key]):wheels[key].rotation=Vector3(wheel_spin,-steering if key.begins_with("F") else 0,0)
 	update_hud()
