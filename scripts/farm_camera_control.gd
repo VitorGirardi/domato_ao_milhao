@@ -73,8 +73,8 @@ func update(delta:float) -> void:
 		if absf(game.pickup.speed)<1:return
 		heading=game.pickup.rotation.y+PI
 	elif game._mounted():
-		# Horse steering is camera-relative: never recenter against a lateral turn.
-		if absf(game.horse.speed)<1 or absf(Input.get_axis("left","right"))>.05:return
+		# Horse steering is camera-relative: never recenter against lateral or backward input.
+		if absf(game.horse.speed)<1 or absf(Input.get_axis("left","right"))>.05 or Input.get_action_strength("back")>.05:return
 		heading=game.horse.heading+PI
 	else:return
 	game.yaw=lerp_angle(game.yaw,heading,1-exp(-delta*1.6))

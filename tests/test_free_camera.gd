@@ -54,6 +54,9 @@ func run() -> void:
 	game.pickup.speed=0;c.look_delay=0;c.update(.1);assert(game.yaw==yaw)
 	game.pickup.mounted=false;game.horse.mounted=true;game.horse.speed=4;game.horse.heading=0;game.yaw=0
 	c.update(.1);assert(absf(game.yaw)>.01 and absf(game.yaw)<.6)
+	yaw=game.yaw;Input.action_press("back");c.update(.1)
+	assert(game.yaw==yaw,"Camera-relative backward steering must not cause a follow loop")
+	Input.action_release("back")
 	game.horse.mounted=false;game.horse.speed=0
 	game.preferences.data.free_camera=false;c.sync_cursor();assert(not c.captured())
 	yaw=game.yaw;game._input(motion());assert(game.yaw==yaw)
