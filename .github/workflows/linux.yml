@@ -63,6 +63,14 @@ jobs:
           cat test-results/linux/free-camera.log
           grep -q FREE_CAMERA_OK test-results/linux/free-camera.log
           ! grep -E 'SCRIPT ERROR|ERROR:' test-results/linux/free-camera.log
+      - name: Construction menu and mouse building in cooperative play
+        if: matrix.suite == 'graphics'
+        run: |
+          xvfb-run -a timeout 180 godot --audio-driver Dummy --path . --script tests/test_build_menu.gd > test-results/linux/build-menu.log 2>&1
+          grep -q BUILD_MENU_OK test-results/linux/build-menu.log
+          if grep -E 'SCRIPT ERROR|ERROR:' test-results/linux/build-menu.log; then exit 1; fi
+          cp test-results/build-menu-*.png test-results/linux/
+          xvfb-run -a python3 tests/run_network.py --godot godot --gui --test test_coop_build_menu
       - name: Recorded audio and real mixer output
         if: matrix.suite == 'gameplay'
         run: |
@@ -292,14 +300,6 @@ jobs:
           grep -q MINE_EXPLORATION_OK test-results/linux/mine-exploration.log
           if grep -E 'SCRIPT ERROR|ERROR:' test-results/linux/mine-exploration.log; then exit 1; fi
           cp test-results/mine-*.png test-results/linux/
-      - name: Construction menu and mouse building in cooperative play
-        if: matrix.suite == 'graphics'
-        run: |
-          xvfb-run -a timeout 180 godot --audio-driver Dummy --path . --script tests/test_build_menu.gd > test-results/linux/build-menu.log 2>&1
-          grep -q BUILD_MENU_OK test-results/linux/build-menu.log
-          if grep -E 'SCRIPT ERROR|ERROR:' test-results/linux/build-menu.log; then exit 1; fi
-          cp test-results/build-menu-*.png test-results/linux/
-          xvfb-run -a python3 tests/run_network.py --godot godot --gui --test test_coop_build_menu
       - name: Wayland graphical gameplay and fullscreen
         if: matrix.suite == 'graphics'
         shell: bash

@@ -28,7 +28,7 @@ func available() -> bool:
 	return game.session_started and not game.quitting and not game.build_mode and game.hud.modal_kind.is_empty() and not game.falls.local_down()
 
 func focused() -> bool:
-	return focus_allowed and (game.qa_mode or DisplayServer.get_name()=="headless" or (game.get_window().has_focus() and game.get_window().mode!=Window.MODE_MINIMIZED))
+	return focus_allowed and (DisplayServer.get_name()=="headless" or (game.get_window().has_focus() and game.get_window().mode!=Window.MODE_MINIMIZED))
 
 func captured() -> bool:
 	return free_mode() and available() and focused() and not cursor_released
