@@ -52,6 +52,17 @@ jobs:
           python3 tools/linux/audit_resources.py
           timeout 300 godot --headless --editor --path . --import --quit > test-results/linux/import.log 2>&1
           ! grep -E 'SCRIPT ERROR|ERROR:' test-results/linux/import.log
+      - name: Free camera and cursor integration
+        if: matrix.suite != 'multiplayer'
+        run: |
+          if [ "${{ matrix.suite }}" = graphics ]; then
+            xvfb-run -a timeout 180 godot --audio-driver Dummy --path . --script tests/test_free_camera.gd >test-results/linux/free-camera.log 2>&1
+          else
+            timeout 180 godot --headless --audio-driver Dummy --path . --script tests/test_free_camera.gd >test-results/linux/free-camera.log 2>&1
+          fi
+          cat test-results/linux/free-camera.log
+          grep -q FREE_CAMERA_OK test-results/linux/free-camera.log
+          ! grep -E 'SCRIPT ERROR|ERROR:' test-results/linux/free-camera.log
       - name: Recorded audio and real mixer output
         if: matrix.suite == 'gameplay'
         run: |

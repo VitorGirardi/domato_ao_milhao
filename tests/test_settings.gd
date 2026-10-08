@@ -1,6 +1,9 @@
 extends SceneTree
 func _initialize() -> void:
-	var good:=FarmSettings.normalized({"volume":9,"sensitivity":-1,"quality":2,"fps":120,"fullscreen":false,"music":0,"ambience":99,"effects":-.4})
+	var good:=FarmSettings.normalized({"free_camera":false,"volume":9,"sensitivity":-1,"quality":2,"fps":120,"fullscreen":false,"music":0,"ambience":99,"effects":-.4})
+	assert(not good.free_camera)
+	assert(FarmSettings.normalized({}).free_camera)
+	assert(FarmSettings.normalized({"free_camera":"bad"}).free_camera)
 	assert(good.music==0 and good.ambience==1 and good.effects==0)
 	assert(good.volume==1 and good.sensitivity==.25 and good.quality==2 and not good.fullscreen and good.fps==120)
 	var bad:=FarmSettings.normalized({"volume":NAN,"sensitivity":"bad","quality":99,"fps":-1,"fullscreen":"false","music":INF,"effects":"loud","ambience":false})

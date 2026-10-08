@@ -64,7 +64,11 @@ var overlay: ColorRect
 var modal_shade:ColorRect
 var modal: Panel
 var text_input: LineEdit
-var modal_kind := ""
+signal modal_changed
+var modal_kind := "":
+	set(value):
+		modal_kind=value
+		modal_changed.emit()
 var current_tool := "inspect"
 var current_crop := "carrot"
 
@@ -397,17 +401,17 @@ func _money(value: int) -> String:
 		result+=text[i]
 	return result
 
-func close_modal() -> void:
+func close_modal(replacing:bool=false) -> void:
 	world_hud.visible=true
 	if is_instance_valid(overlay): overlay.queue_free()
 	overlay=null
 	modal_shade=null
 	modal=null
 	text_input=null
-	modal_kind=""
+	if not replacing:modal_kind=""
 
 func _modal(kind: String, height: float = 530) -> Panel:
-	close_modal()
+	close_modal(true)
 	modal_kind=kind
 	world_hud.visible=false
 	overlay=ColorRect.new()

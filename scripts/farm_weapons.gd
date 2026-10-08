@@ -172,6 +172,7 @@ func handle_input(event:InputEvent) -> bool:
 				if armed:start_reload();return true
 			KEY_TAB,KEY_B:holster()
 	if event is InputEventMouseButton and armed:
+		if game.camera_control.game!=null and game.camera_control.free_mode() and game.camera_control.cursor_released:return false
 		if event.button_index==MOUSE_BUTTON_RIGHT:
 			if event.pressed:_begin_aim()
 			else:_end_aim()
