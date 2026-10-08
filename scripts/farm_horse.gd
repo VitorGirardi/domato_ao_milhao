@@ -173,7 +173,7 @@ func render_transition(actor:FarmAvatar) -> void:
 	rider_body.position=Vector3(visual.x,lerpf(outer.y,position.y,phase),visual.z)
 	rider_body.velocity=Vector3.ZERO
 	var facing:Basis=global_basis*model.basis*Basis(Vector3.UP,values.Facing.y*-transition_side)
-	if transition_kind=="mount":facing=transition_basis.slerp(facing,smoothstep(0,.2,progress))
+	if transition_kind=="mount":facing=transition_basis.orthonormalized().slerp(facing.orthonormalized(),smoothstep(0,.2,progress))
 	transition_avatar.global_transform=Transform3D(facing,visual)
 	FarmHorseMountPose.apply(actor,values,transition_side)
 	var support_weight:=smoothstep(.10,.25,phase)*(1-smoothstep(.72,.95,phase))

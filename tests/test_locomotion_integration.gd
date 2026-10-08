@@ -95,7 +95,7 @@ func run() -> void:
 		assert(not game.actor.locomotion.active)
 		game.horse.reset_rider(game.player,game.avatar,game.actor)
 		game.pickup.restore(FarmPickup.defaults())
-		game.player.position=game.pickup.position+Vector3(-2.5,.15,0)
+		game.player.position=game.pickup.door_stand()
 		game.actor.airborne=false;game.actor.swimming=false
 		await physics_frame
 		assert(game.pickup.enter())

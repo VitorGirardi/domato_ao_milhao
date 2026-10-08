@@ -1,3 +1,7 @@
+# Atualização 0.62 — trabalho e montaria
+
+Atualizem os dois PCs para **0.62.0, protocolo 29**. As animações de regar e colher aparecem para ambos; o anfitrião controla a entrada e saída do cavalo, inclusive pausas e conclusão. Mensagens antigas não fazem a pose retroceder. A camionetinha continua solo. Save 31 preservado. [Guia](ACOES_PERSONAGEM.md).
+
 # Atualização 0.57 — filhotes
 
 Atualizem os dois PCs para **0.57.0, protocolo 27**. Aquisição, idade e suprimentos são salvos pelo anfitrião. Crescimento visual e poses aparecem para o visitante. [Guia](FILHOTES.md).

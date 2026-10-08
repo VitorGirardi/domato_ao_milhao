@@ -1,3 +1,12 @@
+## 0.62.0 — Trabalho e transporte animados
+
+- Poses originais do Blender para mineração, rega com duas mãos e colheita com agachamento e recuperação.
+- Água e efeito de colheita acompanham o gesto; repetição de E aguarda o fim da ação.
+- Porta da camionetinha articulada, entrada/saída completas e mãos no volante. Passagem bloqueada impede a transição.
+- Montar/desmontar com apoio no estribo, passagem da perna e movimento contínuo; pausa e cancelamento seguros.
+- Montaria e trabalho sincronizados no cooperativo, com proteção contra mensagens fora de ordem. Protocolo 29; save 31 preservado.
+- [Controles e validação](ACOES_PERSONAGEM.md).
+
 ## 0.60.0 — Sons do vale
 
 - Motor diesel gravado com marcha lenta, carga, transições e volume audível ao dirigir.

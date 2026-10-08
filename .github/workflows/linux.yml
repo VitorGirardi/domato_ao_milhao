@@ -52,6 +52,21 @@ jobs:
           python3 tools/linux/audit_resources.py
           timeout 300 godot --headless --editor --path . --import --quit > test-results/linux/import.log 2>&1
           ! grep -E 'SCRIPT ERROR|ERROR:' test-results/linux/import.log
+      - name: Work and transport animations
+        if: matrix.suite != 'multiplayer'
+        shell: bash
+        run: |
+          set -euo pipefail
+          display=(--headless)
+          runner=()
+          if [ '${{ matrix.suite }}' = graphics ]; then display=(); runner=(xvfb-run -a); fi
+          for entry in 'test_work_actions WORK_ACTIONS_OK' 'test_work_integration WORK_INTEGRATION_OK' 'test_horse_mount_animation HORSE_MOUNT_ANIMATION_OK' 'test_horse_mount_revision HORSE_MOUNT_REVISION_OK' 'test_vehicle_entry VEHICLE_ENTRY_OK' 'test_transport_integration TRANSPORT_INTEGRATION_OK'; do
+            read -r test marker <<< "$entry"
+            "${runner[@]}" timeout 240 godot "${display[@]}" --audio-driver Dummy --path . --script "tests/$test.gd" > "test-results/linux/$test.log" 2>&1
+            cat "test-results/linux/$test.log"
+            grep -q "$marker" "test-results/linux/$test.log"
+            ! grep -E 'SCRIPT ERROR|ERROR:' "test-results/linux/$test.log"
+          done
       - name: Recorded audio and real mixer output
         if: matrix.suite == 'gameplay'
         run: |
@@ -103,6 +118,7 @@ jobs:
       - name: Linux multiplayer with two isolated processes
         if: matrix.suite == 'multiplayer'
         run: |
+          python3 tests/run_network.py --godot godot --test test_coop_work
           python3 tests/run_network.py --godot godot
           python3 tests/run_network.py --godot godot --test test_coop
           python3 tests/run_network.py --godot godot --test test_coop_full
@@ -320,7 +336,7 @@ jobs:
           git rev-parse HEAD > exports/linux/COMMIT.txt
           cp tools/linux/jogar.sh exports/linux/
           cp LINUX.md exports/linux/LEIA-ME.md
-          cp PROFUNDEZAS.md CONSTRUCAO.md FILHOTES.md ANIMAIS.md MOVIMENTO.md ZECA_POMAR.md ROSA.md ENTREGAS.md POMAR.md GARAGEM.md ARTE_FAZENDA.md PRIMEIROS_LACOS.md CAMIONETINHA.md GODOT_LICENSE.txt AUDIO.md AUDIO_CREDITS.md MULTIPLAYER.md AGUAS_VIVAS.md FAZENDAS.md QUEDA_RETORNO.md MIRA.md MAPA.md VALE_SERRA.md PESCA_MINERACAO.md exports/linux/
+          cp ACOES_PERSONAGEM.md PROFUNDEZAS.md CONSTRUCAO.md FILHOTES.md ANIMAIS.md MOVIMENTO.md ZECA_POMAR.md ROSA.md ENTREGAS.md POMAR.md GARAGEM.md ARTE_FAZENDA.md PRIMEIROS_LACOS.md CAMIONETINHA.md GODOT_LICENSE.txt AUDIO.md AUDIO_CREDITS.md MULTIPLAYER.md AGUAS_VIVAS.md FAZENDAS.md QUEDA_RETORNO.md MIRA.md MAPA.md VALE_SERRA.md PESCA_MINERACAO.md exports/linux/
           chmod +x exports/linux/jogar.sh
           tar -czf exports/DoMatoAoMilhao-Linux-x86_64.tar.gz -C exports/linux .
           sha256sum exports/DoMatoAoMilhao-Linux-x86_64.tar.gz | tee exports/SHA256SUMS

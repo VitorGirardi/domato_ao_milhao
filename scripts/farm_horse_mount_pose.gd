@@ -13,6 +13,7 @@ static func sample(phase:float) -> Dictionary:
 	return result
 
 static func apply(actor:FarmAvatar,values:Dictionary,side:float) -> void:
+	FarmWorkPose.release(actor)
 	actor.locomotion.release(actor)
 	for key:String in values:
 		if key in ["Travel","Facing"]:continue

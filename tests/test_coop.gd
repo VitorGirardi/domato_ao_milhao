@@ -68,7 +68,7 @@ func run() -> void:
 		# Deliberately replay exactly the same request.
 		n._tend_request.rpc_id(1,n.sequence,0,"harvest","carrot",int(n.plot_versions.get(0,0)),n.structure_version);flag("race_sent")
 		await until(func():return game.state.inventory.carrot==3)
-		await create_timer(1).timeout
+		await create_timer(1.5).timeout
 		n.request_tend(1,"harvest","corn")
 		await until(func():return game.state.inventory.corn==3)
 		assert(game.state.harvests==2 and not FileAccess.file_exists(n.coop_path))
