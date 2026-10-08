@@ -7,6 +7,14 @@
 - Montaria e trabalho sincronizados no cooperativo, com proteção contra mensagens fora de ordem. Protocolo 29; save 31 preservado.
 - [Controles e validação](ACOES_PERSONAGEM.md).
 
+## 0.61.0 — Câmera livre
+
+- Mouse gira a câmera ao explorar sem segurar botão; Alt alterna o cursor.
+- Menus, construção e perda de foco liberam o mouse; mira mantém o botão direito.
+- Carro e cavalo recebem acompanhamento suave, com intervalo após olhar manualmente.
+- Controle antigo disponível em Configurações → Jogo e vídeo; preferência persistente.
+- Preservados saves, economia, animações, física e áudio da 0.60.
+
 ## 0.60.0 — Sons do vale
 
 - Motor diesel gravado com marcha lenta, carga, transições e volume audível ao dirigir.

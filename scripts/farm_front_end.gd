@@ -202,6 +202,11 @@ func show_settings() -> void:
 			options.select(int(pending.quality));options.item_selected.connect(func(index:int):pending.quality=index);controls.quality=options
 		else:
 			options.select([30,60,120,0].find(int(pending.fps)));options.item_selected.connect(func(index:int):pending.fps=[30,60,120,0][index]);controls.fps=options
+	var free_camera:=CheckButton.new();free_camera.text="Câmera livre • mouse gira sem segurar botão"
+	free_camera.position=Vector2(32,510);free_camera.size=Vector2(780,40)
+	free_camera.button_pressed=pending.free_camera;controls.video_page.add_child(free_camera)
+	free_camera.toggled.connect(func(value:bool):pending.free_camera=value);controls.free_camera=free_camera
+	hud.label(controls.video_page,"Alt libera o cursor. Desmarque para usar o controle antigo.",Vector2(32,550),Vector2(780,26),16)
 	hud.label(p,"As alterações entram em vigor ao aplicar.",Vector2(32,577),Vector2(780,28),17)
 	FarmGameUI.action(hud,p,"Cancelar",Rect2(32,636,225,47),"front:back")
 	FarmGameUI.action(hud,p,"Padrões",Rect2(273,636,225,47),"front:defaults")
@@ -211,10 +216,11 @@ func show_settings() -> void:
 func show_controls() -> void:
 	var hud:FarmHUD=game.hud
 	var p:=FarmGameUI.open(hud,"controls","Controles do vale","book",920,630)
-	var rows:=["WASD   Andar / cavalgar","Mouse direito   Girar câmera","Espaço   Pular","Shift   Correr / tapinha no cavalo","E   Interagir / montar / desmontar","M   Mapa (a pé ou montado)","TAB   Construir / caminhar","R / Q   Girar construção","M   Mover construção selecionada","F5   Salvar fazenda","F11   Tela cheia / janela","Esc   Voltar / pausar"]
-	for i in range(rows.size()):hud.label(p,rows[i],Vector2(32+(i/6)*440,127+(i%6)*54),Vector2(425,40),18)
+	var rows:=["WASD   Andar / cavalgar","Mouse   Olhar • Alt   Cursor","Espaço   Pular","Shift   Correr / tapinha no cavalo","E   Interagir / montar / desmontar","M   Mapa (a pé ou montado)","TAB   Construir / caminhar","R / Q   Girar construção","M   Mover construção selecionada","F5   Salvar fazenda","F11   Tela cheia / janela","Esc   Voltar / pausar","Rodinha   Aproximar / afastar","Direito   Girar na construção"]
+	if not game.preferences.data.free_camera:rows[1]="Mouse direito   Girar câmera"
+	for i in range(rows.size()):hud.label(p,rows[i],Vector2(32+(i/7)*440,117+(i%7)*48),Vector2(425,40),18)
 	hud.label(p,"F · Armazém    H · Equipe    B · Emotes    T · Terrenos",Vector2(32,469),Vector2(856,30),18)
-	hud.label(p,"P · Sacar/guardar P-8    Clique · Atirar    R · Recarregar",Vector2(32,507),Vector2(856,30),17)
+	hud.label(p,"P · Arma    Direito · Mirar    Clique · Atirar    R · Recarregar",Vector2(32,507),Vector2(856,30),17)
 	FarmGameUI.action(hud,p,"Voltar",Rect2(300,566,320,43),"front:back",true)
 
 func escape() -> bool:
@@ -244,7 +250,7 @@ func handle(action:String) -> void:
 		"front:video_tab":settings_tab(false)
 		"front:defaults":
 			for key in ["volume","music","ambience","effects","sensitivity"]:controls[key].value=FarmSettings.DEFAULTS[key]
-			controls.fullscreen.button_pressed=true
+			controls.fullscreen.button_pressed=true;controls.free_camera.button_pressed=true
 			controls.quality.select(1);controls.fps.select(1);pending=FarmSettings.DEFAULTS.duplicate()
 		"front:apply":
 			var previous:Dictionary=game.preferences.data

@@ -8,6 +8,7 @@ func key(code:int) -> InputEventKey:
 func run() -> void:
 	assert(OS.get_user_data_dir().contains("test-results"))
 	game=load("res://scenes/main.tscn").instantiate();game.save_path="user://shoulder_aim.json";root.add_child(game);await process_frame
+	game.preferences.data.free_camera=false
 	game.qa_mode=true;game.session_started=true;game.build_mode=false;game.hud.close_modal()
 	game.set_process(false);game.set_physics_process(false);game.world.set_process(false);game.companions.set_process(false)
 	game.weapons.set_physics_process(false);game.falls.set_process(false);game.falls.set_physics_process(false)
