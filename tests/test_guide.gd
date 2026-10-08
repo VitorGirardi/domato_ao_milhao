@@ -30,6 +30,10 @@ func run() -> void:
 	game=load("res://scenes/main.tscn").instantiate();game.save_path="user://guide.json";root.add_child(game);await process_frame
 	game.qa_mode=true;game.set_process(false);game.set_physics_process(false);game.weapons.set_physics_process(false)
 	game.session_started=true;game.build_mode=false;game.hud.close_modal()
+	game._action("guide");game._action("guide:open:start_land")
+	assert(game.build_mode and game.hud.modal_kind.is_empty(),"First land must open initial placement, not the locked expansion menu")
+	assert(game.tool=="inspect" and not game.state.claimed)
+	game.build_mode=false
 	game._action("guide");assert(game.hud.modal_kind=="guide")
 	assert(Input.mouse_mode==Input.MOUSE_MODE_VISIBLE)
 	game._action("guide:pin:garage");assert(game.hud.modal_kind.is_empty())

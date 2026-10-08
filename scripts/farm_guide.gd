@@ -22,6 +22,9 @@ static func entries(s:FarmState) -> Array[Dictionary]:
 		# Early guidance already records historical achievements in existing saves.
 		var current:bool=s.journey_step()<FarmState.JOURNEY.size() and FarmState.JOURNEY[s.journey_step()].key==step.key
 		var action:String={"land":"parcels","plots":"tool:plot","water":"objectives","harvest":"objectives","sale":"market","contract":"market_orders","coop":"tool:coop","expand":"parcels"}[step.key]
+		# Use the actual journey handler for its current step: first-land selection,
+		# the original carrot contract and the $900 expansion have distinct flows.
+		if current:action="journey"
 		var detail:="Concluído na jornada inicial." if s.milestones.get(step.key,false) else "Seu próximo passo na jornada." if current else "Você pode planejar esta etapa; avance na jornada inicial para chegar até ela."
 		var body:String=step.body.replace("\n"," ")
 		if step.key=="harvest":body="Caminhe pela fazenda enquanto a plantação cresce. Quando estiver pronta, aproxime-se e use E para colher."
@@ -30,7 +33,7 @@ static func entries(s:FarmState) -> Array[Dictionary]:
 	rows.append(building(s,"barn","Guarde produtos e organize a produção da fazenda."))
 	rows.append(building(s,"workshop","Use a bancada e melhore seus regadores para cuidar de mais canteiros."))
 	rows.append(building(s,"garage","Melhore o motor, os pneus e a caçamba da camionetinha."))
-	rows.append(entry("rosa","Conheça Dona Rosa","Entregas rendem dinheiro, confiança e influência no vale.","Visite a casa de Dona Rosa. Aceite o pedido e leve os produtos na caçamba da camionetinha.",s.residents.rosa.done>0,"residents",s.claimed))
+	rows.append(entry("rosa","Faça uma entrega a Dona Rosa","Entregas rendem dinheiro, confiança e influência no vale.","Visite a casa de Dona Rosa. Aceite o pedido e leve os produtos na caçamba da camionetinha.",s.residents.rosa.done>0,"residents",s.claimed))
 	for key in ["rod","pickaxe","mine"]:
 		var owned:bool=s.resources.mine_owned if key=="mine" else s.resources[key]
 		var price:int=FarmResources.PRICES[key]
