@@ -5,10 +5,18 @@ var game:Node3D
 func _initialize() -> void:call_deferred("run")
 
 func advance(seconds:float) -> void:
-	for i in range(ceili(seconds*60)):
-		game.actor.animate(1.0/60,false,false)
-		game.action_cooldown=maxf(0,game.action_cooldown-1.0/60)
-		await create_timer(1.0/60).timeout
+	# Use elapsed time, not sixty rendered timer waits per second: CI's software
+	# renderer may draw only a few frames per second in the full authored world.
+	var remaining:=seconds
+	var before:=Time.get_ticks_usec()
+	while remaining>.00001:
+		await process_frame
+		var now:=Time.get_ticks_usec()
+		var step:=minf(remaining,maxf(.00001,(now-before)/1000000.0))
+		before=now;remaining-=step
+		game.actor.animate(step,false,false)
+		game.action_cooldown=maxf(0,game.action_cooldown-step)
+	await process_frame
 
 func capture(label:String) -> void:
 	if DisplayServer.get_name()=="headless":return
