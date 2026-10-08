@@ -217,6 +217,7 @@ func show_controls() -> void:
 	var hud:FarmHUD=game.hud
 	var p:=FarmGameUI.open(hud,"controls","Controles do vale","book",920,630)
 	var rows:=["WASD   Andar / cavalgar","Mouse   Olhar • Alt   Cursor","Espaço   Pular","Shift   Correr / tapinha no cavalo","E   Interagir / montar / desmontar","M   Mapa (a pé ou montado)","TAB   Construir / caminhar","R / Q   Girar construção","M   Mover construção selecionada","F5   Salvar fazenda","F11   Tela cheia / janela","Esc   Voltar / pausar","Rodinha   Aproximar / afastar","Direito   Girar na construção"]
+	if not game.preferences.data.free_camera:rows[1]="Mouse direito   Girar câmera"
 	for i in range(rows.size()):hud.label(p,rows[i],Vector2(32+(i/7)*440,117+(i%7)*48),Vector2(425,40),18)
 	hud.label(p,"F · Armazém    H · Equipe    B · Emotes    T · Terrenos",Vector2(32,469),Vector2(856,30),18)
 	hud.label(p,"P · Arma    Direito · Mirar    Clique · Atirar    R · Recarregar",Vector2(32,507),Vector2(856,30),17)
