@@ -29,6 +29,15 @@ var skin_bones:Dictionary={}
 var skin_rest:Dictionary={}
 var rider_upper_collision:CollisionShape3D
 var rider_body:CharacterBody3D
+var transition_kind:=""
+var transition_elapsed:=0.0
+var transition_side:=-1.0
+var transition_origin:=Vector3.ZERO
+var transition_target:=Vector3.ZERO
+var transition_avatar:Node3D
+var transition_state:FarmState
+var transition_landscape:FarmLandscape
+var transition_basis:=Basis.IDENTITY
 const LEGS:=["FrontL","FrontR","HindL","HindR"]
 
 static func defaults() -> Dictionary:return {"x":HOME.x,"z":HOME.y,"angle":0.0}
@@ -70,10 +79,12 @@ func store(state:FarmState) -> void:
 	snapshot=state.horse.duplicate()
 
 func can_mount(player:CharacterBody3D) -> bool:
-	return not get_meta("temporary_down",false) and not player.get_meta("temporary_down",false) and not mounted and player.position.distance_to(position)<2.8 and player.is_on_floor()
+	return not get_meta("temporary_down",false) and not player.get_meta("temporary_down",false) and not mounted and player.position.distance_to(position)<2.8 and player.is_on_floor() and approach_clear(player)
 
-func mount(player:CharacterBody3D,avatar:Node3D,actor:FarmAvatar) -> void:
+func mount(player:CharacterBody3D,avatar:Node3D,actor:FarmAvatar,animated:bool=false) -> void:
 	if get_meta("temporary_down",false):return
+	var origin:=player.position
+	var origin_basis:=avatar.global_basis
 	rider_actor=actor;rider_body=player
 	mounted=true;obstacle.collision_layer=0;label.visible=false
 	parts.HorseNeck.position=part_home.HorseNeck;parts.HorseNeck.rotation=Vector3.ZERO;life.reset(self)
@@ -89,6 +100,89 @@ func mount(player:CharacterBody3D,avatar:Node3D,actor:FarmAvatar) -> void:
 	update_rider_collision()
 	player.position=position+Vector3.UP*.06;player.velocity=Vector3.ZERO;avatar.rotation.y=heading
 	actor.stop_emote();actor.action_time=0;actor.airborne=false
+	if animated:
+		begin_transition("mount",player,avatar,origin,position)
+		transition_basis=origin_basis
+		player.position=origin;render_transition(actor)
+
+func transition_active() -> bool:return not transition_kind.is_empty()
+
+func approach_clear(player:CharacterBody3D) -> bool:
+	return corridor_clear(player,player.position)
+
+func corridor_clear(player:CharacterBody3D,outer:Vector3) -> bool:
+	# A swept upright capsule verifies the complete lateral approach, excluding
+	# the horse and rider themselves. No interpolation through a barn or fence.
+	var local:=to_local(outer)
+	var side:=-1.0 if local.x<=0 else 1.0
+	var stirrup:=to_global(Vector3(side*.76,0,-.10))
+	var capsule:=CapsuleShape3D.new();capsule.radius=.32;capsule.height=2.30
+	for i in range(9):
+		var point:=outer.lerp(stirrup,i/8.0)
+		var query:=PhysicsShapeQueryParameters3D.new();query.shape=capsule
+		query.transform=Transform3D(Basis.IDENTITY,Vector3(point.x,ground_at(Vector2(point.x,point.z))+1.36,point.z))
+		query.exclude=[player.get_rid(),obstacle.get_rid()];query.collision_mask=1
+		if not get_world_3d().direct_space_state.intersect_shape(query,1).is_empty():return false
+	return true
+
+func begin_transition(kind:String,player:CharacterBody3D,avatar:Node3D,origin:Vector3,target:Vector3) -> void:
+	transition_kind=kind;transition_elapsed=0;transition_origin=origin;transition_target=target
+	transition_avatar=avatar;rider_body=player
+	transition_basis=avatar.global_basis
+	transition_side=-1.0 if to_local(origin if kind=="mount" else target).x<=0 else 1.0
+	speed=0;burst=0;pat_time=0;player.velocity=Vector3.ZERO
+	rider_collision.disabled=true
+	if is_instance_valid(rider_upper_collision):rider_upper_collision.disabled=true
+
+func clear_transition() -> void:
+	transition_kind="";transition_elapsed=0
+	if is_instance_valid(rider_collision):rider_collision.disabled=false
+	if is_instance_valid(rider_upper_collision):rider_upper_collision.disabled=false
+	transition_state=null;transition_landscape=null
+
+func advance_transition(delta:float,active:bool,authority:bool) -> void:
+	if not transition_active():return
+	if active:transition_elapsed=minf(FarmHorseMountPose.DURATION,transition_elapsed+delta)
+	animate(delta if active else 0,0,false);render_transition(rider_actor)
+	if transition_elapsed<FarmHorseMountPose.DURATION or not authority:return
+	var leaving:=transition_kind=="dismount"
+	if leaving:
+		var p:=Vector2(transition_target.x,transition_target.z)
+		if not safe_spot(p,rider_body,transition_state,transition_landscape):
+			# A newly occupied landing cancels safely back to the saddle.
+			clear_transition();rider_body.position=position;pose_rider(transition_avatar,rider_actor);return
+		var state:=transition_state
+		var target:=transition_target
+		reset_rider(rider_body,transition_avatar,rider_actor)
+		rider_body.position=target;store(state);life.reset(self)
+	else:
+		clear_transition();rider_body.position=position+Vector3.UP*.06
+		pose_rider(transition_avatar,rider_actor)
+
+func render_transition(actor:FarmAvatar) -> void:
+	if not transition_active() or not is_instance_valid(transition_avatar):return
+	var progress:=clampf(transition_elapsed/FarmHorseMountPose.DURATION,0,1)
+	var phase:=progress if transition_kind=="mount" else 1-progress
+	var values:=FarmHorseMountPose.sample(phase)
+	var travel:Vector3=values.Travel;travel.x*= -transition_side
+	var visual:=model.to_global(travel)
+	var outer:=transition_origin if transition_kind=="mount" else transition_target
+	visual=outer.lerp(visual,smoothstep(0,.26,phase))
+	# The body follows horizontal travel at ground height; the visual carries
+	# the authored climb. This also gives the camera a continuous target.
+	rider_body.position=Vector3(visual.x,lerpf(outer.y,position.y,phase),visual.z)
+	rider_body.velocity=Vector3.ZERO
+	var facing:Basis=global_basis*model.basis*Basis(Vector3.UP,values.Facing.y*-transition_side)
+	if transition_kind=="mount":facing=transition_basis.orthonormalized().slerp(facing.orthonormalized(),smoothstep(0,.2,progress))
+	transition_avatar.global_transform=Transform3D(facing,visual)
+	FarmHorseMountPose.apply(actor,values,transition_side)
+	var support_weight:=smoothstep(.10,.25,phase)*(1-smoothstep(.72,.95,phase))
+	FarmHorseMountPose.plant_stirrup(actor,"L" if transition_side<0 else "R",model.to_global(Vector3(transition_side*.49,1.23,.10)),support_weight)
+	var grip_weight:=smoothstep(.05,.32,phase)
+	for side in ["L","R"]:
+		var sign_value:=-1.0 if side=="L" else 1.0
+		actor.reach_rein_hand(side,model.to_global(Vector3(sign_value*.25,2.06,.32)),grip_weight)
+	update_reins()
 
 func safe_spot(p:Vector2,player:CharacterBody3D,state:FarmState,landscape:FarmLandscape) -> bool:
 	if p.x<FarmLandscape.WALK_MIN.x+.6 or p.x>FarmLandscape.WALK_MAX.x-.6 or p.y<FarmLandscape.WALK_MIN.y+.6 or p.y>FarmLandscape.WALK_MAX.y-.6:return false
@@ -100,14 +194,22 @@ func safe_spot(p:Vector2,player:CharacterBody3D,state:FarmState,landscape:FarmLa
 	query.shape=capsule;query.transform=Transform3D(Basis.IDENTITY,Vector3(p.x,ground_at(p)+1.40,p.y));query.exclude=[player.get_rid()];query.collision_mask=1
 	return get_world_3d().direct_space_state.intersect_shape(query,1).is_empty()
 
-func dismount(player:CharacterBody3D,avatar:Node3D,actor:FarmAvatar,state:FarmState,landscape:FarmLandscape) -> bool:
+func dismount(player:CharacterBody3D,avatar:Node3D,actor:FarmAvatar,state:FarmState,landscape:FarmLandscape,animated:bool=false) -> bool:
 	if not mounted:return true
+	if animated and transition_active():return false
 	# Search beside, behind and ahead. Never eject the rider through a building.
 	for radius in [1.65,2.4,3.2]:
 		for angle in [PI/2,-PI/2,PI,0.0,PI*.75,-PI*.75]:
 			var offset:Vector3=Vector3(sin(heading+angle),0,cos(heading+angle))*radius
 			var p:=Vector2(position.x+offset.x,position.z+offset.z)
 			if not safe_spot(p,player,state,landscape):continue
+			var destination:=Vector3(p.x,ground_at(p)+.12,p.y)
+			if animated:
+				if not corridor_clear(player,destination):continue
+				transition_state=state;transition_landscape=landscape
+				begin_transition("dismount",player,avatar,position,destination)
+				return true
+			clear_transition()
 			mounted=false;burst=0;pat_time=0;speed=0
 			remove_rider_collision()
 			rider_collision.shape=walk_shape;rider_collision.position=Vector3(0,1.29,0);rider_collision.rotation=Vector3.ZERO
@@ -118,6 +220,7 @@ func dismount(player:CharacterBody3D,avatar:Node3D,actor:FarmAvatar,state:FarmSt
 
 func encourage() -> bool:
 	if get_meta("temporary_down",false):return false
+	if transition_active():return false
 	if not mounted or pat_time>0 or stamina<25:return false
 	stamina-=25;burst=3.5;pat_time=.55
 	encouraged.emit()
@@ -125,6 +228,9 @@ func encourage() -> bool:
 
 func drive(player:CharacterBody3D,avatar:Node3D,actor:FarmAvatar,direction:Vector3,delta:float,active:bool) -> void:
 	if get_meta("temporary_down",false):return
+	if transition_active():
+		advance_transition(delta,active,true)
+		return
 	if active:
 		burst=maxf(0,burst-delta);pat_time=maxf(0,pat_time-delta)
 		stamina=minf(100,stamina+delta*(7 if burst<=0 else 0))
@@ -148,6 +254,8 @@ func drive(player:CharacterBody3D,avatar:Node3D,actor:FarmAvatar,direction:Vecto
 	pose_rider(avatar,actor)
 
 func pose_rider(avatar:Node3D,actor:FarmAvatar) -> void:
+	if transition_active():
+		render_transition(actor);return
 	rider_actor=actor
 	avatar.global_transform=Transform3D(global_basis*model.basis,model.to_global(Vector3(0,1.04+(parts.HorseBody.position.y-body_home.y),-.04)))
 	var tap:=sin(clampf(1-pat_time/.55,0,1)*PI) if pat_time>0 else 0.0
@@ -161,6 +269,7 @@ func pose_rider(avatar:Node3D,actor:FarmAvatar) -> void:
 		actor.pose_bone("UpperArm."+side,Vector3(-.60,0,-sign_value*.45))
 		actor.pose_bone("Forearm."+side,Vector3(-.85,0,0))
 		actor.pose_bone("Hand."+side,Vector3.ZERO)
+		actor.reach_rein_hand(side,model.to_global(Vector3(sign_value*.25,2.06,.32)),1.0)
 	if pat_time>0:
 		actor.reach_rein_hand("R",model.to_global(Vector3(.28,2.30,.76)),tap)
 	update_reins()
@@ -290,6 +399,7 @@ func update_reins() -> void:
 
 func reset_rider(player:CharacterBody3D,avatar:Node3D,actor:FarmAvatar) -> void:
 	if not mounted:return
+	clear_transition()
 	mounted=false;burst=0;pat_time=0;speed=0
 	remove_rider_collision()
 	rider_collision.shape=walk_shape;rider_collision.position=Vector3(0,1.29,0);rider_collision.rotation=Vector3.ZERO

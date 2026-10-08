@@ -5,8 +5,9 @@ func _initialize() -> void:call_deferred("run")
 
 func place(point:Vector2,heading:float) -> void:
 	truck.restore({"x":point.x,"z":point.y,"angle":heading})
-	game.player.position=truck.position+Vector3(-2.5,.15,0);game.actor.airborne=false;game.actor.swimming=false
+	game.player.position=truck.door_stand();game.actor.airborne=false;game.actor.swimming=false
 	assert(truck.enter())
+	while truck.transitioning():truck.drive(.05,0,0,true,true)
 
 func screenshot(label:String) -> void:
 	if DisplayServer.get_name()=="headless":return
@@ -102,7 +103,10 @@ func run() -> void:
 	place(FarmPickup.HOME,PI/2);cash=game.state.money
 	var value:=FarmPickupCargo.value(game.state);game._action("pickup:cargo");game._action("pickup:sell")
 	assert(game.state.money==cash+value and FarmPickupCargo.count(FarmPickupCargo.contents(game.state))==0 and truck.cargo_visual.get_child_count()==0)
-	game.hud.close_modal();assert(truck.exit_vehicle());game._update_ui()
+	game.hud.close_modal()
+	assert(truck.exit_vehicle())
+	while truck.transitioning():truck.drive(.05,0,0,true,true)
+	game._update_ui()
 	assert(not truck.instruments.visible and game.hud.walking.controls.visible)
 	game.session_started=false;game.audio.stop_all();await create_timer(.15).timeout;game.queue_free();await process_frame
 	print("PICKUP_CARGO_OK: real roads, bridges, ford depth, dashboard, visible cargo, capacity, sale proximity, save atomicity and both modes")

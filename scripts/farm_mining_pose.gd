@@ -32,23 +32,11 @@ static func sample(seconds:float,distance:float=1.5) -> Dictionary:
 static func apply(actor:FarmAvatar,tool:Node3D,seconds:float,target:Vector3) -> Dictionary:
 	var distance:=Vector2(target.x-actor.root.global_position.x,target.z-actor.root.global_position.z).length()
 	var frame:=sample(seconds,distance)
-	var raised:float=frame.raised
-	# Keep ankles and legs planted; rotate the upper body into each strike.
-	actor.pose_bone("Spine",Vector3(lerpf(.32,-.08,raised),lerpf(-.08,.12,raised),0))
-	actor.pose_bone("Chest",Vector3(.06,lerpf(-.07,.12,raised),0))
-	actor.pose_bone("Neck",Vector3(-.12,0,0))
-	actor.pose_bone("Head",Vector3(.10,0,0))
-	for side in ["L","R"]:
-		actor.pose_bone("Thigh."+side,Vector3.ZERO)
-		actor.pose_bone("Shin."+side,Vector3.ZERO)
-		actor.pose_bone("Foot."+side,Vector3.ZERO)
-		actor.pose_bone("UpperArm."+side,Vector3(-.65,0,-.28 if side=="R" else .28))
-		actor.pose_bone("Forearm."+side,Vector3(-.85,0,0))
-		actor.pose_bone("Hand."+side,Vector3.ZERO)
+	# Blender-authored shoulders/torso lead the blow, knees accept its weight.
+	FarmWorkPose.body(actor,"mine",float(frame.phase))
 	tool.global_transform=actor.root.global_transform*frame.tool
 	for iteration in range(3):
 		actor.reach_rein_hand("R",tool.global_transform*GRIP_R,1)
 		actor.reach_rein_hand("L",tool.global_transform*GRIP_L,1)
 	frame["world_impact"]=actor.root.global_transform*frame.impact
 	return frame
-

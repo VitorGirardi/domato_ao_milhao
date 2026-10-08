@@ -23,13 +23,15 @@ func run() -> void:
 		var park:=FarmResidents.parking(key);var direction:=Vector2(0,-1 if key!="lia" else 1)
 		var start:=park-direction*14
 		game.pickup.restore({"x":start.x,"z":start.y,"angle":PI if key!="lia" else 0.0})
-		game.player.position=game.pickup.position+Vector3(2.5,.1,0);game.actor.airborne=false;game.actor.swimming=false
+		game.player.position=game.pickup.door_stand();game.actor.airborne=false;game.actor.swimming=false
 		assert(game.pickup.enter())
+		while game.pickup.transitioning():game.pickup.drive(.05,0,0,true,true)
 		for i in range(180):
 			var distance:=Vector2(game.pickup.position.x,game.pickup.position.z).distance_to(park)
 			game.pickup.drive(1.0/60,1 if distance>3 else 0,0,distance<=3,true)
 		assert(game.pickup.position.distance_to(residents.ground(park))<5,"Blocked driveway: "+key+str(game.pickup.position))
 		game.pickup.speed=0;assert(game.pickup.exit_vehicle())
+		while game.pickup.transitioning():game.pickup.drive(.05,0,0,true,true)
 		game.player.position=residents.ground(FarmResidents.entry(key))+Vector3(1,0,0);game.actor.airborne=false
 		game.actor.animate(1,false,false)
 		residents.discover();assert(game.state.residents[key].known)

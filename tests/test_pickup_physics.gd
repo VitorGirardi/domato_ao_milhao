@@ -5,8 +5,9 @@ func _initialize() -> void:call_deferred("run")
 
 func place(point:Vector2,heading:float) -> void:
 	truck.restore({"x":point.x,"z":point.y,"angle":heading})
-	game.player.position=truck.position+Vector3(-2.5,.15,0);game.actor.airborne=false;game.actor.swimming=false
+	game.player.position=truck.door_stand();game.actor.airborne=false;game.actor.swimming=false
 	assert(truck.enter())
+	while truck.transitioning():truck.drive(.05,0,0,true,true)
 
 func screenshot(label:String) -> void:
 	if DisplayServer.get_name()=="headless":return

@@ -18,12 +18,13 @@ func run() -> void:
 	game.state=FarmState.new_farm("survival","farmer");assert(game.state.claim(Vector2(4,-2)).is_empty())
 	var truck:FarmPickup=game.pickup
 	truck.set_physics_process(false);truck.restore(FarmPickup.defaults())
-	game.player.position=truck.position+Vector3(-2.5,.15,0);game.actor.airborne=false
+	game.player.position=truck.door_stand();game.actor.airborne=false
 	await physics_frame
 	for key in truck.wheels:assert(is_instance_valid(truck.wheels[key]))
 	game.camera.position=truck.to_global(Vector3(-8,5,9));game.camera.look_at(truck.position+Vector3.UP*1.5)
 	game.avatar.visible=false;game.hud.visible=false;await capture("model");game.avatar.visible=true
 	assert(truck.enter() and truck.mounted)
+	while truck.transitioning():truck.drive(.05,0,0,true,true)
 	await capture("cab")
 	assert(not game.weapons.active() and not game._try_jump() and not game.companions.allowed())
 	# Exercise the real input/physics integration, including pause and engine audio.
@@ -51,7 +52,9 @@ func run() -> void:
 	for i in range(30):truck.drive(1.0/60,1,1,false,true);await physics_frame
 	assert(absf(angle_difference(angle,truck.rotation.y))>.03,"Steering must turn the vehicle")
 	for i in range(90):truck.drive(1.0/60,0,0,true,true);await physics_frame
-	assert(is_zero_approx(truck.speed));assert(truck.exit_vehicle())
+	assert(is_zero_approx(truck.speed))
+	assert(truck.exit_vehicle())
+	while truck.transitioning():truck.drive(.05,0,0,true,true)
 	assert(not truck.mounted and game.avatar.position.is_equal_approx(Vector3.ZERO))
 	assert(game.player.position.distance_to(truck.position)>2)
 	truck.store();assert(game._save_game(false,true))
@@ -65,8 +68,9 @@ func run() -> void:
 	truck.restore({"x":30.0,"z":25.0,"angle":0.0})
 	var wall:=StaticBody3D.new();var shape:=CollisionShape3D.new();var box:=BoxShape3D.new();box.size=Vector3(12,5,.25)
 	shape.shape=box;wall.add_child(shape);game.add_child(wall);wall.position=Vector3(30,2.5,36)
-	game.player.position=truck.position+Vector3(-2.5,.15,0);game.actor.airborne=false;await physics_frame
+	game.player.position=truck.door_stand();game.actor.airborne=false;await physics_frame
 	assert(truck.enter())
+	while truck.transitioning():truck.drive(.05,0,0,true,true)
 	for i in range(180):truck.drive(1.0/60,1,0,false,true);await physics_frame
 	assert(truck.position.z<33.1,"Vehicle must stop before a thin wall")
 	assert(not truck.surface_allowed(Vector3(285,5,260),0),"Vehicle must reject deep lake water")

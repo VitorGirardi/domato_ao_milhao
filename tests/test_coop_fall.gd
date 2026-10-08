@@ -31,7 +31,9 @@ func run() -> void:
 		await until(func():return exists("late_join_received"))
 		assert(game.falls.is_down("npc:armorer"))
 		game.horse.position=ground(20,0);game.horse.life.reset(game.horse);n.mounts.send_initial();flag("mount_now")
-		await until(func():return n.mounts.rider==n.accepted and n.accepted!=0 and exists("guest_mounted"))
+		# Rider ownership is reserved before the climb finishes. Wait for the
+		# seated pose on both peers so this ray tests the horse, not the climber.
+		await until(func():return n.mounts.rider==n.accepted and n.accepted!=0 and not game.horse.transition_active() and exists("guest_mounted"))
 		host_shot(game.horse.position+Vector3.UP,"horse")
 		assert(n.mounts.rider==0 and not game.horse.mounted)
 		await until(func():return exists("horse_seen"))
@@ -73,7 +75,8 @@ func run() -> void:
 		assert(not game.falls.knock_down("horse"),"Guest can directly decide falls")
 		flag("late_join_received");await until(func():return exists("mount_now"))
 		game.player.position=ground(21.8,0);await create_timer(.5).timeout
-		n.mounts.request("mount");await create_timer(.5).timeout
+		n.mounts.request("mount")
+		await until(func():return n.mounts.local_rider() and not game.horse.transition_active())
 		assert(n.mounts.local_rider(),"Mount fixture failed: horse %s player %s"%[game.horse.position,game.player.position]);flag("guest_mounted")
 		await until(func():return game.falls.is_down("horse") and n.mounts.rider==0)
 		assert(not game.horse.mounted and game.player.collision_layer!=0 and not game.falls.local_down())
@@ -107,5 +110,4 @@ func run() -> void:
 	game.queue_free();await process_frame;await create_timer(.2).timeout
 	print("COOP_QA_OK: ",mode," pistol falls, late join, horse dismount, frozen players, 60-second lifecycle, immunity and preserved saves")
 	quit()
-
 

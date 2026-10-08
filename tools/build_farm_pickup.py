@@ -78,14 +78,17 @@ box('Cab floor',(0,1.30,.13),(2.15,.16,1.95),dark)
 box('Cab rear lower',(0,1.92,-.92),(2.23,1.24,.14),green,.09)
 box('Cab rear glass',(0,2.76,-.92),(1.66,.57,.055),blue,.04)
 box('Roof',(0,3.30,.10),(2.46,.18,2.23),cream,.11)
+door_parts=[]
 for x in [-1.08,1.08]:
     rod('Windscreen pillar',(x,2.10,1.04),(x,3.23,.88),.065,cream)
     rod('Rear window pillar',(x,2.13,-.89),(x,3.24,-.89),.075,cream)
+    before_door=set(bpy.context.scene.objects)
     box('Door',(x,1.85,.07),(.15,1.10,1.79),green,.07)
     box('Door ivory strip',(x*1.065,2.14,.08),(.03,.10,1.75),cream,.02)
     box('Door handle',(x*1.08,2.27,-.48),(.08,.055,.21),steel,.015)
     rod('Mirror stalk',(x,2.50,.79),(x*1.28,2.48,.72),.03,steel)
     box('Wing mirror',(x*1.31,2.51,.72),(.18,.28,.12),steel,.04)
+    if x<0:door_parts.extend(o for o in bpy.context.scene.objects if o not in before_door)
     box('Running board',(x*1.14,.89,.12),(.34,.13,1.95),dark,.04)
 box('Windshield lower rail',(0,2.17,1.03),(2.18,.12,.13),cream,.04)
 box('Split windscreen center',(0,2.72,.95),(.05,1.01,.06),cream,.01)
@@ -111,7 +114,8 @@ for x in [-.85,.85]:
     box('Mud flap',(x*1.24,.43,-2.26),(.50,.38,.06),rubber,.02)
 for x,z in [(-1.15,-2.18),(1.15,1.55)]:box('Paint wear',(x,1.43,z),(.015,.11,.31),wood,.015)
 
-body=join(list(bpy.context.scene.objects),'PickupBody',(0,0,0))
+driver_door=join(door_parts,'DriverDoor',(-1.08,1.85,.965))
+body=join([o for o in bpy.context.scene.objects if o!=driver_door],'PickupBody',(0,0,0))
 for front,z in [('F',1.84),('R',-1.85)]:
     for side,x in [('L',-1.18),('R',1.18)]:
         existing=set(bpy.context.scene.objects)
