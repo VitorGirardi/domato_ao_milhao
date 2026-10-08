@@ -45,7 +45,7 @@ static func water(state:FarmState,index:int) -> String:
 	tree.watered=true
 	return ""
 
-static func harvest(state:FarmState,index:int) -> String:
+static func harvest(state:FarmState,index:int,manual:bool=true) -> String:
 	if not _available(state,index):return "Escolha uma laranjeira produtiva da fazenda."
 	var tree:Dictionary=state.items[index].orchard
 	if tree.ready!=YIELD:return "As laranjas ainda não estão maduras."
@@ -55,6 +55,7 @@ static func harvest(state:FarmState,index:int) -> String:
 	if state.orchard_journey.stage==1:state.orchard_journey.harvested=mini(YIELD,int(state.orchard_journey.harvested)+YIELD)
 	state.harvests+=1
 	state.earn_xp(FarmLevels.HARVEST)
+	if manual:FarmSkills.earn(state,"farming",10)
 	state.refresh_journey()
 	return ""
 

@@ -31,9 +31,10 @@ func show(h:FarmHUD,s:FarmState) -> void:
 	var pages:=maxi(1,ceili(rows.size()/3.0))
 	page=clampi(page,0,pages-1)
 	var p:=FarmGameUI.open(h,"guide","Caderno do Fazendeiro","book",1080,800)
-	for i in range(3):
-		var key:String=["next","all","done"][i]
-		FarmGameUI.action(h,p,["Próximos passos","Todos os caminhos","Concluídos"][i],Rect2(26+i*345,110,334,42),"guide:tab:"+key,tab==key)
+	for i in range(4):
+		var key:String=["next","all","done","skills"][i]
+		FarmGameUI.action(h,p,["Próximos passos","Todos os caminhos","Concluídos","Habilidades"][i],Rect2(26+i*260,110,248,42),"guide:tab:"+key,tab==key)
+	if tab=="skills":FarmSkillsHUD.draw(h,p,s);return
 	h.label(p,"Escolha seu caminho. As dicas acompanham sua fazenda; não há prazo nem obrigação.",Vector2(28,162),Vector2(1024,28),17)
 	if rows.is_empty():h.label(p,"Nenhuma etapa nesta página. Explore os outros caminhos do caderno.",Vector2(28,230),Vector2(1000,60),22)
 	for i in range(3):
@@ -63,6 +64,7 @@ static func wrapped(h:FarmHUD,parent:Control,text:String,rect:Rect2,font:int,col
 func handle(game:Node3D,value:String) -> bool:
 	if value!="guide" and not value.begins_with("guide:"):return false
 	if not game.session_started:return true
+	if value=="guide:practice":FarmSkillsHUD.practice(game.hud);return true
 	if value=="guide:mine":
 		game.navigator.select(FarmResourceSites.MINE_AT,"Mina da Pedra Clara","mine")
 		game.hud.close_modal();return true

@@ -63,6 +63,24 @@ jobs:
           cat test-results/linux/guide.log
           grep -q GUIDE_OK test-results/linux/guide.log
           ! grep -E 'SCRIPT ERROR|ERROR:' test-results/linux/guide.log
+      - name: Practice skills and Caderno UI
+        if: matrix.suite != 'multiplayer'
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 180 godot --headless --audio-driver Dummy --path . --script tests/test_skills.gd >test-results/linux/skills.log 2>&1
+          cat test-results/linux/skills.log
+          grep -q SKILLS_OK test-results/linux/skills.log
+          ! grep -E 'SCRIPT ERROR|ERROR:' test-results/linux/skills.log
+          if [ "${{ matrix.suite }}" = graphics ]; then
+            xvfb-run -a timeout 180 godot --audio-driver Dummy --path . --script tests/test_skills_ui.gd >test-results/linux/skills-ui.log 2>&1
+            cp test-results/skills-*.png test-results/linux/
+          else
+            timeout 180 godot --headless --audio-driver Dummy --path . --script tests/test_skills_ui.gd >test-results/linux/skills-ui.log 2>&1
+          fi
+          cat test-results/linux/skills-ui.log
+          grep -q SKILLS_UI_OK test-results/linux/skills-ui.log
+          ! grep -E 'SCRIPT ERROR|ERROR:' test-results/linux/skills-ui.log
       - name: Work and transport animations
         if: matrix.suite != 'multiplayer'
         shell: bash
@@ -364,7 +382,7 @@ jobs:
           git rev-parse HEAD > exports/linux/COMMIT.txt
           cp tools/linux/jogar.sh exports/linux/
           cp LINUX.md exports/linux/LEIA-ME.md
-          cp CADERNO.md ACOES_PERSONAGEM.md PROFUNDEZAS.md CONSTRUCAO.md FILHOTES.md ANIMAIS.md MOVIMENTO.md ZECA_POMAR.md ROSA.md ENTREGAS.md POMAR.md GARAGEM.md ARTE_FAZENDA.md PRIMEIROS_LACOS.md CAMIONETINHA.md GODOT_LICENSE.txt AUDIO.md AUDIO_CREDITS.md MULTIPLAYER.md AGUAS_VIVAS.md FAZENDAS.md QUEDA_RETORNO.md MIRA.md MAPA.md VALE_SERRA.md PESCA_MINERACAO.md exports/linux/
+          cp HABILIDADES.md CADERNO.md ACOES_PERSONAGEM.md PROFUNDEZAS.md CONSTRUCAO.md FILHOTES.md ANIMAIS.md MOVIMENTO.md ZECA_POMAR.md ROSA.md ENTREGAS.md POMAR.md GARAGEM.md ARTE_FAZENDA.md PRIMEIROS_LACOS.md CAMIONETINHA.md GODOT_LICENSE.txt AUDIO.md AUDIO_CREDITS.md MULTIPLAYER.md AGUAS_VIVAS.md FAZENDAS.md QUEDA_RETORNO.md MIRA.md MAPA.md VALE_SERRA.md PESCA_MINERACAO.md exports/linux/
           chmod +x exports/linux/jogar.sh
           tar -czf exports/DoMatoAoMilhao-Linux-x86_64.tar.gz -C exports/linux .
           sha256sum exports/DoMatoAoMilhao-Linux-x86_64.tar.gz | tee exports/SHA256SUMS

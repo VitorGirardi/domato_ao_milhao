@@ -88,10 +88,12 @@ static func catch_fish(state:FarmState, spot:int) -> String:
 	if not error.is_empty():return error
 	var roll:=randi_range(0,99)
 	var index:=0
-	while index<2 and roll>=int(FISH_WEIGHTS[spot][index]):
-		roll-=int(FISH_WEIGHTS[spot][index]);index+=1
+	var weights:=FarmSkills.fish_weights(state,spot)
+	while index<2 and roll>=int(weights[index]):
+		roll-=int(weights[index]);index+=1
 	state.resources.stock[FISH_KEYS[index]]=mini(STOCK_LIMIT,int(state.resources.stock[FISH_KEYS[index]])+1)
 	state.resources.caught=mini(MAX_COUNTER,int(state.resources.caught)+1);state.earn_xp(3)
+	FarmSkills.earn(state,"fishing",10)
 	return ""
 
 static func can_extract(state:FarmState, node:int) -> String:
@@ -108,9 +110,11 @@ static func can_extract(state:FarmState, node:int) -> String:
 static func extract(state:FarmState, node:int) -> String:
 	var error:=can_extract(state,node)
 	if not error.is_empty():return error
-	state.resources.stock[NODE_ORES[node]]=mini(STOCK_LIMIT,int(state.resources.stock[NODE_ORES[node]])+1)
+	var amount:=mini(FarmSkills.mining_yield(state),mini(STOCK_LIMIT-int(state.resources.stock[NODE_ORES[node]]),MAX_COUNTER-int(state.resources.mined)))
+	state.resources.stock[NODE_ORES[node]]+=amount
 	state.resources.node_ready[node]=state.elapsed+COOLDOWN
-	state.resources.mined=mini(MAX_COUNTER,int(state.resources.mined)+1);state.earn_xp(5)
+	state.resources.mined=mini(MAX_COUNTER,int(state.resources.mined)+amount);state.earn_xp(5)
+	FarmSkills.earn(state,"mining",10)
 	return ""
 
 static func sell(state:FarmState, key:String) -> int:
