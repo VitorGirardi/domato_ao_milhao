@@ -13,6 +13,8 @@ var last_request:Dictionary={}
 var serial:=0
 var input_active:=true
 var published_transition:=""
+var state_revision:=0
+var received_revision:=-1
 
 func setup(n:FarmNetwork) -> void:
 	network=n;name="CoopMount"
@@ -61,7 +63,7 @@ func apply_request(sender:int,number:int,action:String) -> void:
 			elif not h.encourage():message="Espere o cavalo recuperar o fôlego."
 			else:message="Bora, Pé de Pano!"
 		_:message="Comando de montaria inválido."
-	if network.accepted!=0:_state.rpc_id(network.accepted,rider,h.position,h.heading,network.game.player.position,network.remote.position,h.transition_kind,h.transition_origin,h.transition_target,h.transition_elapsed)
+	send_initial()
 	if sender==1:_answer(message)
 	else:_answer.rpc_id(sender,message)
 	network.save_coop()
@@ -72,9 +74,12 @@ func _answer(message:String) -> void:
 	if network.active:network.game.hud.toast(message)
 
 @rpc("authority","call_remote","reliable",2)
-func _state(owner_id:int,position:Vector3,heading:float,host_at:Vector3,guest_at:Vector3,kind:String="",origin:Vector3=Vector3.ZERO,target:Vector3=Vector3.ZERO,elapsed:float=0.0) -> void:
-	if not network.active or network.hosting:return
+func _state(owner_id:int,position:Vector3,heading:float,host_at:Vector3,guest_at:Vector3,kind:String="",origin:Vector3=Vector3.ZERO,target:Vector3=Vector3.ZERO,elapsed:float=0.0,revision:int=0) -> void:
+	if not network.active or network.hosting or revision<=received_revision:return
+	received_revision=revision
 	var h:FarmHorse=network.game.horse
+	var owner_changed:=rider!=owner_id
+	var entry_basis:=model(owner_id).global_basis if owner_id!=0 else Basis.IDENTITY
 	if rider!=owner_id:
 		if rider!=0 and is_instance_valid(body(rider)):h.reset_rider(body(rider),model(rider),actor(rider))
 		rider=owner_id
@@ -84,7 +89,11 @@ func _state(owner_id:int,position:Vector3,heading:float,host_at:Vector3,guest_at
 			network.game.player.position=guest_at;network.remote.position=host_at;network.target=host_at
 	if rider!=0:
 		if not kind.is_empty():
-			h.begin_transition(kind,body(rider),model(rider),origin,target);h.transition_elapsed=elapsed;h.render_transition(actor(rider))
+			if owner_changed or kind!=h.transition_kind:
+				h.begin_transition(kind,body(rider),model(rider),origin,target)
+				h.transition_basis=entry_basis
+			h.transition_elapsed=clampf(maxf(h.transition_elapsed,elapsed),0,FarmHorseMountPose.DURATION)
+			h.render_transition(actor(rider))
 		elif h.transition_active():h.clear_transition()
 
 @rpc("any_peer","call_remote","unreliable_ordered",4)
@@ -125,18 +134,20 @@ func _physics_process(delta:float) -> void:
 	if timer<=0:
 		timer=.05
 		if network.hosting and network.accepted!=0:
-			frame+=1;_frame.rpc_id(network.accepted,frame,rider,h.position,h.heading,h.stamina,h.burst,h.pat_time,h.speed,h.transition_elapsed)
+			frame+=1;_frame.rpc_id(network.accepted,frame,rider,h.position,h.heading,h.stamina,h.burst,h.pat_time,h.speed,h.transition_elapsed,state_revision)
 		elif local_rider():_input_direction.rpc_id(1,input_direction(),g.hud.modal_kind.is_empty())
 
 @rpc("authority","call_remote","unreliable_ordered",4)
-func _frame(number:int,owner_id:int,position:Vector3,heading:float,stamina:float,burst:float,pat:float,speed:float,transition_elapsed:float=0.0) -> void:
-	if not network.ready_session or network.hosting or number<=received or owner_id!=rider:return
+func _frame(number:int,owner_id:int,position:Vector3,heading:float,stamina:float,burst:float,pat:float,speed:float,transition_elapsed:float=0.0,revision:int=0) -> void:
+	# Reliable state (channel 2) and motion (channel 4) can arrive in either order.
+	# A frame must belong to the exact mount/dismount state already installed.
+	if not network.ready_session or network.hosting or number<=received or owner_id!=rider or revision!=received_revision:return
 	received=number
 	var h:FarmHorse=network.game.horse
 	var sprint_started:=pat>0 and h.pat_time<=0
 	h.position=position;h.heading=heading;h.rotation.y=heading;h.stamina=stamina;h.burst=burst;h.pat_time=pat;h.speed=speed
 	if h.transition_active():
-		h.transition_elapsed=transition_elapsed;h.render_transition(actor(rider))
+		h.transition_elapsed=clampf(maxf(h.transition_elapsed,transition_elapsed),0,FarmHorseMountPose.DURATION);h.render_transition(actor(rider))
 		if h.transition_kind=="mount" and transition_elapsed>=FarmHorseMountPose.DURATION:h.clear_transition()
 	if rider!=0 and not h.transition_active():
 		body(rider).position=position;model(rider).rotation.y=heading
@@ -145,9 +156,11 @@ func _frame(number:int,owner_id:int,position:Vector3,heading:float,stamina:float
 	if sprint_started:h.encouraged.emit()
 
 func send_initial() -> void:
+	state_revision+=1
 	if network.accepted==0:return
 	var h:FarmHorse=network.game.horse
-	_state.rpc_id(network.accepted,rider,h.position,h.heading,network.game.player.position,network.remote.position,h.transition_kind,h.transition_origin,h.transition_target,h.transition_elapsed)
+	published_transition=h.transition_kind
+	_state.rpc_id(network.accepted,rider,h.position,h.heading,network.game.player.position,network.remote.position,h.transition_kind,h.transition_origin,h.transition_target,h.transition_elapsed,state_revision)
 
 func force_dismount() -> void:
 	if not network.hosting or rider==0:return
@@ -181,3 +194,4 @@ func release(id:int) -> void:
 func reset() -> void:
 	if rider!=0:release(rider)
 	waiting=false;serial=0;received=-1;frame=0;last_request.clear();direction=Vector3.ZERO
+	state_revision=0;received_revision=-1;published_transition="";input_active=true
