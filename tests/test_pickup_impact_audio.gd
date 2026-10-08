@@ -23,21 +23,27 @@ func run() -> void:
 	await create_timer(.15).timeout
 	assert(not motor.impact(10,Vector3.ZERO),"Stopped vehicle must not emit impacts")
 	motor.update(.1,10,1,false,true);motor.idle.stop();motor.load_voice.stop()
+	await create_timer(.2).timeout # Drain queued engine audio before isolating impact.
 	assert(not motor.impact(1.9,Vector3.ZERO))
 	assert(not motor.impact(NAN,Vector3.ZERO) and not motor.impact(10,Vector3.INF))
 	capture.clear_buffer();assert(motor.impact(3,Vector3.ZERO))
 	assert(not motor.impact(20,Vector3.ZERO),"Wall contact spam restarted impact")
 	var soft:float=await level()
 	motor.update(.7,0,0,false,true);motor.idle.stop();motor.load_voice.stop()
+	await create_timer(.2).timeout
 	capture.clear_buffer();assert(motor.impact(18,Vector3.ZERO))
 	var hard:float=await level()
 	assert(soft>.0005 and hard>soft*1.8 and hard<.25,"Impact intensity must be audible, proportional and bounded: %f / %f"%[soft,hard])
 	# Muting Effects must silence the same 3D voice, not bypass the bus.
 	motor.update(.7,0,0,false,true);motor.idle.stop();motor.load_voice.stop()
 	mix.effects=0;FarmAudio.apply_mix(mix)
+	# Bus changes reach the mixer asynchronously. Clearing capture alone does
+	# not discard audio already queued upstream by the preceding engine update.
+	await create_timer(.2).timeout
 	capture.clear_buffer();assert(motor.impact(18,Vector3.ZERO));assert(await level()<.000001)
 	motor.update(.7,0,0,false,true);motor.idle.stop();motor.load_voice.stop()
 	mix.effects=1;FarmAudio.apply_mix(mix)
+	await create_timer(.2).timeout
 	assert(motor.impact(18,Vector3.ZERO));motor.update(.016,0,0,false,false)
 	assert(not motor.impact_voice.playing and not motor.active)
 	await create_timer(.1).timeout;capture.clear_buffer();assert(await level()<.000001)
