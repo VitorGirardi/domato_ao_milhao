@@ -12,6 +12,10 @@ Fonte 1541: SHA256 `cbc7cc2041478b1c8bfc1ef561edced80402536b0b1d614da62c4f5058f4
 
 Fonte 1543: SHA256 `45f3458b4028b28ddf40456e921a76b4d834f87c268db760cf7cef32ddb54db7`. Licença CC0 conferida na página em 2026-09-23.
 
+## Impacto da camionetinha
+
+`pickup_impact.wav`: síntese original de pancada grave na carroceria com um breve chocalho metálico. Fonte determinística em `tools/build_pickup_impact.py` (Python + NumPy, também executável pelo Python do Blender). Sem gravações de terceiros.
+
 ## Paleta natural — 0.60
 
 Gravações de Joseph Sardin / BigSoundBank, CC0-1.0. Licença verificada em cada página em 2026-10-07. Uso editado, com recortes, filtros, fades e ajuste de ganho. Originais e hashes completos: `art/audio/natural/sources.json`.

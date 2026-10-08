@@ -365,5 +365,15 @@
     "channels": 1,
     "boundary_jump": 0.0,
     "source": "BigSoundBank #1354, Joseph Sardin, CC0"
+  },
+  "pickup_impact": {
+    "seconds": 0.58,
+    "peak": 0.74,
+    "rms": 0.09885969421740662,
+    "tail_rms": 0.0026514876451988107,
+    "source": "Original deterministic synthesis: tools/build_pickup_impact.py",
+    "loop": false,
+    "channels": 1,
+    "boundary_jump": 0.0
   }
 }
