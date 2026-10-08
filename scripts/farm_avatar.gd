@@ -27,6 +27,7 @@ var blink_elapsed:=-1.0
 var blink_rng:=RandomNumberGenerator.new()
 var locomotion:=FarmLocomotion.new()
 var locomotion_allowed:Callable
+var work_pose_active:=false
 
 static func prepare_model(node: Node) -> void:
 	# Small facial patches should remain readable beneath the hat and moustache.
@@ -131,9 +132,10 @@ func emote(kind:String) -> bool:
 func play(kind: String) -> void:
 	stop_emote()
 	action_kind=kind
-	action_time=2.2 if kind=="collect" else (1.15 if kind=="water" else 0.55)
+	action_time=FarmWorkPose.duration(kind) if kind in ["water","harvest"] else (2.2 if kind=="collect" else .55)
 
 func animate(delta: float, moving: bool, running: bool, blink:bool=true) -> void:
+	FarmWorkPose.release(self)
 	if moving or airborne or swimming or action_time>0: stop_emote()
 	emote_time=maxf(0,emote_time-delta)
 	if emote_time<=0 and not emote_kind.is_empty(): stop_emote()
@@ -177,6 +179,9 @@ func animate(delta: float, moving: bool, running: bool, blink:bool=true) -> void
 	if use_locomotion:
 		locomotion.apply(self,delta,running)
 		can.visible=false;carried_egg.visible=false
+		return
+	if action_time>0 and action_kind in ["water","harvest"] and not airborne and landing<=0:
+		FarmWorkPose.apply(self,action_kind,FarmWorkPose.duration(action_kind)-action_time)
 		return
 	var active:=action_time>0
 	var collecting:=active and action_kind=="collect"

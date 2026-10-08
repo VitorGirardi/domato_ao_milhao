@@ -1,10 +1,19 @@
-## 0.61.1 — Caderno do Fazendeiro
+## 0.63.0 — Caderno do Fazendeiro
 
 - Livro de orientação acessível ao caminhar e construir: próximos passos, todos os caminhos e concluídos.
 - Dicas consultam nível, moedas, estoque, construções, pesca, mineração e melhorias reais; Sandbox respeitado.
 - Acompanhar fecha o livro e fixa uma dica durante a sessão. Abrir outra fazenda limpa a seleção.
 - Atalhos para construir, consultar lojas e marcar destinos; abrir uma dica não compra nem consome recursos.
 - Saves e protocolo cooperativo preservados. Habilidades por prática serão uma próxima etapa.
+
+## 0.62.0 — Trabalho e transporte animados
+
+- Poses originais do Blender para mineração, rega com duas mãos e colheita com agachamento e recuperação.
+- Água e efeito de colheita acompanham o gesto; repetição de E aguarda o fim da ação.
+- Porta da camionetinha articulada, entrada/saída completas e mãos no volante. Passagem bloqueada impede a transição.
+- Montar/desmontar com apoio no estribo, passagem da perna e movimento contínuo; pausa e cancelamento seguros.
+- Montaria e trabalho sincronizados no cooperativo, com proteção contra mensagens fora de ordem. Protocolo 29; save 31 preservado.
+- [Controles e validação](ACOES_PERSONAGEM.md).
 
 ## 0.61.0 — Câmera livre
 

@@ -2,7 +2,7 @@ class_name FarmNetwork
 extends Node
 ## Host-authoritative cooperative farm.
 const PORT:=28729
-const PROTOCOL:=28
+const PROTOCOL:=29
 var game:Node3D
 var active:=false
 var ready_session:=false
@@ -386,7 +386,7 @@ func apply_tend(sender:int,seq:int,index:int,op:String,crop:String,expected:int,
 		game.state.restore(before);send_outcome(sender,index,"",crop,"Falha ao salvar. A ação foi desfeita; tente novamente.");return
 	for changed in affected:
 		plot_versions[changed]=int(plot_versions.get(changed,0))+1;plot_states[changed]=plot_stamp(game.state.items[changed])
-	last_action[sender]=now+(1200 if op=="water" else 800)
+	last_action[sender]=now+(1200 if op=="water" else 1400 if op=="harvest" else 800)
 	if op=="harvest":harvest_actions+=1
 	refresh_crops();broadcast_state();send_outcome(sender,index,op,visual_crop,message)
 
@@ -412,7 +412,7 @@ func apply_outcome(sender:int,index:int,op:String,crop:String,message:String) ->
 	model.rotation.y=atan2(direction.x,direction.z);performer.play(op)
 	match op:
 		"plant":game.feedback.planted(at)
-		"harvest":game.feedback.harvest(at,crop)
+		"harvest":game.feedback.harvest(at,crop,performer)
 		"water":game.feedback.water(at,model.global_transform*Vector3(.47,1.1,1),false,"Regado!",performer.can)
 	if local:game._chime(op)
 

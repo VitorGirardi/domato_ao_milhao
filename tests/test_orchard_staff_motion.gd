@@ -68,7 +68,7 @@ func run() -> void:
 	money = state.money
 	assert(state.inventory.orange == 0)
 	await capture("harvesting")
-	for step in range(7): world.update_staff(state,.1)
+	for step in range(ceili(FarmWorkPose.HARVEST_DURATION/.1)+1): world.update_staff(state,.1)
 	assert(state.inventory.orange == 6 and state.money == money-2)
 	assert(world.staff_root.get_instance_id() == worker_id)
 	# Manual care racing an animation cancels the pending service, without charge.

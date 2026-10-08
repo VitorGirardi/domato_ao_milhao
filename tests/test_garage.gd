@@ -40,13 +40,16 @@ func run() -> void:
 	await physics_frame;await physics_frame
 	var truck:FarmPickup=game.pickup
 	# Drive physically into the bay from the front, stop inside and unload safely.
-	truck.restore({"x":4,"z":12,"angle":PI});game.player.position=truck.position+Vector3(2.5,.1,0);game.actor.airborne=false;game.actor.swimming=false
+	truck.restore({"x":4,"z":12,"angle":PI});game.player.position=truck.door_stand();game.actor.airborne=false;game.actor.swimming=false
 	assert(truck.enter())
+	while truck.transitioning():truck.drive(.05,0,0,true,true)
 	for i in range(180):
 		truck.drive(1.0/60,1 if truck.position.z>2 else 0,0,truck.position.z<=2,true)
 	assert(truck.position.z<2 and truck.position.z> -3,"Garage entrance blocked: "+str(truck.position))
 	truck.speed=0;truck.store();var parked:=truck.position;truck.ensure_parking();assert(truck.position.distance_to(parked)<.1)
-	assert(truck.exit_vehicle());assert(FarmGarage.inside_bay(game.state.items[0],Vector2(game.player.position.x,game.player.position.z)))
+	assert(truck.exit_vehicle())
+	while truck.transitioning():truck.drive(.05,0,0,true,true)
+	assert(FarmGarage.inside_bay(game.state.items[0],Vector2(game.player.position.x,game.player.position.z)))
 	game._action("garage:open");assert(game.hud.modal_kind=="garage")
 	assert(FarmGarage.can_service(truck));game.hud.text_input.text="Trovão";game._action("garage:name");game._action("garage:paint:1")
 	assert(FarmGarage.config(game.state).name=="Trovão" and FarmGarage.config(game.state).paint==1)
@@ -54,7 +57,10 @@ func run() -> void:
 	assert(truck.accessories.get_child_count()>0)
 	assert(FarmPickupCargo.transfer(game.state,"carrot",120,true).is_empty());truck.refresh_cargo();assert(truck.cargo_visual.get_child_count()==12)
 	assert(game._save_game(false,true));assert(game._load_game());assert(FarmGarage.config(game.state).name=="Trovão" and FarmGarage.capacity(game.state)==120)
-	game.hud.close_modal();game.actor.airborne=false;assert(truck.enter());game._update_ui();game._update_camera(1,true)
+	game.hud.close_modal();game.actor.airborne=false
+	assert(truck.enter())
+	while truck.transitioning():truck.drive(.05,0,0,true,true)
+	game._update_ui();game._update_camera(1,true)
 	assert(truck.instruments.title.text=="TROVÃO" and not truck.instruments.service.disabled)
 	game.hud.toast_time=0;game.hud.toast_panel.visible=false;await capture("parked-dashboard")
 	truck.instruments.service.pressed.emit();assert(game.hud.modal_kind=="garage");game.hud.toast_time=0;game.hud.toast_panel.visible=false;await capture("menu");game.hud.close_modal()
@@ -69,6 +75,8 @@ func run() -> void:
 	assert(painted,"Customization must visibly recolor the pickup")
 	# Menu alone is not authority: a remote car, moving car or coop cannot buy.
 	truck.position.x=30;game._action("garage:open");before=game.state.serialize();game.hud.text_input.text="Remoto";game._action("garage:name");assert(game.state.serialize()==before)
+	# Construction is only available on foot; do not bypass the mounted gate.
+	truck.reset_driver()
 	game.hud.close_modal();game.build_mode=true;game.selected=0;game._action("build:open");assert(game.hud.modal_kind=="garage")
 	game.hud.close_modal();game._action("map");assert(game.navigator.destinations().any(func(entry):return entry.key=="garage:0"))
 	game.hud.close_modal();game.network.active=true;game._action("garage:open");before=game.state.serialize();game._action("garage:paint:2");assert(game.state.serialize()==before);game.network.active=false

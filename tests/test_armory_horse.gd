@@ -32,7 +32,10 @@ func run() -> void:
 	var disk:=FarmState.new()
 	assert(disk.restore(JSON.parse_string(FileAccess.get_file_as_string(game.save_path))))
 	assert(disk.horse==game.state.horse and disk.armory==before)
-	game._horse_interact();assert(not game.horse.mounted)
+	while game.horse.transition_active():await physics_frame
+	game._horse_interact();assert(game.horse.transition_active())
+	while game.horse.transition_active():await physics_frame
+	assert(not game.horse.mounted)
 	await create_timer(.4).timeout
 	assert(game.weapons.handle_input(key(KEY_P)) and game.weapons.armed)
 	assert(game.weapons.start_reload());await create_timer(1.4).timeout

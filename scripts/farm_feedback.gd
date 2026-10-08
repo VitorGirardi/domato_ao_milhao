@@ -54,15 +54,30 @@ func water(at: Vector3, origin: Vector3, overhead: bool, caption: String = "Rega
 		var start:Array[Vector3]=[origin+Vector3(rng.randf_range(-0.04,0.04),0,0)]
 		var duration:=rng.randf_range(0.32,0.48)
 		var tween:=create_tween()
-		tween.tween_interval(i*0.015)
+		var held:=is_instance_valid(vessel)
+		var pour_start:=FarmWorkPose.WATER_POUR_START if held else 0.0
+		var pour_span:=FarmWorkPose.WATER_POUR_END-FarmWorkPose.WATER_POUR_START if held else .39
+		tween.tween_interval(pour_start+i*pour_span/25.0)
 		tween.tween_callback(func():
-			if is_instance_valid(vessel): start[0]=to_local(vessel.global_transform*Vector3(0,0.4,0.57))
+			if held:
+				if not is_instance_valid(vessel) or not vessel.is_visible_in_tree():return
+				start[0]=to_local(vessel.global_transform*Vector3(0,0.4,0.57))
 			drop.position=start[0]
 			drop.visible=true)
 		tween.tween_method(func(t: float): drop.position=start[0].lerp(end,t)+Vector3.UP*sin(t*PI)*0.08,0.0,1.0,duration)
 		tween.tween_callback(drop.queue_free)
 
-func harvest(at: Vector3, crop: String) -> void:
+func harvest(at: Vector3, crop: String, performer:FarmAvatar=null) -> void:
+	if performer==null:
+		_harvest(at,crop)
+		return
+	var tween:=create_tween()
+	tween.tween_interval(FarmWorkPose.HARVEST_CONTACT)
+	tween.tween_callback(func():
+		if is_instance_valid(performer.root) and performer.action_kind=="harvest" and performer.action_time>0 and performer.work_pose_active and not performer.swimming and not performer.airborne:
+			_harvest(at,crop))
+
+func _harvest(at: Vector3, crop: String) -> void:
 	floating_text(at,"+3 "+FarmState.CROPS[crop].name,Color("ffde7c"))
 	for i in range(3):
 		var product:=world.model("harvest_"+crop,self,at+Vector3((i-1)*0.4,0.2,0))

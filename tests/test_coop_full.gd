@@ -72,6 +72,13 @@ func run() -> void:
 		game.player.position=game.horse.position+Vector3(1.8,.2,0)
 		await create_timer(.7).timeout
 		n.mounts.request("mount");await until(func():return n.mounts.local_rider())
+		game.hud.modal_kind="qa_mount_pause"
+		await create_timer(.2).timeout
+		var paused_phase:float=game.horse.transition_elapsed
+		await create_timer(.3).timeout
+		assert(absf(game.horse.transition_elapsed-paused_phase)<.06,"Host advanced guest mount while menu paused")
+		game.hud.modal_kind=""
+		await until(func():return not game.horse.transition_active())
 		n.mounts.request("sprint");await until(func():return game.horse.burst>0)
 		Input.action_press("back")
 		await until(func():return exists("ride_checked"));Input.action_release("back")

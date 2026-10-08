@@ -57,6 +57,7 @@ var trail_journey:=FarmTrails.new()
 var weapons:=FarmWeapons.new()
 var horse:=FarmHorse.new()
 var pickup:=FarmPickup.new()
+var pending_vehicle_action:=""
 var navigator:=FarmNavigation.new()
 var preferences:=FarmSettings.new()
 var front_end:=FarmFrontEnd.new()
@@ -229,6 +230,10 @@ func _physics_process(delta: float) -> void:
 func _process(delta: float) -> void:
 	if not is_instance_valid(hud):
 		return
+	if not pending_vehicle_action.is_empty() and not pickup.transitioning():
+		var next_action:=pending_vehicle_action
+		pending_vehicle_action=""
+		if not pickup.mounted:_action(next_action)
 	# Some Windows transitions retain the focus flag while minimizing.
 	if session_started and not qa_mode and DisplayServer.get_name()!="headless" and hud.modal_kind.is_empty() and not focus_check_pending:
 		if get_window().mode==Window.MODE_MINIMIZED or not get_window().has_focus():_check_focus_pause()
@@ -714,6 +719,8 @@ func _nearest() -> int:
 func _nearby_context() -> Dictionary:
 	if falls.local_down():return {}
 	if build_mode or not state.claimed: return {}
+	if pickup.transitioning():return {"text":"Saindo da camionetinha…" if pickup.transition.exiting else "Entrando na camionetinha…","action":"wait","ready":false}
+	if _mounted() and horse.transition_active():return {"text":"Acomodando-se com Pé de Pano…","action":"wait","ready":false}
 	if pickup.mounted:return {"text":"Sair da camionetinha" if absf(pickup.speed)<1.2 else "Frear para sair · Espaço","action":"pickup","ready":absf(pickup.speed)<1.2}
 	if pickup.nearby():return {"text":"Dirigir · V abre a caçamba","action":"pickup"}
 	if _mounted():return {"text":"Desmontar · Pé de Pano","action":"horse"}
@@ -793,7 +800,8 @@ func _interact_nearest() -> void:
 
 func _tend_selected() -> void:
 	if falls.local_down():return
-	if _mounted():return
+	if _mounted() or pickup.mounted:return
+	if not build_mode and actor.action_time>0:return
 	actor.stop_emote()
 	if not build_mode and actor.airborne: return
 	if selected<0 or selected>=state.items.size(): return
@@ -817,7 +825,7 @@ func _tend_selected() -> void:
 			var facing:=at-player.position
 			if facing.length()>0.01: avatar.rotation.y=atan2(facing.x,facing.z)
 		if state.harvests>previous_harvests:
-			feedback.harvest(at,old_crop)
+			feedback.harvest(at,old_crop,null if build_mode else actor)
 			kind="harvest"
 		elif not was_watered and item.watered:
 			var origin:=avatar.global_transform*Vector3(0.47,1.1,1.0)
@@ -852,13 +860,20 @@ func _tend_selected() -> void:
 	elif item.kind=="garage":FarmGarage.show(self)
 
 func _action(value: String) -> void:
+	if (pickup.transitioning() or (_mounted() and horse.transition_active())) and value not in ["close","menu","save","quit","front:quit","net:leave"] and not value.begins_with("front:"):
+		hud.toast("Aguarde terminar de entrar ou sair.");return
 	if value=="residents" or value.begins_with("resident:"):residents_world.handle(value);return
 	if value.begins_with("garage:"):FarmGarage.handle(self,value);return
 	if value.begins_with("pickup:"):pickup.cargo_action(value);return
 	if pickup.mounted:
 		if value in ["mode","emotes","move"] or value.begins_with("tool:") or value.begins_with("emote:") or value.begins_with("resource:") or value.begins_with("gather:"):
 			hud.toast("Estacione e saia com E para fazer isso.");return
-		if value in ["front:title","net:menu"] and not pickup.exit_vehicle():return
+		if value in ["front:title","net:menu"]:
+			if not pickup.exit_vehicle():return
+			if pickup.mounted:
+				pending_vehicle_action=value
+				hud.close_modal()
+				return
 	if falls.local_down() and value not in ["close","save","quit","start","menu","net:leave","net:menu","net:back","front:continue","front:settings","front:controls","front:back","front:audio_tab","front:video_tab","front:defaults","front:apply","front:title","front:quit"]:return
 	if value in ["move","remove"] and falls.blocks_command({"action":"move_item" if value=="move" else "remove","index":selected}):return
 	if value in ["market","market_orders"] and falls.is_down("npc:vendor"):return
@@ -3219,14 +3234,15 @@ func _qa_v022() -> void:
 
 func _horse_interact() -> void:
 	if falls.local_down() or falls.is_down("horse"):return
+	if horse.transition_active():return
 	if network.active:
 		network.mounts.request("dismount" if _mounted() else "mount");return
 	if not session_started or build_mode or not hud.modal_kind.is_empty():return
 	if horse.mounted:
-		if not horse.dismount(player,avatar,actor,state,world.landscape):hud.toast("Procure espaço livre ao lado do cavalo.")
+		if not horse.dismount(player,avatar,actor,state,world.landscape,true):hud.toast("Procure espaço livre ao lado do cavalo.")
 	elif horse.can_mount(player) and actor.action_time<=0:
 		weapons.holster()
-		horse.mount(player,avatar,actor);hud.toast("WASD cavalgar · Shift dá um tapinha para galopar · E desmontar")
+		horse.mount(player,avatar,actor,true);hud.toast("WASD cavalgar · Shift dá um tapinha para galopar · E desmontar")
 	_update_ui()
 
 func _qa_v023() -> void:
@@ -3384,6 +3400,7 @@ func _qa_v025() -> void:
 	print("V025_INTEGRATION_OK: stable render/menu/map, graze, bounded walking, obstacle sweep, pause, recovery, approach/mount/dismount")
 
 func _reset_farm(next_state:FarmState=null) -> void:
+	pending_vehicle_action=""
 	pickup.reset_driver()
 	_cancel_route();move_index=-1;turn=0;crop="carrot"
 	resource_panel_state.clear();gathering.reset()
