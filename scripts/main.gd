@@ -879,6 +879,7 @@ func _action(value: String) -> void:
 	if value in ["market","market_orders"] and falls.is_down("npc:vendor"):return
 	if value=="armory" and falls.is_down("npc:armorer"):return
 	if quitting:return
+	if hud.guide.handle(self,value):return
 	if value=="orchard:open":
 		FarmOrchardMission.show(hud,state);return
 	if value=="orchard:mark":

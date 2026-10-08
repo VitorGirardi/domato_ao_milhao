@@ -1,3 +1,11 @@
+## 0.63.0 — Caderno do Fazendeiro
+
+- Livro de orientação acessível ao caminhar e construir: próximos passos, todos os caminhos e concluídos.
+- Dicas consultam nível, moedas, estoque, construções, pesca, mineração e melhorias reais; Sandbox respeitado.
+- Acompanhar fecha o livro e fixa uma dica durante a sessão. Abrir outra fazenda limpa a seleção.
+- Atalhos para construir, consultar lojas e marcar destinos; abrir uma dica não compra nem consome recursos.
+- Saves e protocolo cooperativo preservados. Habilidades por prática serão uma próxima etapa.
+
 ## 0.62.0 — Trabalho e transporte animados
 
 - Poses originais do Blender para mineração, rega com duas mãos e colheita com agachamento e recuperação.
