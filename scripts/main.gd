@@ -756,7 +756,7 @@ func _nearby_context() -> Dictionary:
 		"sign": context.text="Editar placa"
 		"plot":
 			if not item.planted:
-				context.text="Plantar %s · $%d"%[FarmState.CROPS[crop].name,FarmState.CROPS[crop].seed]
+				context.text="Plantar %s · $%d"%[FarmState.CROPS[crop].name,FarmSkills.seed_cost(state,crop)]
 				context.seeds=true
 			elif item.growth>=1: context.text="Colher "+FarmState.CROPS[item.crop].name
 			elif not item.watered: context.text="Regar "+FarmState.CROPS[item.crop].name
@@ -1433,6 +1433,8 @@ func _update_ui() -> void:
 	journey_seen=step
 	if session_started and not state.level_notice.is_empty() and hud.toast_time<=0:
 		hud.toast(state.level_notice);state.level_notice="";_chime()
+	if session_started and not state.skill_notice.is_empty() and hud.toast_time<=0:
+		hud.toast(state.skill_notice);state.skill_notice="";_chime()
 
 func _journey_action() -> void:
 	hud.close_modal()

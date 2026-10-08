@@ -53,7 +53,7 @@ static func complete(state:FarmState,site:int,kind:String) -> bool:
 	var price:=cost(state,kind)
 	var liters:int=state.items[site].dairy.milk if kind=="milk" else 0
 	# Care charges only feed; service and ledger commit with the same completed task.
-	if not FarmDairy.care(state,site,kind).is_empty():return false
+	if not FarmDairy.care(state,site,kind,false).is_empty():return false
 	state.money-=FEE;w.spent+=price;w.total_spent+=price;w.services+=1;w.collected+=liters
 	return true
 static func dismiss(state:FarmState) -> void:

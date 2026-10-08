@@ -74,7 +74,7 @@ static func complete(state:FarmState,index:int,kind:String) -> String:
 	if state.money<cost:
 		worker.paused=true;worker.reason="funds"
 		return "Zeca pausou: faltam moedas para cuidar do pomar."
-	var error:=FarmOrchard.water(state,index) if kind=="water" else FarmOrchard.harvest(state,index)
+	var error:=FarmOrchard.water(state,index) if kind=="water" else FarmOrchard.harvest(state,index,false)
 	if not error.is_empty():return error
 	state.money-=cost;state.staff.spent+=cost
 	worker.spent+=cost;worker.services+=1;worker.reason=""

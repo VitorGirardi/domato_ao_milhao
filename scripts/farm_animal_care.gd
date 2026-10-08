@@ -48,6 +48,10 @@ static func care(state:FarmState,index:int) -> String:
 	var error:=reason(state,index)
 	if not error.is_empty():return error
 	var item:Dictionary=state.items[index]
+	var data:=needs(item)
+	var refill:=FarmSkills.comfort_bonus(state)
+	data.food=minf(100,float(data.food)+refill);data.water=minf(100,float(data.water)+refill)
+	FarmSkills.earn(state,"handling",8)
 	item.animal_care={"seconds":DURATION,"visits":mini(1000000,int(item.get("animal_care",{}).get("visits",0))+1)}
 	return ""
 

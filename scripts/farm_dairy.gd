@@ -24,7 +24,7 @@ static func tick(data:Dictionary,delta:float,bonus:float=1.0) -> void:
 		data.timer=0.0 if data.milk==CAPACITY else maxf(0,progress-cycles*CYCLE)
 	data.food=maxf(0,float(data.food)-span/6)
 	data.water=maxf(0,float(data.water)-span/4.8)
-static func care(state:FarmState,index:int,action:String) -> String:
+static func care(state:FarmState,index:int,action:String,manual:bool=true) -> String:
 	if index<0 or index>=state.items.size() or state.items[index].kind!="corral": return "Escolha um curral."
 	if action=="milk" and state.temporary_down.get(FarmFallTargets.item_key(state,index,"cow"),false):return "Espere Mimosa se recuperar para ordenhar."
 	var data:Dictionary=state.items[index].dairy
@@ -44,6 +44,7 @@ static func care(state:FarmState,index:int,action:String) -> String:
 		"milk":
 			if data.milk==0: return "Ainda não há leite para coletar."
 			state.earn_xp(int(data.milk)*FarmLevels.MILK)
+			if manual:FarmSkills.earn(state,"handling",int(data.milk)*2)
 			state.milk_stock+=int(data.milk); data.milk=0
 		_: return "Ação desconhecida."
 	return ""

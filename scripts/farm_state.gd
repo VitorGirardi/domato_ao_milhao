@@ -1,6 +1,6 @@
 class_name FarmState
 extends RefCounted
-const SAVE_VERSION:=31
+const SAVE_VERSION:=32
 ## Pure simulation. Coordinates are X/Z in meters; all persistence is JSON.
 
 const CROPS = {
@@ -49,6 +49,8 @@ const JOURNEY = [
 	{"key":"expand", "title":"Um sonho maior", "body":"Junte $900 para expandir.\nMais espaço para construir\na fazenda do seu jeito.", "button":"Planejar expansão", "action":"expand"}
 ]
 var scenery_obstacles:Array[Rect2]=[] # Runtime scenery, reconstructed from property bounds.
+var skills:=FarmSkills.fresh()
+var skill_notice:=""
 var farm_xp:int=0
 var level_notice:="" # Runtime-only; loaded games do not replay celebrations.
 var owned_parcels:Array=[]
@@ -132,6 +134,7 @@ func can_supply(order:Dictionary) -> bool:
 
 func unlock_sandbox() -> void:
 	if not infinite_resources():return
+	for key in FarmSkills.KEYS:skills[key]=maxi(int(skills[key]),FarmSkills.THRESHOLDS[-1])
 	resources.rod=true;resources.pickaxe=true;resources.mine_owned=true;resources.gallery_level=2
 	watering_upgrade=true;professional_watering=true
 	if not armory.pistol:FarmArmory.buy_pistol(self,armory)
@@ -504,6 +507,7 @@ func care_coop(index: int, action: String) -> String:
 			if amount==0: return "O ninho ainda está vazio."
 			inventory.egg+=amount
 			earn_xp(amount*FarmLevels.EGG)
+			FarmSkills.earn(self,"handling",amount)
 			flock.nest=0
 			return "+%d ovos no estoque!"%amount
 	return "Cuidado desconhecido."
@@ -648,7 +652,7 @@ func tend(index: int, crop: String = "carrot") -> String:
 	if not item.planted:
 		if not CROPS.has(crop):
 			return "Semente desconhecida."
-		var cost: int = CROPS[crop].seed
+		var cost: int = FarmSkills.seed_cost(self,crop)
 		if money < cost:
 			return "Faltam moedas para sementes."
 		money -= cost
@@ -659,14 +663,16 @@ func tend(index: int, crop: String = "carrot") -> String:
 		refresh_journey()
 		return "Sementes plantadas. Agora é só regar!"
 	if float(item.growth) >= 1.0:
-		inventory[item.crop] += int(CROPS[item.crop]["yield"])
+		var amount:=int(CROPS[item.crop]["yield"])+FarmSkills.crop_bonus(self)
+		inventory[item.crop] += amount
 		harvests += 1
 		earn_xp(FarmLevels.HARVEST)
+		FarmSkills.earn(self,"farming",10)
 		item.planted = false
 		item.watered = false
 		item.growth = 0.0
 		refresh_journey()
-		return "+3 %s no estoque!" % CROPS[item.crop].name
+		return "+%d %s no estoque!" % [amount,CROPS[item.crop].name]
 	if not item.watered:
 		var targets:=water_targets(index)
 		for target in targets: items[target].watered=true
@@ -754,7 +760,7 @@ func expand() -> String:
 	return ""
 
 func serialize() -> Dictionary:
-	return {"version": SAVE_VERSION, "rosa_story":rosa_story.duplicate(), "orchard_staff":orchard_staff.duplicate(true), "orchard_journey":orchard_journey.duplicate(), "residents":residents.duplicate(true), "chapter":chapter.duplicate(), "pickup":pickup.duplicate(true), "game_mode":game_mode, "character_id":character_id, "cave_crew":cave_crew.duplicate(true),"resources":resources.duplicate(true), "horse":horse.duplicate(), "armory":armory.duplicate(), "owned_parcels":owned_parcels.duplicate(), "unlimited_money":unlimited_money, "farm_xp":farm_xp, "dairy_worker":dairy_worker.duplicate(), "cheese_worker":cheese_worker.duplicate(), "cheese_stock":cheese_stock, "cheese_order":cheese_order.duplicate(), "milk_stock":milk_stock, "cultivation":cultivation.duplicate(true), "field_staff":field_staff.duplicate(true), "professional_watering":professional_watering, "irrigation":irrigation.duplicate(true), "money": _money, "claimed": claimed,
+	return {"version": SAVE_VERSION, "skills":skills.duplicate(), "rosa_story":rosa_story.duplicate(), "orchard_staff":orchard_staff.duplicate(true), "orchard_journey":orchard_journey.duplicate(), "residents":residents.duplicate(true), "chapter":chapter.duplicate(), "pickup":pickup.duplicate(true), "game_mode":game_mode, "character_id":character_id, "cave_crew":cave_crew.duplicate(true),"resources":resources.duplicate(true), "horse":horse.duplicate(), "armory":armory.duplicate(), "owned_parcels":owned_parcels.duplicate(), "unlimited_money":unlimited_money, "farm_xp":farm_xp, "dairy_worker":dairy_worker.duplicate(), "cheese_worker":cheese_worker.duplicate(), "cheese_stock":cheese_stock, "cheese_order":cheese_order.duplicate(), "milk_stock":milk_stock, "cultivation":cultivation.duplicate(true), "field_staff":field_staff.duplicate(true), "professional_watering":professional_watering, "irrigation":irrigation.duplicate(true), "money": _money, "claimed": claimed,
 		"center": [center.x, center.y], "land_size": land_size,
 		"items": items.duplicate(true), "inventory": inventory.duplicate(),
 		"elapsed": elapsed, "revenue": revenue, "harvests": harvests,
@@ -766,6 +772,8 @@ func restore(data: Variant) -> bool:
 	if data is Dictionary and data.has("armory") and not FarmArmory.valid(data.armory):return false
 	if not data is Dictionary or not _number(data.get("version")) or data.version<1 or data.version>SAVE_VERSION or float(data.version)!=floorf(float(data.version)):
 		return false
+	if data.version>=32 and not data.has("skills"):return false
+	if not FarmSkills.valid(data.get("skills",FarmSkills.fresh())):return false
 	if data.version>=27 and not data.has("orchard_staff"):return false
 	if data.version>=23 and (not data.has("orchard_journey") or not data.get("inventory") is Dictionary):return false
 	if data.version>=23 and not data.inventory.has("orange"):return false
@@ -1008,6 +1016,8 @@ func restore(data: Variant) -> bool:
 	irrigation=saved_irrigation.duplicate(true)
 	irrigation.plots=unique_plots
 	for key in ["watered","spent"]: irrigation[key]=int(irrigation[key])
+	skills=FarmSkills.normalized(data.get("skills",FarmSkills.fresh()))
+	skill_notice=""
 	farm_xp=int(data.farm_xp) if data.version>=14 else FarmLevels.legacy_xp(self)
 	level_notice=""
 	unlock_sandbox()
