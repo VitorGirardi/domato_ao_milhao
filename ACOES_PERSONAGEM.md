@@ -2,6 +2,8 @@
 
 As animações usam fontes editáveis do Blender e poses amostradas para os dois personagens. A movimentação normal continua responsável por andar e correr; cada ação assume o esqueleto durante sua duração e devolve o controle ao terminar.
 
+Na 0.63.1, o motorista se apoia sobre o banco, com os pés no piso e espaço para o chapéu. A cabine mantém o personagem em escala normal, e a pose final da entrada é a mesma usada ao dirigir. Colisões produzem uma pancada proporcional ao impacto, sujeita ao volume de efeitos; empurrar continuamente um obstáculo não repete o som.
+
 - Mineração: preparação do golpe, rotação do tronco, impacto e recuperação, mantendo o contato da picareta sincronizado com os efeitos.
 - Rega: levantar e inclinar o regador com apoio das duas mãos. A água começa durante a inclinação.
 - Colheita: flexionar as pernas, alcançar a planta e retornar. O efeito dos produtos acompanha o contato; a economia continua confirmada pela ação validada.

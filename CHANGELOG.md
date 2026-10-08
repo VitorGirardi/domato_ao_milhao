@@ -1,3 +1,10 @@
+## 0.63.1 — Banco do motorista e som de colisão
+
+- Quadril apoiado no assento, pés sobre o piso e mãos no volante nos dois personagens, sem reduzir sua escala.
+- Cabine e teto ajustados no Blender para acomodar a postura sentada; colisão acompanha a altura real. Entrada e direção compartilham a mesma pose final.
+- Pancada de carroceria proporcional à velocidade contra o obstáculo, com volume de efeitos, pausa e proteção contra repetição ao empurrar uma parede.
+- Preservados Caderno do Fazendeiro, animações, saves, garagem, carga e protocolo cooperativo 29.
+
 ## 0.63.0 — Caderno do Fazendeiro
 
 - Livro de orientação acessível ao caminhar e construir: próximos passos, todos os caminhos e concluídos.
