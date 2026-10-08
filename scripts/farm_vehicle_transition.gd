@@ -23,11 +23,14 @@ func apply(truck:FarmPickup,delta:float) -> bool:
 	var sit:=smoothstep(.35,.72,t)
 	var approach:=smoothstep(0,.15,t)
 	var at:=outside.lerp(truck.model.to_global(Vector3(-.53,.35,-.02)),sit)
+	var player_at:=outside.lerp(truck.position,sit)
 	at.y+=sin(sit*PI)*.38
 	var facing:=truck.global_basis*truck.model.basis
 	if not exiting and t<.15:
 		at=origin.origin.lerp(outside,approach)
+		player_at=origin.origin.lerp(outside,approach)
 		facing=origin.basis.orthonormalized().slerp(facing.orthonormalized(),approach)
+	game.player.position=player_at
 	game.avatar.global_transform=Transform3D(facing,at)
 	var sample:=t*(POSES.size()-1);var index:=mini(floori(sample),POSES.size()-2)
 	for bone in POSES[index]:

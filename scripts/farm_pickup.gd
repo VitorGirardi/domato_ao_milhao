@@ -178,7 +178,10 @@ func drive(delta:float,throttle:float,turn:float,brake:bool,active:bool) -> void
 			var leaving:=transition.exiting;var outside:=transition.outside
 			transition.clear(self)
 			if leaving:
-				reset_driver();game.player.position=outside;store()
+				if door_clear(outside):
+					reset_driver();game.player.position=outside;store()
+				else:
+					_pose_driver(0);game.hud.toast("A saída ficou bloqueada. Libere espaço ao lado da porta.")
 			else:_pose_driver(0)
 		_animate(0);return
 	audio_throttle=throttle if active and not brake else 0.0

@@ -21,9 +21,12 @@ func run() -> void:
 		truck.drive(.05,1,1,false,false)
 		assert(truck.transition.elapsed==0,"Pause freezes entry and throttle")
 		var parked:=truck.position
+		var previous_player:Vector3=game.player.position
 		for i in range(61):
 			truck.drive(.05,1,1,false,true)
 			assert(truck.position==parked and truck.speed==0)
+			assert(game.player.position.distance_to(previous_player)<.22,"Camera/player root follows a continuous entry")
+			previous_player=game.player.position
 			if i in [16,31,59]:await capture(character+"-entry-"+str(i))
 		assert(not truck.transitioning() and truck.mounted and is_zero_approx(truck.driver_door.rotation.y))
 		for side in ["L","R"]:
@@ -40,6 +43,17 @@ func run() -> void:
 		game.player.position=truck.door_stand();assert(truck.enter())
 		game.session_started=false;truck._physics_process(0);game.session_started=true
 		assert(not truck.mounted and not truck.transitioning(),"Session end cancels entry")
+	# Recheck an exit whose landing was clear before a movable blocker arrived.
+	game.player.position=truck.door_stand();assert(truck.enter())
+	while truck.transitioning():truck.drive(.05,0,0,true,true)
+	assert(truck.exit_vehicle())
+	var blocker:=StaticBody3D.new();var blocker_shape:=CollisionShape3D.new();var blocker_box:=BoxShape3D.new()
+	blocker_box.size=Vector3(.8,2,.8);blocker_shape.shape=blocker_box;blocker.add_child(blocker_shape);game.add_child(blocker)
+	blocker.position=truck.door_stand()+Vector3.UP
+	await physics_frame
+	while truck.transitioning():truck.drive(.05,0,0,true,true)
+	assert(truck.mounted and game.player.position.distance_to(truck.position)<.01,"Blocked exit safely reseats driver")
+	blocker.free();truck.reset_driver()
 	# A wall in the leaf sweep blocks entry before any state or pose is changed.
 	var wall:=StaticBody3D.new();var shape:=CollisionShape3D.new();var box:=BoxShape3D.new();box.size=Vector3(.2,2,.3)
 	shape.shape=box;wall.add_child(shape);game.add_child(wall);wall.position=truck.to_global(Vector3(-1.9,1.8,.5))
